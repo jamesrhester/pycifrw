@@ -55,8 +55,12 @@ If (data) has the wrong length, an error is returned.
 Note also that a CifFile object can be accessed as a mapping type, ie using
 square brackets.  Most mapping operations have been implemented (see below).
 
+We import type objects at the module level, as required by later versions
+of Python.
+
 <<*>>=
 <<Copyright statement>>
+from types import *
 <<CifFile class>>
 <<CifBlock class>>
 <<Define an error class>>
@@ -78,7 +82,6 @@ class CifFile:
 
 <<Initialise data structures>>=
 def __init__(self,datasource=None):
-    from types import *
     self.dictionary = {}
     if isinstance(datasource,DictType):
         for (key,value) in datasource.items():
@@ -254,7 +257,6 @@ items.
 
 <<Initialise Cif Block>>=
 def __init__(self,data = ()):
-    from types import *
     self.block = {"loops":[]}
     if type(data) is DictType:     #direct placement
         self.block = data
@@ -420,13 +422,12 @@ the item name should also occur in a single member tuple.
 
 <<Add a data item>>=
 def AddCifItem(self,data):
-    import types
     # we accept only tuples, strings and lists!!
-    if not (isinstance(data[0],types.StringType) or isinstance(data[0],types.TupleType)
-          or isinstance(data[0],types.ListType)):
+    if not (isinstance(data[0],StringType) or isinstance(data[0],TupleType)
+          or isinstance(data[0],ListType)):
               raise TypeError, 'Cif datanames are either a string, tuple or list'
     # now put into the dictionary properly...
-    if isinstance(data[0],types.StringType):   # a single name        
+    if isinstance(data[0],StringType):   # a single name        
         if len(data[0])>78:                   # too long
             raise CifError, 'Dataname ' + data[0] + ' too long.'
         if data[0][0]!='_':
@@ -443,7 +444,7 @@ def AddCifItem(self,data):
            raise TypeError, 'Length mismatch between itemnames and values'
        dellist = []
        for itemname in data[0]:
-           if len(itemname)>78 or not isinstance(itemname,types.StringType): # no good
+           if len(itemname)>78 or not isinstance(itemname,StringType): # no good
                raise CifError, 'Bad item name ' + `itemname`
            if itemname[0]!='_':
                raise CifError, 'Dataname ' + data[0] + ' does not begin with _'
@@ -460,10 +461,9 @@ sure everything goes in either as a single item or as a list/tuple.
 
 <<Regularise data values>>=
 def regularise_data(self,dataitem):
-    import types
-    alrighttypes = [types.IntType, types.LongType, 
-                    types.FloatType, types.StringType]
-    okmappingtypes = [types.TupleType, types.ListType]
+    alrighttypes = [IntType, LongType, 
+                    FloatType, StringType]
+    okmappingtypes = [TupleType, ListType]
     thistype = type(dataitem)
     if thistype in alrighttypes or thistype in okmappingtypes:
         return dataitem
@@ -488,7 +488,7 @@ buffer to speed it up.
 <<Print a data block>>=
 def printsection(self,order=[]):
     import cStringIO
-    import types,string
+    import string
     # first make an ordering
     if not order:
         order = self.block.keys()
@@ -500,7 +500,7 @@ def printsection(self,order=[]):
     outstring = cStringIO.StringIO()       # the returned string
     for itemname in order:
         itemvalue = self.block[itemname]
-        if isinstance(itemvalue,types.StringType):
+        if isinstance(itemvalue,StringType):
               thisstring = self._formatstring(itemvalue)
               if len(thisstring) + len(itemname) < 78:
                       outstring.write('%s %s\n' % (itemname,thisstring))
@@ -528,7 +528,7 @@ def printsection(self,order=[]):
                for name in loopnames:
                    # at each point, get the next data value
                    datapoint = aloop[name][position]
-                   if isinstance(datapoint,types.StringType):
+                   if isinstance(datapoint,StringType):
                        thisstring = '%s' % (self._formatstring(datapoint)) #no spaces yet
                        if '\n' in thisstring:
                            # check its position, might be too far along
