@@ -1,0 +1,16 @@
+PyCiFRW installation
+====================
+
+Unpack the distribution to a location where Python can find it
+(eg .../lib/Python2.0/site-packages/PyCifRW in Unix, or
+    C:\Python2.0\Lib\PyCifRW  in Windows)
+
+Under Unix, you should then add a file 'PyCifRW.pth' in the
+lib/Python2.0/site-packages directory containing the single line
+'PyCifRW'
+
+Problems
+========
+
+Most of the files in the distribution have Unix-style line endings.
+This may cause strange problems on Macintosh systems.
