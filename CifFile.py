@@ -121,7 +121,10 @@ class CifBlock:
         self.RemoveCifItem(key)
 
     def __len__(self):
-        return len(self.block)  
+        blen = len(self.block) - 1   #non-looped items
+        for aloop in self.block["loops"]:
+            blen = blen + len(aloop.keys())
+        return blen    
 
     def __nonzero__(self):
         if len(self.block) == 1 and len(self.block["loops"]) == 0:

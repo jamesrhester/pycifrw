@@ -1,33 +1,39 @@
-@
+@ \section{Introduction}
 
-This file implements a general Cif reading/writing utility.  A class
-is initialised with either no arguments (a new Cif file) or with the
-name of an already existing Cif file.  Data items are accessed/changed/
+This file implements a general CIF reading/writing utility.  A class
+is initialised with either no arguments (a new CIF file) or with the
+name of an already existing CIF file.  Data items are accessed/changed/
 added using the python mapping type ie to get [[dataitem]] you would
-type 'value = cf[blockname][itemname]. 
+type [[value = cf[blockname][dataitem]]]. 
 
 The methods available for the CifFile type are:
 \begin{enumerate}
-\item ReadCif([[filename]]): reinitialise to different Cif file
-\item GetBlocks():       return list of block names in file
-\item WriteOut([[filename]],[[comment]]): output the entire current file to
-[[filename]], with an optional [[comment]] at the beginning.
+\item [[ReadCif(filename)]]: (re)initialise using Cif file [[filename]].
+\item [[GetBlocks()]]:       return list of block names in file
+\item [[NewBlock(blockname)]]: add new block to this object. Returns new
+block name, which will not be the requested name if the Cif object 
+already has the requested name.
+\item [[WriteOut(comment)]]: return the contents of the current file as a
+CIF-conformant string, with optional [[comment]] at the beginning.
 \end{enumerate}
 
 The methods available for the CifBlock type are:
 \begin{enumerate}
-\item GetCifItem([[itemname]]): return the value of [[itemname]] in 
+\item [[GetCifItem(itemname)]]: return the value of [[itemname]] in 
 current block (equivalent to using [])
-\item AddCifItem([[data]]): add [[data]] to the current block.  [[data]] is 
+\item [[AddCifItem(data)]]: add [[data]] to the current block.  [[data]] is 
 a tuple containing either an array of itemnames and an array of arrays of 
-data, or else an itemname and a data value for that item.  This is called
-when setting data using []
-\item RemoveCifItem([[dataname]]): remove the given Cif dataname from the 
+data, or else an itemname and a data value for that item.  This method 
+is called when setting data using []
+\item [[RemoveCifItem(dataname)]]: remove the given Cif dataname from the 
 current block.  Same as typing 'del block[item]'
+\item [[GetLoop(dataname)]]: for looped data item [[dataname]], get a list
+of all itemnames and values co-occurring in this loop.  Returns an error
+if [[dataname]] is not in a loop.
 \end{enumerate}
 
 Note also that a CifFile object can be accessed as a mapping type, ie using
-square brackets.
+square brackets.  Most mapping operations have been implemented (see below).
 
 <<*>>=
 <<CifFile class>>
@@ -183,6 +189,11 @@ class CifBlock:
     <<Print a data block>>
     <<Format a string>>
 
+@ Note that in the following initialisation, it is conceivable that
+the dictionary type used to initialise the block already has loops
+in it; we have not attempted to check that it has not, and initialise 
+the [[loop]] dictionary item to 0. 
+
 <<Initialise Cif Block>>=
 def __init__(self,data = ()):
     from types import *
@@ -197,7 +208,9 @@ def __init__(self,data = ()):
     else: raise TypeError
 
 @ Adding emulation of a mapping type.  We add any of the other
-functions we'd like to emulate. 
+functions we'd like to emulate.   [[__len__]] returns the number
+of CIF items in this block, either in a loop or not.  So it is
+not the simple length of the dictionary.
 
 <<Add emulation of a mapping type>>=
 def __str__(self):
@@ -213,7 +226,10 @@ def __delitem__(self,key):
     self.RemoveCifItem(key)
 
 def __len__(self):
-    return len(self.block)  
+    blen = len(self.block) - 1   #non-looped items
+    for aloop in self.block["loops"]:
+        blen = blen + len(aloop.keys())
+    return blen    
 
 def __nonzero__(self):
     if len(self.block) == 1 and len(self.block["loops"]) == 0:

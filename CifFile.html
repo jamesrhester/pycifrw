@@ -1,40 +1,46 @@
 <!-- this file was generated automatically by noweave --- better not edit it-->
-<html><head><title>CifFile.nw</title></head><body>
-
-This file implements a general Cif reading/writing utility.  A class
-is initialised with either no arguments (a new Cif file) or with the
-name of an already existing Cif file.  Data items are accessed/changed/
+<html><head><title>CifFile.nw</title></head><body><h2>Introduction</h2>
+<p>
+This file implements a general CIF reading/writing utility.  A class
+is initialised with either no arguments (a new CIF file) or with the
+name of an already existing CIF file.  Data items are accessed/changed/
 added using the python mapping type ie to get <code>dataitem</code> you would
-type 'value = cf[blockname][itemname]. 
+type <code>value = cf[blockname][dataitem]</code>. 
 <p>
 The methods available for the CifFile type are:
 <ol>
-<li>ReadCif(<code>filename</code>): reinitialise to different Cif file
-<li>GetBlocks():       return list of block names in file
-<li>WriteOut(<code>filename</code>,<code>comment</code>): output the entire current file to
-<code>filename</code>, with an optional <code>comment</code> at the beginning.
+<li><code>ReadCif(filename)</code>: (re)initialise using Cif file <code>filename</code>.
+<li><code>GetBlocks()</code>:       return list of block names in file
+<li><code>NewBlock(blockname)</code>: add new block to this object. Returns new
+block name, which will not be the requested name if the Cif object 
+already has the requested name.
+<li><code>WriteOut(comment)</code>: return the contents of the current file as a
+CIF-conformant string, with optional <code>comment</code> at the beginning.
 </ol>
 <p>
 The methods available for the CifBlock type are:
 <ol>
-<li>GetCifItem(<code>itemname</code>): return the value of <code>itemname</code> in 
+<li><code>GetCifItem(itemname)</code>: return the value of <code>itemname</code> in 
 current block (equivalent to using [])
-<li>AddCifItem(<code>data</code>): add <code>data</code> to the current block.  <code>data</code> is 
+<li><code>AddCifItem(data)</code>: add <code>data</code> to the current block.  <code>data</code> is 
 a tuple containing either an array of itemnames and an array of arrays of 
-<a name="NWD1">data, or else an itemname and a data value for that item.  This is called</a>
-when setting data using []
-<li>RemoveCifItem(<code>dataname</code>): remove the given Cif dataname from the 
-current block.  Same as typing 'del block[item]'
+data, or else an itemname and a data value for that item.  This method 
+is called when setting data using []
+<li><code>RemoveCifItem(dataname)</code>: remove the given Cif dataname from the 
+<a name="NWD1">current block.  Same as typing 'del block[item]'</a>
+<li><code>GetLoop(dataname)</code>: for looped data item <code>dataname</code>, get a list
+of all itemnames and values co-occurring in this loop.  Returns an error
+if <code>dataname</code> is not in a loop.
 </ol>
 <p>
 Note also that a CifFile object can be accessed as a mapping type, ie using
-square brackets.
+square brackets.  Most mapping operations have been implemented (see below).
 <p>
 <pre><a name="NWCifA-*-1" href="#NWD1"><dfn>&lt;*&gt;=</dfn></a>
 <a name="NWCifA-*-1-u1" href="#NWD2"><i>&lt;CifFile class&gt;</i></a>
 <a name="NWCifA-*-1-u2" href="#NWD7"><i>&lt;CifBlock class&gt;</i></a>
-<a name="NWCifA-*-1-u3" href="#NWDF"><i>&lt;Define an error class&gt;</i></a>
-<a name="NWCifA-*-1-u4" href="#NWDG"><i>&lt;Test the cif module&gt;</i></a>
+<a name="NWCifA-*-1-u3" href="#NWDG"><i>&lt;Define an error class&gt;</i></a>
+<a name="NWCifA-*-1-u4" href="#NWDH"><i>&lt;Test the cif module&gt;</i></a>
 
 </pre><p><h2><a name="NWD2">CifFile</a></h2>
 <p>
@@ -175,16 +181,21 @@ or a complete block, suitable when copying.
 <p>
 <pre><a name="NWCifA-CifE-1" href="#NWD7"><dfn>&lt;CifBlock class&gt;=</dfn></a> <b>(<a href="#NWD1">&lt;-U</a>)</b>
 class CifBlock:
-    <a name="NWCifA-CifE-1-u1" href="#NWCifA-IniK-1"><i>&lt;Initialise Cif Block&gt;</i></a>
-    <a name="NWCifA-CifE-1-u2" href="#NWD8"><i>&lt;Add emulation of a mapping type&gt;</i></a>
-    <a name="NWCifA-CifE-1-u3" href="#NWD9"><i>&lt;Return value of Cif item&gt;</i></a>
-    <a name="NWCifA-CifE-1-u4" href="#NWDB"><i>&lt;Remove a data item&gt;</i></a>
-    <a name="NWCifA-CifE-1-u5" href="#NWDC"><i>&lt;Add a data item&gt;</i></a>
-    <a name="NWCifA-CifE-1-u6" href="#NWDA"><i>&lt;Get complete looped data&gt;</i></a>
-    <a name="NWCifA-CifE-1-u7" href="#NWDD"><i>&lt;Print a data block&gt;</i></a>
-    <a name="NWCifA-CifE-1-u8" href="#NWDE"><i>&lt;Format a string&gt;</i></a>
+    <a name="NWCifA-CifE-1-u1" href="#NWD8"><i>&lt;Initialise Cif Block&gt;</i></a>
+    <a name="NWCifA-CifE-1-u2" href="#NWD9"><i>&lt;Add emulation of a mapping type&gt;</i></a>
+    <a name="NWCifA-CifE-1-u3" href="#NWDA"><i>&lt;Return value of Cif item&gt;</i></a>
+    <a name="NWCifA-CifE-1-u4" href="#NWDC"><i>&lt;Remove a data item&gt;</i></a>
+    <a name="NWCifA-CifE-1-u5" href="#NWDD"><i>&lt;Add a data item&gt;</i></a>
+    <a name="NWCifA-CifE-1-u6" href="#NWDB"><i>&lt;Get complete looped data&gt;</i></a>
+    <a name="NWCifA-CifE-1-u7" href="#NWDE"><i>&lt;Print a data block&gt;</i></a>
+    <a name="NWCifA-CifE-1-u8" href="#NWDF"><i>&lt;Format a string&gt;</i></a>
 
-</pre><pre><a name="NWCifA-IniK-1" href="#NWCifA-IniK-1"><dfn>&lt;Initialise Cif Block&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
+</pre><p><a name="NWD8">Note that in the following initialisation, it is conceivable that</a>
+the dictionary type used to initialise the block already has loops
+in it; we have not attempted to check that it has not, and initialise 
+the <code>loop</code> dictionary item to 0. 
+<p>
+<pre><a name="NWCifA-IniK-1" href="#NWD8"><dfn>&lt;Initialise Cif Block&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
 def __init__(self,data = ()):
     from types import *
     self.block = {&quot;loops&quot;:[]}
@@ -197,10 +208,12 @@ def __init__(self,data = ()):
             self.AddCifItem(item)
     else: raise TypeError
 
-</pre><p><a name="NWD8">Adding emulation of a mapping type.  We add any of the other</a>
-functions we'd like to emulate. 
+</pre><p><a name="NWD9">Adding emulation of a mapping type.  We add any of the other</a>
+functions we'd like to emulate.   <code>__len__</code> returns the number
+of CIF items in this block, either in a loop or not.  So it is
+not the simple length of the dictionary.
 <p>
-<pre><a name="NWCifA-AddV-1" href="#NWD8"><dfn>&lt;Add emulation of a mapping type&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
+<pre><a name="NWCifA-AddV-1" href="#NWD9"><dfn>&lt;Add emulation of a mapping type&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
 def __str__(self):
     return self.printsection()
 
@@ -214,7 +227,10 @@ def __delitem__(self,key):
     self.RemoveCifItem(key)
 
 def __len__(self):
-    return len(self.block)  
+    blen = len(self.block) - 1   #non-looped items
+    for aloop in self.block[&quot;loops&quot;]:
+        blen = blen + len(aloop.keys())
+    return blen    
 
 def __nonzero__(self):
     if len(self.block) == 1 and len(self.block[&quot;loops&quot;]) == 0:
@@ -256,11 +272,11 @@ def update(self,adict):
             for aloop in adict.block[&quot;loops&quot;]:
                 self.AddCifItem((aloop.keys(),aloop.values()))
 
-</pre><p><a name="NWD9">Returning a Cif item value.  Note that a looped block has little</a>
+</pre><p><a name="NWDA">Returning a Cif item value.  Note that a looped block has little</a>
 meaning without all the items in the loop.  Routine <code>GetLoop</code> is
 better in this case.
 <p>
-<pre><a name="NWCifA-RetO-1" href="#NWD9"><dfn>&lt;Return value of Cif item&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
+<pre><a name="NWCifA-RetO-1" href="#NWDA"><dfn>&lt;Return value of Cif item&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
 def GetCifItem(self,itemname):
     if self.block.has_key(itemname):
         return self.block[itemname]
@@ -270,7 +286,7 @@ def GetCifItem(self,itemname):
                 return aloop[itemname]
     raise KeyError, 'Item not in Cif block'
 
-</pre><p><a name="NWDA">This function is required if we wish a list of all items in a data block.</a>
+</pre><p><a name="NWDB">This function is required if we wish a list of all items in a data block.</a>
 We would use this if we needed to match things up properly.  We give the name
 of one item, and all items from that loop, and their values, are returned.
 For example, <code>j,k = cf.GetLoop(itemname)</code>, where k will be a list of lists.
@@ -279,7 +295,7 @@ Also, it would be nice if the return value is in a form that can be
 fed right back into the file.  So if we are asked for an item which is
 part of a loop, we reconstruct all of the data before returning it.
 <p>
-<pre><a name="NWCifA-GetO-1" href="#NWDA"><dfn>&lt;Get complete looped data&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
+<pre><a name="NWCifA-GetO-1" href="#NWDB"><dfn>&lt;Get complete looped data&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
 def GetLoop(self,itemname):
     for aloop in self.block[&quot;loops&quot;]:
         if aloop.has_key(itemname):
@@ -289,10 +305,10 @@ def GetLoop(self,itemname):
         raise TypeError, 'Non-looped item'
     raise KeyError, 'Item not in loop'
 
-</pre><p><a name="NWDB">Removing a data item.  We delete the item, and if it is looped, and</a>
+</pre><p><a name="NWDC">Removing a data item.  We delete the item, and if it is looped, and</a>
 nothing is left in the loop, we remove that element of the list.
 <p>
-<pre><a name="NWCifA-RemI-1" href="#NWDB"><dfn>&lt;Remove a data item&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
+<pre><a name="NWCifA-RemI-1" href="#NWDC"><dfn>&lt;Remove a data item&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
 def RemoveCifItem(self,itemname):
     if self.block.has_key(itemname):
         del self.block[itemname]
@@ -316,7 +332,7 @@ If an item is already stored, it will be silently replaced; if it earlier
 lived in a loop, it will be removed from the loop, and the loop itself
 removed if it is now zero length.
 <p>
-<a name="NWDC">We should also check for consistency, by making sure the new item is</a>
+<a name="NWDD">We should also check for consistency, by making sure the new item is</a>
 not in the block already.  If it is, we replace it (consistent with
 the meaning of square brackets).  If it is in a loop, we replace the
 looped value and all other items in the loop block.
@@ -325,7 +341,7 @@ We typecheck the data items.  They can be tuples, strings
 or lists.  If we have a list of values for a single item,
 the item name should also occur in a single member tuple.
 <p>
-<pre><a name="NWCifA-AddF-1" href="#NWDC"><dfn>&lt;Add a data item&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
+<pre><a name="NWCifA-AddF-1" href="#NWDD"><dfn>&lt;Add a data item&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
 def AddCifItem(self,data):
     import types
     # we accept only tuples, strings and lists!!
@@ -350,13 +366,13 @@ def AddCifItem(self,data):
        self.block[&quot;loops&quot;].append(newdict)
     return
 
-</pre><p><a name="NWDD">Printing a section.  We allow an optional order list to be given, in</a>
+</pre><p><a name="NWDE">Printing a section.  We allow an optional order list to be given, in</a>
 case the caller wants to order things in some nice way.  This is
 overridden if any item in the order list occurs within a loop, in
 which case it will be packaged together with everything else within
 that same loop.
 <p>
-<pre><a name="NWCifA-PriI-1" href="#NWDD"><dfn>&lt;Print a data block&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
+<pre><a name="NWCifA-PriI-1" href="#NWDE"><dfn>&lt;Print a data block&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
 def printsection(self,order=[]):
     import types
     # first make an ordering
@@ -413,14 +429,14 @@ def printsection(self,order=[]):
                curstring = ''
     return outstring
 
-</pre><p><a name="NWDE">Formatting a string.  We make sure that the length of the item value</a>
+</pre><p><a name="NWDF">Formatting a string.  We make sure that the length of the item value</a>
 is less than 80, or else we should split them, and so on. We check the
 value for terminators and impossible apostrophes and length, before
 deciding whether to print it and the item on a single line.  We try to
 respect carriage returns in the string, if the caller has tried to do
 the formatting for us.
 <p>
-<pre><a name="NWCifA-ForF-1" href="#NWDE"><dfn>&lt;Format a string&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
+<pre><a name="NWCifA-ForF-1" href="#NWDF"><dfn>&lt;Format a string&gt;=</dfn></a> <b>(<a href="#NWD7">&lt;-U</a>)</b>
 def _formatstring(self,instring):
     import re, string
     if len(instring)&lt; 75 and '\n' not in instring:   #single line?
@@ -450,19 +466,19 @@ def _formatstring(self,instring):
             instring = instring[letter+1:]            
     return outstring
 
-</pre><p><a name="NWDF">Defining an error class: we simply derive a 'nothing' class from the root</a>
+</pre><p><a name="NWDG">Defining an error class: we simply derive a 'nothing' class from the root</a>
 Python class
 <p>
-<pre><a name="NWCifA-DefL-1" href="#NWDF"><dfn>&lt;Define an error class&gt;=</dfn></a> <b>(<a href="#NWD1">&lt;-U</a>)</b>
+<pre><a name="NWCifA-DefL-1" href="#NWDG"><dfn>&lt;Define an error class&gt;=</dfn></a> <b>(<a href="#NWD1">&lt;-U</a>)</b>
 def CifError(Exceptions):
     def __init__(self,value):
         self.value = value
     def __str__(self):
         print `value`
  
-</pre><p><a name="NWDG">Testing the object.</a>
+</pre><p><a name="NWDH">Testing the object.</a>
 <p>
-<pre><a name="NWCifA-TesJ-1" href="#NWDG"><dfn>&lt;Test the cif module&gt;=</dfn></a> <b>(<a href="#NWD1">&lt;-U</a>)</b>
+<pre><a name="NWCifA-TesJ-1" href="#NWDH"><dfn>&lt;Test the cif module&gt;=</dfn></a> <b>(<a href="#NWD1">&lt;-U</a>)</b>
 def testcif():
     items = (('_item_1','Some data'),
              ('_item_2','Some_underline_data'),
@@ -479,22 +495,22 @@ def testcif():
 
 <ul>
 <li><a href="#NWD1"><i>&lt;*&gt;</i></a>: <a href="#NWD1">D1</a>
-<li><a href="#NWDC"><i>&lt;Add a data item&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWDC">D2</a>
+<li><a href="#NWDD"><i>&lt;Add a data item&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWDD">D2</a>
 <li><a href="#NWD5"><i>&lt;Add a new data section&gt;</i></a>: <a href="#NWD2">U1</a>, <a href="#NWD5">D2</a>
-<li><a href="#NWD8"><i>&lt;Add emulation of a mapping type&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWD8">D2</a>
+<li><a href="#NWD9"><i>&lt;Add emulation of a mapping type&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWD9">D2</a>
 <li><a href="#NWD7"><i>&lt;CifBlock class&gt;</i></a>: <a href="#NWD1">U1</a>, <a href="#NWD7">D2</a>
 <li><a href="#NWD2"><i>&lt;CifFile class&gt;</i></a>: <a href="#NWD1">U1</a>, <a href="#NWD2">D2</a>
 <li><a href="#NWD4"><i>&lt;CifFile emulation of mapping type&gt;</i></a>: <a href="#NWD2">U1</a>, <a href="#NWD4">D2</a>
-<li><a href="#NWDF"><i>&lt;Define an error class&gt;</i></a>: <a href="#NWD1">U1</a>, <a href="#NWDF">D2</a>
-<li><a href="#NWDE"><i>&lt;Format a string&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWDE">D2</a>
-<li><a href="#NWDA"><i>&lt;Get complete looped data&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWDA">D2</a>
-<li><a href="#NWCifA-IniK-1"><i>&lt;Initialise Cif Block&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWCifA-IniK-1">D2</a>
+<li><a href="#NWDG"><i>&lt;Define an error class&gt;</i></a>: <a href="#NWD1">U1</a>, <a href="#NWDG">D2</a>
+<li><a href="#NWDF"><i>&lt;Format a string&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWDF">D2</a>
+<li><a href="#NWDB"><i>&lt;Get complete looped data&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWDB">D2</a>
+<li><a href="#NWD8"><i>&lt;Initialise Cif Block&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWD8">D2</a>
 <li><a href="#NWCifA-IniQ-1"><i>&lt;Initialise data structures&gt;</i></a>: <a href="#NWD2">U1</a>, <a href="#NWCifA-IniQ-1">D2</a>
-<li><a href="#NWDD"><i>&lt;Print a data block&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWDD">D2</a>
+<li><a href="#NWDE"><i>&lt;Print a data block&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWDE">D2</a>
 <li><a href="#NWD3"><i>&lt;Read in a CIF file&gt;</i></a>: <a href="#NWD2">U1</a>, <a href="#NWD3">D2</a>
-<li><a href="#NWDB"><i>&lt;Remove a data item&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWDB">D2</a>
-<li><a href="#NWD9"><i>&lt;Return value of Cif item&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWD9">D2</a>
-<li><a href="#NWDG"><i>&lt;Test the cif module&gt;</i></a>: <a href="#NWD1">U1</a>, <a href="#NWDG">D2</a>
+<li><a href="#NWDC"><i>&lt;Remove a data item&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWDC">D2</a>
+<li><a href="#NWDA"><i>&lt;Return value of Cif item&gt;</i></a>: <a href="#NWD7">U1</a>, <a href="#NWDA">D2</a>
+<li><a href="#NWDH"><i>&lt;Test the cif module&gt;</i></a>: <a href="#NWD1">U1</a>, <a href="#NWDH">D2</a>
 <li><a href="#NWD6"><i>&lt;Write out to string representation&gt;</i></a>: <a href="#NWD2">U1</a>, <a href="#NWD6">D2</a>
 </ul>
 <ul>

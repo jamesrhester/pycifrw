@@ -1,4 +1,4 @@
-                          PyCiFRW Readme
+                          PyCIFRW Readme
                           --------------
 
 Introduction
@@ -7,8 +7,18 @@ Introduction
 PyCIFRW provides basic support for reading and writing CIF (Crystallographic
 Information Format) files using Python.  It was developed at the Australian
 National Beamline Facility (ANBF), run by the Australian Synchrotron Research
-Program (ASRP) as part of a larger project to provide CIF input/output 
-capabilities for data collection.
+Program (ASRP), as part of a larger project to provide CIF input/output 
+capabilities for data collection.  It is currently under active 
+development and testing.  
+
+Supported Platforms
+-------------------
+
+PyCIFRW is written entirely in Python.  While this makes parsing of large
+CIF files rather slow, it will run wherever Python runs.  It has been
+tested on Unix (Linux,Solaris) and Windows 95/98 under Python 1.5.2 and
+Python 2.0.  Macintoshes will probably have trouble with the Unix-style line 
+termination of the .py files.
 
 Files
 -----
@@ -50,7 +60,7 @@ To read in a CIF:
 >> from CifFile import *
 >> cf = CifFile('jun_01_2.cif')
 
-to access a CIF
+to access information in a CIF
 
 >> wav = cf['si_std']['_diffrn_meas_wavelength']
 
