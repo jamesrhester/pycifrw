@@ -72,7 +72,7 @@ def DeclareTerminals(Grammar):
      dqstr = "\"((\"[]["+non_blank_char+"-])|([]["+ordinary_char+" \v\t#$';_-]))*\""
      sqstr = "'(('[]["+non_blank_char+"-])|([]["+ordinary_char+" \v\t#$\";_-]))*'"
      lotstr = "[]"+ordinary_char+"\" \v\t#$'_-]"+char+"*("+terminate+")*"
-     scstr = "(\n|\r\n|\f)"+";"+char+"*("+terminate+")("+lotstr+")*;"
+     scstr = "(\n|\r\n|\f)"+";"+char+"*("+terminate+")+("+lotstr+")*;"
      dv1str = "("+dv1str + ")|"+sqstr+"|"+dqstr
      dv2str = "[]["+ordinary_char+"-][]["+non_blank_char+"-]*"
      dv2str = "("+dv2str + ")|"+dqstr+"|"+sqstr+"|("+scstr+")"

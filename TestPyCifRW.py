@@ -139,7 +139,7 @@ class FileWriteTestCase(unittest.TestCase):
 
    def tearDown(self):
        import os
-       # os.remove('test.cif')
+       os.remove('test.cif')
        del self.df
        del self.cf
 
@@ -174,7 +174,6 @@ class FileWriteTestCase(unittest.TestCase):
        for key,value in olditems:
            compstringa = map(lambda a:re.sub('\n','',a),value)
            compstringb = map(lambda a:re.sub('\n','',a),self.df[key])
-           print str(compstringa) +' : ' + str(compstringb)
            self.failUnless(compstringa==compstringb)
 
 if __name__=='__main__':

@@ -53,6 +53,10 @@ This is done by declaring terminators to be whitespace unless they are
 immediately followed by a semicolon, in which case they are not removed from
 the input stream and are available for matching below.
 
+Further changes, later checked for: a sequence of two or more terminators
+when processing a semicolon delimited string would be rejected, but now is
+OK, after including a '+' after the terminator definition.
+
 <<Declare the terminals>>=
 def stripstring(value):
     if value:
@@ -86,7 +90,7 @@ def DeclareTerminals(Grammar):
      dqstr = "\"((\"[]["+non_blank_char+"-])|([]["+ordinary_char+" \v\t#$';_-]))*\""
      sqstr = "'(('[]["+non_blank_char+"-])|([]["+ordinary_char+" \v\t#$\";_-]))*'"
      lotstr = "[]"+ordinary_char+"\" \v\t#$'_-]"+char+"*("+terminate+")*"
-     scstr = "(\n|\r\n|\f)"+";"+char+"*("+terminate+")("+lotstr+")*;"
+     scstr = "(\n|\r\n|\f)"+";"+char+"*("+terminate+")+("+lotstr+")*;"
      dv1str = "("+dv1str + ")|"+sqstr+"|"+dqstr
      dv2str = "[]["+ordinary_char+"-][]["+non_blank_char+"-]*"
      dv2str = "("+dv2str + ")|"+dqstr+"|"+sqstr+"|("+scstr+")"

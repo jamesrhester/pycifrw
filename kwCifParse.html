@@ -47,12 +47,16 @@ def CifGramBuild():
     BindRules(CifG)
     return CifG 
 
-</pre><p><a name="NWD4">We define the terminal matches here.  We assume our new version of kjParse,</a>
+</pre><p>We define the terminal matches here.  We assume our new version of kjParse,
 which uses Perl-type regular expressions.  The largest problem in composing
-these match expressions was taking care of the special status of terminators.
+<a name="NWD4">these match expressions was taking care of the special status of terminators.</a>
 This is done by declaring terminators to be whitespace unless they are 
 immediately followed by a semicolon, in which case they are not removed from
 the input stream and are available for matching below.
+<p>
+Further changes, later checked for: a sequence of two or more terminators
+when processing a semicolon delimited string would be rejected, but now is
+OK, after including a '+' after the terminator definition.
 <p>
 <pre><a name="NWkwCD-DecL-1" href="#NWD4"><dfn>&lt;Declare the terminals&gt;=</dfn></a> <b>(<a href="#NWD2">&lt;-U</a>)</b>
 def stripstring(value):
@@ -87,7 +91,7 @@ def DeclareTerminals(Grammar):
      dqstr = &quot;\&quot;((\&quot;[][&quot;+non_blank_char+&quot;-])|([][&quot;+ordinary_char+&quot; \v\t#$';_-]))*\&quot;&quot;
      sqstr = &quot;'(('[][&quot;+non_blank_char+&quot;-])|([][&quot;+ordinary_char+&quot; \v\t#$\&quot;;_-]))*'&quot;
      lotstr = &quot;[]&quot;+ordinary_char+&quot;\&quot; \v\t#$'_-]&quot;+char+&quot;*(&quot;+terminate+&quot;)*&quot;
-     scstr = &quot;(\n|\r\n|\f)&quot;+&quot;;&quot;+char+&quot;*(&quot;+terminate+&quot;)(&quot;+lotstr+&quot;)*;&quot;
+     scstr = &quot;(\n|\r\n|\f)&quot;+&quot;;&quot;+char+&quot;*(&quot;+terminate+&quot;)+(&quot;+lotstr+&quot;)*;&quot;
      dv1str = &quot;(&quot;+dv1str + &quot;)|&quot;+sqstr+&quot;|&quot;+dqstr
      dv2str = &quot;[][&quot;+ordinary_char+&quot;-][][&quot;+non_blank_char+&quot;-]*&quot;
      dv2str = &quot;(&quot;+dv2str + &quot;)|&quot;+dqstr+&quot;|&quot;+sqstr+&quot;|(&quot;+scstr+&quot;)&quot;
