@@ -24,4 +24,4 @@ install: package
 	install CifFile.py YappsCifParser.py yappsrt.py /usr/lib/python2.0/site-packages/ANBF/PyCifRW
 #
 clean: 
-	rm *.pyc *.g
+	rm -f *.pyc *.g

@@ -88,7 +88,13 @@ def makeloop(namelist,itemlist,context):
 
 The regular expressions aren't quite as easy to deal with as in kjParsing;
 in kjParsing we could pass string variables as re arguments, but here we have
-to have a raw string.
+to have a raw string.  However, we can simplify the BNC specification
+of Nick Spadaccini.   First of all, we do not have to have type I and type 
+II strings, which are distinguished by the presence or absence of a line
+feed directly preceding them and thus by being allowed a semicolon at the
+front or not.  We take care of this by treating as whitespace all terminators
+except for those with a following semicolon, so that a carriage-return-semicolon
+sequence matches the start_sc_line uniquely.
 
 <<Regular expressions>>=
 # first handle whitespace and comments, keeping whitespace
@@ -100,11 +106,10 @@ ignore: "#.*"
 token LBLOCK:  "(L|l)(O|o)(O|o)(P|p)_"        # loop_
 token data_name: "_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+" #_followed by stuff
 token data_heading: "(D|d)(A|a)(T|t)(A|a)_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+"
-token data_value_1: "([^\s\"#$'_][^\s]+)|'(('[^\s])|([^\n\r\f']))*'+|\"((\"[^\s])|([^\n\r\f']))*\"+"
-token data_value_2: "([^\s\"$#';][^\s]*)|\"((\"[^\s])|([^\"\n\r\f]))*\"+|'(('[^\s])|([^'\n\r\f]))*'+"
-token start_sc_line: "(\n|\r\n|\f);([^\n\r\f])*(\r\n|\r|\n|\f)"
+token start_sc_line: "(\n|\r\n|\f);([^\n\r\f])*(\r\n|\r|\n|\f)+"
 token sc_line_of_text: "[^;\r\n\f]([^\r\n\f])*(\r\n|\r|\n|\f)+"
 token end_sc_line: ";"
+token data_value_1: "([^\s\"#$'_][^\s]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\f\"]))*\"+"
 token END: '$'
 
 @
@@ -149,8 +154,6 @@ rule input: ((
 
      rule datakvpair: data_name data_value  {{return {data_name:data_value} }} # name-value
      rule data_value: (data_value_1          {{thisval = stripstring(data_value_1)}}
-		      |  
-		      data_value_2          {{thisval = stripstring(data_value_2)}}
                       |
                       sc_lines_of_text      {{thisval = stripextras(sc_lines_of_text)}}
                       )                     {{return monitor('data_value',thisval)}}
