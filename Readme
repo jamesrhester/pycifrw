@@ -1,0 +1,47 @@
+                          PyCiFRW Readme
+                          --------------
+
+Introduction
+------------
+
+PyCIFRW provides basic support for reading and writing CIF (Crystallographic
+Information Format) files.  It was developed at the ANBF (Australian
+National Beamline Facility) as part of a larger project to provide CIF
+input/output capabilities to visiting users.
+
+Files
+-----
+
+PyCiFRW consists of the following files:
+
+CifFile.py                     Defines the CifFile module
+CifFile.nw                     Noweb file from which CifFile.py is obtained
+CifFile.html                   Programming notes for CifFile
+
+Makefile                       How to derive .html and .py files from .nw files
+kjCParseBuild.py               Somewhat enhanced part of the kjParsing package
+kjCParser.py                   Somewhat enhanced part of the kjParsing package
+kwCifParse.py                  Cif grammar specifications for kjParsing
+kwCifParse.html                Programming notes for kwCifParse
+kwCifParse.nw                  Noweb file
+
+Installation
+------------
+
+All .py files should be placed in a directory where python can find them, for
+example .../lib/python/site-packages
+
+Use
+---
+
+See the text in CifFile.html for details of the interface
+
+Example
+-------
+
+To read in a CIF:
+>> from CifFile import *
+>> cf = CifFile('jun_01_2.cif','si_std')
+>> wav = cf.GetCifItem('_diffrn_meas_wavelength')
+
+

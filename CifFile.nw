@@ -1,0 +1,476 @@
+@
+
+This file implements a general Cif reading/writing utility.  A class
+is initialised with either no arguments (a new Cif file) or with the
+name of an already existing Cif file.  Data items are accessed/changed/
+added using the python mapping type ie to get [[dataitem]] you would
+type 'value = cf[blockname][itemname]. 
+
+The methods available for the CifFile type are:
+\begin{enumerate}
+\item ReadCif([[filename]]): reinitialise to different Cif file
+\item GetBlocks():       return list of block names in file
+\item WriteOut([[filename]],[[comment]]): output the entire current file to
+[[filename]], with an optional [[comment]] at the beginning.
+\end{enumerate}
+
+The methods available for the CifBlock type are:
+\begin{enumerate}
+\item GetCifItem([[itemname]]): return the value of [[itemname]] in 
+current block (equivalent to using [])
+\item AddCifItem([[data]]): add [[data]] to the current block.  [[data]] is 
+a tuple containing either an array of itemnames and an array of arrays of 
+data, or else an itemname and a data value for that item.  This is called
+when setting data using []
+\item RemoveCifItem([[dataname]]): remove the given Cif dataname from the 
+current block.  Same as typing 'del block[item]'
+\end{enumerate}
+
+Note also that a CifFile object can be accessed as a mapping type, ie using
+square brackets.
+
+<<*>>=
+<<CifFile class>>
+<<CifBlock class>>
+<<Define an error class>>
+<<Test the cif module>>
+
+@ \section{CifFile}
+
+If we are passed a filename, we open it and read it in, assuming that
+it is a conformant Cif file.  A CifFile object is a dictionary of
+CifBlock objects, accessed by block name.
+
+<<CifFile class>>=
+class CifFile:
+    <<Initialise data structures>>
+    <<CifFile emulation of mapping type>>
+    <<Read in a CIF file>>
+    <<Add a new data section>>
+<<Write out to string representation>>
+
+<<Initialise data structures>>=
+def __init__(self,datasource=None):
+    from types import *
+    self.dictionary = {}
+    if isinstance(datasource,DictType):
+        for (key,value) in datasource.items():
+            self.__setitem__(key,value)
+    elif type(datasource) is StringType:
+        self.ReadCif(datasource)
+    elif isinstance(datasource,CifFile):
+        self.dictionary = datasource.dictionary.copy()
+
+@ Reading in a file.  We use the kwParse module to provide grammar
+services.  The structure returned from parsing is an array of blocks,
+which we convert to a dictionary and place in [[self.dictionary]].
+
+<<Read in a CIF file>>=
+def ReadCif(self,filename):
+    import kwCifParse
+    stream = open(filename,'r')
+    text = stream.read()
+    stream.close()
+    parser = kwCifParse.CifGramBuild()
+    context = {"loops":[]}
+    self.dictionary = {}
+    try:
+        filecontents = parser.DoParse1(text,context)
+    except SyntaxError,LexTokenError:
+        raise CifError, 'Cif file badly formatted'
+    for block in filecontents.keys():
+        self.dictionary.update({block:CifBlock(filecontents[block])})
+
+@ Emulation of a mapping type.
+
+<<CifFile emulation of mapping type>>=
+def __str__(self):
+    return self.WriteOut()
+
+def __setitem__(self,key,value):
+    if isinstance(value,CifBlock):
+        self.NewBlock(key,value)
+    else: raise TypeError
+
+def __getitem__(self,key):
+    return self.dictionary[key]
+
+def __delitem__(self,key):
+    del self.dictionary[key]
+
+def __len__(self):
+    return len(self.dictionary)
+
+def keys(self):
+    return self.dictionary.keys()
+
+def has_key(self,key):
+    return self.dictionary.has_key(key)
+
+def clear(self):
+    self.dictionary.clear()
+
+def copy(self):   
+    newcopy = self.dictionary.copy()
+    return CifFile('',newcopy)
+ 
+def update(self,adict):
+    for key in adict.keys():
+        self.dictionary[key] = adict[key]
+
+@ We add a new dictionary to the current list of dictionaries, and set
+the count of the number of loops to zero.  We return the new block name
+in case we have changed it, so the calling routine can refer to it
+later.
+
+<<Add a new data section>>=
+def NewBlock(self,blockname,blockcontents):
+    import re
+    if not isinstance(blockcontents,CifBlock):
+        raise TypeError, 'Cif files can only contain CifBlocks'
+    newblockname = re.sub('\W','_',blockname)
+    blocknames = self.dictionary.keys()
+    i = 0
+    while blocknames.count(newblockname):
+        i = i + 1
+        newblockname = newblockname+`i`
+    self.dictionary.update({newblockname:blockcontents})
+    return newblockname
+
+@ Writing all this stuff out to a string.  We loop over each of the
+individual sections, getting their string representation.
+
+<<Write out to string representation>>=
+    def WriteOut(self,comment=''):
+        if not comment:
+            comment = \
+"""
+##########################################################################
+#               Crystallographic Information Format file 
+#               Produced by PyCifRW module
+# 
+#  This is a CIF file.  CIF has been adopted by the International
+#  Union of Crystallography as the standard for data archiving and 
+#  transmission.
+#
+#  For information on this file format, follow the CIF links at
+#  http://www.iucr.org
+##########################################################################
+"""
+        outstring = comment
+        for datablock in self.dictionary.keys():
+            outstring = outstring + '\ndata_'+datablock+'\n'
+            outstring = outstring + str(self.dictionary[datablock])
+        return outstring
+
+@ \section{Cif Block class}
+
+A Cif Block is essentially a dictionary with a few extra items
+for our own internal reference.  These are used to handle loop
+management, so that data belonging within one loop are able to
+be handled together when printing out.  When initialising, we
+allow either a set of tuples, suitable for input to AddCifItem,
+or a complete block, suitable when copying.
+
+<<CifBlock class>>=
+class CifBlock:
+    <<Initialise Cif Block>>
+    <<Add emulation of a mapping type>>
+    <<Return value of Cif item>>
+    <<Remove a data item>>
+    <<Add a data item>>
+    <<Get complete looped data>>
+    <<Print a data block>>
+    <<Format a string>>
+
+<<Initialise Cif Block>>=
+def __init__(self,data = ()):
+    from types import *
+    self.block = {"loops":[]}
+    if type(data) is DictType:     #direct placement
+        self.block = data
+        if not self.block.has_key("loops"):
+            self.block.update({"loops":[]})
+    elif type(data) is TupleType:
+        for item in data:
+            self.AddCifItem(item)
+    else: raise TypeError
+
+@ Adding emulation of a mapping type.  We add any of the other
+functions we'd like to emulate. 
+
+<<Add emulation of a mapping type>>=
+def __str__(self):
+    return self.printsection()
+
+def __setitem__(self,key,value):
+    self.AddCifItem((key,value))
+
+def __getitem__(self,key):
+    return self.GetCifItem(key)
+
+def __delitem__(self,key):
+    self.RemoveCifItem(key)
+
+def __len__(self):
+    return len(self.block)  
+
+def __nonzero__(self):
+    if len(self.block) == 1 and len(self.block["loops"]) == 0:
+        return 0
+    return 1
+
+def keys(self):
+    thesekeys = self.block.keys()
+    for aloop in self.block["loops"]:
+        thesekeys.extend(aloop.keys())
+    return thesekeys
+
+def has_key(self,key):
+    if self.block.has_key(key):
+        return 1
+    for aloop in self.block["loops"]:
+        if aloop.has_key(key):
+            return 1
+    return 0
+
+def clear(self):
+    self.block = self.NewBlock()
+
+def copy(self):
+    newcopy = self.block.copy()
+    newcopy["loops"] = []
+    for aloop in self.block["loops"]:  # do a deeper copy
+        newcopy["loops"].append(aloop.copy())
+    return CifBlock(newcopy)
+ 
+def update(self,adict):
+    loopdone = []
+    if not isinstance(adict,CifBlock):
+        raise TypeError
+    for key in adict.block.keys():
+        if key!="loops":
+            self.AddCifItem((key,adict[key]))
+        else:
+            for aloop in adict.block["loops"]:
+                self.AddCifItem((aloop.keys(),aloop.values()))
+
+@ Returning a Cif item value.  Note that a looped block has little
+meaning without all the items in the loop.  Routine [[GetLoop]] is
+better in this case.
+
+<<Return value of Cif item>>=
+def GetCifItem(self,itemname):
+    if self.block.has_key(itemname):
+        return self.block[itemname]
+    else:
+        for aloop in self.block["loops"]:
+            if aloop.has_key(itemname):
+                return aloop[itemname]
+    raise KeyError, 'Item not in Cif block'
+
+@ This function is required if we wish a list of all items in a data block.
+We would use this if we needed to match things up properly.  We give the name
+of one item, and all items from that loop, and their values, are returned.
+For example, [[j,k = cf.GetLoop(itemname)]], where k will be a list of lists.
+
+Also, it would be nice if the return value is in a form that can be
+fed right back into the file.  So if we are asked for an item which is
+part of a loop, we reconstruct all of the data before returning it.
+
+<<Get complete looped data>>=
+def GetLoop(self,itemname):
+    for aloop in self.block["loops"]:
+        if aloop.has_key(itemname):
+            return aloop.items()
+    # not a looped item
+    if self.block.has_key(itemname):
+        raise TypeError, 'Non-looped item'
+    raise KeyError, 'Item not in loop'
+
+@ Removing a data item.  We delete the item, and if it is looped, and
+nothing is left in the loop, we remove that element of the list.
+
+<<Remove a data item>>=
+def RemoveCifItem(self,itemname):
+    if self.block.has_key(itemname):
+        del self.block[itemname]
+        return
+    for aloop in self.block["loops"]:
+        if aloop.has_key(itemname):
+            del aloop[itemname]
+            if len(aloop)==0: 
+                del aloop
+            return
+    # not found
+    raise KeyError, 'Key not found in Cif'
+
+@ Adding a data item.  We are passed a tuple with the (set) of data
+names at the beginning, and a (set) of values for them following.  For
+efficiency, we want to group looped items together; so in the stored
+dictionary, all data items in a loop belong in one dictionary in an
+array of dictionaries keyed by the word "loops".
+
+If an item is already stored, it will be silently replaced; if it earlier
+lived in a loop, it will be removed from the loop, and the loop itself
+removed if it is now zero length.
+
+We should also check for consistency, by making sure the new item is
+not in the block already.  If it is, we replace it (consistent with
+the meaning of square brackets).  If it is in a loop, we replace the
+looped value and all other items in the loop block.
+
+We typecheck the data items.  They can be tuples, strings
+or lists.  If we have a list of values for a single item,
+the item name should also occur in a single member tuple.
+
+<<Add a data item>>=
+def AddCifItem(self,data):
+    import types
+    # we accept only tuples, strings and lists!!
+    if not (isinstance(data[0],types.StringType) or isinstance(data[0],types.TupleType)
+          or isinstance(data[0],types.ListType)):
+              raise TypeError, 'Cif datanames are either a string, tuple or list'
+    # now put into the dictionary properly...
+    if isinstance(data[0],types.StringType):   # a single name        
+        self.block.update({data[0]:data[1]})  # trust the data is OK
+        for aloop in self.block["loops"]:
+            if aloop.has_key(data[0]):
+                del aloop[data[0]]
+        self.block["loops"] = filter(len,self.block["loops"])
+    else:                                # we loop
+       if(len(data[0])!=len(data[1])):
+           raise TypeError, 'Length mismatch between itemnames and values'
+       dellist = []
+       for itemname in data[0]:
+           self.block["loops"] = filter(lambda a,b=itemname:b not in a.keys(),self.block["loops"])
+       newdict = {}
+       map(lambda a,b,c=newdict:c.update({a:b}),data[0],data[1])
+       self.block["loops"].append(newdict)
+    return
+
+@ Printing a section.  We allow an optional order list to be given, in
+case the caller wants to order things in some nice way.  This is
+overridden if any item in the order list occurs within a loop, in
+which case it will be packaged together with everything else within
+that same loop.
+
+<<Print a data block>>=
+def printsection(self,order=[]):
+    import types
+    # first make an ordering
+    if not order:
+        order = self.block.keys()
+        order.sort()
+    # now prune that ordering...
+    order = filter(lambda a,b=self.block:b.has_key(a),order)
+    order.remove('loops')
+    # now do it...
+    outstring = ''       # the returned string
+    for itemname in order:
+        itemvalue = self.block[itemname]
+        if isinstance(itemvalue,types.StringType):
+              thisstring = self._formatstring(itemvalue)
+              if len(thisstring) + len(itemname) < 78:
+                      outstring = outstring + '%s %s\n' % (itemname,thisstring)
+              else:
+                      outstring = outstring + '%s\n%s\n' % (itemname, thisstring)
+        else: 
+                  if len(str(itemvalue)) + len(itemname) < 78:
+                      outstring = outstring + '%s %s\n' % (itemname, itemvalue)
+                  else:
+                      outstring = outstring + '%s\n%s\n' % (itemname, itemvalue)
+        continue
+    #do the loops
+    for aloop in self.block["loops"]:
+           outstring = outstring + '\n loop_\n'
+           loopnames = aloop.keys()
+           loopnames.sort()
+           numdata = len(aloop[loopnames[0]])
+           for name in loopnames: 
+               outstring = outstring + '   %-75s\n' % name
+               if len(aloop[name]) != numdata:
+                   raise CifError,'Loop data mismatch for ' + name + ':output aborted'
+           curstring = ''      
+           for position in range(numdata):
+               for name in loopnames:
+                   # at each point, get the next data value
+                   datapoint = aloop[name][position]
+                   if isinstance(datapoint,types.StringType):
+                       thisstring = ' %s ' % (self._formatstring(datapoint))
+                       if '\n' in thisstring:
+                           outstring = outstring + curstring + thisstring
+                           curstring = ''
+                           continue
+                   else: 
+                       thisstring = ' %s ' % datapoint
+                   if len(curstring) + len(thisstring)> 80: #past end of line
+                       outstring = outstring + curstring+'\n'
+                       curstring = ''
+                   curstring = curstring + thisstring
+               outstring = outstring + curstring+'\n'
+               curstring = ''
+    return outstring
+
+@ Formatting a string.  We make sure that the length of the item value
+is less than 80, or else we should split them, and so on. We check the
+value for terminators and impossible apostrophes and length, before
+deciding whether to print it and the item on a single line.  We try to
+respect carriage returns in the string, if the caller has tried to do
+the formatting for us.
+
+<<Format a string>>=
+def _formatstring(self,instring):
+    import re, string
+    if len(instring)< 75 and '\n' not in instring:   #single line?
+        if not ' ' in instring and not '\t' in instring and not '\v' \
+          in instring:                  # no blanks
+            return instring
+        if not "'" in instring:                                       #use apostrophes
+            return "'%s'" % (instring)
+        elif not "\"" in instring:
+            return '"%s"' % (instring)
+    # is a long one
+    outstring = "\n;\n"
+    # if there are returns in the string, try to work with them
+    while 1:
+        retin = string.find(instring,'\n')+1
+        if retin < 80 and retin > 0:      # honour this break
+            outstring = outstring + instring[:retin]
+            instring = instring[retin:]
+        elif len(instring)<80:            # finished
+            outstring = outstring + instring + '\n;\n'
+            break
+        else:                             # find a space
+            for letter in range(79,40,-1): 
+                if instring[letter] in ' \t\f': break
+            outstring = outstring + instring[:letter+1]
+            outstring = outstring + '\n'
+            instring = instring[letter+1:]            
+    return outstring
+
+@ Defining an error class: we simply derive a 'nothing' class from the root
+Python class
+
+<<Define an error class>>=
+def CifError(Exceptions):
+    def __init__(self,value):
+        self.value = value
+    def __str__(self):
+        print `value`
+ 
+@ Testing the object.
+
+<<Test the cif module>>=
+def testcif():
+    items = (('_item_1','Some data'),
+             ('_item_2','Some_underline_data'),
+             ('_item_3','34.2332'),
+             ('_item_4','Some very long data which we hope will overflow the single line and force printing of another line aaaaa bbbbbb cccccc dddddddd eeeeeeeee fffffffff hhhhhhhhh iiiiiiii jjjjjj'),
+             (('_item_5','_item_6','_item_7'),([1,2,3,4],[5,6,7,8],['a','b','c','d'])))
+    ourblock = CifBlock(items)
+    cif = CifFile()
+    cif["testblock"] = ourblock
+    f = open('testfile','w')
+    f.write(cif.WriteOut('# This is a test file'))
+    f.write(str(cif))

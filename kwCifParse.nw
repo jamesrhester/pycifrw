@@ -1,0 +1,277 @@
+@ We use the kwParse package to construct a parser for Cif files.  See the
+documentation for that package for more details.
+
+<<*>>=
+<<Define the grammar string>>
+<<Declare the terminals>>
+<<Define function calls>>
+<<Bind function calls to rules>>
+<<Build the grammar>>
+
+@  We define a function which takes the various definitions (see below) and
+uses them to produce a grammar object.
+
+<<Build the grammar>>=
+def CifGramBuild():
+    import kjCParseBuild
+    CifG = kjCParseBuild.NullCGrammar()
+    CifG.SetCaseSensitivity(1)
+    DeclareTerminals(CifG)
+    gramterms = "Input dblockseq dataseq data data_loop loopfield loopvalues"
+    CifG.Nonterms(gramterms)
+    CifG.Declarerules(CifGGramString)
+    CifG.whitespace("(( |\t|\v|\n|\r|\f)(?!;))|( |\t|\v)")  #our own addition
+    CifG.comments(["#.*\n(?!;)","#.*"])
+    CifG.Compile()
+    BindRules(CifG)
+    return CifG 
+
+@  We define the terminal matches here.  We assume our new version of kjParse,
+which uses Perl-type regular expressions.  The largest problem in composing
+these match expressions was taking care of the special status of terminators.
+This is done by declaring terminators to be whitespace unless they are 
+immediately followed by a semicolon, in which case they are not removed from
+the input stream and are available for matching below.
+
+<<Declare the terminals>>=
+def stripstring(value):
+    if value:
+        if value[0]== '\'' and value[-1]=='\'':
+            return value[1:-1]
+        if value[0]=='"' and value[-1]=='"':
+            return value[1:-1]
+    return value
+
+def stripextras(value):
+    # we get rid of semicolons and leading terminators etc.
+     import re
+     jj = re.compile("[\n\r\f \t\v]*")
+     semis = re.compile("[\n\r\f \t\v]*[\n\r\f];")
+     cut = semis.match(value)
+     if cut:
+          nv = value[cut.end():len(value)-2]
+     else: nv = value
+     cut = jj.match(nv)
+     if cut:
+          return stripstring(nv[cut.end():])
+     return nv
+
+def DeclareTerminals(Grammar):
+     ordinary_char = "!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~"
+     non_blank_char = ordinary_char+"\"#$';_"
+     char = "([]"+non_blank_char+" \v\t-])"
+     terminate = "\n|\r|\r\n|\f"
+     dataheadingstr = "(D|d)(A|a)(T|t)(A|a)_"+"[]["+non_blank_char+"-]+"
+     dv1str = "[]"+ordinary_char+";-][]["+non_blank_char+"-]*"
+     dqstr = "\"((\"[]["+non_blank_char+"-])|([]["+ordinary_char+" \v\t#$';_-]))*\""
+     sqstr = "'(('[]["+non_blank_char+"-])|([]["+ordinary_char+" \v\t#$\";_-]))*'"
+     lotstr = "[]"+ordinary_char+"\" \v\t#$'_-]"+char+"*("+terminate+")*"
+     scstr = "(\n|\r\n|\f)"+";"+char+"*("+terminate+")("+lotstr+")*;"
+     dv1str = "("+dv1str + ")|"+sqstr+"|"+dqstr
+     dv2str = "[]["+ordinary_char+"-][]["+non_blank_char+"-]*"
+     dv2str = "("+dv2str + ")|"+dqstr+"|"+sqstr+"|("+scstr+")"
+     Grammar.Addterm("LBLOCK","(L|l)(O|o)(O|o)(P|p)_",None)
+     Grammar.Addterm("data_name","_"+"[]["+non_blank_char+"-]+",stripextras)
+     Grammar.Addterm("data_heading",dataheadingstr,stripextras)
+     Grammar.Addterm("data_value_1",dv1str,stripextras)
+     Grammar.Addterm("data_value_2",dv2str,stripextras)
+
+@ This is the whole grammar for a Cif, based on the draft of Nick
+Spadaccini, October 2000.  The limitations of the kwParsing package
+mean that + and * signs have to be explicitly written out.  It's
+pretty obvious how it works.  A Cif file is a sequence of data blocks.
+A data block is a sequence of key-value matches, either key-value
+pairs, or a loop block.  A loop block has a top and a bottom, the top
+is a sequence of names, and the bottom is a sequence of values.
+
+We absorb the data_heading grammar rule into the lexer, ie it becomes a
+terminal.
+
+<<Define the grammar string>>=
+CifGGramString = """
+     Input :: ## this is the root nonterminal
+        @R InputRule :: Input >> dblockseq 
+        @R NullRule  :: Input >>
+
+        @R DblockRule :: dblockseq >> data_heading dataseq
+        @R MDblockRule :: dblockseq >> dblockseq data_heading dataseq
+        @R EmptyBlockRule :: dblockseq >> data_heading
+
+        @R DataSeqRule :: dataseq >> data
+        @R MDataSeqRule :: dataseq >> dataseq data
+
+        @R DataKvRule1a :: data >> data_name data_value_1
+        @R DataKvRule2a :: data >> data_name data_value_2
+        @R DataLpRule :: data >> data_loop
+
+        @R LpRule     :: data_loop >> LBLOCK loopfield loopvalues
+        @R LtRule     :: loopfield >> data_name
+        @R LtmRule    :: loopfield >> loopfield data_name
+
+        @R Lb2Rule    :: loopvalues >> data_value_2 
+        @R LbRule     :: loopvalues >> data_value_1
+        @R LbmRule     :: loopvalues >> loopvalues data_value_1
+        @R Lb2mRule    :: loopvalues >> loopvalues data_value_2 
+
+       """ 
+
+@  These are the various functions that are called to define the semantics.
+We don't bother doing any interpretation of the terminals at this stage.
+
+<<Define function calls>>=
+import CifFile
+def dblockinterp(): pass
+def nameinterp(): pass
+def textinterp(): pass
+<<Make key-value pair>>
+<<Add loop values>>
+<<Add loop names>>
+<<Format loop for datablock dictionary>>
+<<Add loop to datablock>>
+<<Add data to datalist>>
+<<Finish this datablock>>
+
+@ The simplest operation is the creation of a key, value pair.  We
+return the item as part of a one member tuple, so that we can
+easily distinguish between an array and a single value by testing
+the length of an item.
+
+<<Make key-value pair>>=
+def dkvrulea(list,context): 
+    return {list[0]:list[1]}
+    
+<<Rule bindings>>=
+Grammar.Bind("DataKvRule1a", dkvrulea)
+Grammar.Bind("DataKvRule2a", dkvrulea)
+
+@ Dealing with loops is more complex.  We accumulate the names and
+items in lists, to keep the order matched, then change them into a
+dictionary of key-value pairs.  If this is the first time, we create
+the list.
+
+<<Add loop names>>=
+def ltrule(list,context):
+    return list
+
+def ltmrule(list,context):
+    list[0].append(list[1])
+    return list[0]
+
+<<Rule bindings>>=
+Grammar.Bind("LtRule", ltrule)
+Grammar.Bind("LtmRule", ltmrule)
+
+@ We do the same for the loop values.  
+
+<<Add loop values>>=
+def lbrule(list,context):
+    #print 'lbrule ' + `list`
+    return list
+
+def lb2rule(list,context):
+    #print 'lb2rule ' + `list`
+    return list
+
+def lbmrule(list,context):
+    #print 'lbmrule ' + `list[1]`
+    list[0].append(list[1])
+    return list[0]
+
+def lb2mrule(list,context):
+    #print 'lb2mrule ' + `list[1]`
+    list[0].append(list[1])
+    return list[0]
+
+<<Rule bindings>>=
+Grammar.Bind("LbRule", lbrule)
+Grammar.Bind("LbmRule", lbmrule)
+Grammar.Bind("Lb2Rule", lb2rule)
+Grammar.Bind("Lb2mRule", lb2mrule)
+
+@ Now we add the loop to the datablock.  We want to transform the flat
+lists of values and names to a list of key-value pairs, with values given
+as arrays.  We also need to give a 'name' to the loop, so that we can 
+later match items back together.  The current number of loops is kept
+in the 'context' dictionary.
+
+<<Format loop for datablock dictionary>>=
+def lprule(list,context):
+    noitems = len(list[1])
+    nopoints = divmod(len(list[2]),noitems)
+    if nopoints[1]!=0:    #mismatch
+        raise "CifError:loop item mismatch"
+    nopoints = nopoints[0]
+    newdict = {}
+    for i in range(0,noitems):
+        templist = []
+        for j in range(0,nopoints):
+            templist.append(list[2][j*noitems + i])
+        newdict.update({list[1][i]:templist})
+    context["loops"].append(newdict)
+    return {"dummy":''}    # to keep things easy
+
+<<Add loop to datablock>>=
+def datalprule(list,context):
+    return list[0]
+
+<<Rule bindings>>=
+Grammar.Bind("LpRule", lprule)
+Grammar.Bind("DataLpRule",datalprule)
+
+@ Add the loops and keyvaluepairs to the datablock.  What we are really
+doing is expanding an anonymous dictionary.
+
+<<Add data to datalist>>=
+def dataseqrule(list,context):
+    return list[0]
+
+def mdataseqrule(list,context):
+    list[0].update(list[1])
+    return list[0]
+
+<<Rule bindings>>=
+Grammar.Bind("DataSeqRule",dataseqrule)
+Grammar.Bind("MDataSeqRule",mdataseqrule)
+
+@ Finally, store the complete datablock in the global array.  We save
+the array of loops kept in the context dictionary as a pseudo
+dictionary entry, and then reset it to zero, ready for the next time
+around.
+
+<<Finish this datablock>>=
+def dblockrule(list,context):
+    list[1].update({"loops":context["loops"]})
+    context["loops"] = []
+    if list[1].has_key("dummy"):
+        del list[1]["dummy"]
+    return {list[0][5:]:list[1]}
+
+def mtblockrule(list,context):
+    return {list[0][5:]:[]}
+
+def mdblockrule(list,context):
+    list[2].update({"loops":context["loops"]})
+    context["loops"] = []
+    del list[2]["dummy"]
+    list[0].update({list[1][5:]:list[2]})
+    return list[0]
+
+def inputrule(list,context):
+    return list[0]
+
+def nullrule(list,context):
+    return [{}]
+
+<<Rule bindings>>=
+Grammar.Bind("InputRule", inputrule)
+Grammar.Bind("DblockRule", dblockrule)
+Grammar.Bind("MDblockRule", mdblockrule)
+Grammar.Bind("NullRule", nullrule)
+Grammar.Bind("EmptyBlockRule",mtblockrule)
+
+@ Create the semantics.  See the definition of each actual function
+to find the actual bindings.
+
+<<Bind function calls to rules>>=
+def BindRules(Grammar):
+    <<Rule bindings>>
