@@ -100,14 +100,14 @@ def checklengths(self):
         if toolong:
             print 'Warning: block ' + name + ' has ' + `toolong` + ' overlength data names'
 
-@ Reading in a file.  We use the kwParse module to provide grammar
+@ Reading in a file.  We now use the Yapps2-generated YappsCifParser module to provide grammar
 services.  The structure returned from parsing is an array of blocks,
 which we convert to a dictionary and place in [[self.dictionary]].  We do a preliminary
 check of line length, to satisfy the current standard.
 
 <<Read in a CIF file>>=
 def ReadCif(self,filename):
-    import kwCifParse,string
+    import YappsCifParser,string
     import ParserErrors
     stream = open(filename,'r')
     text = stream.read()
@@ -119,31 +119,17 @@ def ReadCif(self,filename):
     if toolong:
         pos = split.index(toolong[0])
         raise CifError, 'Line %d contains more than 80 characters' % (pos+1)
-    parser = kwCifParse.CifGramBuild()
     context = {"loops":[],"latest":{}}
-    try:
-        filecontents = parser.DoParse1(text,context)
-    except ParserErrors.LexTokenUnfoundError, lexerrobj:
-        errorstring = lexerrobj.value
-        if len(context["latest"].keys()):
-            latestkey = context["latest"].keys()[0]
-            latestvalue = context["latest"][latestkey]
-            errorstring = errorstring + "\n\nLast dataitem successfully parsed was\n"
-            errorstring = errorstring + latestkey +' = ' + latestvalue + '\n'
+    try: 
+        parser = YappsCifParser.CifParser(YappsCifParser.CifParserScanner(text))
+        filecontents = getattr(parser,"input")()
+    except YappsCifParser.SyntaxError:
+        errorstring = 'Syntax error in input file: last value parsed was %s' % YappsCifParser.lastval
+        errorstring = errorstring + '\nParser status: %s' % `parser._scanner`
         raise CifError, errorstring
-    except RuntimeError, rte:
-        if str(rte)[0:17] == 'maximum recursion':
-            errorstring = "If the data value below is incorrect, suspect missing semicolon \nin a loop somewhere before this.\n"
-            if len(context["latest"].keys()):
-                latestkey = context["latest"].keys()[0]
-                latestvalue = context["latest"][latestkey]
-                errorstring = errorstring + "Last dataitem successfully parsed was:\n"
-                errorstring = errorstring + latestkey +' = ' + latestvalue + '\n'
-            raise CifError, errorstring
-        else: 
-            raise RuntimeError, rte
-    if not filecontents: # comments only, return empty
-        return
+    else:
+        if not filecontents: # comments only, return empty
+            return
     for block in filecontents.keys():
         self.dictionary.update({block:CifBlock(filecontents[block])})
 
@@ -194,8 +180,6 @@ def NewBlock(self,blockname,blockcontents=()):
     import re
     if not blockcontents:
         blockcontents = CifBlock()
-    elif not isinstance(blockcontents,CifBlock):
-        raise TypeError, 'Cif files can only contain CifBlocks'
     newblockname = re.sub('\W','_',blockname)
     blocknames = self.dictionary.keys()
     i = 0
@@ -204,6 +188,8 @@ def NewBlock(self,blockname,blockcontents=()):
         newblockname = newblockname+`i`
     if len(newblockname) > 73:
         raise CifError, 'Cif block name too long:' + newblockname
+    if blockcontents.__class__.__name__[-8:] != 'CifBlock':
+        raise CifError, 'Cif block initialised with non CifBlock object %s' % blockcontents.__class__.__name__[-8:]
     self.dictionary.update({newblockname:blockcontents})
     return newblockname
 

@@ -70,6 +70,11 @@ class BlockChangeTestCase(unittest.TestCase):
    def tearDown(self):
        del self.cf
 
+   def testFromBlockSet(self):
+        """Test that we can use a CifBlock to set a CifBlock"""
+        df = CifFile.CifFile()
+        df.NewBlock('testname',self.cf)
+
    def testLoop(self):
         """Check GetLoop returns values and names in right order"""
    	results = self.cf.GetLoop(self.names[2])
