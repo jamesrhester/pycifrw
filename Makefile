@@ -18,3 +18,6 @@ xfiles.py: xfiles.nw CifFile.py
 install: package
 	install kjCParseBuild.py kjCParser.py kjSet.py CifFile.py kwCifParse.py /usr/local/lib/python1.5/site-packages/ANBF/PyCifRW
 	install kjCParseBuild.py kjCParser.py CifFile.py kjSet.py kwCifParse.py /usr/local/lib/python2.0/site-packages/ANBF/PyCifRW
+#
+clean: 
+	rm *.pyc

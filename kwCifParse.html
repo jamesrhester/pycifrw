@@ -1,18 +1,38 @@
 <!-- this file was generated automatically by noweave --- better not edit it-->
-<html><head><title>kwCifParse.nw</title></head><body><a name="NWD1">We use the kwParse package to construct a parser for Cif files.  See the</a>
+<html><head><title>kwCifParse.nw</title></head><body><a name="NWD1">A copyright statement which applies to this file and generated files</a>
+as well.
+<p>
+<pre><a name="NWkwCD-CopJ-1" href="#NWD1"><dfn>&lt;Copyright statement&gt;=</dfn></a> <b>(<a href="#NWD2">U-&gt;</a>)</b>
+&quot;&quot;&quot;
+1. This software copyright  Australian Synchrotron Research Program Inc.
+
+2. Permission is hereby granted to use, copy and modify this software for
+non-commercial purposes only.  Permission is also granted to use
+reasonable portions of it in other software for non-commercial
+purposes, provided that suitable acknowledgement is made.  Australian
+Synchrotron Research Program Inc., as the owner of the copyright in
+the software, does not grant any right to publish, sell or otherwise
+redistribute the software, or modified versions of the software, to
+third parties.  You are encouraged to communicate useful modifications
+to Australian Synchrotron Research Program Inc. for inclusion in
+future versions.
+&quot;&quot;&quot;
+
+</pre><p><a name="NWD2">We use the kwParse package to construct a parser for Cif files.  See the</a>
 documentation for that package for more details.
 <p>
-<pre><a name="NWkwCD-*-1" href="#NWD1"><dfn>&lt;*&gt;=</dfn></a>
-<a name="NWkwCD-*-1-u1" href="#NWD4"><i>&lt;Define the grammar string&gt;</i></a>
-<a name="NWkwCD-*-1-u2" href="#NWD3"><i>&lt;Declare the terminals&gt;</i></a>
-<a name="NWkwCD-*-1-u3" href="#NWD5"><i>&lt;Define function calls&gt;</i></a>
-<a name="NWkwCD-*-1-u4" href="#NWDC"><i>&lt;Bind function calls to rules&gt;</i></a>
-<a name="NWkwCD-*-1-u5" href="#NWD2"><i>&lt;Build the grammar&gt;</i></a>
+<pre><a name="NWkwCD-*-1" href="#NWD2"><dfn>&lt;*&gt;=</dfn></a>
+<a name="NWkwCD-*-1-u1" href="#NWD1"><i>&lt;Copyright statement&gt;</i></a>
+<a name="NWkwCD-*-1-u2" href="#NWD5"><i>&lt;Define the grammar string&gt;</i></a>
+<a name="NWkwCD-*-1-u3" href="#NWD4"><i>&lt;Declare the terminals&gt;</i></a>
+<a name="NWkwCD-*-1-u4" href="#NWD6"><i>&lt;Define function calls&gt;</i></a>
+<a name="NWkwCD-*-1-u5" href="#NWDD"><i>&lt;Bind function calls to rules&gt;</i></a>
+<a name="NWkwCD-*-1-u6" href="#NWD3"><i>&lt;Build the grammar&gt;</i></a>
 
-</pre><p><a name="NWD2">We define a function which takes the various definitions (see below) and</a>
+</pre><p><a name="NWD3">We define a function which takes the various definitions (see below) and</a>
 uses them to produce a grammar object.
 <p>
-<pre><a name="NWkwCD-BuiH-1" href="#NWD2"><dfn>&lt;Build the grammar&gt;=</dfn></a> <b>(<a href="#NWD1">&lt;-U</a>)</b>
+<pre><a name="NWkwCD-BuiH-1" href="#NWD3"><dfn>&lt;Build the grammar&gt;=</dfn></a> <b>(<a href="#NWD2">&lt;-U</a>)</b>
 def CifGramBuild():
     import kjCParseBuild
     CifG = kjCParseBuild.NullCGrammar()
@@ -27,14 +47,14 @@ def CifGramBuild():
     BindRules(CifG)
     return CifG 
 
-</pre><p><a name="NWD3">We define the terminal matches here.  We assume our new version of kjParse,</a>
+</pre><p><a name="NWD4">We define the terminal matches here.  We assume our new version of kjParse,</a>
 which uses Perl-type regular expressions.  The largest problem in composing
 these match expressions was taking care of the special status of terminators.
 This is done by declaring terminators to be whitespace unless they are 
 immediately followed by a semicolon, in which case they are not removed from
 the input stream and are available for matching below.
 <p>
-<pre><a name="NWkwCD-DecL-1" href="#NWD3"><dfn>&lt;Declare the terminals&gt;=</dfn></a> <b>(<a href="#NWD1">&lt;-U</a>)</b>
+<pre><a name="NWkwCD-DecL-1" href="#NWD4"><dfn>&lt;Declare the terminals&gt;=</dfn></a> <b>(<a href="#NWD2">&lt;-U</a>)</b>
 def stripstring(value):
     if value:
         if value[0]== '\'' and value[-1]=='\'':
@@ -79,7 +99,7 @@ def DeclareTerminals(Grammar):
 
 </pre><p>This is the whole grammar for a Cif, based on the draft of Nick
 Spadaccini, October 2000.  The limitations of the kwParsing package
-<a name="NWD4">mean that + and * signs have to be explicitly written out.  It's</a>
+<a name="NWD5">mean that + and * signs have to be explicitly written out.  It's</a>
 pretty obvious how it works.  A Cif file is a sequence of data blocks.
 A data block is a sequence of key-value matches, either key-value
 pairs, or a loop block.  A loop block has a top and a bottom, the top
@@ -88,7 +108,7 @@ is a sequence of names, and the bottom is a sequence of values.
 We absorb the data_heading grammar rule into the lexer, ie it becomes a
 terminal.
 <p>
-<pre><a name="NWkwCD-DefP-1" href="#NWD4"><dfn>&lt;Define the grammar string&gt;=</dfn></a> <b>(<a href="#NWD1">&lt;-U</a>)</b>
+<pre><a name="NWkwCD-DefP-1" href="#NWD5"><dfn>&lt;Define the grammar string&gt;=</dfn></a> <b>(<a href="#NWD2">&lt;-U</a>)</b>
 CifGGramString = &quot;&quot;&quot;
      Input :: ## this is the root nonterminal
         @R InputRule :: Input &gt;&gt; dblockseq 
@@ -116,41 +136,41 @@ CifGGramString = &quot;&quot;&quot;
 
        &quot;&quot;&quot; 
 
-</pre><p><a name="NWD5">These are the various functions that are called to define the semantics.</a>
+</pre><p><a name="NWD6">These are the various functions that are called to define the semantics.</a>
 We don't bother doing any interpretation of the terminals at this stage.
 <p>
-<pre><a name="NWkwCD-DefL-1" href="#NWD5"><dfn>&lt;Define function calls&gt;=</dfn></a> <b>(<a href="#NWD1">&lt;-U</a>)</b>
+<pre><a name="NWkwCD-DefL-1" href="#NWD6"><dfn>&lt;Define function calls&gt;=</dfn></a> <b>(<a href="#NWD2">&lt;-U</a>)</b>
 import CifFile
 def dblockinterp(): pass
 def nameinterp(): pass
 def textinterp(): pass
-<a name="NWkwCD-DefL-1-u1" href="#NWD6"><i>&lt;Make key-value pair&gt;</i></a>
-<a name="NWkwCD-DefL-1-u2" href="#NWD8"><i>&lt;Add loop values&gt;</i></a>
-<a name="NWkwCD-DefL-1-u3" href="#NWD7"><i>&lt;Add loop names&gt;</i></a>
-<a name="NWkwCD-DefL-1-u4" href="#NWD9"><i>&lt;Format loop for datablock dictionary&gt;</i></a>
+<a name="NWkwCD-DefL-1-u1" href="#NWD7"><i>&lt;Make key-value pair&gt;</i></a>
+<a name="NWkwCD-DefL-1-u2" href="#NWD9"><i>&lt;Add loop values&gt;</i></a>
+<a name="NWkwCD-DefL-1-u3" href="#NWD8"><i>&lt;Add loop names&gt;</i></a>
+<a name="NWkwCD-DefL-1-u4" href="#NWDA"><i>&lt;Format loop for datablock dictionary&gt;</i></a>
 <a name="NWkwCD-DefL-1-u5" href="#NWkwCD-AddL-1"><i>&lt;Add loop to datablock&gt;</i></a>
-<a name="NWkwCD-DefL-1-u6" href="#NWDA"><i>&lt;Add data to datalist&gt;</i></a>
-<a name="NWkwCD-DefL-1-u7" href="#NWDB"><i>&lt;Finish this datablock&gt;</i></a>
+<a name="NWkwCD-DefL-1-u6" href="#NWDB"><i>&lt;Add data to datalist&gt;</i></a>
+<a name="NWkwCD-DefL-1-u7" href="#NWDC"><i>&lt;Finish this datablock&gt;</i></a>
 
-</pre><p><a name="NWD6">The simplest operation is the creation of a key, value pair.  We</a>
+</pre><p><a name="NWD7">The simplest operation is the creation of a key, value pair.  We</a>
 return the item as part of a one member tuple, so that we can
 easily distinguish between an array and a single value by testing
 the length of an item.
 <p>
-<pre><a name="NWkwCD-MakJ-1" href="#NWD6"><dfn>&lt;Make key-value pair&gt;=</dfn></a> <b>(<a href="#NWD5">&lt;-U</a>)</b>
+<pre><a name="NWkwCD-MakJ-1" href="#NWD7"><dfn>&lt;Make key-value pair&gt;=</dfn></a> <b>(<a href="#NWD6">&lt;-U</a>)</b>
 def dkvrulea(list,context): 
     return {list[0]:list[1]}
     
-</pre><pre><a name="NWkwCD-RulD-1" href="#NWkwCD-RulD-1"><dfn>&lt;Rule bindings&gt;=</dfn></a> <b>(<a href="#NWDC">U-&gt;</a>)</b> <b>[D<a href="#NWkwCD-RulD-2">-&gt;</a>]</b>
+</pre><pre><a name="NWkwCD-RulD-1" href="#NWkwCD-RulD-1"><dfn>&lt;Rule bindings&gt;=</dfn></a> <b>(<a href="#NWDD">U-&gt;</a>)</b> <b>[D<a href="#NWkwCD-RulD-2">-&gt;</a>]</b>
 Grammar.Bind(&quot;DataKvRule1a&quot;, dkvrulea)
 Grammar.Bind(&quot;DataKvRule2a&quot;, dkvrulea)
 
-</pre><p><a name="NWD7">Dealing with loops is more complex.  We accumulate the names and</a>
+</pre><p><a name="NWD8">Dealing with loops is more complex.  We accumulate the names and</a>
 items in lists, to keep the order matched, then change them into a
 dictionary of key-value pairs.  If this is the first time, we create
 the list.
 <p>
-<pre><a name="NWkwCD-AddE-1" href="#NWD7"><dfn>&lt;Add loop names&gt;=</dfn></a> <b>(<a href="#NWD5">&lt;-U</a>)</b>
+<pre><a name="NWkwCD-AddE-1" href="#NWD8"><dfn>&lt;Add loop names&gt;=</dfn></a> <b>(<a href="#NWD6">&lt;-U</a>)</b>
 def ltrule(list,context):
     return list
 
@@ -158,13 +178,13 @@ def ltmrule(list,context):
     list[0].append(list[1])
     return list[0]
 
-</pre><pre><a name="NWkwCD-RulD-2" href="#NWkwCD-RulD-1"><dfn>&lt;Rule bindings&gt;+=</dfn></a> <b>(<a href="#NWDC">U-&gt;</a>)</b> <b>[<a href="#NWkwCD-RulD-1">&lt;-</a>D<a href="#NWkwCD-RulD-3">-&gt;</a>]</b>
+</pre><pre><a name="NWkwCD-RulD-2" href="#NWkwCD-RulD-1"><dfn>&lt;Rule bindings&gt;+=</dfn></a> <b>(<a href="#NWDD">U-&gt;</a>)</b> <b>[<a href="#NWkwCD-RulD-1">&lt;-</a>D<a href="#NWkwCD-RulD-3">-&gt;</a>]</b>
 Grammar.Bind(&quot;LtRule&quot;, ltrule)
 Grammar.Bind(&quot;LtmRule&quot;, ltmrule)
 
-</pre><p><a name="NWD8">We do the same for the loop values.  </a>
+</pre><p><a name="NWD9">We do the same for the loop values.  </a>
 <p>
-<pre><a name="NWkwCD-AddF-1" href="#NWD8"><dfn>&lt;Add loop values&gt;=</dfn></a> <b>(<a href="#NWD5">&lt;-U</a>)</b>
+<pre><a name="NWkwCD-AddF-1" href="#NWD9"><dfn>&lt;Add loop values&gt;=</dfn></a> <b>(<a href="#NWD6">&lt;-U</a>)</b>
 def lbrule(list,context):
     #print 'lbrule ' + `list`
     return list
@@ -183,19 +203,19 @@ def lb2mrule(list,context):
     list[0].append(list[1])
     return list[0]
 
-</pre><pre><a name="NWkwCD-RulD-3" href="#NWkwCD-RulD-1"><dfn>&lt;Rule bindings&gt;+=</dfn></a> <b>(<a href="#NWDC">U-&gt;</a>)</b> <b>[<a href="#NWkwCD-RulD-2">&lt;-</a>D<a href="#NWkwCD-RulD-4">-&gt;</a>]</b>
+</pre><pre><a name="NWkwCD-RulD-3" href="#NWkwCD-RulD-1"><dfn>&lt;Rule bindings&gt;+=</dfn></a> <b>(<a href="#NWDD">U-&gt;</a>)</b> <b>[<a href="#NWkwCD-RulD-2">&lt;-</a>D<a href="#NWkwCD-RulD-4">-&gt;</a>]</b>
 Grammar.Bind(&quot;LbRule&quot;, lbrule)
 Grammar.Bind(&quot;LbmRule&quot;, lbmrule)
 Grammar.Bind(&quot;Lb2Rule&quot;, lb2rule)
 Grammar.Bind(&quot;Lb2mRule&quot;, lb2mrule)
 
-</pre><p><a name="NWD9">Now we add the loop to the datablock.  We want to transform the flat</a>
+</pre><p><a name="NWDA">Now we add the loop to the datablock.  We want to transform the flat</a>
 lists of values and names to a list of key-value pairs, with values given
 as arrays.  We also need to give a 'name' to the loop, so that we can 
 later match items back together.  The current number of loops is kept
 in the 'context' dictionary.
 <p>
-<pre><a name="NWkwCD-Fora-1" href="#NWD9"><dfn>&lt;Format loop for datablock dictionary&gt;=</dfn></a> <b>(<a href="#NWD5">&lt;-U</a>)</b>
+<pre><a name="NWkwCD-Fora-1" href="#NWDA"><dfn>&lt;Format loop for datablock dictionary&gt;=</dfn></a> <b>(<a href="#NWD6">&lt;-U</a>)</b>
 def lprule(list,context):
     noitems = len(list[1])
     nopoints = divmod(len(list[2]),noitems)
@@ -211,18 +231,18 @@ def lprule(list,context):
     context[&quot;loops&quot;].append(newdict)
     return {&quot;dummy&quot;:''}    # to keep things easy
 
-</pre><pre><a name="NWkwCD-AddL-1" href="#NWkwCD-AddL-1"><dfn>&lt;Add loop to datablock&gt;=</dfn></a> <b>(<a href="#NWD5">&lt;-U</a>)</b>
+</pre><pre><a name="NWkwCD-AddL-1" href="#NWkwCD-AddL-1"><dfn>&lt;Add loop to datablock&gt;=</dfn></a> <b>(<a href="#NWD6">&lt;-U</a>)</b>
 def datalprule(list,context):
     return list[0]
 
-</pre><pre><a name="NWkwCD-RulD-4" href="#NWkwCD-RulD-1"><dfn>&lt;Rule bindings&gt;+=</dfn></a> <b>(<a href="#NWDC">U-&gt;</a>)</b> <b>[<a href="#NWkwCD-RulD-3">&lt;-</a>D<a href="#NWkwCD-RulD-5">-&gt;</a>]</b>
+</pre><pre><a name="NWkwCD-RulD-4" href="#NWkwCD-RulD-1"><dfn>&lt;Rule bindings&gt;+=</dfn></a> <b>(<a href="#NWDD">U-&gt;</a>)</b> <b>[<a href="#NWkwCD-RulD-3">&lt;-</a>D<a href="#NWkwCD-RulD-5">-&gt;</a>]</b>
 Grammar.Bind(&quot;LpRule&quot;, lprule)
 Grammar.Bind(&quot;DataLpRule&quot;,datalprule)
 
-</pre><p><a name="NWDA">Add the loops and keyvaluepairs to the datablock.  What we are really</a>
+</pre><p><a name="NWDB">Add the loops and keyvaluepairs to the datablock.  What we are really</a>
 doing is expanding an anonymous dictionary.
 <p>
-<pre><a name="NWkwCD-AddK-1" href="#NWDA"><dfn>&lt;Add data to datalist&gt;=</dfn></a> <b>(<a href="#NWD5">&lt;-U</a>)</b>
+<pre><a name="NWkwCD-AddK-1" href="#NWDB"><dfn>&lt;Add data to datalist&gt;=</dfn></a> <b>(<a href="#NWD6">&lt;-U</a>)</b>
 def dataseqrule(list,context):
     return list[0]
 
@@ -230,16 +250,16 @@ def mdataseqrule(list,context):
     list[0].update(list[1])
     return list[0]
 
-</pre><pre><a name="NWkwCD-RulD-5" href="#NWkwCD-RulD-1"><dfn>&lt;Rule bindings&gt;+=</dfn></a> <b>(<a href="#NWDC">U-&gt;</a>)</b> <b>[<a href="#NWkwCD-RulD-4">&lt;-</a>D<a href="#NWkwCD-RulD-6">-&gt;</a>]</b>
+</pre><pre><a name="NWkwCD-RulD-5" href="#NWkwCD-RulD-1"><dfn>&lt;Rule bindings&gt;+=</dfn></a> <b>(<a href="#NWDD">U-&gt;</a>)</b> <b>[<a href="#NWkwCD-RulD-4">&lt;-</a>D<a href="#NWkwCD-RulD-6">-&gt;</a>]</b>
 Grammar.Bind(&quot;DataSeqRule&quot;,dataseqrule)
 Grammar.Bind(&quot;MDataSeqRule&quot;,mdataseqrule)
 
-</pre><p><a name="NWDB">Finally, store the complete datablock in the global array.  We save</a>
+</pre><p><a name="NWDC">Finally, store the complete datablock in the global array.  We save</a>
 the array of loops kept in the context dictionary as a pseudo
 dictionary entry, and then reset it to zero, ready for the next time
-around.
+around.  We include rules for empty files and datasets.
 <p>
-<pre><a name="NWkwCD-FinL-1" href="#NWDB"><dfn>&lt;Finish this datablock&gt;=</dfn></a> <b>(<a href="#NWD5">&lt;-U</a>)</b>
+<pre><a name="NWkwCD-FinL-1" href="#NWDC"><dfn>&lt;Finish this datablock&gt;=</dfn></a> <b>(<a href="#NWD6">&lt;-U</a>)</b>
 def dblockrule(list,context):
     list[1].update({&quot;loops&quot;:context[&quot;loops&quot;]})
     context[&quot;loops&quot;] = []
@@ -248,12 +268,13 @@ def dblockrule(list,context):
     return {list[0][5:]:list[1]}
 
 def mtblockrule(list,context):
-    return {list[0][5:]:[]}
+    return {list[0][5:]:{&quot;loops&quot;:context[&quot;loops&quot;]}}
 
 def mdblockrule(list,context):
     list[2].update({&quot;loops&quot;:context[&quot;loops&quot;]})
     context[&quot;loops&quot;] = []
-    del list[2][&quot;dummy&quot;]
+    if list[2].has_key(&quot;dummy&quot;):
+        del list[2][&quot;dummy&quot;]
     list[0].update({list[1][5:]:list[2]})
     return list[0]
 
@@ -261,38 +282,39 @@ def inputrule(list,context):
     return list[0]
 
 def nullrule(list,context):
-    return [{}]
+    return {}
 
-</pre><pre><a name="NWkwCD-RulD-6" href="#NWkwCD-RulD-1"><dfn>&lt;Rule bindings&gt;+=</dfn></a> <b>(<a href="#NWDC">U-&gt;</a>)</b> <b>[<a href="#NWkwCD-RulD-5">&lt;-</a>D]</b>
+</pre><pre><a name="NWkwCD-RulD-6" href="#NWkwCD-RulD-1"><dfn>&lt;Rule bindings&gt;+=</dfn></a> <b>(<a href="#NWDD">U-&gt;</a>)</b> <b>[<a href="#NWkwCD-RulD-5">&lt;-</a>D]</b>
 Grammar.Bind(&quot;InputRule&quot;, inputrule)
 Grammar.Bind(&quot;DblockRule&quot;, dblockrule)
 Grammar.Bind(&quot;MDblockRule&quot;, mdblockrule)
 Grammar.Bind(&quot;NullRule&quot;, nullrule)
 Grammar.Bind(&quot;EmptyBlockRule&quot;,mtblockrule)
 
-</pre><p><a name="NWDC">Create the semantics.  See the definition of each actual function</a>
+</pre><p><a name="NWDD">Create the semantics.  See the definition of each actual function</a>
 to find the actual bindings.
 <p>
-<pre><a name="NWkwCD-BinS-1" href="#NWDC"><dfn>&lt;Bind function calls to rules&gt;=</dfn></a> <b>(<a href="#NWD1">&lt;-U</a>)</b>
+<pre><a name="NWkwCD-BinS-1" href="#NWDD"><dfn>&lt;Bind function calls to rules&gt;=</dfn></a> <b>(<a href="#NWD2">&lt;-U</a>)</b>
 def BindRules(Grammar):
     <a name="NWkwCD-BinS-1-u1" href="#NWkwCD-RulD-1"><i>&lt;Rule bindings&gt;</i></a>
 </pre>
 
 <ul>
-<li><a href="#NWD1"><i>&lt;*&gt;</i></a>: <a href="#NWD1">D1</a>
-<li><a href="#NWDA"><i>&lt;Add data to datalist&gt;</i></a>: <a href="#NWD5">U1</a>, <a href="#NWDA">D2</a>
-<li><a href="#NWD7"><i>&lt;Add loop names&gt;</i></a>: <a href="#NWD5">U1</a>, <a href="#NWD7">D2</a>
-<li><a href="#NWkwCD-AddL-1"><i>&lt;Add loop to datablock&gt;</i></a>: <a href="#NWD5">U1</a>, <a href="#NWkwCD-AddL-1">D2</a>
-<li><a href="#NWD8"><i>&lt;Add loop values&gt;</i></a>: <a href="#NWD5">U1</a>, <a href="#NWD8">D2</a>
-<li><a href="#NWDC"><i>&lt;Bind function calls to rules&gt;</i></a>: <a href="#NWD1">U1</a>, <a href="#NWDC">D2</a>
-<li><a href="#NWD2"><i>&lt;Build the grammar&gt;</i></a>: <a href="#NWD1">U1</a>, <a href="#NWD2">D2</a>
-<li><a href="#NWD3"><i>&lt;Declare the terminals&gt;</i></a>: <a href="#NWD1">U1</a>, <a href="#NWD3">D2</a>
-<li><a href="#NWD5"><i>&lt;Define function calls&gt;</i></a>: <a href="#NWD1">U1</a>, <a href="#NWD5">D2</a>
-<li><a href="#NWD4"><i>&lt;Define the grammar string&gt;</i></a>: <a href="#NWD1">U1</a>, <a href="#NWD4">D2</a>
-<li><a href="#NWDB"><i>&lt;Finish this datablock&gt;</i></a>: <a href="#NWD5">U1</a>, <a href="#NWDB">D2</a>
-<li><a href="#NWD9"><i>&lt;Format loop for datablock dictionary&gt;</i></a>: <a href="#NWD5">U1</a>, <a href="#NWD9">D2</a>
-<li><a href="#NWD6"><i>&lt;Make key-value pair&gt;</i></a>: <a href="#NWD5">U1</a>, <a href="#NWD6">D2</a>
-<li><a href="#NWkwCD-RulD-1"><i>&lt;Rule bindings&gt;</i></a>: <a href="#NWkwCD-RulD-1">D1</a>, <a href="#NWkwCD-RulD-2">D2</a>, <a href="#NWkwCD-RulD-3">D3</a>, <a href="#NWkwCD-RulD-4">D4</a>, <a href="#NWkwCD-RulD-5">D5</a>, <a href="#NWkwCD-RulD-6">D6</a>, <a href="#NWDC">U7</a>
+<li><a href="#NWD2"><i>&lt;*&gt;</i></a>: <a href="#NWD2">D1</a>
+<li><a href="#NWDB"><i>&lt;Add data to datalist&gt;</i></a>: <a href="#NWD6">U1</a>, <a href="#NWDB">D2</a>
+<li><a href="#NWD8"><i>&lt;Add loop names&gt;</i></a>: <a href="#NWD6">U1</a>, <a href="#NWD8">D2</a>
+<li><a href="#NWkwCD-AddL-1"><i>&lt;Add loop to datablock&gt;</i></a>: <a href="#NWD6">U1</a>, <a href="#NWkwCD-AddL-1">D2</a>
+<li><a href="#NWD9"><i>&lt;Add loop values&gt;</i></a>: <a href="#NWD6">U1</a>, <a href="#NWD9">D2</a>
+<li><a href="#NWDD"><i>&lt;Bind function calls to rules&gt;</i></a>: <a href="#NWD2">U1</a>, <a href="#NWDD">D2</a>
+<li><a href="#NWD3"><i>&lt;Build the grammar&gt;</i></a>: <a href="#NWD2">U1</a>, <a href="#NWD3">D2</a>
+<li><a href="#NWD1"><i>&lt;Copyright statement&gt;</i></a>: <a href="#NWD1">D1</a>, <a href="#NWD2">U2</a>
+<li><a href="#NWD4"><i>&lt;Declare the terminals&gt;</i></a>: <a href="#NWD2">U1</a>, <a href="#NWD4">D2</a>
+<li><a href="#NWD6"><i>&lt;Define function calls&gt;</i></a>: <a href="#NWD2">U1</a>, <a href="#NWD6">D2</a>
+<li><a href="#NWD5"><i>&lt;Define the grammar string&gt;</i></a>: <a href="#NWD2">U1</a>, <a href="#NWD5">D2</a>
+<li><a href="#NWDC"><i>&lt;Finish this datablock&gt;</i></a>: <a href="#NWD6">U1</a>, <a href="#NWDC">D2</a>
+<li><a href="#NWDA"><i>&lt;Format loop for datablock dictionary&gt;</i></a>: <a href="#NWD6">U1</a>, <a href="#NWDA">D2</a>
+<li><a href="#NWD7"><i>&lt;Make key-value pair&gt;</i></a>: <a href="#NWD6">U1</a>, <a href="#NWD7">D2</a>
+<li><a href="#NWkwCD-RulD-1"><i>&lt;Rule bindings&gt;</i></a>: <a href="#NWkwCD-RulD-1">D1</a>, <a href="#NWkwCD-RulD-2">D2</a>, <a href="#NWkwCD-RulD-3">D3</a>, <a href="#NWkwCD-RulD-4">D4</a>, <a href="#NWkwCD-RulD-5">D5</a>, <a href="#NWkwCD-RulD-6">D6</a>, <a href="#NWDD">U7</a>
 </ul>
 <ul>
 </ul>

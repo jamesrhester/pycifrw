@@ -1,3 +1,18 @@
+"""
+1. This software copyright  Australian Synchrotron Research Program Inc.
+
+2. Permission is hereby granted to use, copy and modify this software for
+non-commercial purposes only.  Permission is also granted to use
+reasonable portions of it in other software for non-commercial
+purposes, provided that suitable acknowledgement is made.  Australian
+Synchrotron Research Program Inc., as the owner of the copyright in
+the software, does not grant any right to publish, sell or otherwise
+redistribute the software, or modified versions of the software, to
+third parties.  You are encouraged to communicate useful modifications
+to Australian Synchrotron Research Program Inc. for inclusion in
+future versions.
+"""
+
 class CifFile:
     def __init__(self,datasource=None):
         from types import *
@@ -9,6 +24,14 @@ class CifFile:
             self.ReadCif(datasource)
         elif isinstance(datasource,CifFile):
             self.dictionary = datasource.dictionary.copy()
+        self.checklengths()
+
+    def checklengths(self):
+        blocks = self.dictionary.items()
+        for name,block in blocks:
+            toolong = len(filter(lambda a:len(a)>78, block.keys()))
+            if toolong:
+                print 'Warning: block ' + name + ' has ' + `toolong` + ' overlength data names'
 
     def __str__(self):
         return self.WriteOut()
@@ -49,19 +72,24 @@ class CifFile:
         stream = open(filename,'r')
         text = stream.read()
         stream.close()
+        if not text:      # empty file, return empty block
+            return
         parser = kwCifParse.CifGramBuild()
         context = {"loops":[]}
-        self.dictionary = {}
         try:
             filecontents = parser.DoParse1(text,context)
         except SyntaxError,LexTokenError:
             raise CifError, 'Cif file badly formatted'
+        if not filecontents: # comments only, return empty
+            return
         for block in filecontents.keys():
             self.dictionary.update({block:CifBlock(filecontents[block])})
 
-    def NewBlock(self,blockname,blockcontents):
+    def NewBlock(self,blockname,blockcontents=()):
         import re
-        if not isinstance(blockcontents,CifBlock):
+        if not blockcontents:
+            blockcontents = CifBlock()
+        elif not isinstance(blockcontents,CifBlock):
             raise TypeError, 'Cif files can only contain CifBlocks'
         newblockname = re.sub('\W','_',blockname)
         blocknames = self.dictionary.keys()
@@ -69,6 +97,8 @@ class CifFile:
         while blocknames.count(newblockname):
             i = i + 1
             newblockname = newblockname+`i`
+        if len(newblockname) > 73:
+            raise CifError, 'Cif block name too long:' + newblockname
         self.dictionary.update({newblockname:blockcontents})
         return newblockname
 
@@ -182,11 +212,7 @@ class CifBlock:
         for aloop in self.block["loops"]:
             if aloop.has_key(itemname):
                 del aloop[itemname]
-                if len(aloop)==0: 
-                    del aloop
-                return
-        # not found
-        raise KeyError, 'Key not found in Cif'
+        self.block["loops"] = filter(None, self.block["loops"])
 
     def AddCifItem(self,data):
         import types
@@ -196,6 +222,8 @@ class CifBlock:
                   raise TypeError, 'Cif datanames are either a string, tuple or list'
         # now put into the dictionary properly...
         if isinstance(data[0],types.StringType):   # a single name        
+            if len(data[0])>78:                   # too long
+                raise CifError, 'Dataname ' + data[0] + ' too long.'
             self.block.update({data[0]:data[1]})  # trust the data is OK
             for aloop in self.block["loops"]:
                 if aloop.has_key(data[0]):
@@ -206,6 +234,8 @@ class CifBlock:
                raise TypeError, 'Length mismatch between itemnames and values'
            dellist = []
            for itemname in data[0]:
+               if len(itemname)>78 or not isinstance(itemname,types.StringType): # no good
+                   raise CifError, 'Bad item name ' + `itemname`
                self.block["loops"] = filter(lambda a,b=itemname:b not in a.keys(),self.block["loops"])
            newdict = {}
            map(lambda a,b,c=newdict:c.update({a:b}),data[0],data[1])
@@ -239,12 +269,12 @@ class CifBlock:
                   if len(thisstring) + len(itemname) < 78:
                           outstring = outstring + '%s %s\n' % (itemname,thisstring)
                   else:
-                          outstring = outstring + '%s\n%s\n' % (itemname, thisstring)
+                          outstring = outstring + '%s\n %s\n' % (itemname, thisstring)
             else: 
                       if len(str(itemvalue)) + len(itemname) < 78:
                           outstring = outstring + '%s %s\n' % (itemname, itemvalue)
                       else:
-                          outstring = outstring + '%s\n%s\n' % (itemname, itemvalue)
+                          outstring = outstring + '%s\n %s\n' % (itemname, itemvalue)
             continue
         #do the loops
         for aloop in self.block["loops"]:
@@ -307,22 +337,9 @@ class CifBlock:
         return outstring
 
 
-def CifError(Exceptions):
+class CifError(Exception):
     def __init__(self,value):
         self.value = value
     def __str__(self):
         print `value`
- 
-def testcif():
-    items = (('_item_1','Some data'),
-             ('_item_2','Some_underline_data'),
-             ('_item_3','34.2332'),
-             ('_item_4','Some very long data which we hope will overflow the single line and force printing of another line aaaaa bbbbbb cccccc dddddddd eeeeeeeee fffffffff hhhhhhhhh iiiiiiii jjjjjj'),
-             (('_item_5','_item_6','_item_7'),([1,2,3,4],[5,6,7,8],['a','b','c','d'])))
-    ourblock = CifBlock(items)
-    cif = CifFile()
-    cif["testblock"] = ourblock
-    f = open('testfile','w')
-    f.write(cif.WriteOut('# This is a test file'))
-    f.write(str(cif))
 

@@ -1,7 +1,27 @@
+@ A copyright statement which applies to this file and generated files
+as well.
+
+<<Copyright statement>>=
+"""
+1. This software copyright  Australian Synchrotron Research Program Inc.
+
+2. Permission is hereby granted to use, copy and modify this software for
+non-commercial purposes only.  Permission is also granted to use
+reasonable portions of it in other software for non-commercial
+purposes, provided that suitable acknowledgement is made.  Australian
+Synchrotron Research Program Inc., as the owner of the copyright in
+the software, does not grant any right to publish, sell or otherwise
+redistribute the software, or modified versions of the software, to
+third parties.  You are encouraged to communicate useful modifications
+to Australian Synchrotron Research Program Inc. for inclusion in
+future versions.
+"""
+
 @ We use the kwParse package to construct a parser for Cif files.  See the
 documentation for that package for more details.
 
 <<*>>=
+<<Copyright statement>>
 <<Define the grammar string>>
 <<Declare the terminals>>
 <<Define function calls>>
@@ -236,7 +256,7 @@ Grammar.Bind("MDataSeqRule",mdataseqrule)
 @ Finally, store the complete datablock in the global array.  We save
 the array of loops kept in the context dictionary as a pseudo
 dictionary entry, and then reset it to zero, ready for the next time
-around.
+around.  We include rules for empty files and datasets.
 
 <<Finish this datablock>>=
 def dblockrule(list,context):
@@ -247,12 +267,13 @@ def dblockrule(list,context):
     return {list[0][5:]:list[1]}
 
 def mtblockrule(list,context):
-    return {list[0][5:]:[]}
+    return {list[0][5:]:{"loops":context["loops"]}}
 
 def mdblockrule(list,context):
     list[2].update({"loops":context["loops"]})
     context["loops"] = []
-    del list[2]["dummy"]
+    if list[2].has_key("dummy"):
+        del list[2]["dummy"]
     list[0].update({list[1][5:]:list[2]})
     return list[0]
 
@@ -260,7 +281,7 @@ def inputrule(list,context):
     return list[0]
 
 def nullrule(list,context):
-    return [{}]
+    return {}
 
 <<Rule bindings>>=
 Grammar.Bind("InputRule", inputrule)

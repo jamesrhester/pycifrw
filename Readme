@@ -8,8 +8,23 @@ PyCIFRW provides basic support for reading and writing CIF (Crystallographic
 Information Format) files using Python.  It was developed at the Australian
 National Beamline Facility (ANBF), run by the Australian Synchrotron Research
 Program (ASRP), as part of a larger project to provide CIF input/output 
-capabilities for data collection.  It is currently under active 
+capabilities for data collection.  It is currently (Sept 2001) under active 
 development and testing.  
+
+Conformance
+-----------
+
+The draft BNC specification for CIF files was used as a reference, and
+in most cases the grammar and character sets specified there were copied
+directly.
+
+PyCifRW has been tested on the IUCr sample CIF trap files, and fails or 
+successfully reads as it is supposed to, except for test 8 (long 
+datanames/long lines), for which it will silently read in overlength 
+lines and only warn about overlength datanames.  Attempts to add new 
+datanames to a CIF file will result in an error if they are overlength.  
+Provided no overlength datanames were read in, output lines do not
+exceed 80 characters.
 
 Supported Platforms
 -------------------
@@ -46,18 +61,21 @@ Installation
 ------------
 
 All .py files should be placed in a directory where python can find them, for
-example .../lib/python/site-packages/PyCifRW
+example .../lib/python/site-packages/PyCifRW under Unix-type systems, and in
+C:/Python20/Lib/PyCifRW for Windows.  Unix users should note that they will
+need to create a one line file named 'PyCifRW.pth' in the site-packages directory 
+containing the single word 'PyCifRW'.
 
 Use
 ---
 
-See the text in CifFile.html for details of the interface
+See the text in CifFile.html for details of the interface.
 
 Example
 -------
 
 To read in a CIF:
->> from CifFile import *
+>> from PyCifRW.CifFile import *
 >> cf = CifFile('jun_01_2.cif')
 
 to access information in a CIF

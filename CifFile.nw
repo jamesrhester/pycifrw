@@ -1,3 +1,19 @@
+<<Copyright statement>>=
+"""
+1. This software copyright  Australian Synchrotron Research Program Inc.
+
+2. Permission is hereby granted to use, copy and modify this software for
+non-commercial purposes only.  Permission is also granted to use
+reasonable portions of it in other software for non-commercial
+purposes, provided that suitable acknowledgement is made.  Australian
+Synchrotron Research Program Inc., as the owner of the copyright in
+the software, does not grant any right to publish, sell or otherwise
+redistribute the software, or modified versions of the software, to
+third parties.  You are encouraged to communicate useful modifications
+to Australian Synchrotron Research Program Inc. for inclusion in
+future versions.
+"""
+
 @ \section{Introduction}
 
 This file implements a general CIF reading/writing utility.  A class
@@ -10,9 +26,10 @@ The methods available for the CifFile type are:
 \begin{enumerate}
 \item [[ReadCif(filename)]]: (re)initialise using Cif file [[filename]].
 \item [[GetBlocks()]]:       return list of block names in file
-\item [[NewBlock(blockname)]]: add new block to this object. Returns new
+\item [[NewBlock(blockname,[block contents])]]: add new block to this object. Returns new
 block name, which will not be the requested name if the Cif object 
-already has the requested name.
+already has the requested name.  If [[blockcontents]] is provided, it
+must be a CifBlock object (see below).
 \item [[WriteOut(comment)]]: return the contents of the current file as a
 CIF-conformant string, with optional [[comment]] at the beginning.
 \end{enumerate}
@@ -36,10 +53,10 @@ Note also that a CifFile object can be accessed as a mapping type, ie using
 square brackets.  Most mapping operations have been implemented (see below).
 
 <<*>>=
+<<Copyright statement>>
 <<CifFile class>>
 <<CifBlock class>>
 <<Define an error class>>
-<<Test the cif module>>
 
 @ \section{CifFile}
 
@@ -50,6 +67,7 @@ CifBlock objects, accessed by block name.
 <<CifFile class>>=
 class CifFile:
     <<Initialise data structures>>
+    <<Check data name lengths>>
     <<CifFile emulation of mapping type>>
     <<Read in a CIF file>>
     <<Add a new data section>>
@@ -66,6 +84,18 @@ def __init__(self,datasource=None):
         self.ReadCif(datasource)
     elif isinstance(datasource,CifFile):
         self.dictionary = datasource.dictionary.copy()
+    self.checklengths()
+
+@ Checking item name lengths.  More than 78 characters is no good, as lines will overflow
+the 80 character limit.
+
+<<Check data name lengths>>=
+def checklengths(self):
+    blocks = self.dictionary.items()
+    for name,block in blocks:
+        toolong = len(filter(lambda a:len(a)>78, block.keys()))
+        if toolong:
+            print 'Warning: block ' + name + ' has ' + `toolong` + ' overlength data names'
 
 @ Reading in a file.  We use the kwParse module to provide grammar
 services.  The structure returned from parsing is an array of blocks,
@@ -77,13 +107,16 @@ def ReadCif(self,filename):
     stream = open(filename,'r')
     text = stream.read()
     stream.close()
+    if not text:      # empty file, return empty block
+        return
     parser = kwCifParse.CifGramBuild()
     context = {"loops":[]}
-    self.dictionary = {}
     try:
         filecontents = parser.DoParse1(text,context)
     except SyntaxError,LexTokenError:
         raise CifError, 'Cif file badly formatted'
+    if not filecontents: # comments only, return empty
+        return
     for block in filecontents.keys():
         self.dictionary.update({block:CifBlock(filecontents[block])})
 
@@ -130,9 +163,11 @@ in case we have changed it, so the calling routine can refer to it
 later.
 
 <<Add a new data section>>=
-def NewBlock(self,blockname,blockcontents):
+def NewBlock(self,blockname,blockcontents=()):
     import re
-    if not isinstance(blockcontents,CifBlock):
+    if not blockcontents:
+        blockcontents = CifBlock()
+    elif not isinstance(blockcontents,CifBlock):
         raise TypeError, 'Cif files can only contain CifBlocks'
     newblockname = re.sub('\W','_',blockname)
     blocknames = self.dictionary.keys()
@@ -140,6 +175,8 @@ def NewBlock(self,blockname,blockcontents):
     while blocknames.count(newblockname):
         i = i + 1
         newblockname = newblockname+`i`
+    if len(newblockname) > 73:
+        raise CifError, 'Cif block name too long:' + newblockname
     self.dictionary.update({newblockname:blockcontents})
     return newblockname
 
@@ -315,11 +352,7 @@ def RemoveCifItem(self,itemname):
     for aloop in self.block["loops"]:
         if aloop.has_key(itemname):
             del aloop[itemname]
-            if len(aloop)==0: 
-                del aloop
-            return
-    # not found
-    raise KeyError, 'Key not found in Cif'
+    self.block["loops"] = filter(None, self.block["loops"])
 
 @ Adding a data item.  We are passed a tuple with the (set) of data
 names at the beginning, and a (set) of values for them following.  For
@@ -330,6 +363,10 @@ array of dictionaries keyed by the word "loops".
 If an item is already stored, it will be silently replaced; if it earlier
 lived in a loop, it will be removed from the loop, and the loop itself
 removed if it is now zero length.
+
+We check the length of the name, and give an error if the name is
+greater than 78 characters, as we will overflow our 80 character line
+length in that case.
 
 We should also check for consistency, by making sure the new item is
 not in the block already.  If it is, we replace it (consistent with
@@ -349,6 +386,8 @@ def AddCifItem(self,data):
               raise TypeError, 'Cif datanames are either a string, tuple or list'
     # now put into the dictionary properly...
     if isinstance(data[0],types.StringType):   # a single name        
+        if len(data[0])>78:                   # too long
+            raise CifError, 'Dataname ' + data[0] + ' too long.'
         self.block.update({data[0]:data[1]})  # trust the data is OK
         for aloop in self.block["loops"]:
             if aloop.has_key(data[0]):
@@ -359,6 +398,8 @@ def AddCifItem(self,data):
            raise TypeError, 'Length mismatch between itemnames and values'
        dellist = []
        for itemname in data[0]:
+           if len(itemname)>78 or not isinstance(itemname,types.StringType): # no good
+               raise CifError, 'Bad item name ' + `itemname`
            self.block["loops"] = filter(lambda a,b=itemname:b not in a.keys(),self.block["loops"])
        newdict = {}
        map(lambda a,b,c=newdict:c.update({a:b}),data[0],data[1])
@@ -369,7 +410,10 @@ def AddCifItem(self,data):
 case the caller wants to order things in some nice way.  This is
 overridden if any item in the order list occurs within a loop, in
 which case it will be packaged together with everything else within
-that same loop.
+that same loop.  Note that we print a space before the item value if
+it is printed on a new line, so that if, by some freak accident, the
+first letter of the value is a semicolon, it won't be misinterpreted
+as the beginning of a multi-line value.
 
 <<Print a data block>>=
 def printsection(self,order=[]):
@@ -390,12 +434,12 @@ def printsection(self,order=[]):
               if len(thisstring) + len(itemname) < 78:
                       outstring = outstring + '%s %s\n' % (itemname,thisstring)
               else:
-                      outstring = outstring + '%s\n%s\n' % (itemname, thisstring)
+                      outstring = outstring + '%s\n %s\n' % (itemname, thisstring)
         else: 
                   if len(str(itemvalue)) + len(itemname) < 78:
                       outstring = outstring + '%s %s\n' % (itemname, itemvalue)
                   else:
-                      outstring = outstring + '%s\n%s\n' % (itemname, itemvalue)
+                      outstring = outstring + '%s\n %s\n' % (itemname, itemvalue)
         continue
     #do the loops
     for aloop in self.block["loops"]:
@@ -469,24 +513,8 @@ def _formatstring(self,instring):
 Python class
 
 <<Define an error class>>=
-def CifError(Exceptions):
+class CifError(Exception):
     def __init__(self,value):
         self.value = value
     def __str__(self):
         print `value`
- 
-@ Testing the object.
-
-<<Test the cif module>>=
-def testcif():
-    items = (('_item_1','Some data'),
-             ('_item_2','Some_underline_data'),
-             ('_item_3','34.2332'),
-             ('_item_4','Some very long data which we hope will overflow the single line and force printing of another line aaaaa bbbbbb cccccc dddddddd eeeeeeeee fffffffff hhhhhhhhh iiiiiiii jjjjjj'),
-             (('_item_5','_item_6','_item_7'),([1,2,3,4],[5,6,7,8],['a','b','c','d'])))
-    ourblock = CifBlock(items)
-    cif = CifFile()
-    cif["testblock"] = ourblock
-    f = open('testfile','w')
-    f.write(cif.WriteOut('# This is a test file'))
-    f.write(str(cif))

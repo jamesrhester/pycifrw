@@ -1,3 +1,18 @@
+"""
+1. This software copyright  Australian Synchrotron Research Program Inc.
+
+2. Permission is hereby granted to use, copy and modify this software for
+non-commercial purposes only.  Permission is also granted to use
+reasonable portions of it in other software for non-commercial
+purposes, provided that suitable acknowledgement is made.  Australian
+Synchrotron Research Program Inc., as the owner of the copyright in
+the software, does not grant any right to publish, sell or otherwise
+redistribute the software, or modified versions of the software, to
+third parties.  You are encouraged to communicate useful modifications
+to Australian Synchrotron Research Program Inc. for inclusion in
+future versions.
+"""
+
 CifGGramString = """
      Input :: ## this is the root nonterminal
         @R InputRule :: Input >> dblockseq 
@@ -132,12 +147,13 @@ def dblockrule(list,context):
     return {list[0][5:]:list[1]}
 
 def mtblockrule(list,context):
-    return {list[0][5:]:[]}
+    return {list[0][5:]:{"loops":context["loops"]}}
 
 def mdblockrule(list,context):
     list[2].update({"loops":context["loops"]})
     context["loops"] = []
-    del list[2]["dummy"]
+    if list[2].has_key("dummy"):
+        del list[2]["dummy"]
     list[0].update({list[1][5:]:list[2]})
     return list[0]
 
@@ -145,7 +161,7 @@ def inputrule(list,context):
     return list[0]
 
 def nullrule(list,context):
-    return [{}]
+    return {}
 
 
 def BindRules(Grammar):
