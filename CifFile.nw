@@ -1,17 +1,37 @@
 <<Copyright statement>>=
 """
-1. This software copyright  Australian Synchrotron Research Program Inc.
+1.This Software copyright © Australian Synchrotron Research Program Inc, ("ASRP").
 
-2. Permission is hereby granted to use, copy and modify this software for
-non-commercial purposes only.  Permission is also granted to use
-reasonable portions of it in other software for non-commercial
-purposes, provided that suitable acknowledgement is made.  Australian
-Synchrotron Research Program Inc., as the owner of the copyright in
-the software, does not grant any right to publish, sell or otherwise
-redistribute the software, or modified versions of the software, to
-third parties.  You are encouraged to communicate useful modifications
-to Australian Synchrotron Research Program Inc. for inclusion in
-future versions.
+2.Subject to ensuring that this copyright notice and licence terms
+appear on all copies and all modified versions, of PyCIFRW computer
+code ("this Software"), a royalty-free non-exclusive licence is hereby
+given (i) to use, copy and modify this Software including the use of
+reasonable portions of it in other software and (ii) to publish,
+bundle and otherwise re-distribute this Software or modified versions
+of this Software to third parties, provided that this copyright notice
+and terms are clearly shown as applying to all parts of software
+derived from this Software on each occasion it is published, bundled
+or re-distributed.  You are encouraged to communicate useful
+modifications to ASRP for inclusion for future versions.
+
+3.No part of this Software may be sold as a standalone package.
+
+4.If any part of this Software is bundled with Software that is sold,
+a free copy of the relevant version of this Software must be made
+available through the same distribution channel (be that web server,
+tape, CD or otherwise).
+
+5.It is a term of exercise of any of the above royalty free licence
+rights that ASRP gives no warranty, undertaking or representation
+whatsoever whether express or implied by statute, common law, custom
+or otherwise, in respect of this Software or any part of it.  Without
+limiting the generality of the preceding sentence, ASRP will not be
+liable for any injury, loss or damage (including consequential loss or
+damage) or other loss, loss of profits, costs, charges or expenses
+however caused which may be suffered, incurred or arise directly or
+indirectly in respect of this Software.
+
+6. This Software is not licenced for use in medical applications.
 """
 
 @ \section{Introduction}
@@ -285,12 +305,15 @@ pair separately (if tuples).  We take care to include our special
 "loop" key if it is not in the supplied dictionary, but apart from
 this we make no check of the actual conformance of the dictionary
 items.  If given a maximum output line length, we save that for
-use in writing out lines.
+use in writing out lines.  We use the wraplength parameter to try
+to wrap nicely; however, if we are given very long data, we will
+continue on until we get to maxoutlength characters.
 
 <<Initialise Cif Block>>=
-def __init__(self,data = (),maxoutlength=2048):
+def __init__(self,data = (),maxoutlength=2048,wraplength=80):
     self.block = {"loops":[]}
-    self.outlength = maxoutlength
+    self.maxoutlength = maxoutlength
+    self.wraplength = wraplength
     if type(data) is DictType:     #direct placement
         self.block = data
         if not self.block.has_key("loops"):
@@ -568,12 +591,12 @@ def printsection(self,order=[]):
         itemvalue = self.block[itemname]
         if isinstance(itemvalue,StringType):
               thisstring = self._formatstring(itemvalue)
-              if len(thisstring) + len(itemname) < (self.outlength-2):
+              if len(thisstring) + len(itemname) < (self.wraplength-2):
                       outstring.write('%s %s\n' % (itemname,thisstring))
               else:
                       outstring.write('%s\n %s\n' % (itemname, thisstring))
         else: 
-                  if len(str(itemvalue)) + len(itemname) < (self.outlength-2):
+                  if len(str(itemvalue)) + len(itemname) < (self.wraplength-2):
                       outstring.write('%s %s\n' % (itemname, itemvalue))
                   else:
                       outstring.write('%s\n %s\n' % (itemname, itemvalue))
@@ -597,8 +620,8 @@ def printsection(self,order=[]):
                    if isinstance(datapoint,StringType):
                        thisstring = '%s' % (self._formatstring(datapoint)) #no spaces yet
                        if '\n' in thisstring:
-                           # check its position, might be too far along
-                           if len(curstring) + string.find(thisstring,'\n') > (self.outlength-2):
+                           # we try to wrap if the first <eol> is bigger than our wrap length
+                           if len(curstring) + string.find(thisstring,'\n') > (self.wraplength):
                                outstring.write(' ' + curstring + '\n' + thisstring)
                            else:
                                outstring.write(' ' + curstring + ' ' + thisstring) #a space
@@ -606,7 +629,7 @@ def printsection(self,order=[]):
                            continue
                    else: 
                        thisstring = ' %s ' % datapoint
-                   if len(curstring) + len(thisstring)> self.outlength-2: #past end of line with space
+                   if len(curstring) + len(thisstring)> self.wraplength-2: #past end of line with space
                        outstring.write(' ' + curstring+'\n') #add the space
                        curstring = ''
                    curstring = curstring + ' ' + thisstring
@@ -617,7 +640,7 @@ def printsection(self,order=[]):
     return returnstring
 
 @ Formatting a string.  We make sure that the length of the item value
-is less than [[self.outlength]], or else we should split them, and so on. We check the
+is less than [[self.maxoutlength]], or else we should split them, and so on. We check the
 value for terminators and impossible apostrophes and length, before
 deciding whether to print it and the item on a single line.  We try to
 respect carriage returns in the string, if the caller has tried to do
@@ -634,7 +657,7 @@ improved.
 <<Format a string>>=
 def _formatstring(self,instring):
     import re, string
-    if len(instring)< (self.outlength-5) and '\n' not in instring and not ('"' in instring and '\'' in instring):
+    if len(instring)< (self.maxoutlength-2) and '\n' not in instring and not ('"' in instring and '\'' in instring):
         if not ' ' in instring and not '\t' in instring and not '\v' \
           in instring:                  # no blanks
             return ' %s ' % (instring)
@@ -642,19 +665,19 @@ def _formatstring(self,instring):
             return "'%s'" % (instring)
         elif not "\"" in instring:
             return '"%s"' % (instring)
-    # is a long one
+    # is a long one or one that needs semicolons due to carriage returns
     outstring = "\n;\n"
     # if there are returns in the string, try to work with them
     while 1:
         retin = string.find(instring,'\n')+1
-        if retin < self.outlength and retin > 0:      # honour this break
+        if retin < self.maxoutlength and retin > 0:      # honour this break
             outstring = outstring + instring[:retin]
             instring = instring[retin:]
-        elif len(instring)<self.outlength:            # finished
+        elif len(instring)<self.maxoutlength:            # finished
             outstring = outstring + instring + '\n;\n'
             break
         else:                             # find a space
-            for letter in range(self.outlength-1,40,-1): 
+            for letter in range(self.maxoutlength-1,40,-1): 
                 if instring[letter] in ' \t\f': break
             outstring = outstring + instring[:letter+1]
             outstring = outstring + '\n'
