@@ -54,6 +54,30 @@ class BlockRWTestCase(unittest.TestCase):
         except CifFile.CifError: pass
         else: self.Fail()
 
+    def testBadStringSet(self):
+        """test setting values with bad characters"""
+        dataname = '_name_is_ok'
+        try:
+            self.cf[dataname] = "eca234\f\vaqkadlf"
+        except CifFile.CifError: pass
+        else: self.Fail()
+
+    def testBadNameSet(self):
+        """test setting names with bad characters"""
+        dataname = "_this_is_not ok"
+        try:
+            self.cf[dataname] = "nnn"
+        except CifFile.CifError: pass
+        else: self.Fail()
+
+    def testMoreBadStrings(self):
+        dataname = "_name_is_ok"
+        val = "so far, ok, but now we have a " + chr(128)
+        try:
+            self.cf[dataname] = val
+        except CifFile.CifError: pass
+        else: self.Fail()
+        
 # Now test operations which require a preexisting block
 #
 
@@ -145,7 +169,7 @@ class BlockNameTestCase(unittest.TestCase):
        df = CifFile.CifBlock()
        cf = CifFile.CifFile()
        try:
-           cf['a_very_long_block_name_which_should_be_rejected_out_of_hand123456789012345']=df
+           cf['a_very_long_block_name_which_should_be_rejected_out_of_hand123456789012345678']=df
        except CifFile.CifError: pass
        else: self.Fail()
 

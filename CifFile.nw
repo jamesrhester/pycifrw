@@ -70,7 +70,8 @@ If we are passed a filename, we open it and read it in, assuming that
 it is a conformant Cif file.  A CifFile object is a dictionary of
 CifBlock objects, accessed by block name.  As the maximum line length
 is subject to change, we allow the length to be specified, with the
-current default set at 80 characters.  For reading in files, we only
+current default set at 2048 characters (Cif 1.1).  For reading in files, 
+we only
 flag a length error if the parameter "strict" is true, in which case
 we use parameter maxinlength as our maximum line length on input.  
 Parameter maxoutlength sets the maximum line size for output.  If
@@ -90,12 +91,13 @@ class CifFile:
 <<Write out to string representation>>
 
 <<Initialise data structures>>=
-def __init__(self,datasource=None,strict=1,maxinlength=80,maxoutlength=0):
+def __init__(self,datasource=None,strict=1,maxinlength=2048,maxoutlength=0):
     self.dictionary = {}
     self.maxinlength = maxinlength
-    self.maxoutlength = maxoutlength
     if maxoutlength == 0:
         self.maxoutlength = maxinlength
+    else:
+        self.maxoutlength = maxoutlength
     self.strict = strict
     if isinstance(datasource,DictType):
         for (key,value) in datasource.items():
@@ -105,23 +107,24 @@ def __init__(self,datasource=None,strict=1,maxinlength=80,maxoutlength=0):
     elif isinstance(datasource,CifFile):
         self.dictionary = datasource.dictionary.copy()
     if strict:
-        self.checklengths(maxinlength)
+        self.checklengths()
 
-@ Checking item name lengths.  More than maxlength - 2 characters is no good, 
-as lines will overflow the character limit.
+@ Checking item name lengths.  Although the new 1.1 standard allows
+very long lines (2048 characters), data names are still restricted
+to be no more than 75 characters in length.  We hard code this in.
 
 <<Check data name lengths>>=
-def checklengths(self,maxlength):
+def checklengths(self):
     blocks = self.dictionary.items()
     for name,block in blocks:
-        toolong = len(filter(lambda a:len(a)>(maxlength-2), block.keys()))
+        toolong = len(filter(lambda a:len(a)>75, block.keys()))
         if toolong:
             print 'Warning: block ' + name + ' has ' + `toolong` + ' overlength data names'
 
 @ Reading in a file.  We now use the Yapps2-generated YappsCifParser module to provide grammar
 services.  The structure returned from parsing is an array of blocks,
 which we convert to a dictionary and place in [[self.dictionary]].  We do a preliminary
-check of line length, to satisfy the current standard.
+check of line length, to satisfy the standard.
 
 <<Read in a CIF file>>=
 def ReadCif(self,filename,strict,maxlength):
@@ -198,7 +201,8 @@ def update(self,adict):
 dictionary to the current list of dictionaries, and set
 the count of the number of loops to zero.  We return the new block name
 in case we have changed it, so the calling routine can refer to it
-later.
+later.  Also, there is a limit of 75 characters for the block name length,
+which we enforce here.
 
 <<Add a new data section>>=
 def NewBlock(self,blockname,blockcontents=()):
@@ -211,7 +215,7 @@ def NewBlock(self,blockname,blockcontents=()):
     while blocknames.count(newblockname):
         i = i + 1
         newblockname = newblockname+`i`
-    if len(newblockname) > self.maxinlength - 7:
+    if len(newblockname) > 75:
         raise CifError, 'Cif block name too long:' + newblockname
     if blockcontents.__class__.__name__[-8:] != 'CifBlock':
         raise CifError, 'Cif block initialised with non CifBlock object %s' % blockcontents.__class__.__name__[-8:]
@@ -220,7 +224,8 @@ def NewBlock(self,blockname,blockcontents=()):
 
 @ Writing all this stuff out to a string.  We loop over each of the
 individual sections, getting their string representation.  We 
-implement this using the cStringIO module for faster work.
+implement this using the cStringIO module for faster work.  Note that
+the default output comment specifies a CIF 1.1 standard file.
 
 <<Write out to string representation>>=
     def WriteOut(self,comment=''):
@@ -228,6 +233,7 @@ implement this using the cStringIO module for faster work.
         if not comment:
             comment = \
 """
+#\#CIF1.1
 ##########################################################################
 #               Crystallographic Information Format file 
 #               Produced by PyCifRW module
@@ -265,6 +271,8 @@ class CifBlock:
     <<Return value of Cif item>>
     <<Remove a data item>>
     <<Add a data item>>
+    <<Check data name for CIF conformance>>
+    <<Check data item for CIF conformance>>
     <<Regularise data values>>
     <<Get complete looped data>>
     <<Add to looped data>>
@@ -280,7 +288,7 @@ items.  If given a maximum output line length, we save that for
 use in writing out lines.
 
 <<Initialise Cif Block>>=
-def __init__(self,data = (),maxoutlength=80):
+def __init__(self,data = (),maxoutlength=2048):
     self.block = {"loops":[]}
     self.outlength = maxoutlength
     if type(data) is DictType:     #direct placement
@@ -401,7 +409,9 @@ def GetLoop(self,itemname):
 we've been passed, and then append all of the (key,values) pairs that we
 are passed in [[data]], which is a dictionary.  We expect that the data 
 have been sorted out for us, unlike when data are passed in [[AddCifItem]], 
-when there can be both unlooped and looped data in one set.
+when there can be both unlooped and looped data in one set.  The dataname 
+passed to this routine is simply a convenient way to refer to the
+loop, and has no other significance.
 
 <<Add to looped data>>=
 def AddToLoop(self,dataname,loopdata):
@@ -440,13 +450,14 @@ lived in a loop, it will be removed from the loop, and the loop itself
 removed if it is now zero length.
 
 We check the length of the name, and give an error if the name is
-greater than maxlength - 2 characters, as we will overflow our maxlength 
-character line length in that case.
+greater than 75 characters, which is the CIF 1.1 maximum length.
 
-We should also check for consistency, by making sure the new item is
+We also check for consistency, by making sure the new item is
 not in the block already.  If it is, we replace it (consistent with
 the meaning of square brackets).  If it is in a loop, we replace the
-looped value and all other items in the loop block.
+looped value and all other items in that loop block.  This means
+that when adding loops, we must add them all at once if we call
+this routine directly.
 
 We typecheck the data items.  They can be tuples, strings
 or lists.  If we have a list of values for a single item,
@@ -459,13 +470,11 @@ def AddCifItem(self,data):
           or isinstance(data[0],ListType)):
               raise TypeError, 'Cif datanames are either a string, tuple or list'
     # now put into the dictionary properly...
-    if isinstance(data[0],StringType):   # a single name        
-        if len(data[0])>self.outlength-2:                   # too long
-            raise CifError, 'Dataname ' + data[0] + ' too long.'
-        if data[0][0]!='_':
-            raise CifError, 'Dataname ' + data[0] + ' does not begin with _'
+    if isinstance(data[0],StringType):   # a single name
+        self.check_data_name(data[0])    # make sure no nasty characters   
         # now make sure the data is OK
         regval = self.regularise_data(data[1])
+        self.check_item_value(regval)
         self.block.update({data[0]:regval})  # trust the data is OK
         for aloop in self.block["loops"]:
             if aloop.has_key(data[0]):
@@ -475,17 +484,42 @@ def AddCifItem(self,data):
        if(len(data[0])!=len(data[1])):
            raise TypeError, 'Length mismatch between itemnames and values'
        dellist = []
+       map (self.check_data_name,data[0])
        for itemname in data[0]:
-           if len(itemname)>(self.outlength-2) or not isinstance(itemname,StringType): # no good
-               raise CifError, 'Bad item name ' + `itemname`
-           if itemname[0]!='_':
-               raise CifError, 'Dataname ' + data[0] + ' does not begin with _'
            self.block["loops"] = filter(lambda a,b=itemname:b not in a.keys(),self.block["loops"])
        newdict = {}
        proper_vals = map(self.regularise_data,data[1])
+       map(self.check_item_value,proper_vals)
        map(lambda a,b,c=newdict:c.update({a:b}),data[0],proper_vals)
        self.block["loops"].append(newdict)
     return
+
+@ Checking the data names.  The CIF 1.1 standard restricts characters in
+a data name to ASCII 33-126 and there should be a leading underscore.  Items
+are allowed to have the blank characters as well, i.e. ascii 09,10,13 and 32.
+Data items may be lists, which we need to detect before checking.  We assume
+that the item has been regularised before this check is called.
+
+<<Check data name for CIF conformance>>=
+def check_data_name(self,dataname): 
+    if len(dataname) > 75:
+        raise CifError, 'Dataname ' + dataname + ' too long.'
+    if dataname[0]!='_':
+        raise CifError, 'Dataname ' + dataname + ' does not begin with _'
+    if len (filter (lambda a: ord(a) < 33 or ord(a) > 126, dataname)) > 0:
+        raise CifError, 'Dataname ' + dataname + ' contains forbidden characters'
+ 
+<<Check data item for CIF conformance>>=
+def check_item_value(self,item):
+    test_item = item
+    if type(item) != TupleType and type(item) != ListType:
+       test_item = [item]         #single item list
+    def check_one (it):
+        if type(it) == StringType:
+            if len (filter (lambda a:ord(a) != 9 and ord(a) != 10 and ord(a) != 13
+                    and (ord(a) < 32 or ord(a) > 126), it)) > 0:
+                raise CifError, 'Data item ' + it + '... contains forbidden characters'
+    map(check_one,test_item)
 
 @ Regularising data.  We want the copy.deepcopy operation to work, so
 we can't have any arrays passed into the master dictionary.  We make
@@ -503,7 +537,7 @@ def regularise_data(self,dataitem):
     try:
         regval = list(dataitem)
     except TypeError, value:
-        raise CifError, 'str(dataitem) is wrong type for data value\n' 
+        raise CifError, str(dataitem) + ' is wrong type for data value\n' 
     return regval
     
 @ Printing a section.  We allow an optional order list to be given, in
