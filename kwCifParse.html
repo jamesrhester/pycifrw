@@ -56,7 +56,7 @@ the input stream and are available for matching below.
 <p>
 Further changes, later checked for: a sequence of two or more terminators
 when processing a semicolon delimited string would be rejected, but now is
-OK, after including a '+' after the terminator definition.
+OK, after including a '+' after the terminator definition.  
 <p>
 <pre><a name="NWkwCD-DecL-1" href="#NWD4"><dfn>&lt;Declare the terminals&gt;=</dfn></a> <b>(<a href="#NWD2">&lt;-U</a>)</b>
 def stripstring(value):
@@ -84,13 +84,13 @@ def stripextras(value):
 def DeclareTerminals(Grammar):
      ordinary_char = &quot;!%&amp;\(\)*+,./:&lt;=&gt;?@0-9A-Za-z\\\\^`{}\|~&quot;
      non_blank_char = ordinary_char+&quot;\&quot;#$';_&quot;
-     char = &quot;([]&quot;+non_blank_char+&quot; \v\t-])&quot;
+     char = &quot;([][&quot;+non_blank_char+&quot; \v\t-])&quot;
      terminate = &quot;\n|\r|\r\n|\f&quot;
      dataheadingstr = &quot;(D|d)(A|a)(T|t)(A|a)_&quot;+&quot;[][&quot;+non_blank_char+&quot;-]+&quot;
-     dv1str = &quot;[]&quot;+ordinary_char+&quot;;-][][&quot;+non_blank_char+&quot;-]*&quot;
+     dv1str = &quot;[][&quot;+ordinary_char+&quot;;-][][&quot;+non_blank_char+&quot;-]*&quot;
      dqstr = &quot;\&quot;((\&quot;[][&quot;+non_blank_char+&quot;-])|([][&quot;+ordinary_char+&quot; \v\t#$';_-]))*\&quot;&quot;
      sqstr = &quot;'(('[][&quot;+non_blank_char+&quot;-])|([][&quot;+ordinary_char+&quot; \v\t#$\&quot;;_-]))*'&quot;
-     lotstr = &quot;[]&quot;+ordinary_char+&quot;\&quot; \v\t#$'_-]&quot;+char+&quot;*(&quot;+terminate+&quot;)*&quot;
+     lotstr = &quot;([][&quot;+ordinary_char+&quot;\&quot; \v\t#$'_-]&quot;+char+&quot;*(&quot;+terminate+&quot;))|(&quot;+terminate+&quot;)&quot;
      scstr = &quot;(\n|\r\n|\f)&quot;+&quot;;&quot;+char+&quot;*(&quot;+terminate+&quot;)+(&quot;+lotstr+&quot;)*;&quot;
      dv1str = &quot;(&quot;+dv1str + &quot;)|&quot;+sqstr+&quot;|&quot;+dqstr
      dv2str = &quot;[][&quot;+ordinary_char+&quot;-][][&quot;+non_blank_char+&quot;-]*&quot;

@@ -331,7 +331,8 @@ def GetCifItem(self,itemname):
 @ This function is required if we wish a list of all items in a data block.
 We would use this if we needed to match things up properly.  We give the name
 of one item, and all items from that loop, and their values, are returned.
-For example, [[j,k = cf.GetLoop(itemname)]], where k will be a list of lists.
+As we are using the built-in [[items]] method of dictionaries, the returned
+values are a series of key,value pairs. 
 
 Also, it would be nice if the return value is in a form that can be
 fed right back into the file.  So if we are asked for an item which is
