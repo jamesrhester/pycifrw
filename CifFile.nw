@@ -108,7 +108,6 @@ check of line length, to satisfy the current standard.
 <<Read in a CIF file>>=
 def ReadCif(self,filename):
     import YappsCifParser,string
-    import ParserErrors
     stream = open(filename,'r')
     text = stream.read()
     stream.close()
@@ -560,10 +559,16 @@ the formatting for us.  If we are not putting apostrophes around a
 string, we make the first character a space, to avoid problems if the
 first character of a line is a semicolon.
 
+The CIF specification states that embedded quotes are allowed so long
+as they are not followed by a space.  So if we find any quotes followed
+by spaces we output a semicolon-terminated string to avoid to much
+messing around.  This routine is called very often and could be 
+improved.
+
 <<Format a string>>=
 def _formatstring(self,instring):
     import re, string
-    if len(instring)< 75 and '\n' not in instring:   #single line?
+    if len(instring)< 75 and '\n' not in instring and not ('"' in instring and '\'' in instring):
         if not ' ' in instring and not '\t' in instring and not '\v' \
           in instring:                  # no blanks
             return ' %s ' % (instring)

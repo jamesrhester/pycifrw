@@ -156,9 +156,11 @@ class FileWriteTestCase(unittest.TestCase):
               ['a','b','c','d'])),
              (('_string_1','_string_2'),
               ([';this string begins with a semicolon',
-               'this string is way way too long and should overflow onto the next line eventually if I keep typing for long enough'],
-               [';just_any_old_semicolon-starting-string',
-               'a ball of string'])))
+               'this string is way way too long and should overflow onto the next line eventually if I keep typing for long enough',
+               ';just_any_old_semicolon-starting-string'],
+               ['a string with a final quote"',
+               'a string with a " and a safe\';',
+               'a string with a final \''])))
        self.cf = CifFile.CifBlock(items)
        cif = CifFile.CifFile()
        cif['testblock'] = self.cf
