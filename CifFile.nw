@@ -161,6 +161,12 @@ def keys(self):
 def has_key(self,key):
     return self.dictionary.has_key(key)
 
+def get(self,key,default=None):
+    if self.dictionary.has_key(key):
+        return self.dictionary[key]
+    else: 
+        return default
+
 def clear(self):
     self.dictionary.clear()
 
@@ -309,6 +315,13 @@ def has_key(self,key):
         if aloop.has_key(key):
             return 1
     return 0
+
+def get(self,key,default=None):
+    if self.has_key(key):
+        retval = self.GetCifItem(key)
+    else:
+        retval = default
+    return retval
 
 def clear(self):
     self.block = self.NewBlock()
@@ -532,7 +545,7 @@ def printsection(self,order=[]):
                        thisstring = '%s' % (self._formatstring(datapoint)) #no spaces yet
                        if '\n' in thisstring:
                            # check its position, might be too far along
-                           if len(curstring) + string.find(thisstring,'\n') > 79:
+                           if len(curstring) + string.find(thisstring,'\n') > 78:
                                outstring.write(' ' + curstring + '\n' + thisstring)
                            else:
                                outstring.write(' ' + curstring + ' ' + thisstring) #a space
@@ -540,7 +553,7 @@ def printsection(self,order=[]):
                            continue
                    else: 
                        thisstring = ' %s ' % datapoint
-                   if len(curstring) + len(thisstring)> 79: #past end of line with space
+                   if len(curstring) + len(thisstring)> 78: #past end of line with space
                        outstring.write(' ' + curstring+'\n') #add the space
                        curstring = ''
                    curstring = curstring + ' ' + thisstring

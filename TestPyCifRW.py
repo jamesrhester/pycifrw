@@ -129,6 +129,13 @@ class BlockChangeTestCase(unittest.TestCase):
            pass 
        else: self.Fail()
 #
+#  Test the mapping type implementation
+#
+   def testGetOperation(self):
+       """Test the get mapping call"""
+       self.cf.get("_item_name_1")
+       self.cf.get("_item_name_nonexist")
+#
 #  Test setting of block names
 #
 
@@ -207,6 +214,11 @@ class FileWriteTestCase(unittest.TestCase):
            compstringa = map(lambda a:re.sub('\n','',a),value)
            compstringb = map(lambda a:re.sub('\n','',a),self.df[key])
            self.failUnless(compstringa==compstringb)
+
+   def testGetLoopData(self):
+       """Test the get method for looped data"""
+       newvals = self.cf.get('_string_1')
+       self.failUnless(len(newvals)==3)
 
 if __name__=='__main__':
     unittest.main()
