@@ -98,6 +98,31 @@ class BlockChangeTestCase(unittest.TestCase):
        for name in self.names: self.cf.RemoveCifItem(name)
        self.failUnless(len(self.cf.block["loops"])==0, `self.cf.block["loops"]`)
 
+# test adding data to a loop.  We test straight addition, then make sure the errors
+# happen at the right time
+#
+   def testAddToLoop(self):
+       """Test adding to a loop"""
+       adddict = {'_address':['1 high street','2 high street','3 high street','4 high st'],
+                  '_address2':['Ecuador','Bolivia','Colombia','Mehico']}
+       self.cf.AddToLoop('_item_name#2',adddict)
+       newkeys = map(lambda a:a[0],self.cf.GetLoop('_item_name#2'))
+       self.failUnless(adddict.keys()[0] in newkeys)
+       self.failUnless(len(self.cf.GetLoop('_item_name#2'))==len(self.values)+2)
+       
+   def testBadAddToLoop(self):
+       """Test incorrect loop addition"""
+       adddict = {'_address':['1 high street','2 high street','3 high street'],
+                  '_address2':['Ecuador','Bolivia','Colombia']}
+       try:
+           self.cf.AddToLoop('_no_item',adddict)
+       except KeyError: pass
+       else: self.Fail()
+       try:
+           self.cf.AddToLoop('_item_name#2',adddict)
+       except CifFile.CifError:
+           pass 
+       else: self.Fail()
 #
 #  Test setting of block names
 #
@@ -139,7 +164,7 @@ class FileWriteTestCase(unittest.TestCase):
 
    def tearDown(self):
        import os
-       os.remove('test.cif')
+       #os.remove('test.cif')
        del self.df
        del self.cf
 

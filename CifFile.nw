@@ -47,6 +47,9 @@ current block.  Same as typing 'del block[item]'
 \item [[GetLoop(dataname)]]: for looped data item [[dataname]], get a list
 of all itemnames and values co-occurring in this loop.  Returns an error
 if [[dataname]] is not in a loop.
+\item [[AddLoop(dataname,data)]]: add [[data]] to the loop containing
+[[dataname]].  If dataname is not a looped item, an error is returned.
+If (data) has the wrong length, an error is returned. 
 \end{enumerate}
 
 Note also that a CifFile object can be accessed as a mapping type, ie using
@@ -205,10 +208,12 @@ def NewBlock(self,blockname,blockcontents=()):
     return newblockname
 
 @ Writing all this stuff out to a string.  We loop over each of the
-individual sections, getting their string representation.
+individual sections, getting their string representation.  We 
+implement this using the cStringIO module for faster work.
 
 <<Write out to string representation>>=
     def WriteOut(self,comment=''):
+        import cStringIO
         if not comment:
             comment = \
 """
@@ -224,11 +229,14 @@ individual sections, getting their string representation.
 #  http://www.iucr.org
 ##########################################################################
 """
-        outstring = comment
+        outstring = cStringIO.StringIO()
+        outstring.write(comment)
         for datablock in self.dictionary.keys():
-            outstring = outstring + '\ndata_'+datablock+'\n'
-            outstring = outstring + str(self.dictionary[datablock])
-        return outstring
+            outstring.write('\ndata_'+datablock+'\n')
+            outstring.write(str(self.dictionary[datablock]))
+        returnstring =  outstring.getvalue()
+        outstring.close()
+        return returnstring
 
 @ \section{Cif Block class}
 
@@ -248,6 +256,7 @@ class CifBlock:
     <<Add a data item>>
     <<Regularise data values>>
     <<Get complete looped data>>
+    <<Add to looped data>>
     <<Print a data block>>
     <<Format a string>>
 
@@ -369,6 +378,25 @@ def GetLoop(self,itemname):
         raise TypeError, 'Non-looped item'
     raise KeyError, 'Item not in loop'
 
+@ Adding to a loop.  We find the loop number containing the dataname that
+we've been passed, and then append all of the (key,values) pairs that we
+are passed in [[data]], which is a dictionary.  We expect that the data 
+have been sorted out for us, unlike when data are passed in [[AddCifItem]], 
+when there can be both unlooped and looped data in one set.
+
+<<Add to looped data>>=
+def AddToLoop(self,dataname,loopdata):
+    found = 0
+    for aloop in self.block["loops"]:
+        if aloop.has_key(dataname):
+            found = 1
+            for itemname in loopdata.keys():
+                if len(loopdata[itemname])!= len(aloop[dataname]):
+                    raise CifError, 'Datalength mismatch adding to loop: %s and %s' % (itemname, dataname)
+                aloop.update({itemname:loopdata[itemname]})
+    if not found:
+        raise KeyError, 'No such looped item name: %s' % dataname
+
 @ Removing a data item.  We delete the item, and if it is looped, and
 nothing is left in the loop, we remove that element of the list.
 
@@ -469,10 +497,12 @@ that same loop.
 
 Note that we must be careful to add spaces between data items, especially
 when formatting string loop data, where our string addition could get
-quite hairy.
+quite hairy.  As we are doing so much concatenation, we use a stringIO
+buffer to speed it up.
 
 <<Print a data block>>=
 def printsection(self,order=[]):
+    import cStringIO
     import types,string
     # first make an ordering
     if not order:
@@ -482,29 +512,29 @@ def printsection(self,order=[]):
     order = filter(lambda a,b=self.block:b.has_key(a),order)
     order.remove('loops')
     # now do it...
-    outstring = ''       # the returned string
+    outstring = cStringIO.StringIO()       # the returned string
     for itemname in order:
         itemvalue = self.block[itemname]
         if isinstance(itemvalue,types.StringType):
               thisstring = self._formatstring(itemvalue)
               if len(thisstring) + len(itemname) < 78:
-                      outstring = outstring + '%s %s\n' % (itemname,thisstring)
+                      outstring.write('%s %s\n' % (itemname,thisstring))
               else:
-                      outstring = outstring + '%s\n %s\n' % (itemname, thisstring)
+                      outstring.write('%s\n %s\n' % (itemname, thisstring))
         else: 
                   if len(str(itemvalue)) + len(itemname) < 78:
-                      outstring = outstring + '%s %s\n' % (itemname, itemvalue)
+                      outstring.write('%s %s\n' % (itemname, itemvalue))
                   else:
-                      outstring = outstring + '%s\n %s\n' % (itemname, itemvalue)
+                      outstring.write('%s\n %s\n' % (itemname, itemvalue))
         continue
     #do the loops
     for aloop in self.block["loops"]:
-           outstring = outstring + '\n loop_\n'
+           outstring.write('\n loop_\n')
            loopnames = aloop.keys()
            loopnames.sort()
            numdata = len(aloop[loopnames[0]])
            for name in loopnames: 
-               outstring = outstring + '   %-75s\n' % name
+               outstring.write('   %-75s\n' % name)
                if len(aloop[name]) != numdata:
                    raise CifError,'Loop data mismatch for ' + name + ':output aborted'
            curstring = ''      
@@ -518,20 +548,22 @@ def printsection(self,order=[]):
                        if '\n' in thisstring:
                            # check its position, might be too far along
                            if len(curstring) + string.find(thisstring,'\n') > 79:
-                               outstring = outstring + ' ' + curstring + '\n' + thisstring
+                               outstring.write(' ' + curstring + '\n' + thisstring)
                            else:
-                               outstring = outstring + ' ' + curstring + ' ' + thisstring #a space
+                               outstring.write(' ' + curstring + ' ' + thisstring) #a space
                            curstring = ''
                            continue
                    else: 
                        thisstring = ' %s ' % datapoint
                    if len(curstring) + len(thisstring)> 79: #past end of line with space
-                       outstring = outstring + ' ' + curstring+'\n' #add the space
+                       outstring.write(' ' + curstring+'\n') #add the space
                        curstring = ''
                    curstring = curstring + ' ' + thisstring
-               outstring = outstring + ' ' + curstring + '\n'    #last time through
+               outstring.write(' ' + curstring + '\n')    #last time through
                curstring = ''
-    return outstring
+    returnstring = outstring.getvalue()
+    outstring.close()
+    return returnstring
 
 @ Formatting a string.  We make sure that the length of the item value
 is less than 80, or else we should split them, and so on. We check the
