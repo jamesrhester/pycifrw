@@ -4,27 +4,26 @@
 Introduction
 ------------
 
-PyCIFRW provides basic support for reading and writing CIF (Crystallographic
-Information Format) files using Python.  It was developed at the Australian
-National Beamline Facility (ANBF), run by the Australian Synchrotron Research
-Program (ASRP), as part of a larger project to provide CIF input/output 
-capabilities for data collection.  It is currently (Sept 2002) under active 
-development and testing.  
+PyCIFRW provides support for reading and writing CIF (Crystallographic
+Information Format) files using Python.  It was developed at the
+Australian National Beamline Facility (ANBF), run by the Australian
+Synchrotron Research Program (ASRP), as part of a larger project to
+provide CIF input/output capabilities for data collection.  It is
+currently (Nov 2004) under active development and testing.
 
 Conformance
 -----------
 
-The draft BNC specification for CIF files was used as a reference, and
-in most cases the grammar and character sets specified there were copied
+The CIF 1.1 working specification was used as a reference, and in most
+cases the grammar and character sets specified there were copied
 directly.
 
-PyCifRW has been tested on the IUCr sample CIF trap files, and fails or 
-successfully reads as it is supposed to.    Attempts to add an overlength  
+PyCifRW has been tested on the IUCr sample CIF trip files located at
+http://www.iucr.org/iucr-top/cif/developers/trip and fails or 
+successfully reads as it is supposed to (note that ciftest5 contains
+characters now forbidden in CIFs).    Attempts to add an overlength  
 dataname to a CIF file currently resident in memory will result in an error.
-Output lines do not exceed 80 characters. If a data value is supplied
-with a length of more than 80 characters (including carriage returns) the
-program will attempt to split the string at the carriage returns (doing the
-requisite CIF formatting), otherwise it will break at whitespace.
+Output lines do not exceed 2048 characters. 
 
 Supported Platforms
 -------------------
@@ -32,7 +31,7 @@ Supported Platforms
 PyCIFRW is written entirely in Python.  While this makes parsing of large
 CIF files rather slow, it will run wherever Python runs.  It has been
 tested on Unix (Linux,Solaris) and Windows 95/98 under Python 1.5.2 and
-Python 2.0.  Macintoshes will probably have trouble with the Unix-style line 
+Python 2.0.  Macintoshes may have trouble with the Unix-style line 
 termination of the .py files.
 
 Files
@@ -63,13 +62,20 @@ Installation
 All .py files should be placed in a directory where python can find them, for
 example .../lib/python/site-packages/PyCifRW under Unix-type systems, and in
 C:/Python20/Lib/PyCifRW for Windows.  Unix users should note that they will
-need to create a one line file named 'PyCifRW.pth' in the site-packages directory 
+need to create a file named 'PyCifRW.pth' in the site-packages directory 
 containing the single word 'PyCifRW'.
 
 Use
 ---
 
-See the text in CifFile.html for details of the interface.
+See the text in CifFile.html for details of the interface.  Essentially,
+cif files look like python dictionaries, with each entry in the dictionary
+corresponding to a data block.  The blocks themselves are also dictionaries,
+with each data name being a single entry in the dictionary, so for example,
+cf['si_std']['_diffrn_meas_wavelength'] will return the value of 
+_diffrn_meas_wavelength in the data block named si_std of the Cif file object
+cf.
+
 
 Example
 -------

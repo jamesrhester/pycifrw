@@ -252,8 +252,7 @@ the default output comment specifies a CIF 1.1 standard file.
         import cStringIO
         if not comment:
             comment = \
-"""
-#\#CIF1.1
+"""#\\#CIF1.1
 ##########################################################################
 #               Crystallographic Information Format file 
 #               Produced by PyCifRW module
