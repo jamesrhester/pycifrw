@@ -163,6 +163,7 @@ the length of an item.
 <p>
 <pre><a name="NWkwCD-MakJ-1" href="#NWD7"><dfn>&lt;Make key-value pair&gt;=</dfn></a> <b>(<a href="#NWD6">&lt;-U</a>)</b>
 def dkvrulea(list,context): 
+    context[&quot;latest&quot;] = {list[0]:list[1]}
     return {list[0]:list[1]}
     
 </pre><pre><a name="NWkwCD-RulD-1" href="#NWkwCD-RulD-1"><dfn>&lt;Rule bindings&gt;=</dfn></a> <b>(<a href="#NWDD">U-&gt;</a>)</b> <b>[D<a href="#NWkwCD-RulD-2">-&gt;</a>]</b>
@@ -204,6 +205,7 @@ def lbmrule(list,context):
 
 def lb2mrule(list,context):
     #print 'lb2mrule ' + `list[1]`
+    context[&quot;latest&quot;] = {'Looped data value':list[1]}
     list[0].append(list[1])
     return list[0]
 

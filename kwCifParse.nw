@@ -162,6 +162,7 @@ the length of an item.
 
 <<Make key-value pair>>=
 def dkvrulea(list,context): 
+    context["latest"] = {list[0]:list[1]}
     return {list[0]:list[1]}
     
 <<Rule bindings>>=
@@ -203,6 +204,7 @@ def lbmrule(list,context):
 
 def lb2mrule(list,context):
     #print 'lb2mrule ' + `list[1]`
+    context["latest"] = {'Looped data value':list[1]}
     list[0].append(list[1])
     return list[0]
 

@@ -20,7 +20,6 @@
 
 import kjSet
 import string
-#JRH: import regex
 import re
 import regsub
 import string
@@ -48,11 +47,15 @@ THISMODULE = "kjParser"
 
 # regular expression for matching whitespace
 WHITERE = "["+string.whitespace+"]"
-#JRH: WHITEREGEX = regex.compile(WHITERE)
 WHITEREGEX = re.compile(WHITERE)
 
-# local errors
-LexTokenError = "LexTokenError" # may happen on bad string
+# Made this a proper class and put it elsewhere for general
+# accessibility
+#
+#       "LexTokenError" # may happen on bad string
+#
+from ParserErrors import *
+#
 UnkTermError = "UnkTermError" # ditto
 BadPunctError= "BadPunctError" # if try to make whitespace a punct
 ParseInitError = "ParseInitError" # shouldn't happen?
@@ -453,7 +456,7 @@ class lexdictionary:
                     return result
           # error if we get here
           info = DumpStringWindow(String, StartPosition)
-          raise LexTokenError, "Lexical token not found "+info
+          raise LexTokenUnfoundError, (String,StartPosition)
 
    def isCaseSensitive(self):
        return not self.keywordmap.caseInsensitive

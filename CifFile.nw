@@ -105,6 +105,7 @@ check of line length, to satisfy the current standard.
 <<Read in a CIF file>>=
 def ReadCif(self,filename):
     import kwCifParse,string
+    import ParserErrors
     stream = open(filename,'r')
     text = stream.read()
     stream.close()
@@ -114,11 +115,28 @@ def ReadCif(self,filename):
     if filter(lambda a:len(a)>80, split):
         raise CifError, 'File contains lines longer than 80 characters'
     parser = kwCifParse.CifGramBuild()
-    context = {"loops":[]}
+    context = {"loops":[],"latest":{}}
     try:
         filecontents = parser.DoParse1(text,context)
-    except SyntaxError,LexTokenError:
-        raise CifError, 'Cif file badly formatted'
+    except ParserErrors.LexTokenUnfoundError, lexerrobj:
+        errorstring = lexerrobj.value
+        if len(context["latest"].keys()):
+            latestkey = context["latest"].keys()[0]
+            latestvalue = context["latest"][latestkey]
+            errorstring = errorstring + "\n\nLast dataitem successfully parsed was\n"
+            errorstring = errorstring + latestkey +' = ' + latestvalue + '\n'
+        raise CifError, errorstring
+    except RuntimeError, rte:
+        if str(rte)[0:17] == 'maximum recursion':
+            errorstring = "If the data value below is incorrect, suspect missing semicolon \nin a loop somewhere before this.\n"
+            if len(context["latest"].keys()):
+                latestkey = context["latest"].keys()[0]
+                latestvalue = context["latest"][latestkey]
+                errorstring = errorstring + "Last dataitem successfully parsed was:\n"
+                errorstring = errorstring + latestkey +' = ' + latestvalue + '\n'
+            raise CifError, errorstring
+        else: 
+            raise RuntimeError, rte
     if not filecontents: # comments only, return empty
         return
     for block in filecontents.keys():
@@ -532,4 +550,4 @@ class CifError(Exception):
     def __init__(self,value):
         self.value = value
     def __str__(self):
-        print `value`
+        print '\nCif Format error: '+ self.value 
