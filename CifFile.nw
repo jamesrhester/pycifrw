@@ -244,6 +244,7 @@ class CifBlock:
     <<Return value of Cif item>>
     <<Remove a data item>>
     <<Add a data item>>
+    <<Regularise data values>>
     <<Get complete looped data>>
     <<Print a data block>>
     <<Format a string>>
@@ -413,7 +414,11 @@ def AddCifItem(self,data):
     if isinstance(data[0],types.StringType):   # a single name        
         if len(data[0])>78:                   # too long
             raise CifError, 'Dataname ' + data[0] + ' too long.'
-        self.block.update({data[0]:data[1]})  # trust the data is OK
+        if data[0][0]!='_':
+            raise CifError, 'Dataname ' + data[0] + ' does not begin with _'
+        # now make sure the data is OK
+        regval = self.regularise_data(data[1])
+        self.block.update({data[0]:regval})  # trust the data is OK
         for aloop in self.block["loops"]:
             if aloop.has_key(data[0]):
                 del aloop[data[0]]
@@ -425,12 +430,35 @@ def AddCifItem(self,data):
        for itemname in data[0]:
            if len(itemname)>78 or not isinstance(itemname,types.StringType): # no good
                raise CifError, 'Bad item name ' + `itemname`
+           if itemname[0]!='_':
+               raise CifError, 'Dataname ' + data[0] + ' does not begin with _'
            self.block["loops"] = filter(lambda a,b=itemname:b not in a.keys(),self.block["loops"])
        newdict = {}
-       map(lambda a,b,c=newdict:c.update({a:b}),data[0],data[1])
+       proper_vals = map(self.regularise_data,data[1])
+       map(lambda a,b,c=newdict:c.update({a:b}),data[0],proper_vals)
        self.block["loops"].append(newdict)
     return
 
+@ Regularising data.  We want the copy.deepcopy operation to work, so
+we can't have any arrays passed into the master dictionary.  We make
+sure everything goes in either as a single item or as a list/tuple.
+
+<<Regularise data values>>=
+def regularise_data(self,dataitem):
+    import types
+    alrighttypes = [types.IntType, types.LongType, 
+                    types.FloatType, types.StringType]
+    okmappingtypes = [types.TupleType, types.ListType]
+    thistype = type(dataitem)
+    if thistype in alrighttypes or thistype in okmappingtypes:
+        return dataitem
+    # so try to make into a list
+    try:
+        regval = list(dataitem)
+    except TypeError, value:
+        raise CifError, 'str(dataitem) is wrong type for data value\n' 
+    return regval
+    
 @ Printing a section.  We allow an optional order list to be given, in
 case the caller wants to order things in some nice way.  This is
 overridden if any item in the order list occurs within a loop, in
