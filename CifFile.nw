@@ -68,7 +68,17 @@ from types import *
 
 If we are passed a filename, we open it and read it in, assuming that
 it is a conformant Cif file.  A CifFile object is a dictionary of
-CifBlock objects, accessed by block name.
+CifBlock objects, accessed by block name.  As the maximum line length
+is subject to change, we allow the length to be specified, with the
+current default set at 80 characters.  For reading in files, we only
+flag a length error if the parameter "strict" is true, in which case
+we use parameter maxinlength as our maximum line length on input.  
+Parameter maxoutlength sets the maximum line size for output.  If
+maxoutlength is not specified, it defaults to the maximum input
+length.
+
+Note that this applies to the input only.  For changing output length, 
+you can provide an optional parameter in the WriteOut method.
 
 <<CifFile class>>=
 class CifFile:
@@ -80,25 +90,31 @@ class CifFile:
 <<Write out to string representation>>
 
 <<Initialise data structures>>=
-def __init__(self,datasource=None):
+def __init__(self,datasource=None,strict=1,maxinlength=80,maxoutlength=0):
     self.dictionary = {}
+    self.maxinlength = maxinlength
+    self.maxoutlength = maxoutlength
+    if maxoutlength == 0:
+        self.maxoutlength = maxinlength
+    self.strict = strict
     if isinstance(datasource,DictType):
         for (key,value) in datasource.items():
             self.__setitem__(key,value)
     elif type(datasource) is StringType:
-        self.ReadCif(datasource)
+        self.ReadCif(datasource,strict,maxinlength)
     elif isinstance(datasource,CifFile):
         self.dictionary = datasource.dictionary.copy()
-    self.checklengths()
+    if strict:
+        self.checklengths(maxinlength)
 
-@ Checking item name lengths.  More than 78 characters is no good, as lines will overflow
-the 80 character limit.
+@ Checking item name lengths.  More than maxlength - 2 characters is no good, 
+as lines will overflow the character limit.
 
 <<Check data name lengths>>=
-def checklengths(self):
+def checklengths(self,maxlength):
     blocks = self.dictionary.items()
     for name,block in blocks:
-        toolong = len(filter(lambda a:len(a)>78, block.keys()))
+        toolong = len(filter(lambda a:len(a)>(maxlength-2), block.keys()))
         if toolong:
             print 'Warning: block ' + name + ' has ' + `toolong` + ' overlength data names'
 
@@ -108,7 +124,7 @@ which we convert to a dictionary and place in [[self.dictionary]].  We do a prel
 check of line length, to satisfy the current standard.
 
 <<Read in a CIF file>>=
-def ReadCif(self,filename):
+def ReadCif(self,filename,strict,maxlength):
     import YappsCifParser,string
     stream = open(filename,'r')
     text = stream.read()
@@ -116,10 +132,11 @@ def ReadCif(self,filename):
     if not text:      # empty file, return empty block
         return
     split = string.split(text,'\n')
-    toolong =  filter(lambda a:len(a)>80, split)
-    if toolong:
-        pos = split.index(toolong[0])
-        raise CifError, 'Line %d contains more than 80 characters' % (pos+1)
+    if strict:
+        toolong =  filter(lambda a:len(a)>maxlength, split)
+        if toolong:
+            pos = split.index(toolong[0])
+            raise CifError, 'Line %d contains more than %d characters' % (pos+1,maxlength)
     context = {"loops":[],"latest":{}}
     try: 
         parser = YappsCifParser.CifParser(YappsCifParser.CifParserScanner(text))
@@ -177,7 +194,8 @@ def update(self,adict):
     for key in adict.keys():
         self.dictionary[key] = adict[key]
 
-@ We add a new dictionary to the current list of dictionaries, and set
+@ Adding a new block.  A new block is just a new dictionary, so we add a new 
+dictionary to the current list of dictionaries, and set
 the count of the number of loops to zero.  We return the new block name
 in case we have changed it, so the calling routine can refer to it
 later.
@@ -193,7 +211,7 @@ def NewBlock(self,blockname,blockcontents=()):
     while blocknames.count(newblockname):
         i = i + 1
         newblockname = newblockname+`i`
-    if len(newblockname) > 73:
+    if len(newblockname) > self.maxinlength - 7:
         raise CifError, 'Cif block name too long:' + newblockname
     if blockcontents.__class__.__name__[-8:] != 'CifBlock':
         raise CifError, 'Cif block initialised with non CifBlock object %s' % blockcontents.__class__.__name__[-8:]
@@ -258,11 +276,13 @@ copy (if it is a dictionary) or else initialise each key-value
 pair separately (if tuples).  We take care to include our special
 "loop" key if it is not in the supplied dictionary, but apart from
 this we make no check of the actual conformance of the dictionary
-items.
+items.  If given a maximum output line length, we save that for
+use in writing out lines.
 
 <<Initialise Cif Block>>=
-def __init__(self,data = ()):
+def __init__(self,data = (),maxoutlength=80):
     self.block = {"loops":[]}
+    self.outlength = maxoutlength
     if type(data) is DictType:     #direct placement
         self.block = data
         if not self.block.has_key("loops"):
@@ -420,8 +440,8 @@ lived in a loop, it will be removed from the loop, and the loop itself
 removed if it is now zero length.
 
 We check the length of the name, and give an error if the name is
-greater than 78 characters, as we will overflow our 80 character line
-length in that case.
+greater than maxlength - 2 characters, as we will overflow our maxlength 
+character line length in that case.
 
 We should also check for consistency, by making sure the new item is
 not in the block already.  If it is, we replace it (consistent with
@@ -440,7 +460,7 @@ def AddCifItem(self,data):
               raise TypeError, 'Cif datanames are either a string, tuple or list'
     # now put into the dictionary properly...
     if isinstance(data[0],StringType):   # a single name        
-        if len(data[0])>78:                   # too long
+        if len(data[0])>self.outlength-2:                   # too long
             raise CifError, 'Dataname ' + data[0] + ' too long.'
         if data[0][0]!='_':
             raise CifError, 'Dataname ' + data[0] + ' does not begin with _'
@@ -456,7 +476,7 @@ def AddCifItem(self,data):
            raise TypeError, 'Length mismatch between itemnames and values'
        dellist = []
        for itemname in data[0]:
-           if len(itemname)>78 or not isinstance(itemname,StringType): # no good
+           if len(itemname)>(self.outlength-2) or not isinstance(itemname,StringType): # no good
                raise CifError, 'Bad item name ' + `itemname`
            if itemname[0]!='_':
                raise CifError, 'Dataname ' + data[0] + ' does not begin with _'
@@ -514,12 +534,12 @@ def printsection(self,order=[]):
         itemvalue = self.block[itemname]
         if isinstance(itemvalue,StringType):
               thisstring = self._formatstring(itemvalue)
-              if len(thisstring) + len(itemname) < 78:
+              if len(thisstring) + len(itemname) < (self.outlength-2):
                       outstring.write('%s %s\n' % (itemname,thisstring))
               else:
                       outstring.write('%s\n %s\n' % (itemname, thisstring))
         else: 
-                  if len(str(itemvalue)) + len(itemname) < 78:
+                  if len(str(itemvalue)) + len(itemname) < (self.outlength-2):
                       outstring.write('%s %s\n' % (itemname, itemvalue))
                   else:
                       outstring.write('%s\n %s\n' % (itemname, itemvalue))
@@ -544,7 +564,7 @@ def printsection(self,order=[]):
                        thisstring = '%s' % (self._formatstring(datapoint)) #no spaces yet
                        if '\n' in thisstring:
                            # check its position, might be too far along
-                           if len(curstring) + string.find(thisstring,'\n') > 78:
+                           if len(curstring) + string.find(thisstring,'\n') > (self.outlength-2):
                                outstring.write(' ' + curstring + '\n' + thisstring)
                            else:
                                outstring.write(' ' + curstring + ' ' + thisstring) #a space
@@ -552,7 +572,7 @@ def printsection(self,order=[]):
                            continue
                    else: 
                        thisstring = ' %s ' % datapoint
-                   if len(curstring) + len(thisstring)> 78: #past end of line with space
+                   if len(curstring) + len(thisstring)> self.outlength-2: #past end of line with space
                        outstring.write(' ' + curstring+'\n') #add the space
                        curstring = ''
                    curstring = curstring + ' ' + thisstring
@@ -563,7 +583,7 @@ def printsection(self,order=[]):
     return returnstring
 
 @ Formatting a string.  We make sure that the length of the item value
-is less than 80, or else we should split them, and so on. We check the
+is less than [[self.outlength]], or else we should split them, and so on. We check the
 value for terminators and impossible apostrophes and length, before
 deciding whether to print it and the item on a single line.  We try to
 respect carriage returns in the string, if the caller has tried to do
@@ -580,7 +600,7 @@ improved.
 <<Format a string>>=
 def _formatstring(self,instring):
     import re, string
-    if len(instring)< 75 and '\n' not in instring and not ('"' in instring and '\'' in instring):
+    if len(instring)< (self.outlength-5) and '\n' not in instring and not ('"' in instring and '\'' in instring):
         if not ' ' in instring and not '\t' in instring and not '\v' \
           in instring:                  # no blanks
             return ' %s ' % (instring)
@@ -593,14 +613,14 @@ def _formatstring(self,instring):
     # if there are returns in the string, try to work with them
     while 1:
         retin = string.find(instring,'\n')+1
-        if retin < 80 and retin > 0:      # honour this break
+        if retin < self.outlength and retin > 0:      # honour this break
             outstring = outstring + instring[:retin]
             instring = instring[retin:]
-        elif len(instring)<80:            # finished
+        elif len(instring)<self.outlength:            # finished
             outstring = outstring + instring + '\n;\n'
             break
         else:                             # find a space
-            for letter in range(79,40,-1): 
+            for letter in range(self.outlength-1,40,-1): 
                 if instring[letter] in ' \t\f': break
             outstring = outstring + instring[:letter+1]
             outstring = outstring + '\n'
