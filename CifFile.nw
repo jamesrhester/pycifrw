@@ -25,7 +25,6 @@ type [[value = cf[blockname][dataitem]]].
 The methods available for the CifFile type are:
 \begin{enumerate}
 \item [[ReadCif(filename)]]: (re)initialise using Cif file [[filename]].
-\item [[GetBlocks()]]:       return list of block names in file
 \item [[NewBlock(blockname,[block contents])]]: add new block to this object. Returns new
 block name, which will not be the requested name if the Cif object 
 already has the requested name.  If [[blockcontents]] is provided, it
