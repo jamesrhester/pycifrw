@@ -21,7 +21,6 @@
 import kjSet
 import string
 import re
-import regsub
 import string
 
 # set this flag for regression testing at each load

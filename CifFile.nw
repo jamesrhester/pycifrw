@@ -112,8 +112,10 @@ def ReadCif(self,filename):
     if not text:      # empty file, return empty block
         return
     split = string.split(text,'\n')
-    if filter(lambda a:len(a)>80, split):
-        raise CifError, 'File contains lines longer than 80 characters'
+    toolong =  filter(lambda a:len(a)>80, split)
+    if toolong:
+        pos = split.index(toolong[0])
+        raise CifError, 'Line %d contains more than 80 characters' % (pos+1)
     parser = kwCifParse.CifGramBuild()
     context = {"loops":[],"latest":{}}
     try:
