@@ -68,12 +68,15 @@ class CifFile:
             self.dictionary[key] = adict[key]
 
     def ReadCif(self,filename):
-        import kwCifParse
+        import kwCifParse,string
         stream = open(filename,'r')
         text = stream.read()
         stream.close()
         if not text:      # empty file, return empty block
             return
+        split = string.split(text,'\n')
+        if filter(lambda a:len(a)>80, split):
+            raise CifError, 'File contains lines longer than 80 characters'
         parser = kwCifParse.CifGramBuild()
         context = {"loops":[]}
         try:
@@ -252,7 +255,7 @@ class CifBlock:
         raise KeyError, 'Item not in loop'
 
     def printsection(self,order=[]):
-        import types
+        import types,string
         # first make an ordering
         if not order:
             order = self.block.keys()
@@ -287,23 +290,28 @@ class CifBlock:
                    if len(aloop[name]) != numdata:
                        raise CifError,'Loop data mismatch for ' + name + ':output aborted'
                curstring = ''      
+               # when adding to outstring, make sure to add spaces
                for position in range(numdata):
                    for name in loopnames:
                        # at each point, get the next data value
                        datapoint = aloop[name][position]
                        if isinstance(datapoint,types.StringType):
-                           thisstring = ' %s ' % (self._formatstring(datapoint))
+                           thisstring = '%s' % (self._formatstring(datapoint)) #no spaces yet
                            if '\n' in thisstring:
-                               outstring = outstring + curstring + thisstring
+                               # check its position, might be too far along
+                               if len(curstring) + string.find(thisstring,'\n') > 79:
+                                   outstring = outstring + ' ' + curstring + '\n' + thisstring
+                               else:
+                                   outstring = outstring + ' ' + curstring + ' ' + thisstring #a space
                                curstring = ''
                                continue
                        else: 
                            thisstring = ' %s ' % datapoint
-                       if len(curstring) + len(thisstring)> 80: #past end of line
-                           outstring = outstring + curstring+'\n'
+                       if len(curstring) + len(thisstring)> 79: #past end of line with space
+                           outstring = outstring + ' ' + curstring+'\n' #add the space
                            curstring = ''
-                       curstring = curstring + thisstring
-                   outstring = outstring + curstring+'\n'
+                       curstring = curstring + ' ' + thisstring
+                   outstring = outstring + ' ' + curstring + '\n'    #last time through
                    curstring = ''
         return outstring
 
@@ -312,7 +320,7 @@ class CifBlock:
         if len(instring)< 75 and '\n' not in instring:   #single line?
             if not ' ' in instring and not '\t' in instring and not '\v' \
               in instring:                  # no blanks
-                return instring
+                return ' %s ' % (instring)
             if not "'" in instring:                                       #use apostrophes
                 return "'%s'" % (instring)
             elif not "\"" in instring:

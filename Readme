@@ -19,12 +19,12 @@ in most cases the grammar and character sets specified there were copied
 directly.
 
 PyCifRW has been tested on the IUCr sample CIF trap files, and fails or 
-successfully reads as it is supposed to, except for test 8 (long 
-datanames/long lines), for which it will silently read in overlength 
-lines and only warn about overlength datanames.  Attempts to add new 
-datanames to a CIF file will result in an error if they are overlength.  
-Provided no overlength datanames were read in, output lines do not
-exceed 80 characters.
+successfully reads as it is supposed to.    Attempts to add an overlength  
+dataname to a CIF file currently resident in memory will result in an error.
+Output lines do not exceed 80 characters. If a data value is supplied
+with a length of more than 80 characters (including carriage returns) the
+program will attempt to split the string at the carriage returns (doing the
+requisite CIF formatting), otherwise it will break at whitespace.
 
 Supported Platforms
 -------------------

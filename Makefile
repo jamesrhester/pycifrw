@@ -1,6 +1,10 @@
 # Makefile for ANBF Python based Cif handling modules
 
+#
 package: CifFile.py kwCifParse.py documentation
+#
+../PyCifRW.tar: clean package
+	(cd ..; tar cvf PyCifRW.tar --exclude tests --exclude CVS PyCifRW)
 #
 documentation: CifFile.nw kwCifParse.nw
 	noweave -html -index -filter l2h CifFile.nw > CifFile.html

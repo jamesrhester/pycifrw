@@ -99,16 +99,20 @@ def checklengths(self):
 
 @ Reading in a file.  We use the kwParse module to provide grammar
 services.  The structure returned from parsing is an array of blocks,
-which we convert to a dictionary and place in [[self.dictionary]].
+which we convert to a dictionary and place in [[self.dictionary]].  We do a preliminary
+check of line length, to satisfy the current standard.
 
 <<Read in a CIF file>>=
 def ReadCif(self,filename):
-    import kwCifParse
+    import kwCifParse,string
     stream = open(filename,'r')
     text = stream.read()
     stream.close()
     if not text:      # empty file, return empty block
         return
+    split = string.split(text,'\n')
+    if filter(lambda a:len(a)>80, split):
+        raise CifError, 'File contains lines longer than 80 characters'
     parser = kwCifParse.CifGramBuild()
     context = {"loops":[]}
     try:
@@ -226,10 +230,12 @@ class CifBlock:
     <<Print a data block>>
     <<Format a string>>
 
-@ Note that in the following initialisation, it is conceivable that
-the dictionary type used to initialise the block already has loops
-in it; we have not attempted to check that it has not, and initialise 
-the [[loop]] dictionary item to 0. 
+@ If given non-zero data to initialise the block with, we either
+copy (if it is a dictionary) or else initialise each key-value
+pair separately (if tuples).  We take care to include our special
+"loop" key if it is not in the supplied dictionary, but apart from
+this we make no check of the actual conformance of the dictionary
+items.
 
 <<Initialise Cif Block>>=
 def __init__(self,data = ()):
@@ -410,14 +416,15 @@ def AddCifItem(self,data):
 case the caller wants to order things in some nice way.  This is
 overridden if any item in the order list occurs within a loop, in
 which case it will be packaged together with everything else within
-that same loop.  Note that we print a space before the item value if
-it is printed on a new line, so that if, by some freak accident, the
-first letter of the value is a semicolon, it won't be misinterpreted
-as the beginning of a multi-line value.
+that same loop.  
+
+Note that we must be careful to add spaces between data items, especially
+when formatting string loop data, where our string addition could get
+quite hairy.
 
 <<Print a data block>>=
 def printsection(self,order=[]):
-    import types
+    import types,string
     # first make an ordering
     if not order:
         order = self.block.keys()
@@ -452,23 +459,28 @@ def printsection(self,order=[]):
                if len(aloop[name]) != numdata:
                    raise CifError,'Loop data mismatch for ' + name + ':output aborted'
            curstring = ''      
+           # when adding to outstring, make sure to add spaces
            for position in range(numdata):
                for name in loopnames:
                    # at each point, get the next data value
                    datapoint = aloop[name][position]
                    if isinstance(datapoint,types.StringType):
-                       thisstring = ' %s ' % (self._formatstring(datapoint))
+                       thisstring = '%s' % (self._formatstring(datapoint)) #no spaces yet
                        if '\n' in thisstring:
-                           outstring = outstring + curstring + thisstring
+                           # check its position, might be too far along
+                           if len(curstring) + string.find(thisstring,'\n') > 79:
+                               outstring = outstring + ' ' + curstring + '\n' + thisstring
+                           else:
+                               outstring = outstring + ' ' + curstring + ' ' + thisstring #a space
                            curstring = ''
                            continue
                    else: 
                        thisstring = ' %s ' % datapoint
-                   if len(curstring) + len(thisstring)> 80: #past end of line
-                       outstring = outstring + curstring+'\n'
+                   if len(curstring) + len(thisstring)> 79: #past end of line with space
+                       outstring = outstring + ' ' + curstring+'\n' #add the space
                        curstring = ''
-                   curstring = curstring + thisstring
-               outstring = outstring + curstring+'\n'
+                   curstring = curstring + ' ' + thisstring
+               outstring = outstring + ' ' + curstring + '\n'    #last time through
                curstring = ''
     return outstring
 
@@ -477,7 +489,9 @@ is less than 80, or else we should split them, and so on. We check the
 value for terminators and impossible apostrophes and length, before
 deciding whether to print it and the item on a single line.  We try to
 respect carriage returns in the string, if the caller has tried to do
-the formatting for us.
+the formatting for us.  If we are not putting apostrophes around a
+string, we make the first character a space, to avoid problems if the
+first character of a line is a semicolon.
 
 <<Format a string>>=
 def _formatstring(self,instring):
@@ -485,7 +499,7 @@ def _formatstring(self,instring):
     if len(instring)< 75 and '\n' not in instring:   #single line?
         if not ' ' in instring and not '\t' in instring and not '\v' \
           in instring:                  # no blanks
-            return instring
+            return ' %s ' % (instring)
         if not "'" in instring:                                       #use apostrophes
             return "'%s'" % (instring)
         elif not "\"" in instring:

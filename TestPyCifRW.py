@@ -3,6 +3,7 @@
 #
 # 
 import unittest, CifFile
+import re
 
 # Test basic setting and reading of the CifBlock
 
@@ -119,7 +120,15 @@ class FileWriteTestCase(unittest.TestCase):
              ('_item_2','Some_underline_data'),
              ('_item_3','34.2332'),
              ('_item_4','Some very long data which we hope will overflow the single line and force printing of another line aaaaa bbbbbb cccccc dddddddd eeeeeeeee fffffffff hhhhhhhhh iiiiiiii jjjjjj'),
-             (('_item_5','_item_6','_item_7'),([1,2,3,4],[5,6,7,8],['a','b','c','d'])))
+             (('_item_5','_item_6','_item_7'),
+             ([1,2,3,4],
+              [5,6,7,8],
+              ['a','b','c','d'])),
+             (('_string_1','_string_2'),
+              ([';this string begins with a semicolon',
+               'this string is way way too long and should overflow onto the next line eventually if I keep typing for long enough'],
+               [';just_any_old_semicolon-starting-string',
+               'a ball of string'])))
        self.cf = CifFile.CifBlock(items)
        cif = CifFile.CifFile()
        cif['testblock'] = self.cf
@@ -130,7 +139,7 @@ class FileWriteTestCase(unittest.TestCase):
 
    def tearDown(self):
        import os
-       os.remove('test.cif')
+       # os.remove('test.cif')
        del self.df
        del self.cf
 
@@ -158,6 +167,15 @@ class FileWriteTestCase(unittest.TestCase):
        for key,value in olditems:
            self.failUnless(tuple(map(str,value))==tuple(self.df[key]))
 
+   def testLoopStringInOut(self):
+       """Test writing in and out string loop data"""
+       olditems = self.cf.GetLoop('_string_1')
+       newitems = self.df.GetLoop('_string_1')
+       for key,value in olditems:
+           compstringa = map(lambda a:re.sub('\n','',a),value)
+           compstringb = map(lambda a:re.sub('\n','',a),self.df[key])
+           print str(compstringa) +' : ' + str(compstringb)
+           self.failUnless(compstringa==compstringb)
 
 if __name__=='__main__':
     unittest.main()
