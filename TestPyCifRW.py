@@ -192,13 +192,33 @@ class FileWriteTestCase(unittest.TestCase):
                ['a string with a final quote"',
                'a string with a " and a safe\';',
                'a string with a final \''])))
+       # save block items as well
+       s_items = (('_sitem_1','Some save data'),
+             ('_sitem_2','Some_underline_data'),
+             ('_sitem_3','34.2332'),
+             ('_sitem_4','Some very long data which we hope will overflow the single line and force printing of another line aaaaa bbbbbb cccccc dddddddd eeeeeeeee fffffffff hhhhhhhhh iiiiiiii jjjjjj'),
+             (('_sitem_5','_sitem_6','_sitem_7'),
+             ([1,2,3,4],
+              [5,6,7,8],
+              ['a','b','c','d'])),
+             (('_string_1','_string_2'),
+              ([';this string begins with a semicolon',
+               'this string is way way too long and should overflow onto the next line eventually if I keep typing for long enough',
+               ';just_any_old_semicolon-starting-string'],
+               ['a string with a final quote"',
+               'a string with a " and a safe\';',
+               'a string with a final \''])))
        self.cf = CifFile.CifBlock(items)
+       self.save_block = CifFile.CifBlock(s_items)
+       self.cf.AddSaveFrame("test_save_frame",self.save_block)
+       self.cfs = self.cf["saves"]["test_save_frame"]
        cif = CifFile.CifFile()
        cif['testblock'] = self.cf
        outfile = open('test.cif','w')
        outfile.write(str(cif))
        outfile.close()
        self.df = CifFile.CifFile('test.cif')['testblock']
+       self.dfs = self.df["saves"]["test_save_frame"]
 
    def tearDown(self):
        import os
@@ -210,10 +230,13 @@ class FileWriteTestCase(unittest.TestCase):
        """Test writing short strings in and out"""
        self.failUnless(self.cf['_item_1']==self.df['_item_1'])
        self.failUnless(self.cf['_item_2']==self.df['_item_2'])
+       self.failUnless(self.cfs['_sitem_1']==self.dfs['_sitem_1'])
+       self.failUnless(self.cfs['_sitem_2']==self.dfs['_sitem_2'])
 
    def testNumberInOut(self):
        """Test writing number in and out"""
        self.failUnless(self.cf['_item_3']==(self.df['_item_3']))
+       self.failUnless(self.cfs['_sitem_3']==(self.dfs['_sitem_3']))
 
    def testLongStringInOut(self):
        """Test writing long string in and out
@@ -222,13 +245,18 @@ class FileWriteTestCase(unittest.TestCase):
        import re
        compstring = re.sub('\n','',self.df['_item_4'])
        self.failUnless(compstring == self.cf['_item_4'])
+       compstring = re.sub('\n','',self.dfs['_sitem_4'])
+       self.failUnless(compstring == self.cfs['_sitem_4'])
 
    def testLoopDataInOut(self):
        """Test writing in and out loop data"""
        olditems = self.cf.GetLoop('_item_5')
-       newitems = self.df.GetLoop('_item_5')
        for key,value in olditems:
            self.failUnless(tuple(map(str,value))==tuple(self.df[key]))
+       # save frame test
+       olditems = self.cfs.GetLoop('_sitem_5')
+       for key,value in olditems:
+           self.failUnless(tuple(map(str,value))==tuple(self.dfs[key]))
 
    def testLoopStringInOut(self):
        """Test writing in and out string loop data"""
@@ -243,6 +271,19 @@ class FileWriteTestCase(unittest.TestCase):
        """Test the get method for looped data"""
        newvals = self.cf.get('_string_1')
        self.failUnless(len(newvals)==3)
+
+   def testAddSaveFrame(self):
+       """Test adding a save frame"""
+       s_items = (('_sitem_1','Some save data'),
+             ('_sitem_2','Some_underline_data'),
+             ('_sitem_3','34.2332'),
+             ('_sitem_4','Some very long data which we hope will overflow the single line and force printing of another line aaaaa bbbbbb cccccc dddddddd eeeeeeeee fffffffff hhhhhhhhh iiiiiiii jjjjjj'),
+             (('_sitem_5','_sitem_6','_sitem_7'),
+             ([1,2,3,4],
+              [5,6,7,8],
+              ['a','b','c','d'])))
+       bb = CifFile.CifBlock(s_items)
+       self.cf.AddSaveFrame("some_name",bb)
 
 if __name__=='__main__':
     unittest.main()

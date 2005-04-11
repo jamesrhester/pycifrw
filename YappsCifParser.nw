@@ -148,11 +148,11 @@ rule input: ((
              END                 {{maindict = {} }}
             ))                    {{return maindict}}
 
-     rule dblock: (data_heading           {{dict={data_heading[5:]:{"loops":[]} } }}   # a data heading
+     rule dblock: (data_heading           {{dict={data_heading[5:]:{"loops":[],"saves":{} } } }}   # a data heading
                   (
                    dataseq@<<dict[data_heading[5:]]["loops"]>>    {{dict[data_heading[5:]].update(dataseq)}}
                   |
-                  save_frame
+                  save_frame              {{dict[data_heading[5:]]["saves"].update(save_frame)}}
                   )*
                    )                      {{return monitor('dblock',dict)}} # but may be empty
 
@@ -190,9 +190,9 @@ rule input: ((
                        )*             
 		       )	      {{return loop}}
 
-     rule save_frame: save_heading
+     rule save_frame: save_heading       {{savedict = {save_heading[5:]:{"loops":[] } } }}
                       (
-                      data@<<{"dummydict":0}>>
+                      dataseq@<<savedict[save_heading[5:]]["loops"]>>    {{savedict[save_heading[5:]].update(dataseq)}}
                       )*
-                      save_end 
+                      save_end           {{return monitor('save_frame',savedict)}}
 

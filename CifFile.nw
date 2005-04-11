@@ -69,6 +69,9 @@ if [[dataname]] is not in a loop.
 \item [[AddLoop(dataname,data)]]: add [[data]] to the loop containing
 [[dataname]].  If dataname is not a looped item, an error is returned.
 If (data) has the wrong length, an error is returned. 
+\item [[AddSaveFrame(framename,frame_data)]]: frame_data is a CifBlock,
+and framename is the name to be given to this save frame.  It must differ
+from all other save frame names in the CifBlock object.
 \end{enumerate}
 
 Note also that a CifFile object can be accessed as a mapping type, ie using
@@ -80,9 +83,144 @@ of Python.
 <<*>>=
 <<Copyright statement>>
 from types import *
+<<BlockCollection class>>
 <<CifFile class>>
 <<CifBlock class>>
 <<Define an error class>>
+
+@ \section{BlockCollection}
+
+Both CIF files and a collection of save frames look very similar, so we
+abstract the common behaviour into the BlockCollection class, and then
+inherit from it to make either a CifFile object or a BlockSave object.
+
+<<BlockCollection class>>=
+class BlockCollection:
+    <<Initialise BC data structures>>
+    <<Check data name lengths>>
+    <<BC emulation of mapping type>>
+    <<Read in a CIF file>>
+    <<Add a new data section>>
+<<Write out to string representation>>
+
+@ When initialising, we take an optional type tag, which will
+be used when printing out as a prefix before each block name.
+Usually this will be either "data_" for a data block in a
+CIF file, or "save_" for a save frame in a data block.
+
+<<Initialise BC data structures>>=
+def __init__(self,datasource=None,strict=1,type_tag=''):
+    self.dictionary = {}
+    self.type_tag = type_tag
+    self.strict = strict
+    if isinstance(datasource,DictType):
+        for (key,value) in datasource.items():
+            self.__setitem__(key,value)
+    elif isinstance(datasource,CifFile):
+        self.dictionary = datasource.dictionary.copy()
+    if strict:
+        self.checklengths()
+    self.header_comment = ''
+
+@ Checking item name lengths.  Although the new 1.1 standard allows
+very long lines (2048 characters), data names are still restricted
+to be no more than 75 characters in length.  We hard code this in.
+
+<<Check data name lengths>>=
+def checklengths(self):
+    blocks = self.dictionary.items()
+    for name,block in blocks:
+        toolong = len(filter(lambda a:len(a)>75, block.keys()))
+        if toolong:
+            print 'Warning: block ' + name + ' has ' + `toolong` + ' overlength data names'
+@ Emulation of a mapping type.
+
+<<BC emulation of mapping type>>=
+def __str__(self):
+    return self.WriteOut()
+
+def __setitem__(self,key,value):
+    if isinstance(value,CifBlock):
+        self.NewBlock(key,value)
+    elif isinstance(value,DictType):
+        self.NewBlock(key,CifBlock(value))
+    else: raise TypeError
+
+def __getitem__(self,key):
+    return self.dictionary[key]
+
+def __delitem__(self,key):
+    del self.dictionary[key]
+
+def __len__(self):
+    return len(self.dictionary)
+
+def keys(self):
+    return self.dictionary.keys()
+
+def has_key(self,key):
+    return self.dictionary.has_key(key)
+
+def get(self,key,default=None):
+    if self.dictionary.has_key(key):
+        return self.dictionary[key]
+    else: 
+        return default
+
+def clear(self):
+    self.dictionary.clear()
+
+def copy(self):   
+    newcopy = self.dictionary.copy()
+    return BlockCollection('',newcopy)
+ 
+def update(self,adict):
+    for key in adict.keys():
+        self.dictionary[key] = adict[key]
+
+@ Adding a new block.  A new block is just a new item in our
+dictionary, so we add a new entry to the current list of dictionaries, and set
+the count of the number of loops to zero.  We return the new block name
+in case we have changed it, so the calling routine can refer to it
+later.  Also, there is a limit of 75 characters for the block name length,
+which we enforce here.
+
+<<Add a new data section>>=
+def NewBlock(self,blockname,blockcontents=()):
+    import re
+    if not blockcontents:
+        blockcontents = CifBlock()
+    newblockname = re.sub('\W','_',blockname)
+    blocknames = self.dictionary.keys()
+    i = 0
+    while blocknames.count(newblockname):
+        i = i + 1
+        newblockname = newblockname+`i`
+    if len(newblockname) > 75:
+        raise CifError, 'Cif block/frame name too long:' + newblockname
+    if blockcontents.__class__.__name__[-8:] != 'CifBlock':
+        raise CifError, 'Cif block initialised with non CifBlock object %s' % blockcontents.__class__.__name__[-8:]
+    self.dictionary.update({newblockname:blockcontents})
+    return newblockname
+
+@ Writing all this stuff out to a string.  We loop over each of the
+individual sections, getting their string representation.  We 
+implement this using the cStringIO module for faster work.  Note that
+the default output comment specifies a CIF 1.1 standard file.
+
+<<Write out to string representation>>=
+    def WriteOut(self,comment=''):
+        import cStringIO
+        if not comment:
+            comment = self.header_comment
+        outstring = cStringIO.StringIO()
+        outstring.write(comment)
+        for datablock in self.dictionary.keys():
+            outstring.write('\n' + self.type_tag +datablock+'\n')
+            outstring.write(str(self.dictionary[datablock]))
+        returnstring =  outstring.getvalue()
+        outstring.close()
+        return returnstring
 
 @ \section{CifFile}
 
@@ -102,44 +240,40 @@ Note that this applies to the input only.  For changing output length,
 you can provide an optional parameter in the WriteOut method.
 
 <<CifFile class>>=
-class CifFile:
-    <<Initialise data structures>>
-    <<Check data name lengths>>
-    <<CifFile emulation of mapping type>>
+class CifFile(BlockCollection):
+<<Initialise data structures>>
     <<Read in a CIF file>>
-    <<Add a new data section>>
-<<Write out to string representation>>
+
+@ When initialising, we add those parts that are unique to the CifFile as
+opposed to a simple collection of blocks - i.e. reading in from a file,
+and some line length restrictions.  We don't indent this section in the
+.nw file, so that our comment characters output at the beginning of the
+line.
 
 <<Initialise data structures>>=
-def __init__(self,datasource=None,strict=1,maxinlength=2048,maxoutlength=0):
-    self.dictionary = {}
-    self.maxinlength = maxinlength
-    if maxoutlength == 0:
-        self.maxoutlength = maxinlength
-    else:
-        self.maxoutlength = maxoutlength
-    self.strict = strict
-    if isinstance(datasource,DictType):
-        for (key,value) in datasource.items():
-            self.__setitem__(key,value)
-    elif type(datasource) is StringType:
-        self.ReadCif(datasource,strict,maxinlength)
-    elif isinstance(datasource,CifFile):
-        self.dictionary = datasource.dictionary.copy()
-    if strict:
-        self.checklengths()
-
-@ Checking item name lengths.  Although the new 1.1 standard allows
-very long lines (2048 characters), data names are still restricted
-to be no more than 75 characters in length.  We hard code this in.
-
-<<Check data name lengths>>=
-def checklengths(self):
-    blocks = self.dictionary.items()
-    for name,block in blocks:
-        toolong = len(filter(lambda a:len(a)>75, block.keys()))
-        if toolong:
-            print 'Warning: block ' + name + ' has ' + `toolong` + ' overlength data names'
+    def __init__(self,datasource=None,strict=1,maxinlength=2048,maxoutlength=0):
+        BlockCollection.__init__(self,datasource=datasource,strict=strict,type_tag='data_')
+        self.maxinlength = maxinlength
+        if maxoutlength == 0:
+            self.maxoutlength = maxinlength
+        else:
+            self.maxoutlength = maxoutlength
+        if type(datasource) is StringType:
+            self.ReadCif(datasource,strict,maxinlength)
+        self.header_comment = \
+"""#\\#CIF1.1
+##########################################################################
+#               Crystallographic Information Format file 
+#               Produced by PyCifRW module
+# 
+#  This is a CIF file.  CIF has been adopted by the International
+#  Union of Crystallography as the standard for data archiving and 
+#  transmission.
+#
+#  For information on this file format, follow the CIF links at
+#  http://www.iucr.org
+##########################################################################
+"""
 
 @ Reading in a file.  We now use the Yapps2-generated YappsCifParser module to provide grammar
 services.  The structure returned from parsing is an array of blocks,
@@ -174,106 +308,6 @@ def ReadCif(self,filename,strict,maxlength):
     for block in filecontents.keys():
         self.dictionary.update({block:CifBlock(filecontents[block])})
 
-@ Emulation of a mapping type.
-
-<<CifFile emulation of mapping type>>=
-def __str__(self):
-    return self.WriteOut()
-
-def __setitem__(self,key,value):
-    if isinstance(value,CifBlock):
-        self.NewBlock(key,value)
-    else: raise TypeError
-
-def __getitem__(self,key):
-    return self.dictionary[key]
-
-def __delitem__(self,key):
-    del self.dictionary[key]
-
-def __len__(self):
-    return len(self.dictionary)
-
-def keys(self):
-    return self.dictionary.keys()
-
-def has_key(self,key):
-    return self.dictionary.has_key(key)
-
-def get(self,key,default=None):
-    if self.dictionary.has_key(key):
-        return self.dictionary[key]
-    else: 
-        return default
-
-def clear(self):
-    self.dictionary.clear()
-
-def copy(self):   
-    newcopy = self.dictionary.copy()
-    return CifFile('',newcopy)
- 
-def update(self,adict):
-    for key in adict.keys():
-        self.dictionary[key] = adict[key]
-
-@ Adding a new block.  A new block is just a new dictionary, so we add a new 
-dictionary to the current list of dictionaries, and set
-the count of the number of loops to zero.  We return the new block name
-in case we have changed it, so the calling routine can refer to it
-later.  Also, there is a limit of 75 characters for the block name length,
-which we enforce here.
-
-<<Add a new data section>>=
-def NewBlock(self,blockname,blockcontents=()):
-    import re
-    if not blockcontents:
-        blockcontents = CifBlock()
-    newblockname = re.sub('\W','_',blockname)
-    blocknames = self.dictionary.keys()
-    i = 0
-    while blocknames.count(newblockname):
-        i = i + 1
-        newblockname = newblockname+`i`
-    if len(newblockname) > 75:
-        raise CifError, 'Cif block name too long:' + newblockname
-    if blockcontents.__class__.__name__[-8:] != 'CifBlock':
-        raise CifError, 'Cif block initialised with non CifBlock object %s' % blockcontents.__class__.__name__[-8:]
-    self.dictionary.update({newblockname:blockcontents})
-    return newblockname
-
-@ Writing all this stuff out to a string.  We loop over each of the
-individual sections, getting their string representation.  We 
-implement this using the cStringIO module for faster work.  Note that
-the default output comment specifies a CIF 1.1 standard file.
-
-<<Write out to string representation>>=
-    def WriteOut(self,comment=''):
-        import cStringIO
-        if not comment:
-            comment = \
-"""#\\#CIF1.1
-##########################################################################
-#               Crystallographic Information Format file 
-#               Produced by PyCifRW module
-# 
-#  This is a CIF file.  CIF has been adopted by the International
-#  Union of Crystallography as the standard for data archiving and 
-#  transmission.
-#
-#  For information on this file format, follow the CIF links at
-#  http://www.iucr.org
-##########################################################################
-"""
-        outstring = cStringIO.StringIO()
-        outstring.write(comment)
-        for datablock in self.dictionary.keys():
-            outstring.write('\ndata_'+datablock+'\n')
-            outstring.write(str(self.dictionary[datablock]))
-        returnstring =  outstring.getvalue()
-        outstring.close()
-        return returnstring
-
 @ \section{Cif Block class}
 
 A Cif Block is essentially a dictionary with a few extra items
@@ -282,6 +316,9 @@ management, so that data belonging within one loop are able to
 be handled together when printing out.  When initialising, we
 allow either a set of tuples, suitable for input to AddCifItem,
 or a complete block, suitable when copying.
+
+A new feature is availability of save frames.  They are invisible,
+except when referenced directly using the key "saves".
 
 <<CifBlock class>>=
 class CifBlock:
@@ -295,6 +332,7 @@ class CifBlock:
     <<Regularise data values>>
     <<Get complete looped data>>
     <<Add to looped data>>
+    <<Add a save frame>>
     <<Print a data block>>
     <<Format a string>>
 
@@ -310,13 +348,14 @@ continue on until we get to maxoutlength characters.
 
 <<Initialise Cif Block>>=
 def __init__(self,data = (),maxoutlength=2048,wraplength=80):
-    self.block = {"loops":[]}
+    self.block = {"loops":[],"saves":BlockCollection(type_tag="save_")}
     self.maxoutlength = maxoutlength
     self.wraplength = wraplength
     if type(data) is DictType:     #direct placement
-        self.block = data
-        if not self.block.has_key("loops"):
-            self.block.update({"loops":[]})
+        self.block.update(data)
+	# convert any save frames to CifBlocks
+	sbs = self.block["saves"]  #shorthand
+	self.block["saves"] = BlockCollection(datasource=sbs,type_tag="save_")
     elif type(data) is TupleType:
         for item in data:
             self.AddCifItem(item)
@@ -325,7 +364,8 @@ def __init__(self,data = (),maxoutlength=2048,wraplength=80):
 @ Adding emulation of a mapping type.  We add any of the other
 functions we'd like to emulate.   [[__len__]] returns the number
 of CIF items in this block, either in a loop or not.  So it is
-not the simple length of the dictionary.
+not the simple length of the dictionary.  It also completely
+ignores the "saves" key.
 
 <<Add emulation of a mapping type>>=
 def __str__(self):
@@ -342,19 +382,24 @@ def __delitem__(self,key):
 
 def __len__(self):
     blen = len(self.block) - 1   #non-looped items
+    if self.block.has_key("saves"): blen = blen - 1  #not counted 
     for aloop in self.block["loops"]:
         blen = blen + len(aloop.keys())
     return blen    
 
 def __nonzero__(self):
-    if len(self.block) == 1 and len(self.block["loops"]) == 0:
-        return 0
-    return 1
+    if self.__len__() > 0: return 1
+    return 0
 
+# keys ignores the "saves" key
 def keys(self):
     thesekeys = self.block.keys()
     for aloop in self.block["loops"]:
         thesekeys.extend(aloop.keys())
+    try:
+        thesekeys.remove("saves")
+    except ValueError:
+        pass
     return thesekeys
 
 def has_key(self,key):
@@ -380,7 +425,14 @@ def copy(self):
     newcopy["loops"] = []
     for aloop in self.block["loops"]:  # do a deeper copy
         newcopy["loops"].append(aloop.copy())
+    if self.block.has_key("saves"):
+        newcopy["saves"] = {}
+        for s_block in self.block["saves"]:
+            newcopy["saves"][s_block] = self.block["saves"][s_block].copy()
     return CifBlock(newcopy)
+
+# this is not appropriate for save blocks.  Instead, the save block
+# should be accessed directly for update
  
 def update(self,adict):
     loopdone = []
@@ -447,6 +499,29 @@ def AddToLoop(self,dataname,loopdata):
                 aloop.update({itemname:loopdata[itemname]})
     if not found:
         raise KeyError, 'No such looped item name: %s' % dataname
+
+@ Adding a save frame.  The name must be unique, and the data must be
+a CifBlock with no nested save frames!  As with block names, if this
+frame name already exists, another one will be generated, so the
+function call returns the new name.  The "saves" key refers to a
+CifFile, so we can use the methods defined there to save trouble.
+
+<<Add a save frame>>=
+def AddSaveFrame(self,framename,frame_data):
+    import re
+    if not isinstance(frame_data,CifBlock): 
+	raise CifError, 'Save frame contents not a CifBlock'
+    # as for a new blockname
+    newframename = re.sub('\W','_',framename)
+    framenames = self.block["saves"].keys()
+    i = 0
+    while framenames.count(newframename):
+        i = i + 1
+        newframename = newframename+`i`
+    if len(newframename) > 75:
+        raise CifError, 'Save frame name too long:' + newframename
+    self.block["saves"].update({newframename:frame_data})
+    return newframename
 
 @ Removing a data item.  We delete the item, and if it is looped, and
 nothing is left in the loop, we remove that element of the list.
@@ -579,13 +654,19 @@ def printsection(self,order=[]):
     import string
     # first make an ordering
     if not order:
-        order = self.block.keys()
+        order = self.keys()
         order.sort()
     # now prune that ordering...
     order = filter(lambda a,b=self.block:b.has_key(a),order)
-    order.remove('loops')
+    order.remove('loops')  # shouldn't be there, but...
     # now do it...
     outstring = cStringIO.StringIO()       # the returned string
+    # print any save blocks
+    if len(self.block["saves"])>0:
+	for savename in self.block["saves"].keys():
+	   outstring.write("\nsave_%s \n\n" % savename)
+	   outstring.write(str(self.block["saves"][savename]))
+	   outstring.write("\n\nsave_\n\n")
     for itemname in order:
         itemvalue = self.block[itemname]
         if isinstance(itemvalue,StringType):
