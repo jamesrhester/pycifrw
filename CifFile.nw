@@ -83,10 +83,14 @@ of Python.
 <<*>>=
 <<Copyright statement>>
 from types import *
+import re
 <<BlockCollection class>>
 <<CifFile class>>
 <<CifBlock class>>
 <<Define an error class>>
+<<CIF Dictionary type>>
+<<A valid CIF block>>
+<<A valid CIF file>>
 
 @ \section{BlockCollection}
 
@@ -116,8 +120,9 @@ def __init__(self,datasource=None,strict=1,type_tag=''):
     if isinstance(datasource,DictType):
         for (key,value) in datasource.items():
             self.__setitem__(key,value)
-    elif isinstance(datasource,CifFile):
-        self.dictionary = datasource.dictionary.copy()
+    elif isinstance(datasource,CifFile) or isinstance(datasource,BlockCollection):
+        for key,value in datasource.dictionary.items():
+            self.dictionary[key] = value.copy()
     if strict:
         self.checklengths()
     self.header_comment = ''
@@ -187,7 +192,6 @@ which we enforce here.
 
 <<Add a new data section>>=
 def NewBlock(self,blockname,blockcontents=()):
-    import re
     if not blockcontents:
         blockcontents = CifBlock()
     newblockname = re.sub('\W','_',blockname)
@@ -359,7 +363,8 @@ def __init__(self,data = (),maxoutlength=2048,wraplength=80):
     elif type(data) is TupleType:
         for item in data:
             self.AddCifItem(item)
-    else: raise TypeError
+    else:                          #assume is CifBlock
+        self.block = data.block.copy()
 
 @ Adding emulation of a mapping type.  We add any of the other
 functions we'd like to emulate.   [[__len__]] returns the number
@@ -398,9 +403,14 @@ def keys(self):
         thesekeys.extend(aloop.keys())
     try:
         thesekeys.remove("saves")
+	thesekeys.remove("loops")
     except ValueError:
         pass
     return thesekeys
+
+def values(self):
+    ourkeys = self.keys()
+    return map(lambda a:self[a],ourkeys)
 
 def has_key(self,key):
     if self.block.has_key(key):
@@ -425,10 +435,8 @@ def copy(self):
     newcopy["loops"] = []
     for aloop in self.block["loops"]:  # do a deeper copy
         newcopy["loops"].append(aloop.copy())
-    if self.block.has_key("saves"):
-        newcopy["saves"] = {}
-        for s_block in self.block["saves"]:
-            newcopy["saves"][s_block] = self.block["saves"][s_block].copy()
+    if self.block.has_key("saves"):    # a block collection object
+        newcopy["saves"] = self.block["saves"].copy()
     return CifBlock(newcopy)
 
 # this is not appropriate for save blocks.  Instead, the save block
@@ -457,7 +465,7 @@ def GetCifItem(self,itemname):
         for aloop in self.block["loops"]:
             if aloop.has_key(itemname):
                 return aloop[itemname]
-    raise KeyError, 'Item not in Cif block'
+    raise KeyError, 'Item %s not in Cif block' % itemname
 
 @ This function is required if we wish a list of all items in a data block.
 We would use this if we needed to match things up properly.  We give the name
@@ -508,7 +516,6 @@ CifFile, so we can use the methods defined there to save trouble.
 
 <<Add a save frame>>=
 def AddSaveFrame(self,framename,frame_data):
-    import re
     if not isinstance(frame_data,CifBlock): 
 	raise CifError, 'Save frame contents not a CifBlock'
     # as for a new blockname
@@ -658,7 +665,6 @@ def printsection(self,order=[]):
         order.sort()
     # now prune that ordering...
     order = filter(lambda a,b=self.block:b.has_key(a),order)
-    order.remove('loops')  # shouldn't be there, but...
     # now do it...
     outstring = cStringIO.StringIO()       # the returned string
     # print any save blocks
@@ -690,7 +696,9 @@ def printsection(self,order=[]):
            for name in loopnames: 
                outstring.write('   %-75s\n' % name)
                if len(aloop[name]) != numdata:
-                   raise CifError,'Loop data mismatch for ' + name + ':output aborted'
+                   raise CifError,'Loop data mismatch for ' + name + \
+                   ':output aborted\n'+ '%d , expected %d:' % \
+                   (len(aloop[name]),numdata) + `aloop[loopnames[0]]`+`aloop[name]` + outstring.getvalue()
            curstring = ''      
            # when adding to outstring, make sure to add spaces
            for position in range(numdata):
@@ -736,7 +744,7 @@ improved.
 
 <<Format a string>>=
 def _formatstring(self,instring):
-    import re, string
+    import string
     if len(instring)< (self.maxoutlength-2) and '\n' not in instring and not ('"' in instring and '\'' in instring):
         if not ' ' in instring and not '\t' in instring and not '\v' \
           in instring:                  # no blanks
@@ -773,3 +781,412 @@ class CifError(Exception):
         self.value = value
     def __str__(self):
         print '\nCif Format error: '+ self.value 
+
+@ {Section: Dictionaries}
+
+As there are currently two types of dictionaries available, we are
+forced to deal with the syntax of both.  But, as both a collection
+of save frames and a collection of data blocks are represented by
+the same type, normalisation is very easy: in one case we do
+nothing, and for DDL2 we return the "saves" item.
+
+@ To check that a CIF is valid, we need at least one dictionary but
+perhaps several against which to match it.  A dictionary is optionally
+specified during initialisation, and it is a CifFile type.  We call
+our small dictionary normalisation function, which enables hiding
+of the DDL1/DDL2 save frame/data block syntax differences.
+
+We would like to abstract out the differences in dictionary 
+behaviour,  so we define a dictionary class.  Although we could
+subclass this from a CifFile, we have inconsistent behaviour in
+the a DDL2 dictionary will need to go through the "saves" key to
+get the definitions, whereas the DDL1 dictionary will not.   
+Furthermore, the data block in the DDL2 dictionary contains useful
+information, so we don't want to hide access to that either.
+
+We adopt a data model whereby the excess information in a DDL2
+dictionary is absorbed into special methods, which we initialise
+ourselves for a DDL1 dictionary.  The square bracket notation
+then refers only to the definitions.
+
+Note that the underscore following the data or save frame header is
+technically not part of the name, and so in DDL2 dictionaries there are
+two underscores after the word "save".  DDL1 people hadn't figured this
+out yet, so we have to add it in by changing each block name.
+
+<<CIF Dictionary type>>=
+class CifDic(BlockCollection):
+    <<Initialise Cif dictionary>>
+    <<Dictionary determination function>>
+    <<Deal with DDL1 differences>>
+    <<Add type information>>
+    <<Item-level validation>>
+
+<<Initialise Cif dictionary>>=
+def __init__(self,dic_as_cif):
+    (self.dicname,self.diclang,self.defdata) = self.dic_determine(dic_as_cif)
+    BlockCollection.__init__(self,datasource=self.defdata) 
+    # rename and expand out definitions using "_name" in DDL dictionaries
+    if self.diclang == "DDL1":
+        self.DDL1_normalise()
+    # initialise type information
+    self.dic_as_cif = dic_as_cif
+    self.typedic={}
+    self.add_type_info()
+
+@ This function determines whether we have a DDL2 or DDL1 dictionary.
+
+<<Dictionary determination function>>=
+def dic_determine(self,cifdic):
+    if cifdic.has_key("on_this_dictionary"):   # DDL1
+	self.type_spec = "_type"
+	self.enum_spec = "_enumeration"
+	self.cat_spec = "_category"
+	self.loop_spec = "_list"
+        self.unique_spec = "_list_uniqueness"
+	name = cifdic["on_this_dictionary"]["_dictionary_name"]
+	version = cifdic["on_this_dictionary"]["_dictionary_version"]
+	return (name+version,"DDL1",cifdic)
+    elif len(cifdic.keys()) == 1:              # DDL2
+        blockname = self.keys()[0]	
+	name = cifdic[blockname]["_dictionary.title"]
+	version = cifdic[blockname]["_dictionary.version"]
+	if name != blockname:
+	    print "Warning: DDL2 blockname %s not equal to dictionary name %s" % (blockname,name)
+	self.type_spec = "_item_type.code" 
+	self.enum_spec = "_item_enumeration.value"
+	self.cat_spec = "_item.category_id" 
+	self.loop_spec = "there_is_no_loop_spec!"
+        self.unique_spec = "_item.mandatory_code"
+	return (name+version,"DDL2",cifdic[name]["saves"])
+    else:
+	raise CifError, "Unable to determine dictionary DDL version"
+    
+@ DDL1 differences.  Firstly, in DDL1 you can loop a _name to get
+definitions of related names (e.g. x,y,z).  Secondly, the data block
+name is missing the initial underscore, so we need to read the _name
+value.  There is one block without a _name attribute, which we
+proceed to destroy.
+
+<<Deal with DDL1 differences>>=
+def DDL1_normalise(self):
+    for key,value in self.dictionary.items():
+       if value.has_key("_name"):
+           real_name = value["_name"]
+           if type(real_name) is ListType:        #looped values
+               for looped_name in real_name:
+                   new_value = value.copy()
+                   new_value["_name"] = looped_name  #only looped name
+                   self.dictionary[looped_name] = new_value
+           else: self.dictionary[real_name] = value
+       # delete the old one
+       del self.dictionary[key]
+    # debug
+    open("dic_debug","w").write(self.__str__())
+       
+@ Some things are independent of where an item occurs in the file; we
+check those things here.
+
+<<Item-level validation>>=
+<<Validate the type of an item>>
+<<Validate an enumeration>>
+<<Validate looping properties>>
+
+@ Validate the type of an item
+
+We use the expressions for type that we have available to check that
+the type of the item passed to us matches up.  We may have a list of
+items, so be aware of that.  We define a tiny matching function so
+that we don't have to do a double match to catch the non-matching
+case, which returns None and thus an attribute error if we immediately
+try to get a group.  
+
+Note also that none of the extant dictionaries use the 'none' or 'seq'
+values for type.  The seq value in particular would complicate matters.
+
+<<Validate the type of an item>>=
+def validate_type(self,item_name,item_value):
+    def mymatch(m,a):  
+        res = m.match(a)
+        if res != None: return res.group() 
+        else: return ""
+    target_type = self[item_name][self.type_spec] 
+    matchexpr = self.typedic[target_type]
+    if isinstance(item_value,StringType): #not looped
+	item_values = [item_value]
+    else:
+	item_values = item_value    #is already in a loop
+    #for item in item_values:
+        #print "Type match " + item_name + " " + item + ":",
+    check_all = filter(lambda a: mymatch(matchexpr,a) != a, item_values)
+    if len(check_all)>0: return False
+    else: return True
+
+@ Note that we must make a copy of the enum list, otherwise when we
+add in our ? and . they will modify the Cif in place, very sneakily,
+and next time we have a loop length check, e.g. in writing out, we
+will probably have a mismatch.
+
+<<Validate an enumeration>>=
+def validate_enum(self,item_name,item_value):
+    try: 
+        enum_list = self[item_name][self.enum_spec][:]
+    except KeyError:
+	return None 
+    enum_list.append(".")   #default value
+    enum_list.append("?")   #unknown
+    if isinstance(item_value,StringType): #not looped
+	item_values = [item_value]
+    else:
+	item_values = item_value    #is already in a loop
+    print "Enum check: %s in %s" % (`item_values`,`enum_list`)
+    check_all = filter(lambda a: a not in enum_list,item_values)
+    if len(check_all)>0: return False
+    else: return True
+
+@ Check that something can be looped.  For DDL1 we have yes, no and both.
+For DDL2 there is no explicit restriction on looping beyond membership in
+a category.  Note that the DDL1 core dictionary contains nothing that cannot 
+be looped, but the Powder 1.0 dictionary has 4 items.
+
+<<Validate looping properties>>=
+def validate_looping(self,item_name,item_value):
+    try:
+        how_to_loop = self[item_name][self.loop_spec]
+    except KeyError:
+        return None
+    if how_to_loop == 'yes' and isinstance(item_value,StringType): # not looped
+        return False      #this could be triggered
+    if how_to_loop == 'no' and not isinstance(item_value,StringType): 
+        return False      
+    return True
+
+@ And some things are related to the group structure.  This gets pretty
+divergent for DDL1 and DDL2, so we go separately.
+
+<<Validate loop-level conformance>>=
+<<Validate loop membership>>
+<<Validate loop key>>
+
+@ Loop membership.  Items must be in the same category.  Note that values are
+only needed for the item-level checks, so are not passed to these functions.
+
+The most common constraints on a loop are that all items are from the same
+category, and that loops of a certain category must contain a certain key to
+be valid.  The latter test should be performed after the former test.
+
+<<Validate loop membership>>=
+def validate_loop_membership(self,loop_names):
+    try:
+        categories = map(lambda a:self[a][self.cat_spec],loop_names)
+    except KeyError:       #category is mandatory
+        raise CifError, "%s missing from dictionary %s for item in loop containing %s" % (self.cat_spec,self.dicname,loop_names[0])
+    if len(filter(lambda a:a != categories[0],categories))>0:
+        return False
+    else: return True
+
+def validate_loop_key(self,loop_names):
+    category = self[loop_name[0]][self.cat_spec]
+    # find any unique values which must be present 
+    all_names_in_category = map(lambda a:self[a][self.cat_spec]==category,self.keys())
+    unique_spec = filter(lambda a:self[a].has_key(self.unique_spec),all_names_in_category)
+    for unique_name in unique_spec:
+        names_to_check = self[unique_name][self.unique_spec]
+        if isinstance(names_to_check,StringType):   #only one
+            names_to_check = [names_to_check]
+        for loop_key in names_to_check
+            if loop_key not in loop_names: return False
+    else: return True    
+    
+@ Preparing our type expressions
+
+In DDL2 dictionaries our type expressions are given in the main
+block as POSIX regexps, so we can pass them on to the re package.
+For DDL1 dictionaries we could get them from the DDL1 language
+definition, but for now we just hard code them.  Essentially only
+the number definition is important, as the syntax check on 
+reading/writing will catch any char violations.
+
+Note that the python re engine is not POSIX compliant in that it will
+not return the longest leftmost match, but rather the first leftmost
+match.  So we have reversed the cif_mm dic order in the expression
+below.  We also have to add a catchall for default values.
+
+<<Add type information>>=
+def add_type_info(self):
+    if self.dic_as_cif.has_key("_item_type_list.construct"): #DDL2
+	types = self.dic_as_cif["_item_type_list.code"]
+	constructs = self.dic_as_cif["_item_type_list.construct"]
+    else:   # DDL1
+	types = ["char","numb","null"]
+	constructs = [".*",
+	'(-?(([0-9]*[.][0-9]+)|([0-9]+)[.]?)([(][0-9]+[)])?([eEdD][+-]?[0-9]+)?)|\?|\.',
+	""]
+    packed_up = map(None,types,constructs)
+    for typecode,construct in packed_up:
+        self.typedic[typecode] = re.compile(construct,re.MULTILINE|re.DOTALL)
+
+@ {Section: Valid CIFS}
+
+A whole new can of worms is opened up when we require that a CIF is
+not only syntactically correct, but valid according to the specified
+dictionary.  We have two different DDLs: one has definitions in
+separate data blocks, and the other has definitions in save frames,
+with item types and units defined in the main data block.
+
+A valid CIF is essentially a collection of valid CIF blocks.  It
+may be the case that inter-block relationships need to be checked,
+so there may be some non-trivial block-level checking to be 
+performed.
+
+<<A valid CIF block>>=
+class ValidCifBlock(CifBlock):
+    <<Initialise with dictionary>>
+    <<Match items with dictionaries>>
+    <<Data validation functions>>
+    <<Run data checks>>
+    <<Check input data>>
+    <<Validation report>>
+
+<<Initialise with dictionary>>=
+def __init__(self,diclist = [],*args,**kwords):
+    CifBlock.__init__(self,*args,**kwords)    
+    dic_as_dic_list = map(CifDic,diclist)
+    # the next line creates a dictionary of cif dictionary objects,
+    # indexed by dictionary name+version
+    self.dicdic = {}
+    for a in dic_as_dic_list:
+        self.dicdic[a.dicname]=a
+    self.item_match = {}
+    self.match_items()
+    print "Item matches:"
+    for a,b in self.item_match.items():
+        print "%s: %s" % (a,b)
+    self.check_funs = [
+	self.check_item_type,
+	self.check_item_enum]   # functions which check conformance
+    self.res = {}        #results of data checks
+    if not self.run_data_checks():
+	raise CifError, self.report()
+
+<<Match items with dictionaries>>=
+def match_items(self):
+        for cif_item in self.keys():
+	    self.item_match.setdefault(cif_item,None)   # default value
+	    if not self.item_match[cif_item]:  #not yet found
+	        for name,cifdic in self.dicdic.items():
+                    #print "Searching for %s in %s" % (cif_item,name)
+	            if cifdic.has_key(cif_item):
+                        self.item_match[cif_item]=name
+
+@ We define a series of methods which we collect into a list,
+which we then execute in a series.
+
+<<Data validation functions>>=
+<<Single item data checks>>
+<<Looped item data checks>>
+
+@ These data checks are those that can be performed on a single
+item in isolation, for example numeric or not, is referenced or
+not.
+
+<<Single item data checks>>=
+def check_item_type(self,item_name,item_val,dictionary_name,verbose):
+    if dictionary_name:
+        res = self.dicdic[dictionary_name].validate_type(item_name,item_val)
+        if res and verbose: 
+           print "%s passes type check" % item_name
+        elif not res:
+           print "%s fails type check" % item_name
+        return res
+
+def check_item_enum(self,item_name,item_val,dictionary_name,verbose):
+    if dictionary_name:
+        res = self.dicdic[dictionary_name].validate_enum(item_name,item_val)
+        if res and verbose: 
+           print "%s passes enum check" % item_name
+        elif res == False:
+           print "%s fails enum check" % item_name
+        return res
+
+<<Looped item data checks>>=
+
+
+@ Run all of these data checks. The complicated line creates a dictionary
+indexed by checking function with values [(item,result),...].
+
+<<Run data checks>>=
+def run_data_checks(self,verbose=False):
+    self.res = {}
+    for check_fun in self.check_funs:
+        self.res[check_fun.__name__]= map(lambda b:(b,check_fun(b,self[b],self.item_match[b],verbose)),self.keys())
+    # return false and list of baddies if anything didn't match
+    print "Res: " + `self.res`
+    baddies = map(lambda a:[a,filter(lambda b:b[1]==False,self.res[a])],self.res.keys())
+    # if even one false one is found, this should trigger
+    print "Baddies:" + `baddies`
+    isinvalid = not (len(filter(lambda a:len(a[1])>0,baddies))>0)
+    return isinvalid,baddies
+
+@ Report back.  We summarize the contents of self.res
+<<Validation report>>=
+def report(self):
+   import cStringIO
+   outstr = cStringIO.StringIO()
+   outstr.write( "Validation results\n")
+   outstr.write( "------------------\n")
+   for fn in self.res.keys():
+       it = self.res[fn]      #an optimization
+       failed = filter(lambda a: a[1] == False, it)
+       passed = filter(lambda a: a[1], it)
+       na = filter(lambda a: a[1] == None, it)
+       outstr.write("Test %s: Passed %d, Failed %d, Not applicable %d\n" % \
+	      (fn,len(passed),len(failed),len(na)))
+       if len(failed)>0:
+          for res in failed:
+              outstr.write( "  Failed: %s %s\n" % (fn,res[0]))
+   return outstr.getvalue()
+
+<<Check input data>>=
+def single_item_check(self,item_name,item_value):
+    self.item_match.setdefault(item_name,None)
+    if not right_dic:
+        for name,cifdic in self.dicdic.items():
+            if cifdic.has_key(cif_item):
+                self.item_match[cif_item]=name
+    for check_fun in self.check_funs:
+	check_fun(item_name,item_value,self.item_match[cif_item])
+
+<<A valid CIF file>>=
+class ValidCifFile(CifFile):
+    <<Initialise valid CIF>>
+    <<Redefine add new block>>
+    <<Check and report on validity>>
+
+<<Initialise valid CIF>>=
+def __init__(self,filename,diclist=[],*args,**kwargs):
+    CifFile.__init__(self,filename,*args,**kwargs)
+    self.diclist = diclist        #store here as well
+    for blockname in self.keys():
+	self.dictionary[blockname]=ValidCifBlock(data=self.dictionary[blockname],diclist=self.diclist)
+
+@ Whenever a new block is added, we have to additionally update our
+match array and perform a validation run.  This definition shadows
+the definition in the parent class.
+
+<<Redefine add new block>>=
+def NewBlock(self,blockname,blockcontents):
+    newblockname = CifFile.NewBlock(self,blockname,blockcontents)
+    # dictionary[newblockname] is now a CifBlock object.  We
+    # turn it into a ValidCifBlock object
+    self.dictionary[newblockname] = ValidCifBlock(diclist=self.diclist,
+                                     data=self.dictionary[newblockname])
+
+@ Checking the file.  We check each data block, and put the reports together.
+
+<<Check and report on validity>>=
+def check_and_report(self):
+    for blockname in self.keys():
+        print "\n Report for block %s\n" % blockname
+        self[blockname].run_data_checks()
+        print self[blockname].report()

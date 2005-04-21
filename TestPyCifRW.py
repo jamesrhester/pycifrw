@@ -285,6 +285,33 @@ class FileWriteTestCase(unittest.TestCase):
        bb = CifFile.CifBlock(s_items)
        self.cf.AddSaveFrame("some_name",bb)
 
+##############################################################
+#
+#  Validation testing
+#
+##############################################################
+
+# We first test single item checking
+class DDL1TestCase(unittest.TestCase):
+    def setUp(self):
+	self.ddl1dic = CifFile.CifFile("dictionaries/cif_core.dic")
+        self.validcif = CifFile.ValidCifFile("tests/C13H22O3.cif",diclist=[self.ddl1dic])
+	#items = (("_atom_site_label","S1"),
+	#	 ("_atom_site_fract_x","0.74799(9)"),
+        #         ("_atom_site_adp_type","Umpe"),
+	#	 ("_this_is_not_in_dict","not here"))
+	#bl = CifFile.CifBlock(items)
+	#self.cf = CifFile.ValidCifFile(diclist=[self.ddl1dic])
+	#self.cf["test_block"] = bl
+        #baddies = self.validcif["test_block"].run_data_checks()
+
+    def tearDown(self):
+        del self.validcif
+	del self.ddl1dic
+
+    def testReport(self):
+	self.validcif.check_and_report()
+
 if __name__=='__main__':
     unittest.main()
 
