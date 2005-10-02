@@ -44,7 +44,7 @@ class BlockRWTestCase(unittest.TestCase):
         try:
             self.cf[dataname] = 1.0
         except CifFile.CifError: pass
-        else: self.Fail()
+        else: self.fail()
 
     def testTooLongLoopSet(self):
         """test setting overlong data names in a loop"""
@@ -52,7 +52,7 @@ class BlockRWTestCase(unittest.TestCase):
         try:
             self.cf[(dataname,)] = ((1.0,2.0,3.0),)
         except CifFile.CifError: pass
-        else: self.Fail()
+        else: self.fail()
 
     def testBadStringSet(self):
         """test setting values with bad characters"""
@@ -159,6 +159,16 @@ class BlockChangeTestCase(unittest.TestCase):
        """Test the get mapping call"""
        self.cf.get("_item_name_1")
        self.cf.get("_item_name_nonexist")
+
+#
+#  Test case insensitivity
+#
+   def testDataNameCase(self):
+       """Test same name, different case causes error"""
+       self.assertEqual(self.cf["_Item_Name_1"],self.cf["_item_name_1"])
+       self.cf["_Item_NaMe_1"] = "the quick pewse fox"
+       self.assertEqual(self.cf["_Item_NaMe_1"],self.cf["_item_name_1"])
+
 #
 #  Test setting of block names
 #
@@ -172,6 +182,19 @@ class BlockNameTestCase(unittest.TestCase):
            cf['a_very_long_block_name_which_should_be_rejected_out_of_hand123456789012345678']=df
        except CifFile.CifError: pass
        else: self.Fail()
+
+   def testBlockOverwrite(self):
+       """Upper/lower case should be seen as identical"""
+       df = CifFile.CifBlock()
+       ef = CifFile.CifBlock()
+       cf = CifFile.CifFile()
+       df['_random_1'] = 'oldval'
+       ef['_random_1'] = 'newval'
+       cf['_lowercaseblock'] = df
+       cf['_LowerCaseBlock'] = ef
+       assert(cf['_Lowercaseblock']['_random_1'] == 'newval')
+       assert(len(cf) == 1)
+       
 
 class FileWriteTestCase(unittest.TestCase):
    def setUp(self):
@@ -210,7 +233,7 @@ class FileWriteTestCase(unittest.TestCase):
                'a string with a final \''])))
        self.cf = CifFile.CifBlock(items)
        self.save_block = CifFile.CifBlock(s_items)
-       self.cf.AddSaveFrame("test_save_frame",self.save_block)
+       self.cf["saves"]["test_save_frame"] = self.save_block
        self.cfs = self.cf["saves"]["test_save_frame"]
        cif = CifFile.CifFile()
        cif['testblock'] = self.cf
@@ -283,7 +306,36 @@ class FileWriteTestCase(unittest.TestCase):
               [5,6,7,8],
               ['a','b','c','d'])))
        bb = CifFile.CifBlock(s_items)
-       self.cf.AddSaveFrame("some_name",bb)
+       self.cf["saves"]["some_name"]=bb
+
+##############################################################
+#
+# Test dictionary type
+#
+##############################################################
+ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
+class DictTestCase(unittest.TestCase):
+    def setUp(self):
+	pass
+    
+    def tearDown(self):
+	pass
+
+    def testnum_and_esd(self):
+        """Test conversion of numbers with esds"""
+        testnums = ["5.65","-76.24(3)","8(2)","6.24(3)e3","55.2(2)d4"]
+        res = map(CifFile.get_number_with_esd,testnums)
+        print `res`
+        self.failUnless(res[0]==(5.65,None))
+        self.failUnless(res[1]==(-76.24,0.03))
+        self.failUnless(res[2]==(8,2))
+        self.failUnless(res[3]==(6240,30))
+        self.failUnless(res[4]==(552000,2000))
+         
+    def testdot(self):
+        """Make sure a single dot is skipped"""
+        res1,res2 = CifFile.get_number_with_esd(".")
+        self.failUnless(res1==None)
 
 ##############################################################
 #
@@ -293,24 +345,148 @@ class FileWriteTestCase(unittest.TestCase):
 
 # We first test single item checking
 class DDL1TestCase(unittest.TestCase):
+
     def setUp(self):
-	self.ddl1dic = CifFile.CifFile("dictionaries/cif_core.dic")
-        self.validcif = CifFile.ValidCifFile("tests/C13H22O3.cif",diclist=[self.ddl1dic])
+	#self.ddl1dic = CifFile.CifFile("dictionaries/cif_core.dic")
 	#items = (("_atom_site_label","S1"),
 	#	 ("_atom_site_fract_x","0.74799(9)"),
         #         ("_atom_site_adp_type","Umpe"),
 	#	 ("_this_is_not_in_dict","not here"))
-	#bl = CifFile.CifBlock(items)
-	#self.cf = CifFile.ValidCifFile(diclist=[self.ddl1dic])
-	#self.cf["test_block"] = bl
-        #baddies = self.validcif["test_block"].run_data_checks()
+	bl = CifFile.CifBlock()
+	self.cf = CifFile.ValidCifFile(dic=ddl1dic)
+	self.cf["test_block"] = bl
+	self.cf["test_block"].AddCifItem(("_atom_site_label",
+	      ["C1","Cr2","H3","U4"]))	
 
     def tearDown(self):
-        del self.validcif
-	del self.ddl1dic
+        del self.cf
+
+    def testItemType(self):
+        """Test that types are correctly checked and reported"""
+        #numbers
+        self.cf["test_block"]["_diffrn_radiation_wavelength"] = "0.75"
+        try:
+            self.cf["test_block"]["_diffrn_radiation_wavelength"] = "moly"
+        except CifFile.ValidCifError: pass
+
+    def testItemEsd(self):
+        """Test that non-esd items are not allowed with esds"""
+        #numbers
+        try:
+            self.cf["test_block"]["_chemical_melting_point_gt"] = "1325(6)"
+        except CifFile.ValidCifError: pass
+
+    def testItemEnum(self):
+        """Test that enumerations are understood"""
+        self.cf["test_block"]["_diffrn_source_target"]="Cr"
+        try:
+            self.cf["test_block"]["_diffrn_source_target"]="2.5"
+        except CifFile.ValidCifError: pass 
+        else: self.Fail()
+
+    def testItemRange(self):
+        """Test that ranges are correctly handled"""
+        self.cf["test_block"]["_diffrn_source_power"] = "0.0"
+        self.cf["test_block"]["_diffrn_standards_decay_%"] = "98"
+
+    def testItemLooping(self):
+        """test that list yes/no/both works"""
+        pass
+
+    def testListReference(self):
+        """Test that _list_reference is handled correctly"""
+        #can be both looped and unlooped; if unlooped, no need for ref.
+        self.cf["test_block"]["_diffrn_radiation_wavelength"] = "0.75"
+        try:
+            self.cf["test_block"].AddCifItem(((
+                "_diffrn_radiation_wavelength",
+                "_diffrn_radiation_wavelength_wt"),(("0.75","0.71"),("0.5","0.1"))))
+        except CifFile.ValidCifError: pass
+        else: self.Fail()
+        
+    def testUniqueness(self):
+        """Test that non-unique values are found"""
+        # in cif_core.dic only one set is available
+        try:
+            self.cf["test_block"].AddCifItem(((
+                "_publ_body_label",
+                "_publ_body_element"),
+                  (
+                   ("1.1","1.2","1.3","1.2"),
+                   ("section","section","section","section") 
+                     )))
+        except CifFile.ValidCifError: pass
+        else: self.Fail()
+
+    def testParentChild(self):
+	"""Test that non-matching values are reported"""
+        self.assertRaises(CifFile.ValidCifError,
+	    self.cf["test_block"].AddCifItem,
+	    (("_geom_bond_atom_site_label_1","_geom_bond_atom_site_label_2"),
+	      [["C1","C2","H3","U4"],
+	      ["C1","Cr2","H3","U4"]]))	
+	# now we test that a missing parent is flagged
+        # self.assertRaises(CifFile.ValidCifError,
+	#     self.cf["test_block"].AddCifItem,
+	#     (("_atom_site_type_symbol","_atom_site_label"),
+	#       [["C","C","N"],["C1","C2","N1"]]))
 
     def testReport(self):
-	self.validcif.check_and_report()
+        CifFile.validate_report(CifFile.validate("tests/C13H2203_with_errors.cif",dic=ddl1dic))
+
+class FakeDicTestCase(unittest.TestCase):
+# we test stuff that hasn't been used in official dictionaries to date.
+    def setUp(self):
+        self.testcif = CifFile.CifFile("dictionaries/novel_test.cif")
+
+    def testTypeConstruct(self):
+        self.assertRaises(CifFile.ValidCifError,CifFile.ValidCifFile,
+                           diclist=["dictionaries/novel.dic"],datasource=self.testcif)
+          
+class DicMergeTestCase(unittest.TestCase):
+    def setUp(self):
+        self.offdic = CifFile.CifFile("dictionaries/dict_official")
+        self.adic = CifFile.CifFile("dictionaries/dict_A")
+        self.bdic = CifFile.CifFile("dictionaries/dict_B")
+        self.cdic = CifFile.CifFile("dictionaries/dict_C")
+        self.cvdica = CifFile.CifFile("dictionaries/cvdica.dic")
+        self.cvdicb = CifFile.CifFile("dictionaries/cvdicb.dic")
+        self.cvdicc = CifFile.CifFile("dictionaries/cvdicc.dic")
+        self.cvdicd = CifFile.CifFile("dictionaries/cvdicd.dic")
+        self.testcif = CifFile.CifFile("dictionaries/merge_test.cif")
+       
+    def testAStrict(self):
+        self.assertRaises(CifFile.CifError,CifFile.merge_dic,[self.offdic,self.adic],mergemode="strict")
+        
+    def testAOverlay(self):
+        newdic = CifFile.merge_dic([self.offdic,self.adic],mergemode='overlay')
+        # print newdic.__str__()
+        self.assertRaises(CifFile.ValidCifError,CifFile.ValidCifFile,
+                                  datasource="dictionaries/merge_test.cif",
+                                  dic=newdic)
+        
+    def testAReverseO(self):
+        # the reverse should be OK!
+        newdic = CifFile.merge_dic([self.adic,self.offdic],mergemode='overlay')
+        jj = CifFile.ValidCifFile(datasource="dictionaries/merge_test.cif",
+                                  dic = newdic)
+
+#    def testCOverlay(self):
+#        self.offdic = CifFile.merge_dic([self.offdic,self.cdic],mergemode='replace') 
+#        print "New dic..."
+#        print self.offdic.__str__()
+#        self.assertRaises(CifFile.ValidCifError,CifFile.ValidCifFile,
+#                          datasource="dictionaries/merge_test.cif",
+#                          dic = self.offdic)
+
+    # now for the final example in "maintenance.html"
+    def testCVOverlay(self):
+        jj = open("merge_debug","w")
+        newdic = CifFile.merge_dic([self.cvdica,self.cvdicb,self.cvdicc,self.cvdicd],mergemode='overlay')
+        jj.write(newdic.__str__())
+
+    def tearDown(self):
+        pass
 
 if __name__=='__main__':
     unittest.main()

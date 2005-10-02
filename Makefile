@@ -1,7 +1,7 @@
 # Makefile for ANBF Python based Cif handling modules
 
 #
-package: CifFile.py documentation
+package: CifFile.py #documentation
 #
 ../PyCifRW.tar: clean package
 	(cd ..; tar cvf PyCifRW.tar --exclude tests --exclude CVS --exclude yapps2 --exclude error_reports --exclude old_stuff PyCifRW)

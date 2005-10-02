@@ -12,6 +12,8 @@ For further information about Yapps2, see
 http://theory.stanford.edu/~amitp/Yapps/
 
 <<*>>=
+from CifFile import CifError
+from types import *
 <<Helper functions>>
 %%
 parser CifParser:
@@ -35,7 +37,7 @@ getting rid of the inverted commas.
 lastval = ''
 def monitor(location,value):
     global lastval
-    #print 'At %s: %s' % (location,`value`)
+    # print 'At %s: %s' % (location,`value`)
     lastval = `value`
     return value
 
@@ -47,7 +49,10 @@ def stripextras(value):
      cut = semis.match(value)
      if cut:
           nv = value[cut.end():len(value)-2]
-          if nv[-1]=='\r': nv = nv[:-1]
+	  try:
+             if nv[-1]=='\r': nv = nv[:-1]
+	  except IndexError:    #empty data value
+	     pass
      else: nv = value
      cut = jj.match(nv)
      if cut:
@@ -71,18 +76,51 @@ def makeloop(namelist,itemlist,context):
     noitems = len(namelist)
     nopoints = divmod(len(itemlist),noitems)
     if nopoints[1]!=0:    #mismatch
-        raise "CifError:loop item mismatch"
+        raise CifError, "loop item mismatch"
     nopoints = nopoints[0]
+    # check no overlap between separate loops!
+    new_lower = map(lambda a:a.lower(),namelist)
+    for loop in context:
+        for key in loop.keys():
+            if key.lower() in new_lower:
+                raise CifError, "Duplicate item name %s" % key
     newdict = {}
     for i in range(0,noitems):
         templist = []
         for j in range(0,nopoints):
             templist.append(itemlist[j*noitems + i])
+	lower_keys = map(lambda a:a.lower(),newdict.keys())
+	if namelist[i].lower() in lower_keys:
+	    raise CifError, "%s occurs twice in same loop" % namelist[i]
         newdict.update({namelist[i]:templist})
     context.append(newdict)
-    #print 'Contructed loop with items: '+`newdict`
+    #print 'Constructed loop with items: '+`newdict`
     return {}    # to keep things easy
 
+# this function updates a dictionary first checking for name collisions,
+# which imply that the CIF is invalid.  We need case insensitivity for
+# names. 
+
+# Unfortunately we cannot check loop item contents against non-loop contents
+# in a non-messy way during parsing, as we may not have easy access to previous
+# key value pairs in the context of our call (unlike our built-in access to all 
+# previous loops).
+# For this reason, we don't waste time checking looped items against non-looped
+# names during parsing of a data block.  This would only match a subset of the
+# final items.   We do check against ordinary items, however.
+#
+# Note the following situations:
+# (1) new_dict is empty -> we have just added a loop; do no checking
+# (2) new_dict is not empty -> we have some new key-value pairs
+#
+def cif_update(old_dict,new_dict,loops):
+    old_keys = map(lambda a:a.lower(),old_dict.keys())
+    if new_dict != {}:    # otherwise we have a new loop
+        #print 'Comparing %s to %s' % (`old_keys`,`new_dict.keys()`)
+        for new_key in new_dict.keys():
+            if new_key.lower() in old_keys:
+	        raise CifError, "Duplicate dataname or blockname %s in input file" % new_key
+            old_dict[new_key] = new_dict[new_key]
 #
 @
 
@@ -139,7 +177,7 @@ appended to this array.
 rule input: ((
             dblock              {{maindict = dblock }}
             (
-            dblock              {{maindict.update(monitor('input',dblock))}} #
+            dblock              {{cif_update(maindict,monitor('input',dblock),[])}} #
             )*
             END                
             )
@@ -150,7 +188,7 @@ rule input: ((
 
      rule dblock: (data_heading           {{dict={data_heading[5:]:{"loops":[],"saves":{} } } }}   # a data heading
                   (
-                   dataseq@<<dict[data_heading[5:]]["loops"]>>    {{dict[data_heading[5:]].update(dataseq)}}
+                   dataseq@<<dict[data_heading[5:]]["loops"]>>    {{cif_update(dict[data_heading[5:]],dataseq,[])}}
                   |
                   save_frame              {{dict[data_heading[5:]]["saves"].update(save_frame)}}
                   )*
@@ -158,7 +196,7 @@ rule input: ((
 
      rule dataseq@<<loop_array>>:  data@<<loop_array>>  {{datadict=data}} 
 		       (
-                       data@<<loop_array>>           {{datadict.update(data)}}
+                       data@<<loop_array>>           {{cif_update(datadict,data,loop_array)}}
                        )*                           {{return monitor('dataseq',datadict)}}
 
      rule data@<<loop_array>>:  data_loop@<<loop_array>> {{return data_loop}} 
