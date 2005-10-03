@@ -1,0 +1,1029 @@
+#LyX 1.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 221
+\textclass article
+\language english
+\inputencoding auto
+\fontscheme helvet
+\graphics default
+\paperfontsize default
+\spacing single 
+\papersize Default
+\paperpackage a4
+\use_geometry 0
+\use_amsmath 0
+\use_natbib 0
+\use_numerical_citations 0
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\quotes_times 2
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+
+\layout Title
+
+Programming with PyCIFRW
+\layout Standard
+
+PyCIFRW provides facilities for reading, manipulating and writing CIF files.
+ In addition, CIF files and dictionaries may be validated against DDL1/2
+ dictionaries.
+\layout Section
+
+Installing and Initialising PyCIFRW
+\layout Standard
+
+The python distutils installer places three files into the python packages
+ directory: 
+\family typewriter 
+CifFile.py
+\family default 
+, 
+\family typewriter 
+yappsrt.py
+\family default 
+ and 
+\family typewriter 
+YappsCifParser.py
+\family default 
+.
+ It is sufficient to import 
+\family typewriter 
+CifFile.py
+\family default 
+ to access all PyCifRW features: 
+\layout LyX-Code
+
+>>> import CifFile
+\layout Section
+
+Creating a CifFile object
+\layout Standard
+
+CIF files are represented in PyCIFRW as 
+\family typewriter 
+CifFile
+\family default 
+ objects.
+ These objects behave identically to Python dictionaries, with some additional
+ methods.
+ CIF files can be created by initialising a 
+\family typewriter 
+CifFile
+\family default 
+ object with a filename:
+\layout LyX-Code
+
+>>> cf = CifFile.CifFile(
+\begin_inset Quotes eld
+\end_inset 
+
+mycif.cif
+\begin_inset Quotes erd
+\end_inset 
+
+)
+\layout Standard
+
+Available keyword arguments when initialising are:
+\layout Description
+
+datasource This can be a file name or other 
+\family typewriter 
+CifFile
+\family default 
+ object.
+ Files are read; 
+\family typewriter 
+CifFile
+\family default 
+ objects are copied
+\layout Description
+
+strict block and data names and line lengths are checked against the CIF
+ standard
+\layout Description
+
+maxinlength maximum permitted line length in input file (default 2048 characters
+)
+\layout Description
+
+maxoutlength maximum output line length
+\layout Standard
+
+Errors are raised if CIF syntax/grammar violations are encountered in the
+ input file or line length limits are exceeded.
+\layout Standard
+
+Alternatively, a new 
+\family typewriter 
+CifFile
+\family default 
+ object is created if no datasource argument is given:
+\layout LyX-Code
+
+cf = CifFile.CifFile()
+\layout Standard
+
+In this case, you will need to create at least one 
+\family typewriter 
+CifBlock
+\family default 
+ object to hold your data:
+\layout LyX-Code
+
+myblock = CifFile.CifBlock()
+\layout LyX-Code
+
+cf['a_block'] = myblock
+\layout Standard
+
+A 
+\family typewriter 
+CifBlock
+\family default 
+ object may be initialised with another 
+\family typewriter 
+CifBlock
+\family default 
+, in which case a copy operation is performed, or with a tuple or list of
+ tuples containing key, value pairs.
+ These are inserted into the new 
+\family typewriter 
+CifBlock
+\family default 
+ using 
+\family typewriter 
+AddCifItem
+\family default 
+ (see below).
+\layout Section
+
+Manipulating values in a CIF file
+\layout Subsection
+
+Accessing data
+\layout Standard
+
+The simplest form of access is using standard Python square bracket notation.
+ Data blocks and data names within each data block are referenced identically
+ to normal Python dictionaries:
+\layout LyX-Code
+
+my_data = cf['a_data_block']['_a_data_name']
+\layout Standard
+
+All values are strings with CIF syntactical elements stripped, that is,
+ no enclosing quotation marks or semicolons are included in the values.
+ The value corresponding to a 
+\family typewriter 
+CifFile
+\family default 
+ dictionary key is in all cases a 
+\family typewriter 
+CifBlock
+\family default 
+ object.
+ All standard Python dictionary methods (e.g.
+ get, update, items, keys) are available for both 
+\family typewriter 
+CifFile
+\family default 
+ and 
+\family typewriter 
+CifBlock
+\family default 
+ objects.
+\layout Standard
+
+If a data name occurs in a loop, a list of string values is returned.
+ However, in practice, looped data is usually only useful in combination
+ with other values from the same loop.
+ 
+\family typewriter 
+CifBlock
+\family default 
+ method 
+\family typewriter 
+GetLoop(dataname)
+\family default 
+ will return all data in the loop containing dataname in the format 
+\family typewriter 
+[(dataname,datavalues),...]
+\family default 
+.
+ Method 
+\family typewriter 
+loops()
+\family default 
+ returns a list where each item is a list of datanames occurring in a single
+ loop of the 
+\family typewriter 
+CifBlock
+\family default 
+ object.
+\layout Subsection
+
+Changing or adding data values
+\layout Standard
+
+If many operations are going to be performed on a single data block, it
+ is convenient to assign that block to a new variable:
+\layout LyX-Code
+
+cb = cf['my_block']
+\layout Standard
+
+A new data name and value may be added, or the value of an existing name
+ changed, by straight assignment:
+\layout LyX-Code
+
+cb['_new_data_name'] = 4.5
+\layout LyX-Code
+
+cb['_old_data_name'] = 'cucumber'
+\layout Standard
+
+Old values are overwritten silently.
+ Note that values may be strings or numbers.
+ If they are numbers, they are first converted to strings using default
+ settings - so future accesses will return a string, not a number.
+ 
+\layout Standard
+
+If a list is given as the value instead of a single string or number, a
+ new loop is created containing this one data name, looped.
+ Any looped data values which may have co-occurred in the loop are first
+ deleted.
+ As this is not necessarily the desired behaviour, you should call 
+\family typewriter 
+AddCifItem
+\family default 
+ directly - this routine is always called when assigning values to a 
+\family typewriter 
+CifBlock
+\family default 
+ item.
+\layout Standard
+
+
+\family typewriter 
+AddCifItem
+\family default 
+ is called with a single tuple argument.
+ The tuple contains either a single dataname, or a list or tuple of datanames
+ as its first element.
+ The second element is either a single value or list of values (in the case
+ of a single key) or a list, each element of which is a list of values correspon
+ding to a single dataname.
+ Note that PyCIFRW works with columns of loop data (complete values for
+ each data name in the loop) rather than rows (one value for each dataname
+ in the loop).
+\layout Standard
+
+
+\family typewriter 
+AddCifItem
+\family default 
+ will always create a new loop after deleting any datanames and values already
+ in the data block, so it is impossible to add new data names to existing
+ loops.
+ Method 
+\family typewriter 
+AddToLoop(dataname,newdata)
+\family default 
+ adds 
+\family typewriter 
+newdata
+\family default 
+ to the pre-existing loop containing 
+\family typewriter 
+dataname
+\family default 
+, silently overwriting duplicate data.
+ 
+\family typewriter 
+Newdata
+\family default 
+ should be a Python dictionary of dataname - datavalue pairs, with 
+\family typewriter 
+datavalue
+\family default 
+ a list of new/replacement values.
+\layout Standard
+
+Note that lists returned by PyCIFRW actually access the list inside the
+ CifBlock, and therefore any modification to them will modify the stored
+ list.
+ If you intend to alter any such lists, you should first copy them to avoid
+ destroying the loop structure:
+\layout LyX-Code
+
+mysym = cb['_symmetry_ops'][:]
+\layout LyX-Code
+
+mysym.append('x-1/2,y+1/2,z')
+\layout Subsubsection
+
+Examples using loops
+\layout Paragraph
+
+Adding/replacing a single item with looped values:
+\layout LyX-Code
+
+cb['_symmetry'] = ['x,y,z','-x,-y,-z','x+1/2,y,z']
+\layout Standard
+
+results in an output fragment
+\layout LyX-Code
+
+loop_
+\layout LyX-Code
+
+   _symmetry
+\layout LyX-Code
+
+   x,y,z
+\layout LyX-Code
+
+   -x,-y,-z
+\layout LyX-Code
+
+   x+1/2,y,z
+\layout Paragraph
+
+Adding a complete loop:
+\layout LyX-Code
+
+cb.AddCifItem(['_example','_example_detail'],
+\layout LyX-Code
+
+              [['123.4','small cell'],
+\layout LyX-Code
+
+               ['4567.8','large cell']])
+\layout Standard
+
+results in an output fragment:
+\layout LyX-Code
+
+loop_
+\layout LyX-Code
+
+   _example
+\layout LyX-Code
+
+   _example_detail
+\layout LyX-Code
+
+   123.4 'small cell'
+\layout LyX-Code
+
+   4567.8 'large cell'
+\layout Paragraph
+
+Appending a new dataname to a pre-existing loop:
+\layout LyX-Code
+
+cb.AddToLoop(
+\layout LyX-Code
+
+      '_example',{'_comment':[
+\begin_inset Quotes erd
+\end_inset 
+
+not that small
+\begin_inset Quotes erd
+\end_inset 
+
+,
+\begin_inset Quotes erd
+\end_inset 
+
+Big and beautiful
+\begin_inset Quotes erd
+\end_inset 
+
+]}
+\layout LyX-Code
+
+            )
+\layout Standard
+
+changes the previous output to be
+\layout LyX-Code
+
+loop_
+\layout LyX-Code
+
+   _example
+\layout LyX-Code
+
+   _example_detail
+\layout LyX-Code
+
+   _comment
+\layout LyX-Code
+
+   123.4 'small cell' 'not that small'
+\layout LyX-Code
+
+   4567.8 'large cell' 'Big and beautiful'
+\layout Paragraph
+
+Changing pre-existing data in a loop:
+\layout LyX-Code
+
+cb.AddToLoop('_comment',{'_example':['12.2','12004']})
+\layout LyX-Code
+
+\layout Standard
+
+changes the previous example to
+\layout LyX-Code
+
+loop_
+\layout LyX-Code
+
+   _example
+\layout LyX-Code
+
+   _example_detail
+\layout LyX-Code
+
+   _comment
+\layout LyX-Code
+
+   12.2 'small cell' 'not that small'
+\layout LyX-Code
+
+   12004 'large cell' 'Big and beautiful'
+\layout Paragraph
+
+Adding a new loop packet.
+ 
+\layout Standard
+
+PyCifRW does not (yet) directly support this: the following code shows one
+ way to accomplish this indirectly for the above example.
+\layout LyX-Code
+
+newdata= {'_example':['101.1','255'],
+\layout LyX-Code
+
+ '_example_detail':['medium cell','also medium'],
+\layout LyX-Code
+
+ '_comment':['manageable','still manageable']
+\layout LyX-Code
+
+         }
+\layout LyX-Code
+
+olddata = cb.GetLoop('_example') #(key,value) list
+\layout LyX-Code
+
+map(lambda a:newdata[a[0]].extend(a[1]),loopdata)
+\layout LyX-Code
+
+cb.AddCifItem((newdata.keys(),newdata.values()))
+\layout Standard
+
+Note that, as the lists returned by PyCIFRW are direct pointers to the original
+ lists, it is possible to extend them directly (e.g.
+ 
+\family typewriter 
+cb['_example'].append('101.1')
+\family default 
+), however, this bypasses all data value syntax checks and loop length checks
+ and is not recommended.
+\layout Section
+
+Writing Cif Files
+\layout Standard
+
+The 
+\family typewriter 
+CifFile
+\family default 
+ method 
+\family typewriter 
+WriteOut
+\family default 
+ returns a string which may be passed to an open file descriptor:
+\layout LyX-Code
+
+>>>outfile = open(
+\begin_inset Quotes eld
+\end_inset 
+
+mycif.cif
+\begin_inset Quotes erd
+\end_inset 
+
+)
+\layout LyX-Code
+
+>>>outfile.write(cf.WriteOut())
+\layout Standard
+
+An alternative method uses the built-in Python 
+\family typewriter 
+str()
+\family default 
+ function:
+\layout LyX-Code
+
+>>>outfile.write(str(cf))
+\layout Standard
+
+
+\family typewriter 
+WriteOut
+\family default 
+ takes an optional argument, 
+\family typewriter 
+comment
+\family default 
+, which should be a string containing a comment which will be placed at
+ the top of the output file.
+ This comment string must already contain # characters at the beginning
+ of lines:
+\layout LyX-Code
+
+>>>outfile.write(cf.WriteOut(
+\begin_inset Quotes eld
+\end_inset 
+
+#This is a test file
+\begin_inset Quotes erd
+\end_inset 
+
+))
+\layout Standard
+
+There is currently no way to easily specify the order of output of items
+ within a 
+\family typewriter 
+CifFile
+\family default 
+ or 
+\family typewriter 
+CifBlock.
+ 
+\layout Section
+
+Dictionaries and Validation
+\layout Subsection
+
+Dictionaries
+\layout Standard
+
+DDL dictionaries may also be read into 
+\family typewriter 
+CifFile
+\family default 
+ objects.
+ For this purpose, 
+\family typewriter 
+CifBlock
+\family default 
+ objects automatically support save frames (used in DDL2 dictionaries),
+ which are accessed using the 
+\family typewriter 
+
+\begin_inset Quotes eld
+\end_inset 
+
+saves
+\begin_inset Quotes erd
+\end_inset 
+
+
+\family default 
+ key.
+ The value of this key is a collection of 
+\family typewriter 
+CifBlock
+\family default 
+ objects indexed by save frame name, and available operations are similar
+ to those available for a 
+\family typewriter 
+CifFile
+\family default 
+, which is also a collection of 
+\family typewriter 
+CifBlock
+\family default 
+s.
+\layout Standard
+
+A 
+\family typewriter 
+CifDic
+\family default 
+ object hides the difference between DDL1 dictionaries, where all definitions
+ are separate data blocks, and DDL2 dictionaries, where all definitions
+ are in save frames of a single data block.
+ A 
+\family typewriter 
+CifDic
+\family default 
+ is initialised with a single file name or 
+\family typewriter 
+CifFile
+\family default 
+ object:
+\layout LyX-Code
+
+cd = CifFile.CifDic(
+\begin_inset Quotes eld
+\end_inset 
+
+cif_core.dic
+\begin_inset Quotes erd
+\end_inset 
+
+)
+\layout Standard
+
+Definitions are accessed using the usual notation, e.g.
+ 
+\family typewriter 
+cd['_atom_site_aniso_label']
+\family default 
+.
+ Return values are always 
+\family typewriter 
+CifBlock
+\family default 
+ objects.
+ Additionally, the 
+\family typewriter 
+CifDic
+\family default 
+ object contains a number of instance variables derived from dictionary
+ global data:
+\layout Description
+
+dicname The dictionary name + version as given in the dictionary 
+\layout Description
+
+diclang 'DDL1' or 'DDL2'
+\layout Description
+
+typedic Python dictionary matching typecode with compiled regular expression
+\layout Standard
+
+
+\family typewriter 
+CifDic
+\family default 
+ objects provide a large number of validation functions, which all return
+ a Python dictionary which contains at least the key 
+\family typewriter 
+
+\begin_inset Quotes eld
+\end_inset 
+
+result
+\begin_inset Quotes erd
+\end_inset 
+
+
+\family default 
+.
+ 
+\family typewriter 
+
+\begin_inset Quotes eld
+\end_inset 
+
+result
+\begin_inset Quotes erd
+\end_inset 
+
+
+\family default 
+ takes the values 
+\family typewriter 
+True
+\family default 
+, 
+\family typewriter 
+False
+\family default 
+ or 
+\family typewriter 
+None
+\family default 
+ depending on the success, failure or non-applicability of each test.
+ In case of failure, additional keys are returned depending on the nature
+ of the error.
+\layout Subsection
+
+Validation
+\layout Standard
+
+A top level function is provided for convenient validation of CIF files:
+\layout LyX-Code
+
+CifFile.validate(
+\begin_inset Quotes eld
+\end_inset 
+
+mycif.cif
+\begin_inset Quotes erd
+\end_inset 
+
+,dic = 
+\begin_inset Quotes erd
+\end_inset 
+
+cif_core.dic
+\begin_inset Quotes erd
+\end_inset 
+
+)
+\layout Standard
+
+This returns a tuple 
+\family typewriter 
+(valid_result, no_matches)
+\family default 
+.
+ 
+\family typewriter 
+valid_result
+\family default 
+ and 
+\family typewriter 
+no_matches
+\family default 
+ are Python dictionaries indexed by block name.
+ For 
+\family typewriter 
+valid_result
+\family default 
+, the value for each block is itself a dictionary indexed by 
+\family typewriter 
+item_name
+\family default 
+.
+ The value attached to each item name is a list of 
+\family typewriter 
+(check_function, check_result)
+\family default 
+ tuples, with 
+\family typewriter 
+check_result
+\family default 
+ a small dictionary containing at least the key 
+\family typewriter 
+
+\begin_inset Quotes eld
+\end_inset 
+
+result
+\begin_inset Quotes erd
+\end_inset 
+
+
+\family default 
+.
+ All tests which passed or were not applicable are removed from this dictionary,
+ so result is always 
+\family typewriter 
+False
+\family default 
+.
+ Additional keys contain auxiliary information depending on the test.
+ Each of the items in 
+\family typewriter 
+no_matches
+\family default 
+ is a simple list of item names which were not found in the dictionary.
+\layout Standard
+
+If a simple validation report is required, the function 
+\family typewriter 
+validate_report
+\family default 
+ can be called on the output of the above function, printing a simple ASCII
+ report.
+ This function can be studied as an example of how to process the complex
+ structure returned by the '
+\family typewriter 
+validate
+\family default 
+' function.
+\layout Subsubsection
+
+Limitations on validation
+\layout Enumerate
+
+(DDL2 only) When validating data dictionaries themselves, no checks are
+ made on group and subgroup consistency (e.g.
+ that a specified subgroup is actually defined).
+\layout Enumerate
+
+(DDL1 only) Some _type_construct attributes in the DDL1 spec file are not
+ machine-readable, so values cannot be checked for consistency
+\layout Subsection
+
+ValidCifFile objects
+\layout Standard
+
+A 
+\family typewriter 
+ValidCifFile
+\family default 
+ object behaves identically to a 
+\family typewriter 
+CifFile
+\family default 
+ object with the additional characteristic that it is valid against the
+ given dictionary object.
+ Any attempt to set a data value, or add or remove a data name, that would
+ invalidate the object raises a 
+\family typewriter 
+ValidCifFile
+\family default 
+ error.
+ 
+\layout Standard
+
+Additional keywords for initialisation are:
+\layout Description
+
+dic A 
+\family typewriter 
+CifDic
+\family default 
+ object to use in validation
+\layout Description
+
+diclist A list of 
+\family typewriter 
+CifFile
+\family default 
+ objects or filenames to be merged into a 
+\family typewriter 
+CifDic
+\family default 
+ object (see below)
+\layout Description
+
+mergemode Choose merging method (one of '
+\family typewriter 
+strict
+\family default 
+','
+\family typewriter 
+overlay
+\family default 
+', '
+\family typewriter 
+replace
+\family default 
+')
+\layout Subsection
+
+Merging dictionaries
+\layout Standard
+
+PyCIFRW provides a top-level function to merge DDL1/2 dictionary files.
+ It takes a list of CIF filenames or 
+\family typewriter 
+CifFile
+\family default 
+ objects, and a 
+\family typewriter 
+mergemode
+\family default 
+ keyword argument.
+ CIF files are merged from left to right, that is, the second file in the
+ list is merged into the first file in the list and so on.
+\layout Standard
+
+For completeness we list the arguments of the 
+\family typewriter 
+CifFile merge
+\family default 
+ method:
+\layout Description
+
+new_block_set (first argument, no keyword) The new dictionary to be merged
+ into the current dictionary
+\layout Description
+
+mode merging mode to use ('strict', 'overlay' or 'replace')
+\layout Description
+
+single_block a two element list 
+\family typewriter 
+[oldblockname, newblockname]
+\family default 
+, where 
+\family typewriter 
+oldblockname
+\family default 
+ in the current file is merged with 
+\family typewriter 
+newblockname
+\family default 
+ in the new file.
+ This is useful when blocknames don't match
+\layout Description
+
+idblock This block is ignored when merging - useful when merging DDL1 dictionari
+es in strict mode, in which case the 
+\family typewriter 
+on_this_dictionary
+\family default 
+ block would cause an error.
+\layout Subsubsection
+
+Limitations on merging
+\layout Standard
+
+In overlay mode, the COMCIFS recommendations require that, when both definitions
+ contain identical attributes which can be looped, the merging process should
+ construct those loops and include both sets of data in the new loop.
+ 
+\layout Standard
+
+This is not yet implemented in PyCIFRW, as it involves checking the DDL1/DDL2
+ spec to determine which attributes may be looped together.
+\layout Section
+
+Example programs
+\layout Standard
+
+A program which uses PyCIFRW for validation, 
+\family typewriter 
+validate_cif.py
+\family default 
+, is included in the distribution in the Programs subdirectory.
+ It will validate a CIF file (including dictionaries) against one or more
+ dictionaries which may be specified by name and version or as a filename
+ on the local disk.
+ If name and version are specified, the IUCr canonical registry or a local
+ registry is used to find the dictionary and download it if necessary.
+\layout Subsection
+
+Usage
+\layout LyX-Code
+
+python validate_cif.py [options] ciffile
+\layout Subsection
+
+Options
+\layout Description
+
+--version show version number and exit
+\layout Description
+
+-h,--help print short help message
+\layout Description
+
+-d\SpecialChar ~
+dirname directory to find/store dictionary files
+\layout Description
+
+-f\SpecialChar ~
+dictname filename of locally-stored dictionary
+\layout Description
+
+-u\SpecialChar ~
+version dictionary version to resolve using registry
+\layout Description
+
+-n\SpecialChar ~
+name dictionary name to resolve using registry
+\layout Description
+
+-s store downloaded dictionary locally (default True)
+\layout Description
+
+-c fetch and use canonical registry from IUCr
+\layout Description
+
+-r\SpecialChar ~
+registry location of registry as filename or URL
+\layout Section
+
+Further information
+\layout Standard
+
+The source files are in a literate programming format (noweb) with file
+ extension .nw.
+ HTML documentation generated from these files and containing both code
+ and copious comments is included in the downloaded package.
+ Details of interpretation of the current standards as relates to validation
+ can be found in these files.
+\the_end

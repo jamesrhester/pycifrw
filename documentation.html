@@ -1,0 +1,798 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Programming with PyCIFRW</TITLE>
+<META NAME="description" CONTENT="Programming with PyCIFRW">
+<META NAME="keywords" CONTENT="documentation">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="documentation.css">
+
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<IMG WIDTH="81" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next_inactive"
+ SRC="/usr/share/latex2html/icons/nx_grp_g.png"> 
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up_g.png"> 
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev_g.png">   
+<BR>
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<P>
+
+<P>
+<H1 ALIGN="CENTER">Programming with PyCIFRW</H1>
+<DIV CLASS="author_info">
+
+</DIV>
+PyCIFRW provides facilities for reading, manipulating and writing
+CIF files. In addition, CIF files and dictionaries may be validated
+against DDL1/2 dictionaries.
+
+<P>
+
+<H1><A NAME="SECTION00010000000000000000">
+<SPAN CLASS="arabic">1</SPAN> Installing and Initialising PyCIFRW</A>
+</H1>
+
+<P>
+The python distutils installer places three files into the python
+packages directory: <TT>CifFile.py</TT>, <TT>yappsrt.py</TT> and <TT>YappsCifParser.py</TT>.
+It is sufficient to import <TT>CifFile.py</TT> to access all PyCifRW
+features: 
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>&gt;&gt;&gt;&nbsp;import&nbsp;CifFile
+</DD>
+</DL>
+<P>
+
+<H1><A NAME="SECTION00020000000000000000">
+<SPAN CLASS="arabic">2</SPAN> Creating a CifFile object</A>
+</H1>
+
+<P>
+CIF files are represented in PyCIFRW as <TT>CifFile</TT> objects.
+These objects behave identically to Python dictionaries, with some
+additional methods. CIF files can be created by initialising a <TT>CifFile</TT>
+object with a filename:
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>&gt;&gt;&gt;&nbsp;cf&nbsp;=&nbsp;CifFile.CifFile(``mycif.cif'')
+</DD>
+</DL>Available keyword arguments when initialising are:
+
+<P>
+<DL>
+<DT><STRONG>datasource</STRONG></DT>
+<DD>This can be a file name or other <TT>CifFile</TT> object.
+Files are read; <TT>CifFile</TT> objects are copied
+</DD>
+<DT><STRONG>strict</STRONG></DT>
+<DD>block and data names and line lengths are checked against
+the CIF standard
+</DD>
+<DT><STRONG>maxinlength</STRONG></DT>
+<DD>maximum permitted line length in input file (default
+2048 characters)
+</DD>
+<DT><STRONG>maxoutlength</STRONG></DT>
+<DD>maximum output line length
+</DD>
+</DL>
+Errors are raised if CIF syntax/grammar violations are encountered
+in the input file or line length limits are exceeded.
+
+<P>
+Alternatively, a new <TT>CifFile</TT> object is created if no datasource
+argument is given:
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>cf&nbsp;=&nbsp;CifFile.CifFile()
+</DD>
+</DL>In this case, you will need to create at least one <TT>CifBlock</TT>
+object to hold your data:
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>myblock&nbsp;=&nbsp;CifFile.CifBlock()
+
+<P>
+cf['a_block']&nbsp;=&nbsp;myblock
+</DD>
+</DL>A <TT>CifBlock</TT> object may be initialised with another <TT>CifBlock</TT>,
+in which case a copy operation is performed, or with a tuple or list
+of tuples containing key, value pairs. These are inserted into the
+new <TT>CifBlock</TT> using <TT>AddCifItem</TT> (see below).
+
+<P>
+
+<H1><A NAME="SECTION00030000000000000000">
+<SPAN CLASS="arabic">3</SPAN> Manipulating values in a CIF file</A>
+</H1>
+
+<P>
+
+<H2><A NAME="SECTION00031000000000000000">
+<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">1</SPAN> Accessing data</A>
+</H2>
+
+<P>
+The simplest form of access is using standard Python square bracket
+notation. Data blocks and data names within each data block are referenced
+identically to normal Python dictionaries:
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>my_data&nbsp;=&nbsp;cf['a_data_block']['_a_data_name']
+</DD>
+</DL>All values are strings with CIF syntactical elements stripped, that
+is, no enclosing quotation marks or semicolons are included in the
+values. The value corresponding to a <TT>CifFile</TT> dictionary key
+is in all cases a <TT>CifBlock</TT> object. All standard Python dictionary
+methods (e.g. get, update, items, keys) are available for both <TT>CifFile</TT>
+and <TT>CifBlock</TT> objects.
+
+<P>
+If a data name occurs in a loop, a list of string values is returned.
+However, in practice, looped data is usually only useful in combination
+with other values from the same loop. <TT>CifBlock</TT> method <TT>GetLoop(dataname)</TT>
+will return all data in the loop containing dataname in the format
+<TT>[(dataname,datavalues),...]</TT>. Method <TT>loops()</TT>
+returns a list where each item is a list of datanames occurring in
+a single loop of the <TT>CifBlock</TT> object.
+
+<P>
+
+<H2><A NAME="SECTION00032000000000000000">
+<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN> Changing or adding data values</A>
+</H2>
+
+<P>
+If many operations are going to be performed on a single data block,
+it is convenient to assign that block to a new variable:
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>cb&nbsp;=&nbsp;cf['my_block']
+</DD>
+</DL>A new data name and value may be added, or the value of an existing
+name changed, by straight assignment:
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>cb['_new_data_name']&nbsp;=&nbsp;4.5
+
+<P>
+cb['_old_data_name']&nbsp;=&nbsp;'cucumber'
+</DD>
+</DL>Old values are overwritten silently. Note that values may be strings
+or numbers. If they are numbers, they are first converted to strings
+using default settings - so future accesses will return a string,
+not a number. 
+
+<P>
+If a list is given as the value instead of a single string or number,
+a new loop is created containing this one data name, looped. Any looped
+data values which may have co-occurred in the loop are first deleted.
+As this is not necessarily the desired behaviour, you should call
+<TT>AddCifItem</TT> directly - this routine is always called when
+assigning values to a <TT>CifBlock</TT> item.
+
+<P>
+<TT>AddCifItem</TT> is called with a single tuple argument. The tuple
+contains either a single dataname, or a list or tuple of datanames
+as its first element. The second element is either a single value
+or list of values (in the case of a single key) or a list, each element
+of which is a list of values corresponding to a single dataname. Note
+that PyCIFRW works with columns of loop data (complete values for
+each data name in the loop) rather than rows (one value for each dataname
+in the loop).
+
+<P>
+<TT>AddCifItem</TT> will always create a new loop after deleting any
+datanames and values already in the data block, so it is impossible
+to add new data names to existing loops. Method <TT>AddToLoop(dataname,newdata)</TT>
+adds <TT>newdata</TT> to the pre-existing loop containing <TT>dataname</TT>,
+silently overwriting duplicate data. <TT>Newdata</TT> should be a
+Python dictionary of dataname - datavalue pairs, with <TT>datavalue</TT>
+a list of new/replacement values.
+
+<P>
+Note that lists returned by PyCIFRW actually access the list inside
+the CifBlock, and therefore any modification to them will modify the
+stored list. If you intend to alter any such lists, you should first
+copy them to avoid destroying the loop structure:
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>mysym&nbsp;=&nbsp;cb['_symmetry_ops'][:]
+
+<P>
+mysym.append('x-1/2,y+1/2,z')
+</DD>
+</DL>
+<P>
+
+<H3><A NAME="SECTION00032100000000000000">
+<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN> Examples using loops</A>
+</H3>
+
+<P>
+
+<H4><A NAME="SECTION00032110000000000000">
+<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">1</SPAN> Adding/replacing a single item with looped values:</A>
+</H4>
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>cb['_symmetry']&nbsp;=&nbsp;['x,y,z','-x,-y,-z','x+1/2,y,z']
+</DD>
+</DL>results in an output fragment
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>loop_
+
+<P>
+&nbsp;&nbsp;&nbsp;_symmetry
+
+<P>
+&nbsp;&nbsp;&nbsp;x,y,z
+
+<P>
+&nbsp;&nbsp;&nbsp;-x,-y,-z
+
+<P>
+&nbsp;&nbsp;&nbsp;x+1/2,y,z
+</DD>
+</DL>
+<P>
+
+<H4><A NAME="SECTION00032120000000000000">
+<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">2</SPAN> Adding a complete loop:</A>
+</H4>
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>cb.AddCifItem(['_example','_example_detail'],
+
+<P>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[['123.4','small&nbsp;cell'],
+
+<P>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;['4567.8','large&nbsp;cell']])
+</DD>
+</DL>results in an output fragment:
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>loop_
+
+<P>
+&nbsp;&nbsp;&nbsp;_example
+
+<P>
+&nbsp;&nbsp;&nbsp;_example_detail
+
+<P>
+&nbsp;&nbsp;&nbsp;123.4&nbsp;'small&nbsp;cell'
+
+<P>
+&nbsp;&nbsp;&nbsp;4567.8&nbsp;'large&nbsp;cell'
+</DD>
+</DL>
+<P>
+
+<H4><A NAME="SECTION00032130000000000000">
+<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">3</SPAN> Appending a new dataname to a pre-existing loop:</A>
+</H4>
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>cb.AddToLoop(
+
+<P>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'_example',{'_comment':[''not&nbsp;that&nbsp;small'',''Big&nbsp;and&nbsp;beautiful'']}
+
+<P>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)
+</DD>
+</DL>changes the previous output to be
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>loop_
+
+<P>
+&nbsp;&nbsp;&nbsp;_example
+
+<P>
+&nbsp;&nbsp;&nbsp;_example_detail
+
+<P>
+&nbsp;&nbsp;&nbsp;_comment
+
+<P>
+&nbsp;&nbsp;&nbsp;123.4&nbsp;'small&nbsp;cell'&nbsp;'not&nbsp;that&nbsp;small'
+
+<P>
+&nbsp;&nbsp;&nbsp;4567.8&nbsp;'large&nbsp;cell'&nbsp;'Big&nbsp;and&nbsp;beautiful'
+</DD>
+</DL>
+<P>
+
+<H4><A NAME="SECTION00032140000000000000">
+<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">4</SPAN> Changing pre-existing data in a loop:</A>
+</H4>
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>cb.AddToLoop('_comment',{'_example':['12.2','12004']})
+
+<P>
+</DD>
+</DL>changes the previous example to
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>loop_
+
+<P>
+&nbsp;&nbsp;&nbsp;_example
+
+<P>
+&nbsp;&nbsp;&nbsp;_example_detail
+
+<P>
+&nbsp;&nbsp;&nbsp;_comment
+
+<P>
+&nbsp;&nbsp;&nbsp;12.2&nbsp;'small&nbsp;cell'&nbsp;'not&nbsp;that&nbsp;small'
+
+<P>
+&nbsp;&nbsp;&nbsp;12004&nbsp;'large&nbsp;cell'&nbsp;'Big&nbsp;and&nbsp;beautiful'
+</DD>
+</DL>
+<P>
+
+<H4><A NAME="SECTION00032150000000000000">
+<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">5</SPAN> Adding a new loop packet. </A>
+</H4>
+
+<P>
+PyCifRW does not (yet) directly support this: the following code shows
+one way to accomplish this indirectly for the above example.
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>newdata=&nbsp;{'_example':['101.1','255'],
+
+<P>
+&nbsp;'_example_detail':['medium&nbsp;cell','also&nbsp;medium'],
+
+<P>
+&nbsp;'_comment':['manageable','still&nbsp;manageable']
+
+<P>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}
+
+<P>
+olddata&nbsp;=&nbsp;cb.GetLoop('_example')&nbsp;#(key,value)&nbsp;list
+
+<P>
+map(lambda&nbsp;a:newdata[a[0]].extend(a[1]),loopdata)
+
+<P>
+cb.AddCifItem((newdata.keys(),newdata.values()))
+</DD>
+</DL>Note that, as the lists returned by PyCIFRW are direct pointers to
+the original lists, it is possible to extend them directly (e.g. <TT>cb['_example'].append('101.1')</TT>),
+however, this bypasses all data value syntax checks and loop length
+checks and is not recommended.
+
+<P>
+
+<H1><A NAME="SECTION00040000000000000000">
+<SPAN CLASS="arabic">4</SPAN> Writing Cif Files</A>
+</H1>
+
+<P>
+The <TT>CifFile</TT> method <TT>WriteOut</TT> returns a string which
+may be passed to an open file descriptor:
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>&gt;&gt;&gt;outfile&nbsp;=&nbsp;open(``mycif.cif'')
+
+<P>
+&gt;&gt;&gt;outfile.write(cf.WriteOut())
+</DD>
+</DL>An alternative method uses the built-in Python <TT>str()</TT> function:
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>&gt;&gt;&gt;outfile.write(str(cf))
+</DD>
+</DL><TT>WriteOut</TT> takes an optional argument, <TT>comment</TT>, which
+should be a string containing a comment which will be placed at the
+top of the output file. This comment string must already contain #
+characters at the beginning of lines:
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>&gt;&gt;&gt;outfile.write(cf.WriteOut(``#This&nbsp;is&nbsp;a&nbsp;test&nbsp;file''))
+</DD>
+</DL>There is currently no way to easily specify the order of output of
+items within a <TT>CifFile</TT> or <TT>CifBlock. </TT>
+
+<P>
+
+<H1><A NAME="SECTION00050000000000000000">
+<SPAN CLASS="arabic">5</SPAN> Dictionaries and Validation</A>
+</H1>
+
+<P>
+
+<H2><A NAME="SECTION00051000000000000000">
+<SPAN CLASS="arabic">5</SPAN>.<SPAN CLASS="arabic">1</SPAN> Dictionaries</A>
+</H2>
+
+<P>
+DDL dictionaries may also be read into <TT>CifFile</TT> objects. For
+this purpose, <TT>CifBlock</TT> objects automatically support save
+frames (used in DDL2 dictionaries), which are accessed using the <TT>``saves''</TT>
+key. The value of this key is a collection of <TT>CifBlock</TT> objects
+indexed by save frame name, and available operations are similar to
+those available for a <TT>CifFile</TT>, which is also a collection
+of <TT>CifBlock</TT>s.
+
+<P>
+A <TT>CifDic</TT> object hides the difference between DDL1 dictionaries,
+where all definitions are separate data blocks, and DDL2 dictionaries,
+where all definitions are in save frames of a single data block. A
+<TT>CifDic</TT> is initialised with a single file name or <TT>CifFile</TT>
+object:
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>cd&nbsp;=&nbsp;CifFile.CifDic(``cif_core.dic'')
+</DD>
+</DL>Definitions are accessed using the usual notation, e.g. <TT>cd['_atom_site_aniso_label']</TT>.
+Return values are always <TT>CifBlock</TT> objects. Additionally,
+the <TT>CifDic</TT> object contains a number of instance variables
+derived from dictionary global data:
+
+<P>
+<DL>
+<DT><STRONG>dicname</STRONG></DT>
+<DD>The dictionary name + version as given in the dictionary 
+</DD>
+<DT><STRONG>diclang</STRONG></DT>
+<DD>'DDL1' or 'DDL2'
+</DD>
+<DT><STRONG>typedic</STRONG></DT>
+<DD>Python dictionary matching typecode with compiled regular
+expression
+</DD>
+</DL>
+<TT>CifDic</TT> objects provide a large number of validation functions,
+which all return a Python dictionary which contains at least the key
+<TT>``result''</TT>. <TT>``result''</TT> takes the values
+<TT>True</TT>, <TT>False</TT> or <TT>None</TT> depending on the success,
+failure or non-applicability of each test. In case of failure, additional
+keys are returned depending on the nature of the error.
+
+<P>
+
+<H2><A NAME="SECTION00052000000000000000">
+<SPAN CLASS="arabic">5</SPAN>.<SPAN CLASS="arabic">2</SPAN> Validation</A>
+</H2>
+
+<P>
+A top level function is provided for convenient validation of CIF
+files:
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>CifFile.validate(``mycif.cif'',dic&nbsp;=&nbsp;''cif_core.dic'')
+</DD>
+</DL>This returns a tuple <TT>(valid_result, no_matches)</TT>. <TT>valid_result</TT>
+and <TT>no_matches</TT> are Python dictionaries indexed by block
+name. For <TT>valid_result</TT>, the value for each block is itself
+a dictionary indexed by <TT>item_name</TT>. The value attached to
+each item name is a list of <TT>(check_function, check_result)</TT>
+tuples, with <TT>check_result</TT> a small dictionary containing
+at least the key <TT>``result''</TT>. All tests which passed or
+were not applicable are removed from this dictionary, so result is
+always <TT>False</TT>. Additional keys contain auxiliary information
+depending on the test. Each of the items in <TT>no_matches</TT> is
+a simple list of item names which were not found in the dictionary.
+
+<P>
+If a simple validation report is required, the function <TT>validate_report</TT>
+can be called on the output of the above function, printing a simple
+ASCII report. This function can be studied as an example of how to
+process the complex structure returned by the '<TT>validate</TT>'
+function.
+
+<P>
+
+<H3><A NAME="SECTION00052100000000000000">
+<SPAN CLASS="arabic">5</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN> Limitations on validation</A>
+</H3>
+
+<P>
+
+<OL>
+<LI>(DDL2 only) When validating data dictionaries themselves, no checks
+are made on group and subgroup consistency (e.g. that a specified
+subgroup is actually defined).
+</LI>
+<LI>(DDL1 only) Some _type_construct attributes in the DDL1 spec file
+are not machine-readable, so values cannot be checked for consistency
+</LI>
+</OL>
+
+<P>
+
+<H2><A NAME="SECTION00053000000000000000">
+<SPAN CLASS="arabic">5</SPAN>.<SPAN CLASS="arabic">3</SPAN> ValidCifFile objects</A>
+</H2>
+
+<P>
+A <TT>ValidCifFile</TT> object behaves identically to a <TT>CifFile</TT>
+object with the additional characteristic that it is valid against
+the given dictionary object. Any attempt to set a data value, or add
+or remove a data name, that would invalidate the object raises a <TT>ValidCifFile</TT>
+error. 
+
+<P>
+Additional keywords for initialisation are:
+
+<P>
+<DL>
+<DT><STRONG>dic</STRONG></DT>
+<DD>A <TT>CifDic</TT> object to use in validation
+</DD>
+<DT><STRONG>diclist</STRONG></DT>
+<DD>A list of <TT>CifFile</TT> objects or filenames to be merged
+into a <TT>CifDic</TT> object (see below)
+</DD>
+<DT><STRONG>mergemode</STRONG></DT>
+<DD>Choose merging method (one of '<TT>strict</TT>','<TT>overlay</TT>',
+'<TT>replace</TT>')
+</DD>
+</DL>
+
+<P>
+
+<H2><A NAME="SECTION00054000000000000000">
+<SPAN CLASS="arabic">5</SPAN>.<SPAN CLASS="arabic">4</SPAN> Merging dictionaries</A>
+</H2>
+
+<P>
+PyCIFRW provides a top-level function to merge DDL1/2 dictionary files.
+It takes a list of CIF filenames or <TT>CifFile</TT> objects, and
+a <TT>mergemode</TT> keyword argument. CIF files are merged from left
+to right, that is, the second file in the list is merged into the
+first file in the list and so on.
+
+<P>
+For completeness we list the arguments of the <TT>CifFile merge</TT>
+method:
+
+<P>
+<DL>
+<DT><STRONG>new_block_set</STRONG></DT>
+<DD>(first argument, no keyword) The new dictionary
+to be merged into the current dictionary
+</DD>
+<DT><STRONG>mode</STRONG></DT>
+<DD>merging mode to use ('strict', 'overlay' or 'replace')
+</DD>
+<DT><STRONG>single_block</STRONG></DT>
+<DD>a two element list <TT>[oldblockname, newblockname]</TT>,
+where <TT>oldblockname</TT> in the current file is merged with <TT>newblockname</TT>
+in the new file. This is useful when blocknames don't match
+</DD>
+<DT><STRONG>idblock</STRONG></DT>
+<DD>This block is ignored when merging - useful when merging
+DDL1 dictionaries in strict mode, in which case the <TT>on_this_dictionary</TT>
+block would cause an error.
+</DD>
+</DL>
+
+<P>
+
+<H3><A NAME="SECTION00054100000000000000">
+<SPAN CLASS="arabic">5</SPAN>.<SPAN CLASS="arabic">4</SPAN>.<SPAN CLASS="arabic">1</SPAN> Limitations on merging</A>
+</H3>
+
+<P>
+In overlay mode, the COMCIFS recommendations require that, when both
+definitions contain identical attributes which can be looped, the
+merging process should construct those loops and include both sets
+of data in the new loop. 
+
+<P>
+This is not yet implemented in PyCIFRW, as it involves checking the
+DDL1/DDL2 spec to determine which attributes may be looped together.
+
+<P>
+
+<H1><A NAME="SECTION00060000000000000000">
+<SPAN CLASS="arabic">6</SPAN> Example programs</A>
+</H1>
+
+<P>
+A program which uses PyCIFRW for validation, <TT>validate_cif.py</TT>,
+is included in the distribution in the Programs subdirectory. It will
+validate a CIF file (including dictionaries) against one or more dictionaries
+which may be specified by name and version or as a filename on the
+local disk. If name and version are specified, the IUCr canonical
+registry or a local registry is used to find the dictionary and download
+it if necessary.
+
+<P>
+
+<H2><A NAME="SECTION00061000000000000000">
+<SPAN CLASS="arabic">6</SPAN>.<SPAN CLASS="arabic">1</SPAN> Usage</A>
+</H2>
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>python&nbsp;validate_cif.py&nbsp;[options]&nbsp;ciffile
+</DD>
+</DL>
+<P>
+
+<H2><A NAME="SECTION00062000000000000000">
+<SPAN CLASS="arabic">6</SPAN>.<SPAN CLASS="arabic">2</SPAN> Options</A>
+</H2>
+
+<P>
+<DL>
+<DT><STRONG>-version</STRONG></DT>
+<DD>show version number and exit
+</DD>
+<DT><STRONG>-h,-help</STRONG></DT>
+<DD>print short help message
+</DD>
+<DT><STRONG>-d&nbsp;dirname</STRONG></DT>
+<DD>directory to find/store dictionary files
+</DD>
+<DT><STRONG>-f&nbsp;dictname</STRONG></DT>
+<DD>filename of locally-stored dictionary
+</DD>
+<DT><STRONG>-u&nbsp;version</STRONG></DT>
+<DD>dictionary version to resolve using registry
+</DD>
+<DT><STRONG>-n&nbsp;name</STRONG></DT>
+<DD>dictionary name to resolve using registry
+</DD>
+<DT><STRONG>-s</STRONG></DT>
+<DD>store downloaded dictionary locally (default True)
+</DD>
+<DT><STRONG>-c</STRONG></DT>
+<DD>fetch and use canonical registry from IUCr
+</DD>
+<DT><STRONG>-r&nbsp;registry</STRONG></DT>
+<DD>location of registry as filename or URL
+</DD>
+</DL>
+
+<P>
+
+<H1><A NAME="SECTION00070000000000000000">
+<SPAN CLASS="arabic">7</SPAN> Further information</A>
+</H1>
+
+<P>
+The source files are in a literate programming format (noweb) with
+file extension .nw. HTML documentation generated from these files
+and containing both code and copious comments is included in the downloaded
+package. Details of interpretation of the current standards as relates
+to validation can be found in these files.
+
+<H1><A NAME="SECTION00080000000000000000">
+About this document ...</A>
+</H1>
+ <STRONG>Programming with PyCIFRW</STRONG><P>
+This document was generated using the
+<A HREF="http://www.latex2html.org/"><STRONG>LaTeX</STRONG>2<tt>HTML</tt></A> translator Version 2002-2-1 (1.70)
+<P>
+Copyright &#169; 1993, 1994, 1995, 1996,
+<A HREF="http://cbl.leeds.ac.uk/nikos/personal.html">Nikos Drakos</A>, 
+Computer Based Learning Unit, University of Leeds.
+<BR>
+Copyright &#169; 1997, 1998, 1999,
+<A HREF="http://www.maths.mq.edu.au/~ross/">Ross Moore</A>, 
+Mathematics Department, Macquarie University, Sydney.
+<P>
+The command line arguments were: <BR>
+ <STRONG>latex2html</STRONG> <TT>-no_subdir -split 0 -show_section_numbers /tmp/lyx_tmpdir7557e62NqG/lyx_tmpbuf0/documentation.tex</TT>
+<P>
+The translation was initiated by James Hester on 2005-07-22
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<IMG WIDTH="81" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next_inactive"
+ SRC="/usr/share/latex2html/icons/nx_grp_g.png"> 
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up_g.png"> 
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev_g.png">   
+<BR></DIV>
+<!--End of Navigation Panel-->
+<ADDRESS>
+James Hester
+2005-07-22
+</ADDRESS>
+</BODY>
+</HTML>

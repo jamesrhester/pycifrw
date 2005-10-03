@@ -1,0 +1,74 @@
+Release Notes for PyCIFRW-2.0
+=============================
+
+This is a beta release of PyCifRW-2.0.  It 
+contains a number of improvements
+and bug fixes over the PyCifRW-1.21 release.  A
+few changes have been made in some places which
+may break old code.
+
+
+Bug fixes
+=========
+
+* the CifFile.clear method did not actually work. This
+has been fixed (thanks to Heping Zheng)
+
+* the CifFile.NewBlock method allowed only alphanumerics
+in block names.  This restriction has been relaxed
+
+* CIF data and block names were not case-insensitive. This
+has been fixed.  In particular, an error is raised if input 
+CIF files repeat a data name with different case. 
+
+
+Improvements
+============
+
+* CIF files may now be validated against dictionaries written
+in DDL1 or DDL2. 
+ 
+* Reading and accessing save frames is supported
+
+* A CifDic object is provided giving uniform access to 
+DDL1/DDL2 dictionary definitions
+
+* CIF files and/or blocks may be merged along the lines 
+of the IUCr recommendations for dictionary merging
+
+* A new CifBlock method "loops()" returns a list 
+where each list item is a list of names in a loop of the 
+CifBlock (useful when validating).
+
+* Case insensitivity is enforced throughout when checking
+for data name duplication.  However, the case of all
+data names returned will be the same as the case which
+was originally given unless the data name has been
+replaced, so when writing out a CIF file, the case in 
+the original file or that passed to AddCifItem is preserved.
+
+Incompatible changes
+====================
+
+The following changes may break existing code:
+
+* CifFile.NewBlock no longer returns the new block name.  
+Previously, name collisions were avoided by automatic
+generation of a new block name, which was returned to
+the calling routine. Now, instead an error is raised if 
+the block already exists in the file.  To silently 
+replace an already-existing block, the keyword argument 
+"replace=True" can be used. This keyword is automatically 
+set when using square bracket notation to set the new block 
+(i.e. cf['newblock'] = <some cifblock>)
+
+* When replacing a data item which occurred in
+a loop, the entire loop used to be removed.  Now only 
+the single data name is removed.
+
+* the CifFile method ReadCif, which used to take a filename
+and fill in a CifFile object from the file contents, now 
+takes an open file-like stream, i.e. you should open your
+file before passing it to ReadCif.  This change enables
+ReadCif to be passed URL file objects so that CifFile
+objects can be filled in across the web.

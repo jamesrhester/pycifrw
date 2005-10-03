@@ -1,0 +1,158 @@
+This is TeX, Version 3.14159 (Web2C 7.3.7) (format=latex 2002.6.18)  20 JUN 2002 14:36
+**yapps2.tex
+(./yapps2.tex
+LaTeX2e <2001/06/01>
+Babel <v3.7h> and hyphenation patterns for american, french, german, ngerman, n
+ohyphenation, loaded.
+(/usr/share/texmf/tex/latex/base/article.cls
+Document Class: article 2001/04/21 v1.4e Standard LaTeX document class
+(/usr/share/texmf/tex/latex/base/size10.clo
+File: size10.clo 2001/04/21 v1.4e Standard LaTeX file (size option)
+)
+\c@part=\count79
+\c@section=\count80
+\c@subsection=\count81
+\c@subsubsection=\count82
+\c@paragraph=\count83
+\c@subparagraph=\count84
+\c@figure=\count85
+\c@table=\count86
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+(/usr/share/texmf/tex/latex/psnfss/palatino.sty
+Package: palatino 2001/06/04 PSNFSS-v8.2 (SPQR) 
+)
+(/usr/share/texmf/tex/latex/latex2html/html.sty
+Package: html 1999/07/19 v1.38 hypertext commands for latex2html (nd, hws, rrm)
+
+\c@lpart=\count87
+\c@lchapter=\count88
+\c@chapter=\count89
+\c@lsection=\count90
+\c@lsubsection=\count91
+\c@lsubsubsection=\count92
+\c@lparagraph=\count93
+\c@lsubparagraph=\count94
+\c@lsubsubparagraph=\count95
+\ptrfile=\write3
+)
+(/usr/share/texmf/tex/latex/graphics/color.sty
+Package: color 1999/02/16 v1.0i Standard LaTeX Color (DPC)
+
+(/usr/share/texmf/tex/latex/config/color.cfg
+File: color.cfg 2001/08/31 v1.1 color configuration of teTeX/TeXLive
+)
+Package color Info: Driver file: dvips.def on input line 125.
+
+(/usr/share/texmf/tex/latex/graphics/dvips.def
+File: dvips.def 1999/02/16 v3.0i Driver-dependant file (DPC,SPQR)
+)
+(/usr/share/texmf/tex/latex/graphics/dvipsnam.def
+File: dvipsnam.def 1999/02/16 v3.0i Driver-dependant file (DPC,SPQR)
+)) (./yapps2.aux)
+\openout1 = `yapps2.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Try loading font information for OT1+ppl on input line 23.
+
+(/usr/share/texmf/tex/latex/psnfss/ot1ppl.fd
+File: ot1ppl.fd 2001/06/04 font definitions for OT1/ppl.
+)
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 26.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 26.
+LaTeX Font Info:    Try loading font information for OT1+pcr on input line 28.
+
+(/usr/share/texmf/tex/latex/psnfss/ot1pcr.fd
+File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
+)
+LaTeX Font Info:    Font shape `OT1/ppl/bx/n' in size <14.4> not available
+(Font)              Font shape `OT1/ppl/b/n' tried instead on input line 38.
+ [1
+
+]
+LaTeX Font Info:    Font shape `OT1/ppl/bx/n' in size <10> not available
+(Font)              Font shape `OT1/ppl/b/n' tried instead on input line 137.
+
+
+LaTeX Warning: Reference `sec:Upgrading' on page 2 undefined on input line 137.
+
+
+LaTeX Font Info:    Font shape `OT1/ppl/bx/n' in size <12> not available
+(Font)              Font shape `OT1/ppl/b/n' tried instead on input line 151.
+LaTeX Font Info:    Try loading font information for OMS+ppl on input line 173.
+
+(/usr/share/texmf/tex/latex/psnfss/omsppl.fd
+File: omsppl.fd 
+)
+LaTeX Font Info:    Font shape `OMS/ppl/m/n' in size <10> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 173.
+ [2] [3] [4]
+Overfull \hbox (11.60745pt too wide) in paragraph at lines 373--373
+[]\OT1/pcr/m/n/10 [('id', 'print'), ('str', '3 = '), [('id', '+'), ('num', 1), 
+('num', 2)]][] 
+ []
+
+[5]
+Overfull \hbox (17.60745pt too wide) in paragraph at lines 430--430
+[]    \OT1/pcr/m/n/10 # A term is either a number or an expression surrounded b
+y parentheses[] 
+ []
+
+[6] [7]
+LaTeX Font Info:    Font shape `OT1/pcr/m/it' in size <10> not available
+(Font)              Font shape `OT1/pcr/m/sl' tried instead on input line 556.
+
+Overfull \hbox (11.60745pt too wide) in paragraph at lines 620--620
+[]                      \OT1/pcr/m/n/10 "else" stmt {{ return ('If',expr,then_p
+art,stmt) }}[] 
+ []
+
+[8] [9] [10] [11] [12] [13]
+Overfull \hbox (35.60745pt too wide) in paragraph at lines 1067--1067
+[]    \OT1/pcr/m/n/10 token STR:   '[rR]?\'([^\\n\'\\\\]|\\\\.)*\'|[rR]?"([^\\n
+"\\\\]|\\\\.)*"'[] 
+ []
+
+[14] [15]
+Overfull \hbox (8.89384pt too wide) in paragraph at lines 1168--1172
+\OT1/ppl/m/n/10 tween some pat-tern and noth-ing. In ad-di-tion, Yapps 2 has th
+e con-ve-nience syn-tax []\OT1/pcr/m/n/10 [A B ...]
+ []
+
+
+Overfull \hbox (332.97282pt too wide) in paragraph at lines 1188--1194
+[]\OT1/ppl/m/n/10 The most likely fu-ture ex-ten-sion is back-track-ing. A gram
+-mar pat-tern like []\OT1/pcr/m/n/10 (VAR ':=' expr)? {{ return Assign(VAR,expr
+) }} : expr {{ return expr }}
+ []
+
+[16] [17] (./yapps2.aux)
+
+LaTeX Warning: There were undefined references.
+
+ ) 
+Here is how much of TeX's memory you used:
+ 865 strings out of 10847
+ 11018 string characters out of 70946
+ 56369 words of memory out of 263001
+ 3847 multiletter control sequences out of 10000+0
+ 7807 words of font info for 25 fonts, out of 400000 for 1000
+ 14 hyphenation exceptions out of 1000
+ 23i,7n,19p,162b,309s stack positions out of 300i,100n,500p,50000b,4000s
+
+Output written on yapps2.dvi (17 pages, 61340 bytes).

@@ -1,0 +1,22 @@
+# Purpose: simple valid file conforming to CIF syntax
+
+data_model
+
+_d1 char
+_d2 'model file'
+_d3 "with various types of field"
+_d4              # Comment
+; all conforming to valid STAR/CIF syntax
+  rules
+;
+
+loop_
+
+_d5
+_d6
+_d7
+_d8
+
+A B C D
+E F G H          # Comment within the body of a loop
+I J K L

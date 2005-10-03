@@ -1,0 +1,62 @@
+#!/bin/sh
+
+##############################################################################
+# small wrapper script to run the STAR/CIF syntax test suite                 #
+##############################################################################
+
+CLEAR="tput clear"         # command to clear screen
+
+for F in ciftest[0-9] ciftest[0-9][0-9]
+do
+	${CLEAR}
+	echo "=============================================================="
+	# Diplay purpose (with trick for empty file)
+	echo $F
+	if grep "# Purpose" $F
+	then
+		true
+	else
+		if [ -s $F ]
+		then
+			true
+		else	
+			echo "# Purpose: null file"
+		fi
+	fi
+
+	# Test with vcif
+	echo
+	echo "--------------------------------------------------------------"
+	echo "Testing against CIF syntax"
+	echo
+
+	vcif $F > $F.result
+	if [ -s $F.result ]
+	then
+		cat $F.result
+	else
+		if [ -f $F.result ]; then echo "(Valid)"; fi
+	fi
+
+	# Compare against canonical vcif run
+	if [ -f $F.result -a -f $F.result.canon ]
+	then
+	    if cmp $F.result $F.result.canon > /dev/null
+	    then
+		true   # got the expected result
+	    else
+		echo ""
+		echo "--------------------------------------------------------------"
+		echo "WARNING!! This is different from the canonical result!"
+		echo "Check your version of vcif"
+	    fi
+	fi
+
+	echo "=============================================================="
+	echo
+	echo "Press ENTER for next test"
+	read foo
+done
+
+echo "End of suite"
+exit

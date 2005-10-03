@@ -1,0 +1,25 @@
+ERROR: Number of loop elements not multiple of packetsize at line 27
+ERROR: Value missing at line 27
+ERROR: Value missing at line 27
+ERROR: Value missing at line 27
+ERROR: Unexpected string (B) at line 28
+ERROR: Unexpected string (C) at line 28
+ERROR: Unexpected string (D) at line 28
+ERROR: Unexpected string (E) at line 28
+ERROR: Unexpected string (F) at line 28
+ERROR: Unexpected string (G) at line 28
+ERROR: Unexpected string (H) at line 28
+ERROR: Unexpected string (I) at line 28
+ERROR: Unexpected string (J) at line 28
+ERROR: Unexpected string (K) at line 28
+ERROR: Unexpected string (L) at line 28
+ERROR: Redundant loop_ keyword at line 31
+ERROR: Unexpected string (6) at line 37
+ERROR: Unexpected string (7) at line 37
+ERROR: Unexpected string (8) at line 37
+ERROR: Unexpected string (9) at line 37
+ERROR: loop_ keyword not followed by dataname at line 39
+ERROR: Unexpected string (B) at line 39
+ERROR: Unexpected string (C) at line 39
+ERROR: Unexpected string (D) at line 39
+ERROR: Loop takes no data values before end of file
