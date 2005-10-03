@@ -72,7 +72,7 @@ def stripstring(value):
 # helper function to create a dictionary given a set of
 # looped datanames and data values
 
-def makeloop(namelist,itemlist,context):
+def makeloop(namelist,itemlist,context,item_order_list):
     noitems = len(namelist)
     nopoints = divmod(len(itemlist),noitems)
     if nopoints[1]!=0:    #mismatch
@@ -94,6 +94,8 @@ def makeloop(namelist,itemlist,context):
 	    raise CifError, "%s occurs twice in same loop" % namelist[i]
         newdict.update({namelist[i]:templist})
     context.append(newdict)
+    item_order_list.extend(namelist)
+    #print "Item order list + " + `namelist` + "->" + `item_order_list`
     #print 'Constructed loop with items: '+`newdict`
     return {}    # to keep things easy
 
@@ -122,6 +124,10 @@ def cif_update(old_dict,new_dict,loops):
 	        raise CifError, "Duplicate dataname or blockname %s in input file" % new_key
             old_dict[new_key] = new_dict[new_key]
 #
+# this takes two lines, so we couldn't fit it into a one line execution statement...
+def order_update(order_array,new_name):
+    order_array.append(new_name) 
+    return new_name
 @
 
 The regular expressions aren't quite as easy to deal with as in kjParsing;
@@ -186,24 +192,24 @@ rule input: ((
              END                 {{maindict = {} }}
             ))                    {{return maindict}}
 
-     rule dblock: (data_heading           {{dict={data_heading[5:]:{"loops":[],"saves":{} } } }}   # a data heading
+     rule dblock: (data_heading           {{dict={data_heading[5:]:{"loops":[],"saves":{},"item_order":[] } } }}   # a data heading
                   (
-                   dataseq@<<dict[data_heading[5:]]["loops"]>>    {{cif_update(dict[data_heading[5:]],dataseq,[])}}
+                   dataseq@<<dict[data_heading[5:]]["loops"],dict[data_heading[5:]]["item_order"]>>    {{cif_update(dict[data_heading[5:]],dataseq,[])}}
                   |
                   save_frame              {{dict[data_heading[5:]]["saves"].update(save_frame)}}
                   )*
                    )                      {{return monitor('dblock',dict)}} # but may be empty
 
-     rule dataseq@<<loop_array>>:  data@<<loop_array>>  {{datadict=data}} 
+     rule dataseq@<<loop_array,order_array>>:  data@<<loop_array,order_array>>  {{datadict=data}} 
 		       (
-                       data@<<loop_array>>           {{cif_update(datadict,data,loop_array)}}
-                       )*                           {{return monitor('dataseq',datadict)}}
+                       data@<<loop_array,order_array>>   {{cif_update(datadict,data,loop_array)}}
+                       )*                                {{return monitor('dataseq',datadict)}}
 
-     rule data@<<loop_array>>:  data_loop@<<loop_array>> {{return data_loop}} 
+     rule data@<<loop_array,order_array>>:  data_loop@<<loop_array,order_array>> {{return data_loop}} 
                         | 
-		        datakvpair      {{return datakvpair}} #kv pair
+		        datakvpair@<<order_array>>      {{return datakvpair}} #kv pair
 
-     rule datakvpair: data_name data_value  {{return {data_name:data_value} }} # name-value
+     rule datakvpair@<<order_array>>: data_name data_value  {{return {order_update(order_array, data_name):data_value} }} # name-value
      rule data_value: (data_value_1          {{thisval = stripstring(data_value_1)}}
                       |
                       sc_lines_of_text      {{thisval = stripextras(sc_lines_of_text)}}
@@ -215,7 +221,7 @@ rule input: ((
                             )*
                             end_sc_line     {{return monitor('sc_line_of_text',lines+end_sc_line)}}
 
-     rule data_loop@<<loop_array>>: LBLOCK loopfield loopvalues {{return makeloop(loopfield,loopvalues,loop_array)}}
+     rule data_loop@<<loop_array,order_array>>: LBLOCK loopfield loopvalues {{return makeloop(loopfield,loopvalues,loop_array,order_array)}}
 
      rule loopfield: data_name      {{loop=[data_name]}}
 		     (
@@ -228,9 +234,9 @@ rule input: ((
                        )*             
 		       )	      {{return loop}}
 
-     rule save_frame: save_heading       {{savedict = {save_heading[5:]:{"loops":[] } } }}
+     rule save_frame: save_heading       {{savedict = {save_heading[5:]:{"loops":[],"item_order":[] } } }}
                       (
-                      dataseq@<<savedict[save_heading[5:]]["loops"]>>    {{savedict[save_heading[5:]].update(dataseq)}}
+                      dataseq@<<savedict[save_heading[5:]]["loops"],savedict[save_heading[5:]]["item_order"]>>    {{savedict[save_heading[5:]].update(dataseq)}}
                       )*
                       save_end           {{return monitor('save_frame',savedict)}}
 

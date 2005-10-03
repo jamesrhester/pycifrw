@@ -466,7 +466,6 @@ def ReadCif(self,filestream,strict=1,maxlength=2048):
         if toolong:
             pos = split.index(toolong[0])
             raise CifError, 'Line %d contains more than %d characters' % (pos+1,maxlength)
-    context = {"loops":[],"latest":{}}
     try: 
         parser = YappsCifParser.CifParser(YappsCifParser.CifParserScanner(text))
         filecontents = getattr(parser,"input")()
@@ -517,6 +516,7 @@ class CifBlock:
     <<Check data item for CIF conformance>>
     <<Regularise data values>>
     <<Get complete looped data>>
+    <<Get co-looped names>>
     <<Add to looped data>>
     <<Return all looped names>>
     <<Merge with another block>>
@@ -539,11 +539,11 @@ are not constantly calling the [[lower()]] method of the strings.
 
 <<Initialise Cif Block>>=
 def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80):
-    self.block = {"loops":[],"saves":BlockCollection(type_tag="save_")}
+    self.block = {"loops":[],"saves":BlockCollection(type_tag="save_"),"item_order":[]}
     self.maxoutlength = maxoutlength
     self.wraplength = wraplength
     self.lower_keys = []    #for efficiency
-    if type(data) is DictType:     #direct placement
+    if type(data) is DictType:     #direct placement - used by ReadCif
         self.block.update(data)
 	# convert any save frames to CifBlocks
 	sbs = self.block["saves"]  #shorthand
@@ -557,7 +557,10 @@ def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80):
 	self.checklengths()
     # initialise our list of lower-case keys
     self.lower_keys = map(lambda a:a.lower(),self.keys())
-    self.lower_keys.extend(["loops","saves"])
+    self.lower_keys.extend(["loops","saves","item_order"])
+    # debugging
+    # if self.block.has_key("item_order"):
+    #     print `self.block["item_order"][:10]`
 
 @ Adding emulation of a mapping type.  We add any of the other
 functions we'd like to emulate.   [[__len__]] returns the number
@@ -581,6 +584,7 @@ def __delitem__(self,key):
 def __len__(self):
     blen = len(self.block) - 1   #non-looped items
     if self.block.has_key("saves"): blen = blen - 1  #not counted 
+    if self.block.has_key("item_order"): blen = blen - 1  #not counted 
     for aloop in self.block["loops"]:
         blen = blen + len(aloop.keys())
     return blen    
@@ -589,7 +593,7 @@ def __nonzero__(self):
     if self.__len__() > 0: return 1
     return 0
 
-# keys ignores the "saves" key
+# keys ignores the "saves" and "item_order" keys
 def keys(self):
     thesekeys = self.block.keys()
     for aloop in self.block["loops"]:
@@ -597,6 +601,7 @@ def keys(self):
     try:
         thesekeys.remove("saves")
 	thesekeys.remove("loops")
+	thesekeys.remove("item_order")
     except ValueError:
         pass
     return thesekeys
@@ -618,8 +623,10 @@ def get(self,key,default=None):
     return retval
 
 def clear(self):
-    self.block = {"loops":[],"saves":BlockCollection(type_tag="save_")}
-    self.lower_keys = ["loops","saves"]
+    self.block = {"loops":[],
+                  "saves":BlockCollection(type_tag="save_"),
+                  "item_order":[]}
+    self.lower_keys = ["loops","saves","item_order"]
 
 def copy(self):
     newcopy = self.block.copy()
@@ -697,6 +704,20 @@ def GetLoop(self,keyname):
 	lower_keys = map(lambda a:a.lower(),aloop.keys())
         if keyname.lower() in lower_keys:
             return aloop.items()
+    # not a looped item
+    if self.has_key(itemname):
+        raise TypeError, 'Non-looped item'
+    raise KeyError, 'Item does not exist'
+
+@ Get co-looped names.  Sometimes we just want names, and will get the
+values ourselves on a need-to-know basis.
+
+<<Get co-looped names>>=
+def GetLoopNames(self,keyname):
+    for aloop in self.block["loops"]:
+	lower_keys = map(lambda a:a.lower(),aloop.keys())
+        if keyname.lower() in lower_keys:
+            return aloop.keys()
     # not a looped item
     if self.has_key(itemname):
         raise TypeError, 'Non-looped item'
@@ -967,10 +988,9 @@ def regularise_data(self,dataitem):
     return regval
     
 @ Printing a section.  We allow an optional order list to be given, in
-case the caller wants to order things in some nice way.  This is
-overridden if any item in the order list occurs within a loop, in
-which case it will be packaged together with everything else within
-that same loop.  
+case the caller wants to order things in some nice way.  By default, we
+use the item_order dictionary item.  Naturally, looped items are grouped
+together according to their relative order in the order list.
 
 Note that we must be careful to add spaces between data items, especially
 when formatting string loop data, where our string addition could get
@@ -983,10 +1003,14 @@ def printsection(self,order=[]):
     import string
     # first make an ordering
     if not order:
+        order = self.block["item_order"]
+    if not order:
         order = self.keys()
         order.sort()
-    # now prune that ordering...
-    order = filter(lambda a,b=self.block:b.has_key(a),order)
+    # now prune that ordering,to get rid of special keys
+    order = filter(lambda a:self.has_key(a),order)
+    # and add in any that weren't specified...
+    order.extend(filter(lambda a: a not in order,self.keys()))
     # now do it...
     outstring = cStringIO.StringIO()       # the returned string
     # print any save blocks
@@ -995,38 +1019,41 @@ def printsection(self,order=[]):
 	   outstring.write("\nsave_%s \n\n" % savename)
 	   outstring.write(str(self.block["saves"][savename]))
 	   outstring.write("\n\nsave_\n\n")
-    for itemname in order:
-        itemvalue = self.block[itemname]
-        if isinstance(itemvalue,StringType):
+    while len(order)>0:
+        print "Order now: " + `order`
+        itemname = order.pop(0)
+        itemvalue = self[itemname]
+        if not isinstance(itemvalue,(ListType,TupleType)): #single value
+           if isinstance(itemvalue,StringType):  #need to sanitize
               thisstring = self._formatstring(itemvalue)
               if len(thisstring) + len(itemname) < (self.wraplength-2):
                       outstring.write('%s %s\n' % (itemname,thisstring))
               else:
                       outstring.write('%s\n %s\n' % (itemname, thisstring))
-        else: 
+           else:  #is number, no sanitization required
                   if len(str(itemvalue)) + len(itemname) < (self.wraplength-2):
                       outstring.write('%s %s\n' % (itemname, itemvalue))
                   else:
                       outstring.write('%s\n %s\n' % (itemname, itemvalue))
-        continue
-    #do the loops
-    for aloop in self.block["loops"]:
+        else:#do a loop
            outstring.write('\n loop_\n')
-           loopnames = aloop.keys()
-           loopnames.sort()
-           numdata = len(aloop[loopnames[0]])
+           loopnames = filter(lambda a:a in self.GetLoopNames(itemname),order)#maintain rel ordering
+           print "Loopnames: " + `loopnames`
+           for a in loopnames: order.remove(a)
+           loopnames.insert(0,itemname)     #not caught in the filter, because popped
+           numdata = len(self[loopnames[0]])
            for name in loopnames: 
                outstring.write('   %-75s\n' % name)
-               if len(aloop[name]) != numdata:
+               if len(self[name]) != numdata:
                    raise CifError,'Loop data mismatch for ' + name + \
                    ':output aborted\n'+ '%d , expected %d:' % \
-                   (len(aloop[name]),numdata) + `aloop[loopnames[0]]`+`aloop[name]` + outstring.getvalue()
+                   (len(self[name]),numdata) + `self[loopnames[0]]`+`self[name]` + outstring.getvalue()
            curstring = ''      
            # when adding to outstring, make sure to add spaces
            for position in range(numdata):
                for name in loopnames:
                    # at each point, get the next data value
-                   datapoint = aloop[name][position]
+                   datapoint = self[name][position]
                    if isinstance(datapoint,StringType):
                        thisstring = '%s' % (self._formatstring(datapoint)) #no spaces yet
                        if '\n' in thisstring:
