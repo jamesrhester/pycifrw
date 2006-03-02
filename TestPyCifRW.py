@@ -3,6 +3,7 @@
 #
 # 
 import unittest, CifFile
+import StarFile
 import re
 
 # Test basic setting and reading of the CifBlock
@@ -25,13 +26,13 @@ class BlockRWTestCase(unittest.TestCase):
 
     def testTupleComplexSet(self):
         """Test setting multiple names in loop"""
-	names = ('_item_name_1','_item_name#2','_item_%$#3')
-	values = ((1,2,3,4),('hello','good_bye','a space','# 4'),
-	          (15.462, -99.34,10804,0.0001))
+	names = (('_item_name_1','_item_name#2','_item_%$#3'),)
+	values = (((1,2,3,4),('hello','good_bye','a space','# 4'),
+	          (15.462, -99.34,10804,0.0001)),)
         self.cf.AddCifItem((names,values))
-	self.failUnless(tuple(map(float, self.cf[names[0]])) == values[0])
-	self.failUnless(tuple(self.cf[names[1]]) == values[1])
-	self.failUnless(tuple(map(float, self.cf[names[2]])) == values[2])
+	self.failUnless(tuple(map(float, self.cf[names[0][0]])) == values[0][0])
+	self.failUnless(tuple(self.cf[names[0][1]]) == values[0][1])
+	self.failUnless(tuple(map(float, self.cf[names[0][2]])) == values[0][2])
 
     def testStringSet(self):
         """test string setting"""
@@ -43,15 +44,15 @@ class BlockRWTestCase(unittest.TestCase):
         dataname = '_a_long_long_'*7
         try:
             self.cf[dataname] = 1.0
-        except CifFile.CifError: pass
+        except (StarFile.StarError,CifFile.CifError): pass
         else: self.fail()
 
     def testTooLongLoopSet(self):
         """test setting overlong data names in a loop"""
         dataname = '_a_long_long_'*7
         try:
-            self.cf[(dataname,)] = ((1.0,2.0,3.0),)
-        except CifFile.CifError: pass
+            self.cf[dataname] = (1.0,2.0,3.0)
+        except (StarFile.StarError,CifFile.CifError): pass
         else: self.fail()
 
     def testBadStringSet(self):
@@ -59,15 +60,15 @@ class BlockRWTestCase(unittest.TestCase):
         dataname = '_name_is_ok'
         try:
             self.cf[dataname] = "eca234\f\vaqkadlf"
-        except CifFile.CifError: pass
-        else: self.Fail()
+        except StarFile.StarError: pass
+        else: self.fail()
 
     def testBadNameSet(self):
         """test setting names with bad characters"""
         dataname = "_this_is_not ok"
         try:
             self.cf[dataname] = "nnn"
-        except CifFile.CifError: pass
+        except StarFile.StarError: pass
         else: self.Fail()
 
     def testMoreBadStrings(self):
@@ -75,8 +76,12 @@ class BlockRWTestCase(unittest.TestCase):
         val = "so far, ok, but now we have a " + chr(128)
         try:
             self.cf[dataname] = val
-        except CifFile.CifError: pass
+        except StarFile.StarError: pass
         else: self.Fail()
+
+    def testEmptyString(self):
+        """An empty string is, in fact, legal"""
+        self.cf['_an_empty_string'] = ''
         
 # Now test operations which require a preexisting block
 #
@@ -84,9 +89,9 @@ class BlockRWTestCase(unittest.TestCase):
 class BlockChangeTestCase(unittest.TestCase):
    def setUp(self):
         self.cf = CifFile.CifBlock()
-	self.names = ('_item_name_1','_item_name#2','_item_%$#3')
-	self.values = ((1,2,3,4),('hello','good_bye','a space','# 4'),
-	          (15.462, -99.34,10804,0.0001))
+	self.names = (('_item_name_1','_item_name#2','_item_%$#3'),)
+	self.values = (((1,2,3,4),('hello','good_bye','a space','# 4'),
+	          (15.462, -99.34,10804,0.0001)),)
         self.cf.AddCifItem((self.names,self.values))
 	self.cf['_non_loop_item'] = 'Non loop string item'
 	self.cf['_number_item'] = 15.65
@@ -100,11 +105,11 @@ class BlockChangeTestCase(unittest.TestCase):
         df.NewBlock('testname',self.cf)
 
    def testLoop(self):
-        """Check GetLoop returns values and names in right order"""
-   	results = self.cf.GetLoop(self.names[2])
-	for (key,value) in results:
-	    self.failUnless(key in self.names)
-	    self.failUnless(tuple(value) == self.values[list(self.names).index(key)])
+        """Check GetLoop returns values and names in matching order"""
+   	results = self.cf.GetLoop(self.names[0][2])
+	for key in results.keys():
+	    self.failUnless(key in self.names[0])
+	    self.failUnless(tuple(results[key]) == self.values[0][list(self.names[0]).index(key)])
 	
    def testSimpleRemove(self):
        """Check item deletion outside loop"""
@@ -116,16 +121,16 @@ class BlockChangeTestCase(unittest.TestCase):
 
    def testLoopRemove(self):
        """Check item deletion inside loop"""
-       self.cf.RemoveCifItem(self.names[1])
+       self.cf.RemoveCifItem(self.names[0][1])
        try:
-           a = self.cf[self.names[1]]
+           a = self.cf[self.names[0][1]]
        except KeyError: pass
        else: self.Fail()
 
    def testFullLoopRemove(self):
        """Check removal of all loop items"""
-       for name in self.names: self.cf.RemoveCifItem(name)
-       self.failUnless(len(self.cf.block["loops"])==0, `self.cf.block["loops"]`)
+       for name in self.names[0]: self.cf.RemoveCifItem(name)
+       self.failUnless(len(self.cf.loops)==0, `self.cf.loops`)
 
 # test adding data to a loop.  We test straight addition, then make sure the errors
 # happen at the right time
@@ -135,9 +140,9 @@ class BlockChangeTestCase(unittest.TestCase):
        adddict = {'_address':['1 high street','2 high street','3 high street','4 high st'],
                   '_address2':['Ecuador','Bolivia','Colombia','Mehico']}
        self.cf.AddToLoop('_item_name#2',adddict)
-       newkeys = map(lambda a:a[0],self.cf.GetLoop('_item_name#2'))
+       newkeys = self.cf.GetLoop('_item_name#2').keys()
        self.failUnless(adddict.keys()[0] in newkeys)
-       self.failUnless(len(self.cf.GetLoop('_item_name#2'))==len(self.values)+2)
+       self.failUnless(len(self.cf.GetLoop('_item_name#2'))==len(self.values[0])+2)
        
    def testBadAddToLoop(self):
        """Test incorrect loop addition"""
@@ -149,7 +154,7 @@ class BlockChangeTestCase(unittest.TestCase):
        else: self.Fail()
        try:
            self.cf.AddToLoop('_item_name#2',adddict)
-       except CifFile.CifError:
+       except StarFile.StarLengthError:
            pass 
        else: self.Fail()
 #
@@ -181,7 +186,7 @@ class BlockNameTestCase(unittest.TestCase):
        try:
            cf['a_very_long_block_name_which_should_be_rejected_out_of_hand123456789012345678']=df
        except CifFile.CifError: pass
-       else: self.Fail()
+       else: self.fail()
 
    def testBlockOverwrite(self):
        """Upper/lower case should be seen as identical"""
@@ -205,6 +210,7 @@ class FileWriteTestCase(unittest.TestCase):
              ('_item_3','34.2332'),
              ('_item_4','Some very long data which we hope will overflow the single line and force printing of another line aaaaa bbbbbb cccccc dddddddd eeeeeeeee fffffffff hhhhhhhhh iiiiiiii jjjjjj'),
              ('_item_2','Some_underline_data'),
+             ('_item_empty',''),
              (('_item_5','_item_7','_item_6'),
              ([1,2,3,4],
               ['a','b','c','d'],
@@ -241,7 +247,8 @@ class FileWriteTestCase(unittest.TestCase):
        outfile = open('test.cif','w')
        outfile.write(str(cif))
        outfile.close()
-       self.df = CifFile.CifFile('test.cif')['testblock']
+       self.ef = CifFile.CifFile('test.cif')
+       self.df = self.ef['testblock']
        self.dfs = self.df["saves"]["test_save_frame"]
 
    def tearDown(self):
@@ -249,6 +256,7 @@ class FileWriteTestCase(unittest.TestCase):
        #os.remove('test.cif')
        del self.df
        del self.cf
+       del self.ef
 
    def testStringInOut(self):
        """Test writing short strings in and out"""
@@ -272,13 +280,17 @@ class FileWriteTestCase(unittest.TestCase):
        compstring = re.sub('\n','',self.dfs['_sitem_4'])
        self.failUnless(compstring == self.cfs['_sitem_4'])
 
+   def testEmptyStringInOut(self):
+       """An empty string is in fact kosher""" 
+       self.failUnless(self.cf['_item_empty']=='')
+
    def testLoopDataInOut(self):
        """Test writing in and out loop data"""
        olditems = self.cf.GetLoop('_item_5')
-       for key,value in olditems:
+       for key,value in olditems.items():
            self.failUnless(tuple(map(str,value))==tuple(self.df[key]))
        # save frame test
-       olditems = self.cfs.GetLoop('_sitem_5')
+       olditems = self.cfs.GetLoop('_sitem_5').items()
        for key,value in olditems:
            self.failUnless(tuple(map(str,value))==tuple(self.dfs[key]))
 
@@ -286,7 +298,7 @@ class FileWriteTestCase(unittest.TestCase):
        """Test writing in and out string loop data"""
        olditems = self.cf.GetLoop('_string_1')
        newitems = self.df.GetLoop('_string_1')
-       for key,value in olditems:
+       for key,value in olditems.items():
            compstringa = map(lambda a:re.sub('\n','',a),value)
            compstringb = map(lambda a:re.sub('\n','',a),self.df[key])
            self.failUnless(compstringa==compstringb)
@@ -308,6 +320,24 @@ class FileWriteTestCase(unittest.TestCase):
               ['a','b','c','d'])))
        bb = CifFile.CifBlock(s_items)
        self.cf["saves"]["some_name"]=bb
+
+   def testCopySaveFrame(self):
+       """Early implementations didn't copy the save frame properly"""
+       jj = CifFile.CifFile(self.ef)  #this will trigger a copy
+       self.failUnless(len(jj["testblock"]["saves"])>0)
+
+   def testProperCifFile(self):
+       """We test that all objects have been converted from Star objects"""
+       print "Classnames:\n  CifFile is %s" % `self.ef.__class__`
+       self.failUnless(self.ef.__class__==CifFile.CifFile)
+       print "  CifBlock is %s" % `self.df.__class__`
+       self.failUnless(self.df.__class__==CifFile.CifBlock)
+       jj = self.df.GetLoop('_item_5')
+       print "  CifLoop is %s" % `jj.__class__`
+       self.failUnless(jj.__class__==CifFile.CifLoopBlock)
+       jj = self.dfs.GetLoop('_sitem_5')
+       print "  Save frame loop is %s" % `jj.__class__` 
+       self.failUnless(jj.__class__==CifFile.CifLoopBlock)
 
 ##############################################################
 #
@@ -457,7 +487,7 @@ class DicMergeTestCase(unittest.TestCase):
         self.testcif = CifFile.CifFile("dictionaries/merge_test.cif")
        
     def testAStrict(self):
-        self.assertRaises(CifFile.CifError,CifFile.merge_dic,[self.offdic,self.adic],mergemode="strict")
+        self.assertRaises(StarFile.StarError,CifFile.merge_dic,[self.offdic,self.adic],mergemode="strict")
         
     def testAOverlay(self):
         newdic = CifFile.merge_dic([self.offdic,self.adic],mergemode='overlay')

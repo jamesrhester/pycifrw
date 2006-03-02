@@ -75,7 +75,7 @@ if [[dataname]] is not in a loop.
 \item [[AddLoop(dataname,data)]]: add [[data]] to the loop containing
 [[dataname]].  If dataname is not a looped item, an error is returned.
 If (data) has the wrong length, an error is returned. 
-\item [[loops()]]: return a list containing all looped names, grouped into
+\item [[loopnames()]]: return a list containing all looped names, grouped into
 individual loops.  This was added to facilitate validity checking and is
 unlikely to be useful otherwise.
 \end{enumerate}
@@ -86,304 +86,31 @@ square brackets.  Most mapping operations have been implemented (see below).
 We import type objects at the module level, as required by later versions
 of Python.
 
+We build upon the objects defined in the StarFile class, by imposing a few
+extra restrictions where necessary.  We need a parallel CIF object at every
+level, as we must catch data name lengths and nested loops however the user
+wishes to do them.
+
 <<*>>=
 <<Copyright statement>>
 from types import *
 import re
-<<BlockCollection class>>
-<<CifFile class>>
+import StarFile
+<<CifLoopBlock class>>
 <<CifBlock class>>
+<<CifFile class>>
 <<Define an error class>>
 <<CIF Dictionary type>>
 <<A valid CIF block>>
 <<A valid CIF file>>
 <<Top-level functions>>
 <<Utility functions>>
-
-@ \section{BlockCollection}
-
-Both CIF files and a collection of save frames look very similar, so we
-abstract the common behaviour into the [[BlockCollection]] class, and then
-inherit from it to make a [[CifFile]] object.  Save frames require
-no further special behaviour, and so are instances of a [[BlockCollection]].
-
-<<BlockCollection class>>=
-class BlockCollection:
-    <<Initialise BC data structures>>
-    <<Check block name lengths>>
-    <<BC emulation of mapping type>>
-    <<Read in a CIF file>>
-    <<Add a new data section>>
-    <<Merge with another block collection>>
-    <<Collect all values of a single key in all blocks>>
-<<Write out to string representation>>
-
-@ When initialising, we take an optional type tag, which will
-be used when printing out as a prefix before each block name.
-Usually this will be either "data_" for a data block in a
-CIF file, or "save_" for a save frame in a data block.
-
-<<Initialise BC data structures>>=
-def __init__(self,datasource=None,strict=1,type_tag=''):
-    self.dictionary = {}
-    self.type_tag = type_tag
-    self.strict = strict
-    self.lower_keys = []              # for efficiency
-    if isinstance(datasource,DictType):
-        for (key,value) in datasource.items():
-            self.__setitem__(key,value)
-    elif isinstance(datasource,CifFile) or isinstance(datasource,BlockCollection):
-        for key,value in datasource.dictionary.items():
-            self.dictionary[key] = value.copy()     # a deep copy
-        self.lower_keys = map(lambda a:a.lower(),self.dictionary.keys()) 
-    if strict:
-        self.checklengths()
-    self.header_comment = ''
-
-@ Checking block name lengths.  Although the new 1.1 standard allows
-very long lines (2048 characters), block names are still restricted
-to be no more than 75 characters in length.  We hard code this in.
-
-<<Check block name lengths>>=
-def checklengths(self):
-    toolong = filter(lambda a:len(a)>75, self.dictionary.keys())
-    if toolong:
-	errorstring = ""
-	for bn in toolong:
-	    errorstring += "\n" + bn
-	raise CifError, 'Following block name(s) too long: \n' + errorstring
-
-@ Emulation of a mapping type.  When called via __setitem__, we do not
-check that a new blockname replaces an old block name.  If you need this,
-you should call [[NewBlock]] directly.
-
-<<BC emulation of mapping type>>=
-def __str__(self):
-    return self.WriteOut()
-
-def __setitem__(self,key,value):
-    if isinstance(value,CifBlock):
-        self.NewBlock(key,value,replace=True)
-    elif isinstance(value,DictType):
-        self.NewBlock(key,CifBlock(value),replace=True)
-    else: raise TypeError
-    self.lower_keys.append(key.lower())
-
-# due to attempt to get upper/lower case treated as identical
-# we have a bit of cruft here
-def __getitem__(self,key):
-    try:
-        return self.dictionary[key]
-    except KeyError:
-        if key.lower() not in self.lower_keys:
-            raise KeyError
-    curr_keys = self.dictionary.keys()
-    lower_ordered = map(lambda a:a.lower(),curr_keys)
-    keyindex = lower_ordered.index(key.lower())
-    return self.dictionary[curr_keys[keyindex]]
-
-# we have to get an ordered list of the current keys,
-# as we'll have to delete one of them anyway
-def __delitem__(self,key):
-    try:
-        del self.dictionary[key]
-        self.lower_keys.remove(key.lower())
-    except KeyError:
-        if not self.has_key(key):
-            raise KeyError
-        curr_keys = self.dictionary.keys()
-        lower_ordered = map(lambda a:a.lower(),curr_keys)
-        keyindex = lower_ordered.index(key.lower())
-        del self.dictionary[curr_keys[keyindex]]
-    
-def __len__(self):
-    return len(self.dictionary)
-
-def keys(self):
-    return self.dictionary.keys()
-
-# changes to take case independence into account
-def has_key(self,key):
-    if self.dictionary.has_key(key):
-       return 1
-    if key.lower() in self.lower_keys:
-       return 1
-    return 0
-
-def get(self,key,default=None):
-    if self.dictionary.has_key(key):
-        return self.dictionary[key]
-    elif self.has_key(key):     # take account of case
-        return self.__getitem__(key)
-    else:
-        return default
-
-def clear(self):
-    self.dictionary.clear()
-    self.lower_keys = []
-
-def copy(self):   
-    newcopy = self.dictionary.copy()
-    return BlockCollection('',newcopy)
- 
-def update(self,adict):
-    for key in adict.keys():
-        self.dictionary[key] = adict[key]
-    self.lower_keys.extend(map(lambda a:a.lower(),adict.keys()))
-
-def items(self):
-    return self.dictionary.items()
-
-@ Adding a new block.  A new block is just a new item in our
-dictionary, so we add a new entry to the current list of dictionaries, and set
-the count of the number of loops to zero.  We return the new block name
-in case we have changed it, so the calling routine can refer to it
-later.  Also, there is a limit of 75 characters for the block name length,
-which we enforce here.
-
-The [[no_replace]] option will signal an error if the requested blockname
-is already in the CifFile.
-
-Note that we must take account of upper/lower case differences being irrelevant
-for CIFs, but that we want to preserve the original case.
-
-<<Add a new data section>>=
-def NewBlock(self,blockname,blockcontents=(),replace=False):
-    if not blockcontents:
-        blockcontents = CifBlock()
-    newblockname = re.sub('[  \t]','_',blockname)
-    new_lowerbn = newblockname.lower()
-    if self.lower_keys.count(new_lowerbn):    #already in CIF
-        if not replace:
-            raise CifError, "Attempt to replace existing block" + blockname
-        # generate a list of lower-case keys in correct order
-        current_keys = self.dictionary.keys()
-        blocknames = map(lambda a:a.lower(),current_keys)
-        location = blocknames.index(new_lowerbn)
-        del self.dictionary[current_keys[location]]
-    if len(blockname) > 75:
-        raise CifError, 'Cif block/frame name too long:' + blockname
-    if blockcontents.__class__.__name__[-8:] != 'CifBlock':
-        raise CifError, 'Cif block initialised with non CifBlock object %s' % blockcontents.__class__.__name__[-8:]
-    self.dictionary.update({blockname:blockcontents})
-    self.lower_keys.append(new_lowerbn)
-
-@ Merging.  We implement this for dictionary merging support.  We can't
-merge [[CifDic]] objects, because the internal data structures for DDL2 and
-DDL1 are different (parent-child in particular), so any merge operation
-would have to first recreate the original Cif structure before proceeding.
-
-Merging can be strict, overlay or replace.  In all cases, if the block
-name is different, we simply add it in.  If it is the same, in strict
-mode we flag an error, in replace mode we replace it, and in overlay
-mode we actually add/replace individual data items.
-
-If the single_block list is non-empty, we assume that we should merge
-on the block level, using the given block names as the particular
-blocks to merge.  This is essentially what we have to do for DDL2
-dictionaries, where all the definitions are stored in save frames inside a
-single block. 
-
-Note also the related situation where we are in 'strict' mode, and
-the DDL1 dictionaries both have an "on_this_dictionary" block.  So we
-have an extra keyword argument "idblock" which contains a blockname
-to ignore during merging, i.e. it will remain the same
-as before merging.  In the future we may implement some sort of
-version tracking mechanism using this block.
-
-The suggested overlay method involves adding to loops, rather than
-replacing them completely.  Identical rows must be removed, and
-any key values with identical values remaining after this have to
-flag an error.  We don't read in the ddl specifications themselves,
-to avoid messing with hard-coded filenames, so we require the calling
-function to provide us with this file (not yet implemented).  
- 
-The [[match_att]] keyword allows us to match blocks/save frames on a
-particular attribute, rather than the block name itself.  This means
-we can do the right thing and compare [[_name]] entries rather than
-block names (the default behaviour).
-
-<<Merge with another block collection>>=
-def merge(self,new_bc,mode="strict",single_block=[],
-               idblock="",match_att=""):
-    if single_block:
-        self.dictionary[single_block[0]].merge(new_bc[single_block[1]],mode,
-					       match_att=match_att)
-        return None
-    base_keys = self.keys()
-    block_to_item = base_keys   #default
-    new_keys = new_bc.keys()
-    if match_att:
-        #make a blockname -> item name map
-	block_to_item = map(lambda a:self[a].get(match_att,None),self.keys())
-	# print `block_to_item`
-    for key in new_keys:
-        if key == idblock: continue
-	basekey = key        #default value
-	attval = new_bc[key].get(match_att,0)
-	for ii in range(len(block_to_item)):  #do this way to get looped names
-	    thisatt = block_to_item[ii]
-	    #print "Looking for %s in %s" % (attval,thisatt)
-            if attval == thisatt or \
-	       (isinstance(thisatt,ListType) and attval in thisatt):
-	          basekey = base_keys.pop(ii)
-                  block_to_item.remove(thisatt)
-                  break
-        if not self.dictionary.has_key(basekey) or mode=="replace":
-            self.dictionary[basekey] = new_bc[key]
-        else:
-            if mode=="strict":
-                raise CifError, "In strict merge mode: block %s in old and block %s in new files" % (basekey,key)
-            elif mode=="overlay":
-                self.dictionary[basekey].merge(new_bc[key],mode,match_att=match_att)
-            else:  
-                raise CifError, "Merge called with unknown mode %s" % mode
-
-@ When validating DDL2-type dictionaries against the DDL spec file, we have
-to be able to see all values of parent data items across all save frames
-in order to validate parent-child relations (I've inferred this, but
-if I ever find a standard document this may turn out to be wrong).  So this
-method is provided to return a list of all values taken by the given
-attribute within all of the blocks inside a block collection.
-
-A flat list is returned, even if looped values happen to occur in a data
-block.  This is because the one routine that calls this method is 
-interested in whether or not a given value occurs, rather than how 
-it occurs or what it occurs with.  We also remove duplicate values.
-
-<<Collect all values of a single key in all blocks>>=
-def get_all(self,item_name):
-    raw_values = map(lambda a:self[a].get(item_name),self.dictionary.keys())
-    raw_values = filter(lambda a:a != None, raw_values)
-    ret_vals = []
-    for rv in raw_values:
-        if isinstance(rv,ListType):
-	    for rvv in rv:
-		if rvv not in ret_vals: ret_vals.append(rvv)
-	else:
-	    if rv not in ret_vals: ret_vals.append(rv)
-    return ret_vals
-
-@ Writing all this stuff out to a string.  We loop over each of the
-individual sections, getting their string representation.  We 
-implement this using the cStringIO module for faster work.  Note that
-the default output comment specifies a CIF 1.1 standard file.
-
-<<Write out to string representation>>=
-    def WriteOut(self,comment=''):
-        import cStringIO
-        if not comment:
-            comment = self.header_comment
-        outstring = cStringIO.StringIO()
-        outstring.write(comment)
-        for datablock in self.dictionary.keys():
-            outstring.write('\n' + self.type_tag +datablock+'\n')
-            outstring.write(str(self.dictionary[datablock]))
-        returnstring =  outstring.getvalue()
-        outstring.close()
-        return returnstring
+<<Read in a CIF file>>
 
 @ \section{CifFile}
+
+A CifFile is subclassed from a StarFile.  Our StarFile class has an
+optional check of line length, which we use.
 
 If we are passed a filename, we open it and read it in, assuming that
 it is a conformant Cif file.  A CifFile object is a dictionary of
@@ -401,28 +128,19 @@ Note that this applies to the input only.  For changing output length,
 you can provide an optional parameter in the [[WriteOut]] method.
 
 <<CifFile class>>=
-class CifFile(BlockCollection):
+class CifFile(StarFile.StarFile):
 <<Initialise data structures>>
-    <<Read in a CIF file>>
 
 @ When initialising, we add those parts that are unique to the CifFile as
 opposed to a simple collection of blocks - i.e. reading in from a file,
-and some line length restrictions.  We don't indent this section in the
+and some line length restrictions.  We don't indent this section in this
 noweb file, so that our comment characters output at the beginning of the
-line.
+line.   We restrict our blocks to be of type CifBlock.
 
 <<Initialise data structures>>=
     def __init__(self,datasource=None,strict=1,maxinlength=2048,maxoutlength=0):
-        BlockCollection.__init__(self,datasource=datasource,strict=strict,type_tag='data_')
-        self.maxinlength = maxinlength
-        if maxoutlength == 0:
-            self.maxoutlength = maxinlength
-        else:
-            self.maxoutlength = maxoutlength
-        if type(datasource) is StringType:
-	    filestream = open(datasource)
-            self.ReadCif(filestream,strict,maxinlength)
-	    filestream.close()
+        StarFile.StarFile.__init__(self,datasource=datasource,maxinlength=maxinlength,maxoutlength=maxoutlength,blocktype=CifBlock)
+        self.strict = strict
         self.header_comment = \
 """#\\#CIF1.1
 ##########################################################################
@@ -437,91 +155,51 @@ line.
 #  http://www.iucr.org
 ##########################################################################
 """
+    def NewBlock(self,blockname,*nkwargs,**kwargs):
+       if len(blockname)>75:
+           raise CifError , 'Blockname %s is longer than 75 characters' % blockname
+       else:
+           StarFile.StarFile.NewBlock(self,blockname,*nkwargs,**kwargs)
 
-@ Reading in a file.  We now use the Yapps2-generated [[YappsCifParser]] module to provide grammar
-services.  The structure returned from parsing is an array of blocks,
-which we convert to a dictionary and place in [[self.dictionary]].  We do a preliminary
-check of line length, to satisfy the standard.
+@ \section{Cif Loop block class}
 
-The parser cannot easily check name collisions between looped data items and unlooped 
-data items with the same name, so such collisions may be present.  We do 
-this check after parsing for each data block.
+This parallels the fundamental LoopBlock class of a StarFile, with the
+two restrictions that nested loops are not allowed, and data names have
+to be no longer than 75 characters.
 
-We take an already-opened file as an argument to facilitate reading Cifs across
-the network.
+<<CifLoopBlock class>>=
+class CifLoopBlock(StarFile.LoopBlock):
+    def __init__(self,data=(),dimension=0,**kwargs):
+        self.loopclass = CifLoopBlock
+        if dimension > 1: 
+            raise CifError, 'Attempt to nest loops, loop level %d' % dimension
+        StarFile.LoopBlock.__init__(self,data,dimension=dimension,**kwargs)
+ 
+    def AddLoopItem(self,data,precheck=False):
+        StarFile.LoopBlock.AddLoopItem(self,data,precheck,maxlength=75)
 
-<<Read in a CIF file>>=
-def ReadCif(self,filestream,strict=1,maxlength=2048):
-    import YappsCifParser,string
-    text = filestream.read()
-    if not text:      # empty file, return empty block
-        return
-    # we recognise ctrl-Z as end of file
-    endoffile = text.find('\x1a')
-    if endoffile >= 0: 
-        text = text[:endoffile]
-    split = string.split(text,'\n')
-    if strict:
-        toolong =  filter(lambda a:len(a)>maxlength, split)
-        if toolong:
-            pos = split.index(toolong[0])
-            raise CifError, 'Line %d contains more than %d characters' % (pos+1,maxlength)
-    try: 
-        parser = YappsCifParser.CifParser(YappsCifParser.CifParserScanner(text))
-        filecontents = getattr(parser,"input")()
-    except YappsCifParser.SyntaxError:
-        errorstring = 'Syntax error in input file: last value parsed was %s' % YappsCifParser.lastval
-        errorstring = errorstring + '\nParser status: %s' % `parser._scanner`
-        raise CifError, errorstring
-    else:
-        if not filecontents: # comments only, return empty
-            return
-    for block in filecontents.keys():
-        # check for looped-unlooped name collisions
-        thisblock = filecontents[block]
-        if len(thisblock["loops"])>0 :        #for efficiency
-           unloop_keys = thisblock.keys()
-           unloop_lower_keys = map(lambda a:a.lower(),unloop_keys)
-           loop_keys = []
-           for loop in thisblock["loops"]:
-              loop_keys.extend(loop.keys())
-           #print "ReadCif: comparing %s to %s" % (`unloop_keys`,`loop_keys`)
-           bad = filter(lambda a:a.lower() in unloop_lower_keys,loop_keys)
-           if len(bad)>0:
-              errorstring  = "Following keys duplicated in block %s:" % block
-              for k in bad: errorstring += " %s" % k
-              raise CifError, errorstring 
-        self.dictionary.update({block:CifBlock(filecontents[block])})
+    def insert_loop(self,newloop):
+        if newloop.dimension > 1:
+            raise  CifError, 'Attempt to insert inner loop, loop level %d' % dimension
+        StarFile.LoopBlock.insert_loop(self,newloop)
 
 @ \section{Cif Block class}
 
-The real workhorse is the [[CifBlock]] class. It is essentially 
-a dictionary with a few extra items
-for our own internal reference.  These are used to handle loop
-management and save frame storage.  When initialising, we
-allow either a set of tuples, suitable for input to AddCifItem,
-or a complete block, suitable when copying.
-Save frames are invisible,
-except when referenced directly using the key "saves".
+The basic building block of a Cif File is the CifBlock, which we
+seem forced to subclass from a CifLoopBlock.  
+When initialising, we allow either a set of tuples, suitable for input
+to AddCifItem, or a complete block, suitable when copying. 
 
 <<CifBlock class>>=
-class CifBlock:
+class CifBlock(CifLoopBlock):
     <<Initialise Cif Block>>
-    <<Add emulation of a mapping type>>
+    <<Adjust emulation of a mapping type>>
     <<Return value of Cif item>>
     <<Remove a data item>>
     <<Add a data item>>
     <<Check data name lengths>>
-    <<Check data name for CIF conformance>>
-    <<Check data item for CIF conformance>>
-    <<Regularise data values>>
-    <<Get complete looped data>>
-    <<Get co-looped names>>
-    <<Add to looped data>>
     <<Return all looped names>>
     <<Merge with another block>>
-    <<Print a data block>>
-    <<Format a string>>
 
 @ If given non-zero data to initialise the block with, we either
 copy (if it is a dictionary) or else initialise each key-value
@@ -537,105 +215,56 @@ To manage case insensitivity while preserving the case of items
 that we are passed, we store a list of lower-case keys so that we
 are not constantly calling the [[lower()]] method of the strings.
 
+We include the dimension argument in initialisation, as this could be
+invoked from the StarFile.LoopBlock copy method, which constructs a new
+object, passing the [[dimension]] argument.  Which we ignore.
+
 <<Initialise Cif Block>>=
-def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80):
-    self.block = {"loops":[],"saves":BlockCollection(type_tag="save_"),"item_order":[]}
-    self.maxoutlength = maxoutlength
-    self.wraplength = wraplength
-    self.lower_keys = []    #for efficiency
-    if type(data) is DictType:     #direct placement - used by ReadCif
-        self.block.update(data)
-	# convert any save frames to CifBlocks
-	sbs = self.block["saves"]  #shorthand
-	self.block["saves"] = BlockCollection(datasource=sbs,strict = strict, type_tag="save_")
-    elif isinstance(data,(TupleType,ListType)):
-        for item in data:
-            self.AddCifItem(item)
-    else:                          #assume is CifBlock
-        self.block = data.block.copy()
-    if strict:
+def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80,overwrite=True,dimension=0):
+    self.strict = strict
+    CifLoopBlock.__init__(self,data=data,dimension=0,maxoutlength=maxoutlength,wraplength=wraplength,overwrite=overwrite)
+    if isinstance(data,(StarFile.StarBlock,CifBlock)):
+        self.saves = StarFile.BlockCollection(datasource=data["saves"],element_class=CifLoopBlock,type_tag="save")
+    else:
+        self.saves = StarFile.BlockCollection(element_class=CifLoopBlock,type_tag="save")
+    if self.strict:
 	self.checklengths()
-    # initialise our list of lower-case keys
-    self.lower_keys = map(lambda a:a.lower(),self.keys())
-    self.lower_keys.extend(["loops","saves","item_order"])
-    # debugging
-    # if self.block.has_key("item_order"):
-    #     print `self.block["item_order"][:10]`
 
-@ Adding emulation of a mapping type.  We add any of the other
-functions we'd like to emulate.   [[__len__]] returns the number
-of CIF items in this block, either in a loop or not.  So it is
-not the simple length of the dictionary.  It also completely
-ignores the "saves" key.
+@ As for star blocks, we add in the save frame key.
 
-<<Add emulation of a mapping type>>=
-def __str__(self):
-    return self.printsection()
+<<Adjust emulation of a mapping type>>=
+def __getitem__(self,key):
+    if key == "saves":
+        return self.saves
+    else:
+        return CifLoopBlock.__getitem__(self,key)
 
 def __setitem__(self,key,value):
-    self.AddCifItem((key,value))
-
-def __getitem__(self,key):
-    return self.GetCifItem(key)
-
-def __delitem__(self,key):
-    self.RemoveCifItem(key)
-
-def __len__(self):
-    blen = len(self.block) - 1   #non-looped items
-    if self.block.has_key("saves"): blen = blen - 1  #not counted 
-    if self.block.has_key("item_order"): blen = blen - 1  #not counted 
-    for aloop in self.block["loops"]:
-        blen = blen + len(aloop.keys())
-    return blen    
-
-def __nonzero__(self):
-    if self.__len__() > 0: return 1
-    return 0
-
-# keys ignores the "saves" and "item_order" keys
-def keys(self):
-    thesekeys = self.block.keys()
-    for aloop in self.block["loops"]:
-        thesekeys.extend(aloop.keys())
-    try:
-        thesekeys.remove("saves")
-	thesekeys.remove("loops")
-	thesekeys.remove("item_order")
-    except ValueError:
-        pass
-    return thesekeys
-
-def values(self):
-    ourkeys = self.keys()
-    return map(lambda a:self[a],ourkeys)
-
-def has_key(self,key):
-    if key.lower() in self.lower_keys:
-        return 1
-    return 0
-
-def get(self,key,default=None):
-    if self.has_key(key):
-        retval = self.GetCifItem(key)
+    if key == "saves":
+        self.saves[key] = value
     else:
-        retval = default
-    return retval
+        self.AddCifItem((key,value))
 
 def clear(self):
-    self.block = {"loops":[],
-                  "saves":BlockCollection(type_tag="save_"),
-                  "item_order":[]}
-    self.lower_keys = ["loops","saves","item_order"]
+    CifLoopBlock.clear(self)
+    self.saves = StarFile.BlockCollection(element_class=CifLoopBlock,type_tag="save_")
 
 def copy(self):
-    newcopy = self.block.copy()
-    newcopy["loops"] = []
-    for aloop in self.block["loops"]:  # do a deeper copy
-        newcopy["loops"].append(aloop.copy())
-    if self.block.has_key("saves"):    # a block collection object
-        newcopy["saves"] = self.block["saves"].copy()
-    return CifBlock(newcopy)
+    newblock = CifLoopBlock.copy(self)
+    newblock.saves = self.saves.copy()
+    return self.copy.im_class(newblock)   #catch inheritance
+
+def has_key(self,key):
+    if key == "saves": return 1
+    else: return CifLoopBlock.has_key(self,key)
+
+def __str__(self):
+    retstr = ''
+    for sb in self.saves.keys():
+        retstr = retstr + '\nsave_%s\n\n' % sb
+        retstr = retstr + str(self.saves[sb])
+        retstr = retstr + '\nsave_\n\n'
+    return retstr + CifLoopBlock.__str__(self)
 
 # this is not appropriate for save blocks.  Instead, the save block
 # should be accessed directly for update
@@ -645,116 +274,23 @@ def update(self,adict):
     if not isinstance(adict,CifBlock):
         raise TypeError
     for key in adict.block.keys():
-        if key!="loops":
-            self.AddCifItem((key,adict[key]))
-        else:
-            for aloop in adict.block["loops"]:
-                self.AddCifItem((aloop.keys(),aloop.values()))
+        self.AddCifItem((key,adict[key]))
+    for aloop in adict.loops:
+        self.insert_loop(aloop,audit=True)
 
-@ Returning a Cif item value.  Note that a looped block has little
-meaning without all the items in the loop.  Routine [[GetLoop]] is
-better in this case.  This is a real time-intensive loop, so we
-initially assume that the key we have been passed is the right
-key (i.e. case is the same) and only check for case if this
-fails.
+@ Returning a Cif item value.  Simply funnel through to subclass name.
 
 <<Return value of Cif item>>=
 def GetCifItem(self,itemname):
-    # assume case is correct first
-    try:
-	return self.block[itemname]
-    except KeyError:
-	for loop in self.block["loops"]:
-	    try:
-		return loop[itemname]
-	    except KeyError:
-		pass
-    if itemname.lower() not in self.lower_keys:
-        raise KeyError, 'Item %s not in Cif block' % itemname
-    # if we are still here, need to check case before raising
-    # an error...
-    real_keys = self.block.keys()
-    lower_keys = map(lambda a:a.lower(),self.block.keys()) 
-    try:
-	k_index = lower_keys.index(itemname.lower())
-    except ValueError:
-	pass
-    else:             #no exception, can return key
-        return self.block[real_keys[k_index]]
-    for aloop in self.block["loops"]:
-        real_keys = aloop.keys()
-        lower_keys = map(lambda a:a.lower(),real_keys)
-        try:
-            k_index = lower_keys.index(itemname.lower())
-        except ValueError:
-	    pass
-        else:             #no exception, have to delete key
-            return aloop[real_keys[k_index]]
-    raise KeyError, 'Item %s not in Cif block' % itemname
-
-@ This function is required if we wish a list of all items in a data block.
-We would use this if we needed to match things up properly.  We give the name
-of one item, and all items from that loop, and their values, are returned.
-As we are using the built-in [[items]] method of dictionaries, the returned
-values are a series of key,value pairs. 
-
-<<Get complete looped data>>=
-def GetLoop(self,keyname):
-    for aloop in self.block["loops"]:
-	lower_keys = map(lambda a:a.lower(),aloop.keys())
-        if keyname.lower() in lower_keys:
-            return aloop.items()
-    # not a looped item
-    if self.has_key(itemname):
-        raise TypeError, 'Non-looped item'
-    raise KeyError, 'Item does not exist'
-
-@ Get co-looped names.  Sometimes we just want names, and will get the
-values ourselves on a need-to-know basis.
-
-<<Get co-looped names>>=
-def GetLoopNames(self,keyname):
-    for aloop in self.block["loops"]:
-	lower_keys = map(lambda a:a.lower(),aloop.keys())
-        if keyname.lower() in lower_keys:
-            return aloop.keys()
-    # not a looped item
-    if self.has_key(itemname):
-        raise TypeError, 'Non-looped item'
-    raise KeyError, 'Item does not exist'
-
-@ Adding to a loop.  We find the loop containing the dataname that
-we've been passed, and then append all of the (key,values) pairs that we
-are passed in [[data]], which is a dictionary.  We expect that the data 
-have been sorted out for us, unlike when data are passed in [[AddCifItem]], 
-when there can be both unlooped and looped data in one set.  The dataname 
-passed to this routine is simply a convenient way to refer to the
-loop, and has no other significance.
-
-<<Add to looped data>>=
-def AddToLoop(self,dataname,loopdata):
-    found = 0
-    for aloop in self.block["loops"]:
-	loop_keys = map(lambda a:a.lower(),aloop.keys())
-        if dataname.lower() in loop_keys:
-            found = 1
-            for itemname,itemvalue in loopdata.items():
-		if not isinstance(itemvalue,(ListType,TupleType)):
-		    raise CifError, 'AddToLoop given non-list data'
-                if len(itemvalue)!= len(aloop[dataname]):
-                    raise CifError, 'Datalength mismatch adding to loop: %s and %s' % (itemname, dataname)
-                aloop.update({itemname:itemvalue})
-		self.lower_keys.append(itemname.lower())
-    if not found:
-        raise KeyError, 'No such looped item name: %s' % dataname
+    CifLoopBlock.GetLoopItem(self,itemname)
 
 @ This function was added for the dictionary validation routines.  It
 will return a list where each member is itself a list of item names,
 corresponding to the names in each loop of the file.
 
 <<Return all looped names>>=
-def loops(self):
-    return map(lambda a:a.keys(),self.block["loops"])
+def loopnames(self):
+    return map(lambda a:a.keys(),self.loops)
 
 @ Merging.  Normally merging of dictionaries is done at the data file 
 level, i.e. a whole block is replaced or added.  However, in 'overlay'
@@ -797,33 +333,35 @@ def merge(self,new_block,mode="strict",match_att="",nosaves=False):
               raise CifError, "Identical keys %s in strict merge mode" % key
            elif key != match_att:           #no change otherwise
               self[key] = new_block[key] 
-    if mode == 'replace':
+    elif mode == 'replace':
        newkeys = new_block.keys()
        try:
            newkeys.remove(match_att)        #don't touch the special one
        except ValueError:
            pass
        for key in newkeys: self[key] = new_block[key]
-    if mode == 'overlay': 
+    elif mode == 'overlay': 
        for attribute in new_block.keys():
            if attribute == match_att: continue      #ignore this one
            new_value = new_block[attribute]
            #non-looped items
            if isinstance(new_value,StringType):
               self[attribute] = new_value 
-       for newloop in new_block.loops(): 
+       for newloop in new_block.loops:              
            these_atts = self.keys()
-           overlaps = filter(lambda a: a in these_atts,newloop)
+           overlaps = filter(lambda a: a in these_atts,newloop.keys())
            if len(overlaps)< len(newloop):#completely new loop
-              self.AddCifItem((newloop,map(lambda a:new_block[a],newloop)))
+              self.insert_loop(newloop)
            elif len(overlaps)==len(newloop):
-              # appending 
+              # appending packets 
               overlap_data = map(lambda a:listify(self[a]),overlaps)
               new_data = map(lambda a:new_block[a],overlaps)
               packet_data = transpose(overlap_data)
               new_p_data = transpose(new_data)
               # wipe out the old data and enter the new stuff
-              self.AddCifItem((newloop,new_data))
+              byebyeloop = self.GetLoop(overlaps[0])
+              self.remove_loop(byebyeloop)
+              self.AddCifItem(((overlaps,),(new_data,)))
               for pd in packet_data:
                  if pd not in new_p_data:
                     for i in range(len(overlaps)):
@@ -831,42 +369,14 @@ def merge(self,new_block,mode="strict",match_att="",nosaves=False):
                         #to something in place
                         self[overlaps[i]].append(pd[i]) 
                           
-@ Removing a data item.  We delete the item, and if it is looped, and
-nothing is left in the loop, we remove that element of the list.  We make
-use of our pre-existing [[lower_keys]] list to rapidly determine if we should
-check case of our items.
+@ Removing a data item.  Rename to underlying STAR function.
 
 <<Remove a data item>>=
 def RemoveCifItem(self,itemname):
-    if itemname.lower() not in self.lower_keys:
-	raise KeyError                 # forget it 
-    real_keys = self.block.keys()
-    lower_keys = map(lambda a:a.lower(),real_keys)
-    try:
-	k_index = lower_keys.index(itemname.lower())
-    except ValueError:
-	pass
-    else:             #no exception, have to delete key
-        del self.block[real_keys[k_index]]
-	self.lower_keys.remove(itemname.lower())
-	return        #no duplicates, no more checking needed
-    for aloop in self.block["loops"]:
-        real_keys = aloop.keys()
-        lower_keys = map(lambda a:a.lower(),real_keys)
-        try:
-            k_index = lower_keys.index(itemname.lower())
-        except ValueError:
-	    pass
-        else:             #no exception, have to delete key
-            del aloop[real_keys[k_index]]
-	    self.lower_keys.remove(itemname.lower())
-            self.block["loops"] = filter(None, self.block["loops"])
+    CifLoopBlock.RemoveLoopItem(self,itemname)
 
 @ Adding a data item.  We are passed a tuple with the (set) of data
-names at the beginning, and a (set) of values for them following.  For
-efficiency, we want to group looped items together; so in the stored
-dictionary, all data items in a loop belong in one dictionary in an
-array of dictionaries keyed by the word "loops".
+names at the beginning, and a (set) of values for them following. 
 
 If an item is already stored, it will be silently replaced; if it earlier
 lived in a loop, it will be removed from the loop, and the loop itself
@@ -889,61 +399,22 @@ the item name should also occur in a single member tuple.
 <<Add a data item>>=
 def AddCifItem(self,data):
     # we accept only tuples, strings and lists!!
-    if not (isinstance(data[0],StringType) or isinstance(data[0],(TupleType,ListType))):
+    if not (isinstance(data[0],(StringType,TupleType,ListType))):
               raise TypeError, 'Cif datanames are either a string, tuple or list'
-    # now put into the dictionary properly...
-    # if we have the case of a single looped item, we allow isolated data names
-    # by now making the data name into a list  
-    reg_dname = data[0]
-    reg_data  = data[1]
-    if isinstance(data[1],(ListType,TupleType)) and isinstance(data[0],StringType):# looped values
-        reg_dname = [reg_dname]            # process as loop
-        reg_data = [reg_data]
-    if isinstance(reg_dname,StringType):   # a single name
-        self.check_data_name(reg_dname)    # make sure no nasty characters   
+    # single items passed straight through to underlying routine
+    # we catch single item loops as well...
+    if isinstance(data[0],StringType):
+        if isinstance(data[1],(TupleType,ListType)):
+            CifLoopBlock.AddLoopItem(self,((data[0],),((data[1],))))
+        else:
+            CifLoopBlock.AddLoopItem(self,data)
+        return
+    # otherwise, we unpack one level and send along.  This is different
+    # to the StarBlock behaviour, which assumes that any tuples imply an
+    # inner loop.
+    keyvals = zip(data[0],data[1])
+    map(lambda a:CifLoopBlock.AddLoopItem(self,a),keyvals)
 
-        # now make sure the data is OK
-        regval = self.regularise_data(data[1])
-        self.check_item_value(regval)
-	try:
-            self.RemoveCifItem(reg_dname)     # may be different case, so have to do this
-	except KeyError:
-	    pass
-        self.block.update({reg_dname:regval})  # trust the data is OK
-	self.lower_keys.append(reg_dname.lower())
-    else:                                # we loop
-       if len(reg_dname)!=len(reg_data):
-           raise TypeError, 'Length mismatch between itemnames and values'
-       dellist = []
-       map (self.check_data_name,reg_dname)
-       for itemname in reg_dname:
-	    try:
-                self.RemoveCifItem(itemname)     # may be different case, so have to do this
-	    except KeyError:
-	        pass
-       newdict = {}
-       proper_vals = map(self.regularise_data,reg_data)
-       map(self.check_item_value,proper_vals)
-       map(lambda a,b,c=newdict:c.update({a:b}),reg_dname,proper_vals)
-       self.block["loops"].append(newdict)
-       self.lower_keys.extend(map(lambda a:a.lower(),reg_dname))
-    return
-
-@ Checking the data names.  The CIF 1.1 standard restricts characters in
-a data name to ASCII 33-126 and there should be a leading underscore.  Items
-are allowed to have the blank characters as well, i.e. ascii 09,10,13 and 32.
-Data items may be lists, which we need to detect before checking.  We assume
-that the item has been regularised before this check is called.
-
-<<Check data name for CIF conformance>>=
-def check_data_name(self,dataname): 
-    if len(dataname) > 75:
-        raise CifError, 'Dataname ' + dataname + ' too long.'
-    if dataname[0]!='_':
-        raise CifError, 'Dataname ' + dataname + ' does not begin with _'
-    if len (filter (lambda a: ord(a) < 33 or ord(a) > 126, dataname)) > 0:
-        raise CifError, 'Dataname ' + dataname + ' contains forbidden characters'
- 
 @ Checking data name lengths.  Although the new 1.1 standard allows
 very long lines (2048 characters), data names are still restricted
 to be no more than 75 characters in length.  We hard code this in.
@@ -956,170 +427,22 @@ def checklengths(self):
     if toolong:
        raise CifError, 'Following data names too long:' + outstring
 
-<<Check data item for CIF conformance>>=
-def check_item_value(self,item):
-    test_item = item
-    if type(item) != TupleType and type(item) != ListType:
-       test_item = [item]         #single item list
-    def check_one (it):
-        if type(it) == StringType:
-            if len (filter (lambda a:ord(a) != 9 and ord(a) != 10 and ord(a) != 13
-                    and (ord(a) < 32 or ord(a) > 126), it)) > 0:
-                raise CifError, 'Data item ' + it + '... contains forbidden characters'
-    map(check_one,test_item)
+@ Reading in a file.  We now use the STAR grammar parser, and
+postcheck for nested loops and other disallowed STAR funkiness.
 
-@ Regularising data.  We want the copy.deepcopy operation to work, so
-we can't have any arrays passed into the master dictionary.  We make
-sure everything goes in either as a single item or as a list/tuple.
-
-<<Regularise data values>>=
-def regularise_data(self,dataitem):
-    alrighttypes = [IntType, LongType, 
-                    FloatType, StringType]
-    okmappingtypes = [TupleType, ListType]
-    thistype = type(dataitem)
-    if thistype in alrighttypes or thistype in okmappingtypes:
-        return dataitem
-    # so try to make into a list
-    try:
-        regval = list(dataitem)
-    except TypeError, value:
-        raise CifError, str(dataitem) + ' is wrong type for data value\n' 
-    return regval
-    
-@ Printing a section.  We allow an optional order list to be given, in
-case the caller wants to order things in some nice way.  By default, we
-use the item_order dictionary item.  Naturally, looped items are grouped
-together according to their relative order in the order list.
-
-Note that we must be careful to add spaces between data items, especially
-when formatting string loop data, where our string addition could get
-quite hairy.  As we are doing so much concatenation, we use a stringIO
-buffer to speed it up.
-
-<<Print a data block>>=
-def printsection(self,order=[]):
-    import cStringIO
-    import string
-    # first make an ordering
-    if not order:
-        order = self.block["item_order"]
-    if not order:
-        order = self.keys()
-        order.sort()
-    # now prune that ordering,to get rid of special keys
-    order = filter(lambda a:self.has_key(a),order)
-    # and add in any that weren't specified...
-    order.extend(filter(lambda a: a not in order,self.keys()))
-    # now do it...
-    outstring = cStringIO.StringIO()       # the returned string
-    # print any save blocks
-    if len(self.block["saves"])>0:
-	for savename in self.block["saves"].keys():
-	   outstring.write("\nsave_%s \n\n" % savename)
-	   outstring.write(str(self.block["saves"][savename]))
-	   outstring.write("\n\nsave_\n\n")
-    while len(order)>0:
-        print "Order now: " + `order`
-        itemname = order.pop(0)
-        itemvalue = self[itemname]
-        if not isinstance(itemvalue,(ListType,TupleType)): #single value
-           if isinstance(itemvalue,StringType):  #need to sanitize
-              thisstring = self._formatstring(itemvalue)
-              if len(thisstring) + len(itemname) < (self.wraplength-2):
-                      outstring.write('%s %s\n' % (itemname,thisstring))
-              else:
-                      outstring.write('%s\n %s\n' % (itemname, thisstring))
-           else:  #is number, no sanitization required
-                  if len(str(itemvalue)) + len(itemname) < (self.wraplength-2):
-                      outstring.write('%s %s\n' % (itemname, itemvalue))
-                  else:
-                      outstring.write('%s\n %s\n' % (itemname, itemvalue))
-        else:#do a loop
-           outstring.write('\n loop_\n')
-           loopnames = filter(lambda a:a in self.GetLoopNames(itemname),order)#maintain rel ordering
-           print "Loopnames: " + `loopnames`
-           for a in loopnames: order.remove(a)
-           loopnames.insert(0,itemname)     #not caught in the filter, because popped
-           numdata = len(self[loopnames[0]])
-           for name in loopnames: 
-               outstring.write('   %-75s\n' % name)
-               if len(self[name]) != numdata:
-                   raise CifError,'Loop data mismatch for ' + name + \
-                   ':output aborted\n'+ '%d , expected %d:' % \
-                   (len(self[name]),numdata) + `self[loopnames[0]]`+`self[name]` + outstring.getvalue()
-           curstring = ''      
-           # when adding to outstring, make sure to add spaces
-           for position in range(numdata):
-               for name in loopnames:
-                   # at each point, get the next data value
-                   datapoint = self[name][position]
-                   if isinstance(datapoint,StringType):
-                       thisstring = '%s' % (self._formatstring(datapoint)) #no spaces yet
-                       if '\n' in thisstring:
-                           # we try to wrap if the first <eol> is bigger than our wrap length
-                           if len(curstring) + string.find(thisstring,'\n') > (self.wraplength):
-                               outstring.write(' ' + curstring + '\n' + thisstring)
-                           else:
-                               outstring.write(' ' + curstring + ' ' + thisstring) #a space
-                           curstring = ''
-                           continue
-                   else: 
-                       thisstring = ' %s ' % datapoint
-                   if len(curstring) + len(thisstring)> self.wraplength-2: #past end of line with space
-                       outstring.write(' ' + curstring+'\n') #add the space
-                       curstring = ''
-                   curstring = curstring + ' ' + thisstring
-               outstring.write(' ' + curstring + '\n')    #last time through
-               curstring = ''
-    returnstring = outstring.getvalue()
-    outstring.close()
-    return returnstring
-
-@ Formatting a string.  We make sure that the length of the item value
-is less than [[self.maxoutlength]], or else we should split them, and so on. We check the
-value for terminators and impossible apostrophes and length, before
-deciding whether to print it and the item on a single line.  We try to
-respect carriage returns in the string, if the caller has tried to do
-the formatting for us.  If we are not putting apostrophes around a
-string, we make the first character a space, to avoid problems if the
-first character of a line is a semicolon.
-
-The CIF specification states that embedded quotes are allowed so long
-as they are not followed by a space.  So if we find any quotes followed
-by spaces we output a semicolon-terminated string to avoid to much
-messing around.  This routine is called very often and could be 
-improved.
-
-<<Format a string>>=
-def _formatstring(self,instring):
-    import string
-    if len(instring)< (self.maxoutlength-2) and '\n' not in instring and not ('"' in instring and '\'' in instring):
-        if not ' ' in instring and not '\t' in instring and not '\v' \
-          in instring and not '_' in instring:                  # no blanks
-            return ' %s ' % (instring)
-        if not "'" in instring:                                       #use apostrophes
-            return "'%s'" % (instring)
-        elif not "\"" in instring:
-            return '"%s"' % (instring)
-    # is a long one or one that needs semicolons due to carriage returns
-    outstring = "\n;\n"
-    # if there are returns in the string, try to work with them
-    while 1:
-        retin = string.find(instring,'\n')+1
-        if retin < self.maxoutlength and retin > 0:      # honour this break
-            outstring = outstring + instring[:retin]
-            instring = instring[retin:]
-        elif len(instring)<self.maxoutlength:            # finished
-            outstring = outstring + instring + '\n;\n'
-            break
-        else:                             # find a space
-            for letter in range(self.maxoutlength-1,40,-1): 
-                if instring[letter] in ' \t\f': break
-            outstring = outstring + instring[:letter+1]
-            outstring = outstring + '\n'
-            instring = instring[letter+1:]            
-    return outstring
+<<Read in a CIF file>>=
+def ReadCif(self,filestream,strict=1,maxlength=2048):
+    proto_cif = StarFile.StarFile.ReadStar(filestream,strict,maxlength)
+    # convert to CifFile
+    proto_cif = CifFile(proto_cif)
+    # check for nested loops
+    for bname,bvalue in proto_cif.items():
+        nests = filter(lambda a:len(a.loops)>0,bvalue.loops)
+        if len(nests) > 0:
+            raise CifError, "Block %s contains nested loops"
+        # check for save frame references (not yet implemented in PySTARRW)
+        # check for global blocks
+    return proto_cif
 
 @ Defining an error class: we simply derive a 'nothing' class from the root
 Python class
@@ -1168,7 +491,7 @@ two underscores after the word "save".  DDL1 people hadn't figured this
 out yet, so we have to add it in by changing each block name.
 
 <<CIF Dictionary type>>=
-class CifDic(BlockCollection):
+class CifDic(StarFile.BlockCollection):
     <<Initialise Cif dictionary>>
     <<Dictionary determination function>>
     <<Deal with DDL1 differences>>
@@ -1203,7 +526,7 @@ def __init__(self,dic):
     if isinstance(dic,StringType):
         self.dic_as_cif = CifFile(dic)
     (self.dicname,self.diclang,self.defdata) = self.dic_determine(self.dic_as_cif)
-    BlockCollection.__init__(self,datasource=self.defdata) 
+    StarFile.BlockCollection.__init__(self,element_class=CifBlock,datasource=self.defdata) 
     # rename and expand out definitions using "_name" in DDL dictionaries
     if self.diclang == "DDL1":
         self.DDL1_normalise()   #this removes any non-definition entries
@@ -1362,11 +685,11 @@ def DDL1_normalise(self):
        if value.has_key("_enumeration_range"):
            max,min = self.getmaxmin(value["_enumeration_range"])
            if min == ".":
-               self.dictionary[key].AddCifItem((("_item_range.maximum","_item_range.minimum"),((max,max),(max,min))))
+               self.dictionary[key].AddLoopItem((("_item_range.maximum","_item_range.minimum"),((max,max),(max,min))))
            elif max == ".":
-               self.dictionary[key].AddCifItem((("_item_range.maximum","_item_range.minimum"),((max,min),(min,min))))
+               self.dictionary[key].AddLoopItem((("_item_range.maximum","_item_range.minimum"),((max,min),(min,min))))
            else:
-               self.dictionary[key].AddCifItem((("_item_range.maximum","_item_range.minimum"),((max,max,min),(max,min,min))))
+               self.dictionary[key].AddLoopItem((("_item_range.maximum","_item_range.minimum"),((max,max,min),(max,min,min))))
        #add any type construct information
        if value.has_key("_type_construct"):
            base_types.append(value["_name"]+"_type")   #ie dataname_type
@@ -1397,7 +720,7 @@ def DDL1_normalise(self):
                 self[fake_name] = newcatdata
                 self.cat_list.append(newcat)
     # write out the type information in DDL2 style
-    self.dic_as_cif[self.master_key].AddCifItem((
+    self.dic_as_cif[self.master_key].AddLoopItem((
         ("_item_type_list.code","_item_type_list.construct",
           "_item_type_list.primitive_code"),
         (base_types,base_constructs,prim_types)
@@ -2286,7 +1609,7 @@ def run_data_checks(self,verbose=False):
     for dataname in self.keys():
         update_value(self.v_result,self.fulldic.run_item_validation(dataname,self[dataname]))
         update_value(self.v_result,self.fulldic.run_global_validation(dataname,self[dataname],self))
-    for loop in self.loops():
+    for loop in self.loopnames():
         update_value(self.v_result,self.fulldic.run_loop_validation(loop))
     # now run block-level checks
     update_value(self.v_result,self.fulldic.run_block_validation(self))
@@ -2467,6 +1790,13 @@ As a convenience, we handle lists of filenames/CifFiles which are
 supposed to be dictionaries, and pass them directly to the [[ValidCifBlock]]
 object which will merge as necessary.
 
+Note that we have to set bigdic before calling __init__.  The various calls
+down through the inheritance hierarchy end up calling ValidCifBlock with
+self.bigdic as one of the arguments.  Also, this __init__ procedure could
+be called from within StarFile.__init__ if given a filename to read from,
+so we allow that bigdic might already have been set - and check for its
+existence before setting it again!
+
 <<A valid CIF file>>=
 class ValidCifFile(CifFile):
     <<Initialise valid CIF>>
@@ -2474,15 +1804,15 @@ class ValidCifFile(CifFile):
 
 <<Initialise valid CIF>>=
 def __init__(self,dic=None,diclist=[],mergemode="replace",*args,**kwargs):
-    CifFile.__init__(self,*args,**kwargs)
-    if not diclist and not dic:
+    if not diclist and not dic and not hasattr(self,'bigdic'):
         raise ValidCifError, "At least one dictionary is required to create a ValidCifFile object"
     if not dic and diclist:     #merge here for speed
         self.bigdic = merge_dic(diclist,mergemode)
     elif dic and not diclist:
         self.bigdic = dic
-    for blockname in self.keys():
-	self.dictionary[blockname]=ValidCifBlock(data=self.dictionary[blockname],dic=self.bigdic)
+    CifFile.__init__(self,*args,**kwargs)
+    #for blockname in self.keys():
+#	self.dictionary[blockname]=ValidCifBlock(data=self.dictionary[blockname],dic=self.bigdic)
 
 @ Whenever a new block is added, we have to additionally update our
 match array and perform a validation run.  This definition shadows
@@ -2647,7 +1977,7 @@ def run_data_checks(check_block,fulldic,globals={}):
     for key in check_block.keys():
         update_value(v_result, fulldic.run_item_validation(key,check_block[key]))
         update_value(v_result, fulldic.run_global_validation(key,check_block[key],check_block,globals=globals))
-    for loop in check_block.loops():
+    for loop in check_block.loopnames():
         update_value(v_result, fulldic.run_loop_validation(loop))
     update_value(v_result,fulldic.run_block_validation(check_block,globals=globals))
     # return false and list of baddies if anything didn't match
