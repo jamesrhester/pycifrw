@@ -26,40 +26,59 @@
 
 \layout Title
 
-Programming with PyCIFRW
+Programming with PyCIFRW and PySTARRW
 \layout Standard
 
-PyCIFRW provides facilities for reading, manipulating and writing CIF files.
+PyCIFRW provides facilities for reading, manipulating and writing CIF and
+ STAR files.
  In addition, CIF files and dictionaries may be validated against DDL1/2
  dictionaries.
+ 
 \layout Section
 
 Installing and Initialising PyCIFRW
 \layout Standard
 
-The python distutils installer places three files into the python packages
- directory: 
+Assuming python is installed, you can unpack the distribution into a temporary
+ directory, and then type 
+\begin_inset Quotes eld
+\end_inset 
+
+
+\family typewriter 
+python setup.py
+\family default 
+
+\begin_inset Quotes erd
+\end_inset 
+
+ from within this temporary directory.
+ Upon completion of this command, the python distutils installer will have
+ placed four files into the python packages directory: 
 \family typewriter 
 CifFile.py
 \family default 
 , 
 \family typewriter 
-yappsrt.py
+StarFile.py, yappsrt.py
 \family default 
  and 
 \family typewriter 
-YappsCifParser.py
+YappsStarParser.py
 \family default 
 .
- It is sufficient to import 
+ It is then sufficient to import 
 \family typewriter 
 CifFile.py
 \family default 
- to access all PyCifRW features: 
+ to access all CIF features: 
 \layout LyX-Code
 
 >>> import CifFile
 \layout Section
+
+Working with CIF files
+\layout Subsection
 
 Creating a CifFile object
 \layout Standard
@@ -71,14 +90,14 @@ CifFile
  objects.
  These objects behave identically to Python dictionaries, with some additional
  methods.
- CIF files can be created by initialising a 
+ CIF files can be created by calling the 
 \family typewriter 
-CifFile
+ReadCif
 \family default 
- object with a filename:
+ function:
 \layout LyX-Code
 
->>> cf = CifFile.CifFile(
+>>> cf = CifFile.ReadCif(
 \begin_inset Quotes eld
 \end_inset 
 
@@ -89,47 +108,28 @@ mycif.cif
 )
 \layout Standard
 
-Available keyword arguments when initialising are:
-\layout Description
-
-datasource This can be a file name or other 
-\family typewriter 
-CifFile
-\family default 
- object.
- Files are read; 
-\family typewriter 
-CifFile
-\family default 
- objects are copied
-\layout Description
-
-strict block and data names and line lengths are checked against the CIF
- standard
-\layout Description
-
-maxinlength maximum permitted line length in input file (default 2048 characters
-)
-\layout Description
-
-maxoutlength maximum output line length
+Optionally, the maximum input line length can be specified; it defaults
+ to the CIF 1.1 value of 2048 characters.
 \layout Standard
 
 Errors are raised if CIF syntax/grammar violations are encountered in the
  input file or line length limits are exceeded.
+\layout Subsubsection
+
+Creating a new CifFile
 \layout Standard
 
-Alternatively, a new 
+A new 
 \family typewriter 
 CifFile
 \family default 
- object is created if no datasource argument is given:
+ object is usually created empty:
 \layout LyX-Code
 
 cf = CifFile.CifFile()
 \layout Standard
 
-In this case, you will need to create at least one 
+You will need to create at least one 
 \family typewriter 
 CifBlock
 \family default 
@@ -161,10 +161,10 @@ CifBlock
 AddCifItem
 \family default 
  (see below).
-\layout Section
+\layout Subsection
 
 Manipulating values in a CIF file
-\layout Subsection
+\layout Subsubsection
 
 Accessing data
 \layout Standard
@@ -179,17 +179,21 @@ my_data = cf['a_data_block']['_a_data_name']
 
 All values are strings with CIF syntactical elements stripped, that is,
  no enclosing quotation marks or semicolons are included in the values.
- The value corresponding to a 
+ The value associated with a 
 \family typewriter 
 CifFile
 \family default 
- dictionary key is in all cases a 
+ dictionary key is always a 
 \family typewriter 
 CifBlock
 \family default 
  object.
  All standard Python dictionary methods (e.g.
- get, update, items, keys) are available for both 
+ 
+\family typewriter 
+get, update, items, keys
+\family default 
+) are available for both 
 \family typewriter 
 CifFile
 \family default 
@@ -200,7 +204,8 @@ CifBlock
  objects.
 \layout Standard
 
-If a data name occurs in a loop, a list of string values is returned.
+If a data name occurs in a loop, a list of string values is returned for
+ the value of that dataname.
  However, in practice, looped data is usually only useful in combination
  with other values from the same loop.
  
@@ -211,22 +216,97 @@ CifBlock
 \family typewriter 
 GetLoop(dataname)
 \family default 
- will return all data in the loop containing dataname in the format 
+ will return all data in the loop containing dataname as a 
 \family typewriter 
-[(dataname,datavalues),...]
+CifLoopBlock
 \family default 
-.
- Method 
-\family typewriter 
-loops()
-\family default 
- returns a list where each item is a list of datanames occurring in a single
- loop of the 
+ object, which provides the same methods as the 
 \family typewriter 
 CifBlock
 \family default 
- object.
-\layout Subsection
+.
+ For example, 
+\family typewriter 
+keys()
+\family default 
+ returns a list of datanames in the loop.
+ Additionally, loop packets can be accessed by accessing the nth value in
+ the 
+\family typewriter 
+CifLoopBlock
+\family default 
+ object:
+\layout LyX-Code
+
+>>> lb = cb.GetLoop(
+\begin_inset Quotes eld
+\end_inset 
+
+_item_5
+\begin_inset Quotes erd
+\end_inset 
+
+)
+\layout LyX-Code
+
+>>> lb[0]
+\layout LyX-Code
+
+['1', 'a', '5']
+\layout Standard
+
+which also means that it is simple to loop over all packets using default
+ Python behaviour:
+\layout LyX-Code
+
+>>> for j in lb: print `j` 
+\layout LyX-Code
+
+['1', 'a', '5'] 
+\layout LyX-Code
+
+['2', 'b', '6'] 
+\layout LyX-Code
+
+['3', 'c', '7'] 
+\layout LyX-Code
+
+['4', 'd', '8'] 
+\layout Standard
+
+The corresponding datanames are accessible through method GetItemOrder:
+\layout LyX-Code
+
+>>> lb.GetItemOrder()
+\layout LyX-Code
+
+['_item_5', '_item_7', '_item_6']
+\layout Standard
+
+An alternative way of accessing loop data is through the built in 
+\family typewriter 
+CifLoopBlock
+\family default 
+ iterator called 
+\family typewriter 
+flat_iterator
+\family default 
+, which on each call to the iterator object returns a 
+\family typewriter 
+CifLoopBlock
+\family default 
+ with single-valued datanames (for most purposes identical to a Python dictionar
+y):
+\layout LyX-Code
+
+>>> t = lb.flat_iterator() 
+\layout LyX-Code
+
+>>> for a in t: print `a["_item_7"]` 
+\layout LyX-Code
+
+'a' 'b' 'c' 'd' 
+\layout Subsubsection
 
 Changing or adding data values
 \layout Standard
@@ -250,51 +330,41 @@ cb['_old_data_name'] = 'cucumber'
 
 Old values are overwritten silently.
  Note that values may be strings or numbers.
- If they are numbers, they are first converted to strings using default
- settings - so future accesses will return a string, not a number.
  
 \layout Standard
 
 If a list is given as the value instead of a single string or number, a
  new loop is created containing this one data name, looped.
- Any looped data values which may have co-occurred in the loop are first
- deleted.
- As this is not necessarily the desired behaviour, you should call 
+ If this data name already appeared in a loop, any looped data values which
+ may have co-occurred in the loop are deleted.
+ As this is not necessarily the desired behaviour, you may wish to access
+ the loop block using the 
 \family typewriter 
-AddCifItem
+GetLoop
 \family default 
- directly - this routine is always called when assigning values to a 
-\family typewriter 
-CifBlock
-\family default 
- item.
+ method described above.
 \layout Standard
 
+Alternatively, the underlying AddCifItem method can be used to add multiple
+ looped and unlooped data items in a single command.
 
 \family typewriter 
-AddCifItem
+ AddCifItem
 \family default 
- is called with a single tuple argument.
- The tuple contains either a single dataname, or a list or tuple of datanames
- as its first element.
- The second element is either a single value or list of values (in the case
- of a single key) or a list, each element of which is a list of values correspon
-ding to a single dataname.
- Note that PyCIFRW works with columns of loop data (complete values for
- each data name in the loop) rather than rows (one value for each dataname
- in the loop).
+ is called with a 2-element tuple argument.
+ The first element of the tuple is either a single dataname, or a list or
+ tuple of datanames.
+ The second element is either a single value (in the case of a single name
+ in the first element) or a list, each element of which is a list of values
+ taken by the corresponding dataname in the first element.
+ A nested tuple of datanames in the first element together with the correspondin
+g nested tuple of lists in the second element will become a loop block in
+ the Cif file.
 \layout Standard
 
-
+Another method, 
 \family typewriter 
-AddCifItem
-\family default 
- will always create a new loop after deleting any datanames and values already
- in the data block, so it is impossible to add new data names to existing
- loops.
- Method 
-\family typewriter 
-AddToLoop(dataname,newdata)
+AddToLoop(dataname,newdata),
 \family default 
  adds 
 \family typewriter 
@@ -316,21 +386,22 @@ datavalue
  a list of new/replacement values.
 \layout Standard
 
-Note that lists returned by PyCIFRW actually access the list inside the
- CifBlock, and therefore any modification to them will modify the stored
- list.
- If you intend to alter any such lists, you should first copy them to avoid
- destroying the loop structure:
+Note that lists (and objects) returned by PyCIFRW actually represent the
+ list currently inside the CifBlock, and therefore any modification to them
+ will modify the stored list.
+ While this is often the desired behaviour, if you intend to alter any such
+ lists in other parts of your program while maintaining CIF integrity, you
+ should first copy them to avoid destroying the loop structure:
 \layout LyX-Code
 
 mysym = cb['_symmetry_ops'][:]
 \layout LyX-Code
 
 mysym.append('x-1/2,y+1/2,z')
-\layout Subsubsection
+\layout Paragraph
 
 Examples using loops
-\layout Paragraph
+\layout Subparagraph
 
 Adding/replacing a single item with looped values:
 \layout LyX-Code
@@ -354,18 +425,18 @@ loop_
 \layout LyX-Code
 
    x+1/2,y,z
-\layout Paragraph
+\layout Subparagraph
 
 Adding a complete loop:
 \layout LyX-Code
 
-cb.AddCifItem(['_example','_example_detail'],
+cb.AddCifItem(([['_example','_example_detail']],
 \layout LyX-Code
 
-              [['123.4','small cell'],
+              [[['123.4','4567.8'],
 \layout LyX-Code
 
-               ['4567.8','large cell']])
+               ['small cell','large cell']]]))
 \layout Standard
 
 results in an output fragment:
@@ -384,7 +455,7 @@ loop_
 \layout LyX-Code
 
    4567.8 'large cell'
-\layout Paragraph
+\layout Subparagraph
 
 Appending a new dataname to a pre-existing loop:
 \layout LyX-Code
@@ -433,7 +504,7 @@ loop_
 \layout LyX-Code
 
    4567.8 'large cell' 'Big and beautiful'
-\layout Paragraph
+\layout Subparagraph
 
 Changing pre-existing data in a loop:
 \layout LyX-Code
@@ -462,7 +533,7 @@ loop_
 \layout LyX-Code
 
    12004 'large cell' 'Big and beautiful'
-\layout Paragraph
+\layout Subparagraph
 
 Adding a new loop packet.
  
@@ -501,7 +572,7 @@ cb['_example'].append('101.1')
 \family default 
 ), however, this bypasses all data value syntax checks and loop length checks
  and is not recommended.
-\layout Section
+\layout Subsection
 
 Writing Cif Files
 \layout Standard
@@ -961,6 +1032,129 @@ This is not yet implemented in PyCIFRW, as it involves checking the DDL1/DDL2
  spec to determine which attributes may be looped together.
 \layout Section
 
+Working with STAR files
+\layout Subsection
+
+Creating STAR files
+\layout Standard
+
+Star files are created entirely analogously to CIF files, using the 
+\family typewriter 
+StarFile
+\family default 
+ object or 
+\family typewriter 
+ReadStar
+\family default 
+ function.
+\layout Subsection
+
+Manipulating values
+\layout Standard
+
+The usual square bracket notation applies, as for 
+\family typewriter 
+CifFile
+\family default 
+ and 
+\family typewriter 
+CifBlock
+\family default 
+ objects.
+
+\family typewriter 
+ StarFiles
+\family default 
+ are built out of 
+\family typewriter 
+StarBlock
+\family default 
+ objects in exactly the same way as 
+\family typewriter 
+CifFile
+\family default 
+ objects are built out of 
+\family typewriter 
+CifBlock
+\family default 
+ objects.
+ 
+\family typewriter 
+StarBlock
+\family default 
+ objects can contain any number of 
+\family typewriter 
+LoopBlock
+\family default 
+ objects, which represent STAR loop blocks.
+ Crucially, these 
+\family typewriter 
+LoopBlock
+\family default 
+ objects may contain nested loops, which are also 
+\family typewriter 
+LoopBlock
+\family default 
+ objects.
+ Loops are inserted into a 
+\family typewriter 
+LoopBlock
+\family default 
+ by calling the 
+\family typewriter 
+insert_loop
+\family default 
+ method, and may be nested to an arbitrary level.
+\layout Subsubsection
+
+Iterators
+\layout Standard
+
+Any LoopBlock object has two iterator methods: 
+\family typewriter 
+recursive_iter
+\family default 
+ and 
+\family typewriter 
+flat_iterator
+\family default 
+.
+ On each call of the iterator created by a 
+\family typewriter 
+recursive_iter
+\family default 
+ call, a Python dictionary is returned with single-valued keys corresponding
+ to a single set of values.
+ If there are multiple trees of nested loops in a 
+\family typewriter 
+LoopBlock
+\family default 
+, each tree is iterated over separately, as there is no reason that looped
+ values inside a second loop block would have any relationship with values
+ inside a first loop block.
+ This iterator will thus return all possible sets of values for the 
+\family typewriter 
+LoopBlock
+\family default 
+.
+\layout Standard
+
+The 
+\family typewriter 
+flat_iterator
+\family default 
+ method does not dig down into nested loops.
+ Instead, iterators created from it return a new 
+\family typewriter 
+LoopBlock
+\family default 
+ with key-value pairs corresponding to a single top-level packet; nested
+ loops are included, but they also have only data corresponding to the selected
+ top-level packet available.
+ This iterator thus iterates through the top-level packets, collapsing the
+ nesting level by one.
+\layout Section
+
 Example programs
 \layout Standard
 
@@ -1015,6 +1209,9 @@ name dictionary name to resolve using registry
 
 -r\SpecialChar ~
 registry location of registry as filename or URL
+\layout Description
+
+-t The file to be checked is itself a DDL2 dictionary
 \layout Section
 
 Further information

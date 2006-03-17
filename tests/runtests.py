@@ -1,6 +1,7 @@
 #  Run files in the list, and catch any expected exceptions
 import sys
 from CifFile import *
+from StarFile import *
 
 def runtests():
     test_table = [
@@ -9,19 +10,19 @@ def runtests():
     ["ciftest3", "OK"],
     ["ciftest4", "OK"],
     ["ciftest5", "OK"],
-    ["ciftest6", CifError],
-    ["ciftest7", CifError],
-    ["ciftest8", CifError],
-    ["ciftest9", CifError],
-    ["ciftest10", CifError],
+    ["ciftest6", [CifError,StarError]],
+    ["ciftest7", [CifError,StarError]],
+    ["ciftest8", [CifError,StarError]],
+    ["ciftest9", [CifError,StarError]],
+    ["ciftest10", [CifError,StarError]],
     ["ciftest11", "OK"],
     ["ciftest12", "OK"],
     ["ciftest13", "OK"],
-    ["ciftest14", CifError],
-    ["ciftest15", CifError],
-    ["ciftest16", CifError],
-    ["ciftest17", CifError],
-    ["ciftest18", CifError]
+    ["ciftest14", [CifError,StarError]],
+    ["ciftest15", [CifError,StarError]],
+    ["ciftest16", [CifError,StarError]],
+    ["ciftest17", [CifError,StarError]],
+    ["ciftest18", [CifError,StarError]]
     ]
 
     for filename, testresult in test_table:
@@ -32,7 +33,7 @@ def runtests():
            	    print "%s causes error where none expected" % filename
 	            print "%s\n%s" % (`sys.exc_type`,sys.exc_value)
         	else:
-        	    if sys.exc_type == testresult:
+        	    if sys.exc_type in testresult:
         		print "%s passes" % filename
 		    else:
 			print "Unexpected exception %s for %s" % (`sys.exc_type`,filename)

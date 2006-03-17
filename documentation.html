@@ -1,14 +1,14 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Programming with PyCIFRW</TITLE>
-<META NAME="description" CONTENT="Programming with PyCIFRW">
+<TITLE>Programming with PyCIFRW and PySTARRW</TITLE>
+<META NAME="description" CONTENT="Programming with PyCIFRW and PySTARRW">
 <META NAME="keywords" CONTENT="documentation">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -38,13 +38,13 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <P>
 
 <P>
-<H1 ALIGN="CENTER">Programming with PyCIFRW</H1>
+<H1 ALIGN="CENTER">Programming with PyCIFRW and PySTARRW</H1>
 <DIV CLASS="author_info">
 
 </DIV>
 PyCIFRW provides facilities for reading, manipulating and writing
-CIF files. In addition, CIF files and dictionaries may be validated
-against DDL1/2 dictionaries.
+CIF and STAR files. In addition, CIF files and dictionaries may be
+validated against DDL1/2 dictionaries. 
 
 <P>
 
@@ -53,10 +53,13 @@ against DDL1/2 dictionaries.
 </H1>
 
 <P>
-The python distutils installer places three files into the python
-packages directory: <TT>CifFile.py</TT>, <TT>yappsrt.py</TT> and <TT>YappsCifParser.py</TT>.
-It is sufficient to import <TT>CifFile.py</TT> to access all PyCifRW
-features: 
+Assuming python is installed, you can unpack the distribution into
+a temporary directory, and then type ``<TT>python setup.py</TT>''
+from within this temporary directory. Upon completion of this command,
+the python distutils installer will have placed four files into the
+python packages directory: <TT>CifFile.py</TT>, <TT>StarFile.py,
+yappsrt.py</TT> and <TT>YappsStarParser.py</TT>. It is then sufficient
+to import <TT>CifFile.py</TT> to access all CIF features: 
 
 <P>
 
@@ -68,47 +71,42 @@ features:
 <P>
 
 <H1><A NAME="SECTION00020000000000000000">
-<SPAN CLASS="arabic">2</SPAN> Creating a CifFile object</A>
+<SPAN CLASS="arabic">2</SPAN> Working with CIF files</A>
 </H1>
+
+<P>
+
+<H2><A NAME="SECTION00021000000000000000">
+<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN> Creating a CifFile object</A>
+</H2>
 
 <P>
 CIF files are represented in PyCIFRW as <TT>CifFile</TT> objects.
 These objects behave identically to Python dictionaries, with some
-additional methods. CIF files can be created by initialising a <TT>CifFile</TT>
-object with a filename:
+additional methods. CIF files can be created by calling the <TT>ReadCif</TT>
+function:
 
 <P>
 
 <DL COMPACT>
 <DT>
-<DD>&gt;&gt;&gt;&nbsp;cf&nbsp;=&nbsp;CifFile.CifFile(``mycif.cif'')
+<DD>&gt;&gt;&gt;&nbsp;cf&nbsp;=&nbsp;CifFile.ReadCif(``mycif.cif'')
 </DD>
-</DL>Available keyword arguments when initialising are:
+</DL>Optionally, the maximum input line length can be specified; it defaults
+to the CIF 1.1 value of 2048 characters.
 
 <P>
-<DL>
-<DT><STRONG>datasource</STRONG></DT>
-<DD>This can be a file name or other <TT>CifFile</TT> object.
-Files are read; <TT>CifFile</TT> objects are copied
-</DD>
-<DT><STRONG>strict</STRONG></DT>
-<DD>block and data names and line lengths are checked against
-the CIF standard
-</DD>
-<DT><STRONG>maxinlength</STRONG></DT>
-<DD>maximum permitted line length in input file (default
-2048 characters)
-</DD>
-<DT><STRONG>maxoutlength</STRONG></DT>
-<DD>maximum output line length
-</DD>
-</DL>
 Errors are raised if CIF syntax/grammar violations are encountered
 in the input file or line length limits are exceeded.
 
 <P>
-Alternatively, a new <TT>CifFile</TT> object is created if no datasource
-argument is given:
+
+<H3><A NAME="SECTION00021100000000000000">
+<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">1</SPAN> Creating a new CifFile</A>
+</H3>
+
+<P>
+A new <TT>CifFile</TT> object is usually created empty:
 
 <P>
 
@@ -116,8 +114,8 @@ argument is given:
 <DT>
 <DD>cf&nbsp;=&nbsp;CifFile.CifFile()
 </DD>
-</DL>In this case, you will need to create at least one <TT>CifBlock</TT>
-object to hold your data:
+</DL>You will need to create at least one <TT>CifBlock</TT> object to hold
+your data:
 
 <P>
 
@@ -135,15 +133,15 @@ new <TT>CifBlock</TT> using <TT>AddCifItem</TT> (see below).
 
 <P>
 
-<H1><A NAME="SECTION00030000000000000000">
-<SPAN CLASS="arabic">3</SPAN> Manipulating values in a CIF file</A>
-</H1>
+<H2><A NAME="SECTION00022000000000000000">
+<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN> Manipulating values in a CIF file</A>
+</H2>
 
 <P>
 
-<H2><A NAME="SECTION00031000000000000000">
-<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">1</SPAN> Accessing data</A>
-</H2>
+<H3><A NAME="SECTION00022100000000000000">
+<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN> Accessing data</A>
+</H3>
 
 <P>
 The simplest form of access is using standard Python square bracket
@@ -158,25 +156,90 @@ identically to normal Python dictionaries:
 </DD>
 </DL>All values are strings with CIF syntactical elements stripped, that
 is, no enclosing quotation marks or semicolons are included in the
-values. The value corresponding to a <TT>CifFile</TT> dictionary key
-is in all cases a <TT>CifBlock</TT> object. All standard Python dictionary
-methods (e.g. get, update, items, keys) are available for both <TT>CifFile</TT>
-and <TT>CifBlock</TT> objects.
+values. The value associated with a <TT>CifFile</TT> dictionary key
+is always a <TT>CifBlock</TT> object. All standard Python dictionary
+methods (e.g. <TT>get, update, items, keys</TT>) are available for
+both <TT>CifFile</TT> and <TT>CifBlock</TT> objects.
 
 <P>
-If a data name occurs in a loop, a list of string values is returned.
-However, in practice, looped data is usually only useful in combination
-with other values from the same loop. <TT>CifBlock</TT> method <TT>GetLoop(dataname)</TT>
-will return all data in the loop containing dataname in the format
-<TT>[(dataname,datavalues),...]</TT>. Method <TT>loops()</TT>
-returns a list where each item is a list of datanames occurring in
-a single loop of the <TT>CifBlock</TT> object.
+If a data name occurs in a loop, a list of string values is returned
+for the value of that dataname. However, in practice, looped data
+is usually only useful in combination with other values from the same
+loop. <TT>CifBlock</TT> method <TT>GetLoop(dataname)</TT> will return
+all data in the loop containing dataname as a <TT>CifLoopBlock</TT>
+object, which provides the same methods as the <TT>CifBlock</TT>.
+For example, <TT>keys()</TT> returns a list of datanames in the loop.
+Additionally, loop packets can be accessed by accessing the nth value
+in the <TT>CifLoopBlock</TT> object:
 
 <P>
 
-<H2><A NAME="SECTION00032000000000000000">
-<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN> Changing or adding data values</A>
-</H2>
+<DL COMPACT>
+<DT>
+<DD>&gt;&gt;&gt;&nbsp;lb&nbsp;=&nbsp;cb.GetLoop(``_item_5'')
+
+<P>
+&gt;&gt;&gt;&nbsp;lb[0]
+
+<P>
+['1',&nbsp;'a',&nbsp;'5']
+</DD>
+</DL>which also means that it is simple to loop over all packets using
+default Python behaviour:
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>&gt;&gt;&gt;&nbsp;for&nbsp;j&nbsp;in&nbsp;lb:&nbsp;print&nbsp;`j`&nbsp;
+
+<P>
+['1',&nbsp;'a',&nbsp;'5']&nbsp;
+
+<P>
+['2',&nbsp;'b',&nbsp;'6']&nbsp;
+
+<P>
+['3',&nbsp;'c',&nbsp;'7']&nbsp;
+
+<P>
+['4',&nbsp;'d',&nbsp;'8']&nbsp;
+</DD>
+</DL>The corresponding datanames are accessible through method GetItemOrder:
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>&gt;&gt;&gt;&nbsp;lb.GetItemOrder()
+
+<P>
+['_item_5',&nbsp;'_item_7',&nbsp;'_item_6']
+</DD>
+</DL>An alternative way of accessing loop data is through the built in
+<TT>CifLoopBlock</TT> iterator called <TT>flat_iterator</TT>, which
+on each call to the iterator object returns a <TT>CifLoopBlock</TT>
+with single-valued datanames (for most purposes identical to a Python
+dictionary):
+
+<P>
+
+<DL COMPACT>
+<DT>
+<DD>&gt;&gt;&gt;&nbsp;t&nbsp;=&nbsp;lb.flat_iterator()&nbsp;
+
+<P>
+&gt;&gt;&gt;&nbsp;for&nbsp;a&nbsp;in&nbsp;t:&nbsp;print&nbsp;`a[&#34;_item_7&#34;]`&nbsp;
+
+<P>
+'a'&nbsp;'b'&nbsp;'c'&nbsp;'d'&nbsp;
+</DD>
+</DL>
+<P>
+
+<H3><A NAME="SECTION00022200000000000000">
+<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN> Changing or adding data values</A>
+</H3>
 
 <P>
 If many operations are going to be performed on a single data block,
@@ -201,42 +264,42 @@ name changed, by straight assignment:
 cb['_old_data_name']&nbsp;=&nbsp;'cucumber'
 </DD>
 </DL>Old values are overwritten silently. Note that values may be strings
-or numbers. If they are numbers, they are first converted to strings
-using default settings - so future accesses will return a string,
-not a number. 
+or numbers. 
 
 <P>
 If a list is given as the value instead of a single string or number,
-a new loop is created containing this one data name, looped. Any looped
-data values which may have co-occurred in the loop are first deleted.
-As this is not necessarily the desired behaviour, you should call
-<TT>AddCifItem</TT> directly - this routine is always called when
-assigning values to a <TT>CifBlock</TT> item.
+a new loop is created containing this one data name, looped. If this
+data name already appeared in a loop, any looped data values which
+may have co-occurred in the loop are deleted. As this is not necessarily
+the desired behaviour, you may wish to access the loop block using
+the <TT>GetLoop</TT> method described above.
 
 <P>
-<TT>AddCifItem</TT> is called with a single tuple argument. The tuple
-contains either a single dataname, or a list or tuple of datanames
-as its first element. The second element is either a single value
-or list of values (in the case of a single key) or a list, each element
-of which is a list of values corresponding to a single dataname. Note
-that PyCIFRW works with columns of loop data (complete values for
-each data name in the loop) rather than rows (one value for each dataname
-in the loop).
+Alternatively, the underlying AddCifItem method can be used to add
+multiple looped and unlooped data items in a single command. <TT>AddCifItem</TT>
+is called with a 2-element tuple argument. The first element of the
+tuple is either a single dataname, or a list or tuple of datanames.
+The second element is either a single value (in the case of a single
+name in the first element) or a list, each element of which is a list
+of values taken by the corresponding dataname in the first element.
+A nested tuple of datanames in the first element together with the
+corresponding nested tuple of lists in the second element will become
+a loop block in the Cif file.
 
 <P>
-<TT>AddCifItem</TT> will always create a new loop after deleting any
-datanames and values already in the data block, so it is impossible
-to add new data names to existing loops. Method <TT>AddToLoop(dataname,newdata)</TT>
-adds <TT>newdata</TT> to the pre-existing loop containing <TT>dataname</TT>,
-silently overwriting duplicate data. <TT>Newdata</TT> should be a
-Python dictionary of dataname - datavalue pairs, with <TT>datavalue</TT>
-a list of new/replacement values.
+Another method, <TT>AddToLoop(dataname,newdata),</TT> adds <TT>newdata</TT>
+to the pre-existing loop containing <TT>dataname</TT>, silently overwriting
+duplicate data. <TT>Newdata</TT> should be a Python dictionary of
+dataname - datavalue pairs, with <TT>datavalue</TT> a list of new/replacement
+values.
 
 <P>
-Note that lists returned by PyCIFRW actually access the list inside
-the CifBlock, and therefore any modification to them will modify the
-stored list. If you intend to alter any such lists, you should first
-copy them to avoid destroying the loop structure:
+Note that lists (and objects) returned by PyCIFRW actually represent
+the list currently inside the CifBlock, and therefore any modification
+to them will modify the stored list. While this is often the desired
+behaviour, if you intend to alter any such lists in other parts of
+your program while maintaining CIF integrity, you should first copy
+them to avoid destroying the loop structure:
 
 <P>
 
@@ -250,15 +313,15 @@ mysym.append('x-1/2,y+1/2,z')
 </DL>
 <P>
 
-<H3><A NAME="SECTION00032100000000000000">
-<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN> Examples using loops</A>
-</H3>
+<H4><A NAME="SECTION00022210000000000000">
+<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN> Examples using loops</A>
+</H4>
 
 <P>
 
-<H4><A NAME="SECTION00032110000000000000">
-<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">1</SPAN> Adding/replacing a single item with looped values:</A>
-</H4>
+<H5><A NAME="SECTION00022211000000000000">
+<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">1</SPAN> Adding/replacing a single item with looped values:</A>
+</H5>
 
 <P>
 
@@ -289,21 +352,21 @@ mysym.append('x-1/2,y+1/2,z')
 </DL>
 <P>
 
-<H4><A NAME="SECTION00032120000000000000">
-<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">2</SPAN> Adding a complete loop:</A>
-</H4>
+<H5><A NAME="SECTION00022212000000000000">
+<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">2</SPAN> Adding a complete loop:</A>
+</H5>
 
 <P>
 
 <DL COMPACT>
 <DT>
-<DD>cb.AddCifItem(['_example','_example_detail'],
+<DD>cb.AddCifItem(([['_example','_example_detail']],
 
 <P>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[['123.4','small&nbsp;cell'],
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[[['123.4','4567.8'],
 
 <P>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;['4567.8','large&nbsp;cell']])
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;['small&nbsp;cell','large&nbsp;cell']]]))
 </DD>
 </DL>results in an output fragment:
 
@@ -328,9 +391,9 @@ mysym.append('x-1/2,y+1/2,z')
 </DL>
 <P>
 
-<H4><A NAME="SECTION00032130000000000000">
-<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">3</SPAN> Appending a new dataname to a pre-existing loop:</A>
-</H4>
+<H5><A NAME="SECTION00022213000000000000">
+<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">3</SPAN> Appending a new dataname to a pre-existing loop:</A>
+</H5>
 
 <P>
 
@@ -370,9 +433,9 @@ mysym.append('x-1/2,y+1/2,z')
 </DL>
 <P>
 
-<H4><A NAME="SECTION00032140000000000000">
-<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">4</SPAN> Changing pre-existing data in a loop:</A>
-</H4>
+<H5><A NAME="SECTION00022214000000000000">
+<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">4</SPAN> Changing pre-existing data in a loop:</A>
+</H5>
 
 <P>
 
@@ -408,9 +471,9 @@ mysym.append('x-1/2,y+1/2,z')
 </DL>
 <P>
 
-<H4><A NAME="SECTION00032150000000000000">
-<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">5</SPAN> Adding a new loop packet. </A>
-</H4>
+<H5><A NAME="SECTION00022215000000000000">
+<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN>.<SPAN CLASS="arabic">5</SPAN> Adding a new loop packet. </A>
+</H5>
 
 <P>
 PyCifRW does not (yet) directly support this: the following code shows
@@ -447,9 +510,9 @@ checks and is not recommended.
 
 <P>
 
-<H1><A NAME="SECTION00040000000000000000">
-<SPAN CLASS="arabic">4</SPAN> Writing Cif Files</A>
-</H1>
+<H2><A NAME="SECTION00023000000000000000">
+<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">3</SPAN> Writing Cif Files</A>
+</H2>
 
 <P>
 The <TT>CifFile</TT> method <TT>WriteOut</TT> returns a string which
@@ -488,14 +551,14 @@ items within a <TT>CifFile</TT> or <TT>CifBlock. </TT>
 
 <P>
 
-<H1><A NAME="SECTION00050000000000000000">
-<SPAN CLASS="arabic">5</SPAN> Dictionaries and Validation</A>
+<H1><A NAME="SECTION00030000000000000000">
+<SPAN CLASS="arabic">3</SPAN> Dictionaries and Validation</A>
 </H1>
 
 <P>
 
-<H2><A NAME="SECTION00051000000000000000">
-<SPAN CLASS="arabic">5</SPAN>.<SPAN CLASS="arabic">1</SPAN> Dictionaries</A>
+<H2><A NAME="SECTION00031000000000000000">
+<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">1</SPAN> Dictionaries</A>
 </H2>
 
 <P>
@@ -547,8 +610,8 @@ keys are returned depending on the nature of the error.
 
 <P>
 
-<H2><A NAME="SECTION00052000000000000000">
-<SPAN CLASS="arabic">5</SPAN>.<SPAN CLASS="arabic">2</SPAN> Validation</A>
+<H2><A NAME="SECTION00032000000000000000">
+<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN> Validation</A>
 </H2>
 
 <P>
@@ -582,8 +645,8 @@ function.
 
 <P>
 
-<H3><A NAME="SECTION00052100000000000000">
-<SPAN CLASS="arabic">5</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN> Limitations on validation</A>
+<H3><A NAME="SECTION00032100000000000000">
+<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN> Limitations on validation</A>
 </H3>
 
 <P>
@@ -600,8 +663,8 @@ are not machine-readable, so values cannot be checked for consistency
 
 <P>
 
-<H2><A NAME="SECTION00053000000000000000">
-<SPAN CLASS="arabic">5</SPAN>.<SPAN CLASS="arabic">3</SPAN> ValidCifFile objects</A>
+<H2><A NAME="SECTION00033000000000000000">
+<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">3</SPAN> ValidCifFile objects</A>
 </H2>
 
 <P>
@@ -631,8 +694,8 @@ into a <TT>CifDic</TT> object (see below)
 
 <P>
 
-<H2><A NAME="SECTION00054000000000000000">
-<SPAN CLASS="arabic">5</SPAN>.<SPAN CLASS="arabic">4</SPAN> Merging dictionaries</A>
+<H2><A NAME="SECTION00034000000000000000">
+<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">4</SPAN> Merging dictionaries</A>
 </H2>
 
 <P>
@@ -669,8 +732,8 @@ block would cause an error.
 
 <P>
 
-<H3><A NAME="SECTION00054100000000000000">
-<SPAN CLASS="arabic">5</SPAN>.<SPAN CLASS="arabic">4</SPAN>.<SPAN CLASS="arabic">1</SPAN> Limitations on merging</A>
+<H3><A NAME="SECTION00034100000000000000">
+<SPAN CLASS="arabic">3</SPAN>.<SPAN CLASS="arabic">4</SPAN>.<SPAN CLASS="arabic">1</SPAN> Limitations on merging</A>
 </H3>
 
 <P>
@@ -685,8 +748,66 @@ DDL1/DDL2 spec to determine which attributes may be looped together.
 
 <P>
 
-<H1><A NAME="SECTION00060000000000000000">
-<SPAN CLASS="arabic">6</SPAN> Example programs</A>
+<H1><A NAME="SECTION00040000000000000000">
+<SPAN CLASS="arabic">4</SPAN> Working with STAR files</A>
+</H1>
+
+<P>
+
+<H2><A NAME="SECTION00041000000000000000">
+<SPAN CLASS="arabic">4</SPAN>.<SPAN CLASS="arabic">1</SPAN> Creating STAR files</A>
+</H2>
+
+<P>
+Star files are created entirely analogously to CIF files, using the
+<TT>StarFile</TT> object or <TT>ReadStar</TT> function.
+
+<P>
+
+<H2><A NAME="SECTION00042000000000000000">
+<SPAN CLASS="arabic">4</SPAN>.<SPAN CLASS="arabic">2</SPAN> Manipulating values</A>
+</H2>
+
+<P>
+The usual square bracket notation applies, as for <TT>CifFile</TT>
+and <TT>CifBlock</TT> objects. <TT>StarFiles</TT> are built out of
+<TT>StarBlock</TT> objects in exactly the same way as <TT>CifFile</TT>
+objects are built out of <TT>CifBlock</TT> objects. <TT>StarBlock</TT>
+objects can contain any number of <TT>LoopBlock</TT> objects, which
+represent STAR loop blocks. Crucially, these <TT>LoopBlock</TT> objects
+may contain nested loops, which are also <TT>LoopBlock</TT> objects.
+Loops are inserted into a <TT>LoopBlock</TT> by calling the <TT>insert_loop</TT>
+method, and may be nested to an arbitrary level.
+
+<P>
+
+<H3><A NAME="SECTION00042100000000000000">
+<SPAN CLASS="arabic">4</SPAN>.<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">1</SPAN> Iterators</A>
+</H3>
+
+<P>
+Any LoopBlock object has two iterator methods: <TT>recursive_iter</TT>
+and <TT>flat_iterator</TT>. On each call of the iterator created
+by a <TT>recursive_iter</TT> call, a Python dictionary is returned
+with single-valued keys corresponding to a single set of values. If
+there are multiple trees of nested loops in a <TT>LoopBlock</TT>,
+each tree is iterated over separately, as there is no reason that
+looped values inside a second loop block would have any relationship
+with values inside a first loop block. This iterator will thus return
+all possible sets of values for the <TT>LoopBlock</TT>.
+
+<P>
+The <TT>flat_iterator</TT> method does not dig down into nested loops.
+Instead, iterators created from it return a new <TT>LoopBlock</TT>
+with key-value pairs corresponding to a single top-level packet; nested
+loops are included, but they also have only data corresponding to
+the selected top-level packet available. This iterator thus iterates
+through the top-level packets, collapsing the nesting level by one.
+
+<P>
+
+<H1><A NAME="SECTION00050000000000000000">
+<SPAN CLASS="arabic">5</SPAN> Example programs</A>
 </H1>
 
 <P>
@@ -700,8 +821,8 @@ it if necessary.
 
 <P>
 
-<H2><A NAME="SECTION00061000000000000000">
-<SPAN CLASS="arabic">6</SPAN>.<SPAN CLASS="arabic">1</SPAN> Usage</A>
+<H2><A NAME="SECTION00051000000000000000">
+<SPAN CLASS="arabic">5</SPAN>.<SPAN CLASS="arabic">1</SPAN> Usage</A>
 </H2>
 
 <P>
@@ -713,8 +834,8 @@ it if necessary.
 </DL>
 <P>
 
-<H2><A NAME="SECTION00062000000000000000">
-<SPAN CLASS="arabic">6</SPAN>.<SPAN CLASS="arabic">2</SPAN> Options</A>
+<H2><A NAME="SECTION00052000000000000000">
+<SPAN CLASS="arabic">5</SPAN>.<SPAN CLASS="arabic">2</SPAN> Options</A>
 </H2>
 
 <P>
@@ -746,12 +867,15 @@ it if necessary.
 <DT><STRONG>-r&nbsp;registry</STRONG></DT>
 <DD>location of registry as filename or URL
 </DD>
+<DT><STRONG>-t</STRONG></DT>
+<DD>The file to be checked is itself a DDL2 dictionary
+</DD>
 </DL>
 
 <P>
 
-<H1><A NAME="SECTION00070000000000000000">
-<SPAN CLASS="arabic">7</SPAN> Further information</A>
+<H1><A NAME="SECTION00060000000000000000">
+<SPAN CLASS="arabic">6</SPAN> Further information</A>
 </H1>
 
 <P>
@@ -761,12 +885,12 @@ and containing both code and copious comments is included in the downloaded
 package. Details of interpretation of the current standards as relates
 to validation can be found in these files.
 
-<H1><A NAME="SECTION00080000000000000000">
+<H1><A NAME="SECTION00070000000000000000">
 About this document ...</A>
 </H1>
- <STRONG>Programming with PyCIFRW</STRONG><P>
+ <STRONG>Programming with PyCIFRW and PySTARRW</STRONG><P>
 This document was generated using the
-<A HREF="http://www.latex2html.org/"><STRONG>LaTeX</STRONG>2<tt>HTML</tt></A> translator Version 2002-2-1 (1.70)
+<A HREF="http://www.latex2html.org/"><STRONG>LaTeX</STRONG>2<tt>HTML</tt></A> translator Version 2002-2-1 (1.71)
 <P>
 Copyright &#169; 1993, 1994, 1995, 1996,
 <A HREF="http://cbl.leeds.ac.uk/nikos/personal.html">Nikos Drakos</A>, 
@@ -777,9 +901,9 @@ Copyright &#169; 1997, 1998, 1999,
 Mathematics Department, Macquarie University, Sydney.
 <P>
 The command line arguments were: <BR>
- <STRONG>latex2html</STRONG> <TT>-no_subdir -split 0 -show_section_numbers /tmp/lyx_tmpdir7557e62NqG/lyx_tmpbuf0/documentation.tex</TT>
+ <STRONG>latex2html</STRONG> <TT>-no_subdir -split 0 -show_section_numbers /tmp/lyx_tmpdir32370cfAcqz/lyx_tmpbuf0/documentation.tex</TT>
 <P>
-The translation was initiated by James Hester on 2005-07-22
+The translation was initiated by James Hester on 2006-03-08
 <DIV CLASS="navigation"><HR>
 <!--Navigation Panel-->
 <IMG WIDTH="81" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next_inactive"
@@ -792,7 +916,7 @@ The translation was initiated by James Hester on 2005-07-22
 <!--End of Navigation Panel-->
 <ADDRESS>
 James Hester
-2005-07-22
+2006-03-08
 </ADDRESS>
 </BODY>
 </HTML>

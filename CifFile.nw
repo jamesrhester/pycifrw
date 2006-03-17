@@ -127,6 +127,9 @@ length.
 Note that this applies to the input only.  For changing output length, 
 you can provide an optional parameter in the [[WriteOut]] method.
 
+As we could recursively call ourself, we pass through any unknown keyword
+arguments.
+
 <<CifFile class>>=
 class CifFile(StarFile.StarFile):
 <<Initialise data structures>>
@@ -138,8 +141,8 @@ noweb file, so that our comment characters output at the beginning of the
 line.   We restrict our blocks to be of type CifBlock.
 
 <<Initialise data structures>>=
-    def __init__(self,datasource=None,strict=1,maxinlength=2048,maxoutlength=0):
-        StarFile.StarFile.__init__(self,datasource=datasource,maxinlength=maxinlength,maxoutlength=maxoutlength,blocktype=CifBlock)
+    def __init__(self,datasource=None,strict=1,maxinlength=2048,maxoutlength=0,**kwargs):
+        StarFile.StarFile.__init__(self,datasource=datasource,maxinlength=maxinlength,maxoutlength=maxoutlength,blocktype=CifBlock,**kwargs)
         self.strict = strict
         self.header_comment = \
 """#\\#CIF1.1
@@ -178,10 +181,10 @@ class CifLoopBlock(StarFile.LoopBlock):
     def AddLoopItem(self,data,precheck=False):
         StarFile.LoopBlock.AddLoopItem(self,data,precheck,maxlength=75)
 
-    def insert_loop(self,newloop):
+    def insert_loop(self,newloop,**kwargs):
         if newloop.dimension > 1:
             raise  CifError, 'Attempt to insert inner loop, loop level %d' % dimension
-        StarFile.LoopBlock.insert_loop(self,newloop)
+        StarFile.LoopBlock.insert_loop(self,newloop,**kwargs)
 
 @ \section{Cif Block class}
 
@@ -360,6 +363,7 @@ def merge(self,new_block,mode="strict",match_att="",nosaves=False):
               new_p_data = transpose(new_data)
               # wipe out the old data and enter the new stuff
               byebyeloop = self.GetLoop(overlaps[0])
+              print "Removing '%s' with overlaps '%s'" % (`byebyeloop`,`overlaps`)
               self.remove_loop(byebyeloop)
               self.AddCifItem(((overlaps,),(new_data,)))
               for pd in packet_data:
@@ -431,8 +435,8 @@ def checklengths(self):
 postcheck for nested loops and other disallowed STAR funkiness.
 
 <<Read in a CIF file>>=
-def ReadCif(self,filestream,strict=1,maxlength=2048):
-    proto_cif = StarFile.StarFile.ReadStar(filestream,strict,maxlength)
+def ReadCif(filestream,strict=1,maxlength=2048):
+    proto_cif = StarFile.ReadStar(filestream,maxlength)
     # convert to CifFile
     proto_cif = CifFile(proto_cif)
     # check for nested loops
@@ -808,6 +812,9 @@ def DDL2_normalise(self):
 	      for parent,child in mychildren:   #parent is the same for all
 	          self[child]['_item_linked.parent_name'] = parent
               # put all the children into the parent
+              try:
+                  del self[mychildren[0][0]]['_item_linked.child_name']
+              except ValueError: pass
               self[mychildren[0][0]]['_item_linked.child_name'] = map(lambda a:a[1],mychildren)
               # now make a new,smaller list
 	      notmychildren = filter(lambda a:a[0]!=mychildren[0][0],notmychildren)

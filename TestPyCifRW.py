@@ -339,6 +339,12 @@ class FileWriteTestCase(unittest.TestCase):
        print "  Save frame loop is %s" % `jj.__class__` 
        self.failUnless(jj.__class__==CifFile.CifLoopBlock)
 
+   def testUpdateItemOrder(self):
+       """Tests that when the StarBlock is remade into a CifBlock
+          the loops are properly adjusted in the item order"""
+       jj = self.df.GetLoop('_item_5')
+       self.failUnless(jj in self.df.item_order, "Wanted %s, got %s" % (`jj`,`self.df.item_order`))
+
 ##############################################################
 #
 # Test dictionary type
