@@ -48,13 +48,17 @@ Assuming python is installed, you can unpack the distribution into a temporary
 \family typewriter 
 python setup.py
 \family default 
+ 
+\family typewriter 
+install
+\family default 
 
 \begin_inset Quotes erd
 \end_inset 
 
  from within this temporary directory.
- Upon completion of this command, the python distutils installer will have
- placed four files into the python packages directory: 
+ Upon completion of this command, four files will have been placed into
+ the python packages directory: 
 \family typewriter 
 CifFile.py
 \family default 
@@ -94,7 +98,7 @@ CifFile
 \family typewriter 
 ReadCif
 \family default 
- function:
+ function on a filename or URL:
 \layout LyX-Code
 
 >>> cf = CifFile.ReadCif(
@@ -106,10 +110,17 @@ mycif.cif
 \end_inset 
 
 )
-\layout Standard
+\layout LyX-Code
 
-Optionally, the maximum input line length can be specified; it defaults
- to the CIF 1.1 value of 2048 characters.
+>>> df = CifFile.ReadCif(
+\begin_inset Quotes eld
+\end_inset 
+
+ftp://ftp.iucr.org/pub/cifdics/cifdic.register
+\begin_inset Quotes erd
+\end_inset 
+
+)
 \layout Standard
 
 Errors are raised if CIF syntax/grammar violations are encountered in the
@@ -220,7 +231,7 @@ GetLoop(dataname)
 \family typewriter 
 CifLoopBlock
 \family default 
- object, which provides the same methods as the 
+ object, which provides the same methods as a 
 \family typewriter 
 CifBlock
 \family default 
@@ -253,25 +264,8 @@ _item_5
 \layout LyX-Code
 
 ['1', 'a', '5']
-\layout Standard
-
-which also means that it is simple to loop over all packets using default
- Python behaviour:
 \layout LyX-Code
 
->>> for j in lb: print `j` 
-\layout LyX-Code
-
-['1', 'a', '5'] 
-\layout LyX-Code
-
-['2', 'b', '6'] 
-\layout LyX-Code
-
-['3', 'c', '7'] 
-\layout LyX-Code
-
-['4', 'd', '8'] 
 \layout Standard
 
 The corresponding datanames are accessible through method GetItemOrder:
@@ -287,11 +281,7 @@ An alternative way of accessing loop data is through the built in
 \family typewriter 
 CifLoopBlock
 \family default 
- iterator called 
-\family typewriter 
-flat_iterator
-\family default 
-, which on each call to the iterator object returns a 
+ iterator, which on each call to the iterator object returns a 
 \family typewriter 
 CifLoopBlock
 \family default 
@@ -299,10 +289,10 @@ CifLoopBlock
 y):
 \layout LyX-Code
 
->>> t = lb.flat_iterator() 
+ 
 \layout LyX-Code
 
->>> for a in t: print `a["_item_7"]` 
+>>> for a in lb: print `a["_item_7"]` 
 \layout LyX-Code
 
 'a' 'b' 'c' 'd' 
@@ -345,8 +335,12 @@ GetLoop
  method described above.
 \layout Standard
 
-Alternatively, the underlying AddCifItem method can be used to add multiple
- looped and unlooped data items in a single command.
+Alternatively, the 
+\family typewriter 
+AddCifItem
+\family default 
+ method can be used to add multiple looped and unlooped data items in a
+ single command.
 
 \family typewriter 
  AddCifItem
@@ -360,6 +354,15 @@ Alternatively, the underlying AddCifItem method can be used to add multiple
  A nested tuple of datanames in the first element together with the correspondin
 g nested tuple of lists in the second element will become a loop block in
  the Cif file.
+ In general, however, it will be less confusing to create a 
+\family typewriter 
+CifLoopBlock
+\family default 
+ object, populate it with data items, and then insert it into a 
+\family typewriter 
+CifBlock
+\family default 
+ object (see below).
 \layout Standard
 
 Another method, 
@@ -646,6 +649,13 @@ CifFile
 \family typewriter 
 CifBlock.
  
+\family default 
+Items are output in the order that they were inserted or read in to the
+ 
+\family typewriter 
+CifFile/CifBlock
+\family default 
+.
 \layout Section
 
 Dictionaries and Validation
@@ -886,8 +896,8 @@ validate_report
 \family default 
  can be called on the output of the above function, printing a simple ASCII
  report.
- This function can be studied as an example of how to process the complex
- structure returned by the '
+ This function can be studied as an example of how to process the structure
+ returned by the '
 \family typewriter 
 validate
 \family default 
@@ -1153,6 +1163,13 @@ LoopBlock
  top-level packet available.
  This iterator thus iterates through the top-level packets, collapsing the
  nesting level by one.
+\layout Standard
+
+The default iterator for CifBlocks (as opposed to StarBlocks) is 
+\family typewriter 
+recursive_iter
+\family default 
+.
 \layout Section
 
 Example programs

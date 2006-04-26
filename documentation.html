@@ -54,12 +54,12 @@ validated against DDL1/2 dictionaries.
 
 <P>
 Assuming python is installed, you can unpack the distribution into
-a temporary directory, and then type ``<TT>python setup.py</TT>''
-from within this temporary directory. Upon completion of this command,
-the python distutils installer will have placed four files into the
-python packages directory: <TT>CifFile.py</TT>, <TT>StarFile.py,
-yappsrt.py</TT> and <TT>YappsStarParser.py</TT>. It is then sufficient
-to import <TT>CifFile.py</TT> to access all CIF features: 
+a temporary directory, and then type ``<TT>python setup.py</TT>
+<TT>install</TT>'' from within this temporary directory. Upon completion
+of this command, four files will have been placed into the python
+packages directory: <TT>CifFile.py</TT>, <TT>StarFile.py, yappsrt.py</TT>
+and <TT>YappsStarParser.py</TT>. It is then sufficient to import <TT>CifFile.py</TT>
+to access all CIF features: 
 
 <P>
 
@@ -84,19 +84,18 @@ to import <TT>CifFile.py</TT> to access all CIF features:
 CIF files are represented in PyCIFRW as <TT>CifFile</TT> objects.
 These objects behave identically to Python dictionaries, with some
 additional methods. CIF files can be created by calling the <TT>ReadCif</TT>
-function:
+function on a filename or URL:
 
 <P>
 
 <DL COMPACT>
 <DT>
 <DD>&gt;&gt;&gt;&nbsp;cf&nbsp;=&nbsp;CifFile.ReadCif(``mycif.cif'')
-</DD>
-</DL>Optionally, the maximum input line length can be specified; it defaults
-to the CIF 1.1 value of 2048 characters.
 
 <P>
-Errors are raised if CIF syntax/grammar violations are encountered
+&gt;&gt;&gt;&nbsp;df&nbsp;=&nbsp;CifFile.ReadCif(``ftp://ftp.iucr.org/pub/cifdics/cifdic.register'')
+</DD>
+</DL>Errors are raised if CIF syntax/grammar violations are encountered
 in the input file or line length limits are exceeded.
 
 <P>
@@ -167,8 +166,8 @@ for the value of that dataname. However, in practice, looped data
 is usually only useful in combination with other values from the same
 loop. <TT>CifBlock</TT> method <TT>GetLoop(dataname)</TT> will return
 all data in the loop containing dataname as a <TT>CifLoopBlock</TT>
-object, which provides the same methods as the <TT>CifBlock</TT>.
-For example, <TT>keys()</TT> returns a list of datanames in the loop.
+object, which provides the same methods as a <TT>CifBlock</TT>. For
+example, <TT>keys()</TT> returns a list of datanames in the loop.
 Additionally, loop packets can be accessed by accessing the nth value
 in the <TT>CifLoopBlock</TT> object:
 
@@ -183,27 +182,8 @@ in the <TT>CifLoopBlock</TT> object:
 
 <P>
 ['1',&nbsp;'a',&nbsp;'5']
-</DD>
-</DL>which also means that it is simple to loop over all packets using
-default Python behaviour:
 
 <P>
-
-<DL COMPACT>
-<DT>
-<DD>&gt;&gt;&gt;&nbsp;for&nbsp;j&nbsp;in&nbsp;lb:&nbsp;print&nbsp;`j`&nbsp;
-
-<P>
-['1',&nbsp;'a',&nbsp;'5']&nbsp;
-
-<P>
-['2',&nbsp;'b',&nbsp;'6']&nbsp;
-
-<P>
-['3',&nbsp;'c',&nbsp;'7']&nbsp;
-
-<P>
-['4',&nbsp;'d',&nbsp;'8']&nbsp;
 </DD>
 </DL>The corresponding datanames are accessible through method GetItemOrder:
 
@@ -217,19 +197,18 @@ default Python behaviour:
 ['_item_5',&nbsp;'_item_7',&nbsp;'_item_6']
 </DD>
 </DL>An alternative way of accessing loop data is through the built in
-<TT>CifLoopBlock</TT> iterator called <TT>flat_iterator</TT>, which
-on each call to the iterator object returns a <TT>CifLoopBlock</TT>
-with single-valued datanames (for most purposes identical to a Python
-dictionary):
+<TT>CifLoopBlock</TT> iterator, which on each call to the iterator
+object returns a <TT>CifLoopBlock</TT> with single-valued datanames
+(for most purposes identical to a Python dictionary):
 
 <P>
 
 <DL COMPACT>
 <DT>
-<DD>&gt;&gt;&gt;&nbsp;t&nbsp;=&nbsp;lb.flat_iterator()&nbsp;
+<DD>&nbsp;
 
 <P>
-&gt;&gt;&gt;&nbsp;for&nbsp;a&nbsp;in&nbsp;t:&nbsp;print&nbsp;`a[&#34;_item_7&#34;]`&nbsp;
+&gt;&gt;&gt;&nbsp;for&nbsp;a&nbsp;in&nbsp;lb:&nbsp;print&nbsp;`a[&#34;_item_7&#34;]`&nbsp;
 
 <P>
 'a'&nbsp;'b'&nbsp;'c'&nbsp;'d'&nbsp;
@@ -275,8 +254,8 @@ the desired behaviour, you may wish to access the loop block using
 the <TT>GetLoop</TT> method described above.
 
 <P>
-Alternatively, the underlying AddCifItem method can be used to add
-multiple looped and unlooped data items in a single command. <TT>AddCifItem</TT>
+Alternatively, the <TT>AddCifItem</TT> method can be used to add multiple
+looped and unlooped data items in a single command. <TT>AddCifItem</TT>
 is called with a 2-element tuple argument. The first element of the
 tuple is either a single dataname, or a list or tuple of datanames.
 The second element is either a single value (in the case of a single
@@ -284,7 +263,10 @@ name in the first element) or a list, each element of which is a list
 of values taken by the corresponding dataname in the first element.
 A nested tuple of datanames in the first element together with the
 corresponding nested tuple of lists in the second element will become
-a loop block in the Cif file.
+a loop block in the Cif file. In general, however, it will be less
+confusing to create a <TT>CifLoopBlock</TT> object, populate it with
+data items, and then insert it into a <TT>CifBlock</TT> object (see
+below).
 
 <P>
 Another method, <TT>AddToLoop(dataname,newdata),</TT> adds <TT>newdata</TT>
@@ -547,7 +529,8 @@ characters at the beginning of lines:
 <DD>&gt;&gt;&gt;outfile.write(cf.WriteOut(``#This&nbsp;is&nbsp;a&nbsp;test&nbsp;file''))
 </DD>
 </DL>There is currently no way to easily specify the order of output of
-items within a <TT>CifFile</TT> or <TT>CifBlock. </TT>
+items within a <TT>CifFile</TT> or <TT>CifBlock.</TT> Items are output
+in the order that they were inserted or read in to the <TT>CifFile/CifBlock</TT>.
 
 <P>
 
@@ -640,8 +623,7 @@ a simple list of item names which were not found in the dictionary.
 If a simple validation report is required, the function <TT>validate_report</TT>
 can be called on the output of the above function, printing a simple
 ASCII report. This function can be studied as an example of how to
-process the complex structure returned by the '<TT>validate</TT>'
-function.
+process the structure returned by the '<TT>validate</TT>' function.
 
 <P>
 
@@ -805,6 +787,9 @@ the selected top-level packet available. This iterator thus iterates
 through the top-level packets, collapsing the nesting level by one.
 
 <P>
+The default iterator for CifBlocks (as opposed to StarBlocks) is <TT>recursive_iter</TT>.
+
+<P>
 
 <H1><A NAME="SECTION00050000000000000000">
 <SPAN CLASS="arabic">5</SPAN> Example programs</A>
@@ -901,9 +886,9 @@ Copyright &#169; 1997, 1998, 1999,
 Mathematics Department, Macquarie University, Sydney.
 <P>
 The command line arguments were: <BR>
- <STRONG>latex2html</STRONG> <TT>-no_subdir -split 0 -show_section_numbers /tmp/lyx_tmpdir32370cfAcqz/lyx_tmpbuf0/documentation.tex</TT>
+ <STRONG>latex2html</STRONG> <TT>-no_subdir -split 0 -show_section_numbers /tmp/lyx_tmpdir18503YkrXAK/lyx_tmpbuf0/documentation.tex</TT>
 <P>
-The translation was initiated by James Hester on 2006-03-08
+The translation was initiated by James Hester on 2006-03-18
 <DIV CLASS="navigation"><HR>
 <!--Navigation Panel-->
 <IMG WIDTH="81" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next_inactive"
@@ -916,7 +901,7 @@ The translation was initiated by James Hester on 2006-03-08
 <!--End of Navigation Panel-->
 <ADDRESS>
 James Hester
-2006-03-08
+2006-03-18
 </ADDRESS>
 </BODY>
 </HTML>

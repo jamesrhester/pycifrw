@@ -1,6 +1,6 @@
 # A program to check CIFs against dictionaries.  
 #
-# Usage: check_cif [-d dictionary_dir] -f dictionary file cifname
+# Usage: validate_cif [-d dictionary_dir] -f dictionary file cifname
 #
 # We need option parsing:
 from optparse import OptionParser
@@ -20,10 +20,7 @@ def cif_by_ftp(ftp_ptr,store=True,directory="."):
 	    print "Stored %s as %s" % (ftp_ptr,target)
 	ret_cif = CifFile.CifFile(target)
     else:
-        ret_cif = CifFile.CifFile()
-        raw_data = urllib.urlopen(ftp_ptr) 
-        ret_cif.ReadCif(raw_data)
-        raw_data.close()
+        ret_cif = CifFile.ReadCif(ftp_ptr)
     return ret_cif
 
 # get a canonical CIF dictionary given name and version
@@ -32,19 +29,20 @@ def cif_by_ftp(ftp_ptr,store=True,directory="."):
 def locate_dic(dicname,dicversion,regloc="cifdic.register",store_dir = "."):
     register = cif_by_ftp(regloc,directory=store_dir)
     good_gen = register["validation_dictionaries"]
-    versions = good_gen["_cifdic_dictionary.version"]
-    names = good_gen["_cifdic_dictionary.name"]
-    locations = good_gen["_cifdic_dictionary.URL"]
-    together = map(None,names,versions,locations)
-    matches = filter(lambda a:a[0]==dicname and a[1]==dicversion,together)
-    if len(matches)==0 or len(matches)>1:
-	print "Unable to unambiguously locate %s version %s" % (dicname,dicversion)
-	exit()
-    return matches[0][2]    # the location
+    dataloop = good_gen.GetLoop("_cifdic_dictionary.version")
+    datalist = dataloop.flat_iterator()
+    matches = filter(lambda a:a["_cifdic_dictionary.name"]==dicname and a["_cifdic_dictionary.version"]==dicversion,datalist)
+    if len(matches)==0:
+	print "Unable to find any matches for %s version %s" % (dicname,dicversion)
+	return ""
+    elif len(matches)>1:
+        print "Warning: found more than one candidate, choosing first."
+        print map(str,matches)
+    return matches[0]["_cifdic_dictionary.URL"]    # the location
     
 def main ():
     # define our options
-    op = OptionParser(usage="%prog [options] ciffile", version="%prog 0.5")
+    op = OptionParser(usage="%prog [options] ciffile", version="%prog 0.6")
     op.add_option("-d","--dict_dir", dest = "dirname", default = ".",
 		  help = "Directory where locally stored dictionaries are located")
     op.add_option("-f","--dict_file", dest = "dictnames",
@@ -65,7 +63,7 @@ def main ():
 		  help = "Location of global dictionary registry (see also -c option)")
     (options,args) = op.parse_args()
     # print a header
-    print "Validate_cif version 0.5, Copyright ASRP 2005-\n"      
+    print "Validate_cif version 0.6, Copyright ASRP 2005-\n"      
     # our logic: if we are given a dictionary file using -f, the dictionaries 
     # are all located locally; otherwise, they are all located externally, and
     # we use the IUCr register to locate them. 

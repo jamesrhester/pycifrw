@@ -37,7 +37,8 @@ indirectly in respect of this Software.
 @ \section{Introduction}
 
 This file implements a general CIF reading/writing utility.  The basic
-objects ([[CifFile/CifBlock]]) read and write syntactically correct CIF 1.1 files
+objects ([[CifFile/CifBlock/CifLoopBlock]]) read and write syntactically 
+correct CIF 1.1 files
 including save frames.  Objects for validating CIFs are built on these
 basic objects: A [[CifDic]] object is derived from a [[CifFile]] created from a
 DDL1/2 dictionary; and the [[ValidCifFile/ValidCifBlock]] objects allow
@@ -50,7 +51,7 @@ accessed/changed/added using the python mapping type ie to get
 
 The methods available for the CifFile type are:
 \begin{enumerate}
-\item [[ReadCif(filestream)]]: (re)initialise using opened Cif file [[filestream]].
+\item [[ReadCif(filename)]]: (re)initialise using Cif file [[filename]]. Filename may be a URL.
 \item [[NewBlock(blockname,[block contents],replace=False)]]: add new block to this object.  If [[blockcontents]] is provided, it
 must be a [[CifBlock]] object (see below).  If replace is [[False]], attempts to
 replace a pre-existing block will cause an error.
@@ -58,10 +59,8 @@ replace a pre-existing block will cause an error.
 CIF-conformant string, with optional [[comment]] at the beginning.
 \end{enumerate}
 
-The methods available for the CifBlock type are:
+Some of the more useful methods available for the CifBlock type are:
 \begin{enumerate}
-\item [[GetCifItem(itemname)]]: return the value of [[itemname]] in 
-current block (equivalent to using [])
 \item [[AddCifItem(data)]]: add [[data]] to the current block.  [[data]] is 
 a tuple containing either an array of itemnames and an array of arrays of 
 data, or else an itemname and a data value for that item.  This method 
@@ -69,15 +68,11 @@ is called when setting data using [], but can be called directly and can
 take multiple datanames and values in the [[data]] tuple.
 \item [[RemoveCifItem(dataname)]]: remove the given Cif dataname from the 
 current block.  Same as typing [['del block[item]']]
-\item [[GetLoop(dataname)]]: for looped data item [[dataname]], get a list
-of all itemnames and values co-occurring in this loop.  Returns an error
-if [[dataname]] is not in a loop.
+\item [[GetLoop(dataname)]]: for looped data item [[dataname]], return the
+[[CifLoopBlock]] containing [[dataname]]. 
 \item [[AddLoop(dataname,data)]]: add [[data]] to the loop containing
 [[dataname]].  If dataname is not a looped item, an error is returned.
 If (data) has the wrong length, an error is returned. 
-\item [[loopnames()]]: return a list containing all looped names, grouped into
-individual loops.  This was added to facilitate validity checking and is
-unlikely to be useful otherwise.
 \end{enumerate}
 
 Note also that a CifFile object can be accessed as a mapping type, ie using
@@ -112,8 +107,7 @@ import StarFile
 A CifFile is subclassed from a StarFile.  Our StarFile class has an
 optional check of line length, which we use.
 
-If we are passed a filename, we open it and read it in, assuming that
-it is a conformant Cif file.  A CifFile object is a dictionary of
+A CifFile object is a dictionary of
 CifBlock objects, accessed by block name.  As the maximum line length
 is subject to change, we allow the length to be specified, with the
 current default set at 2048 characters (Cif 1.1).  For reading in files, 
@@ -126,9 +120,6 @@ length.
 
 Note that this applies to the input only.  For changing output length, 
 you can provide an optional parameter in the [[WriteOut]] method.
-
-As we could recursively call ourself, we pass through any unknown keyword
-arguments.
 
 <<CifFile class>>=
 class CifFile(StarFile.StarFile):
@@ -168,7 +159,8 @@ line.   We restrict our blocks to be of type CifBlock.
 
 This parallels the fundamental LoopBlock class of a StarFile, with the
 two restrictions that nested loops are not allowed, and data names have
-to be no longer than 75 characters.
+to be no longer than 75 characters.  We make the default iterator the
+recursive iterator, allowing economy in looping over packets.
 
 <<CifLoopBlock class>>=
 class CifLoopBlock(StarFile.LoopBlock):
@@ -177,6 +169,7 @@ class CifLoopBlock(StarFile.LoopBlock):
         if dimension > 1: 
             raise CifError, 'Attempt to nest loops, loop level %d' % dimension
         StarFile.LoopBlock.__init__(self,data,dimension=dimension,**kwargs)
+        self.__iter__ = self.recursive_iter
  
     def AddLoopItem(self,data,precheck=False):
         StarFile.LoopBlock.AddLoopItem(self,data,precheck,maxlength=75)
@@ -189,7 +182,7 @@ class CifLoopBlock(StarFile.LoopBlock):
 @ \section{Cif Block class}
 
 The basic building block of a Cif File is the CifBlock, which we
-seem forced to subclass from a CifLoopBlock.  
+subclass from a CifLoopBlock.  
 When initialising, we allow either a set of tuples, suitable for input
 to AddCifItem, or a complete block, suitable when copying. 
 
@@ -197,30 +190,15 @@ to AddCifItem, or a complete block, suitable when copying.
 class CifBlock(CifLoopBlock):
     <<Initialise Cif Block>>
     <<Adjust emulation of a mapping type>>
-    <<Return value of Cif item>>
-    <<Remove a data item>>
     <<Add a data item>>
     <<Check data name lengths>>
     <<Return all looped names>>
     <<Merge with another block>>
 
-@ If given non-zero data to initialise the block with, we either
-copy (if it is a dictionary) or else initialise each key-value
-pair separately (if tuples).  We take care to include our special
-"loop" key if it is not in the supplied dictionary, but apart from
-this we make no check of the actual conformance of the dictionary
-items.  If given a maximum output line length, we save that for
-use in writing out lines.  We use the wraplength parameter to try
-to wrap nicely; however, if we are given very long data, we will
-continue on until we get to [[maxoutlength]] characters.
-
-To manage case insensitivity while preserving the case of items
-that we are passed, we store a list of lower-case keys so that we
-are not constantly calling the [[lower()]] method of the strings.
-
-We include the dimension argument in initialisation, as this could be
+@ We include the dimension argument in initialisation, as the initialisation
+method could be
 invoked from the StarFile.LoopBlock copy method, which constructs a new
-object, passing the [[dimension]] argument.  Which we ignore.
+object, passing the [[dimension]] argument.  This method ignores this.
 
 <<Initialise Cif Block>>=
 def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80,overwrite=True,dimension=0):
@@ -232,8 +210,14 @@ def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80,overwri
         self.saves = StarFile.BlockCollection(element_class=CifLoopBlock,type_tag="save")
     if self.strict:
 	self.checklengths()
+    #
+    # simple alias for following methods
+    #
 
-@ As for star blocks, we add in the save frame key.
+def RemoveCifItem(self,itemname): 
+    CifLoopBlock.RemoveLoopItem(self,itemname)
+
+@ Just as for star blocks, we add in the save frame key.
 
 <<Adjust emulation of a mapping type>>=
 def __getitem__(self,key):
@@ -280,12 +264,6 @@ def update(self,adict):
         self.AddCifItem((key,adict[key]))
     for aloop in adict.loops:
         self.insert_loop(aloop,audit=True)
-
-@ Returning a Cif item value.  Simply funnel through to subclass name.
-
-<<Return value of Cif item>>=
-def GetCifItem(self,itemname):
-    CifLoopBlock.GetLoopItem(self,itemname)
 
 @ This function was added for the dictionary validation routines.  It
 will return a list where each member is itself a list of item names,
@@ -363,7 +341,7 @@ def merge(self,new_block,mode="strict",match_att="",nosaves=False):
               new_p_data = transpose(new_data)
               # wipe out the old data and enter the new stuff
               byebyeloop = self.GetLoop(overlaps[0])
-              print "Removing '%s' with overlaps '%s'" % (`byebyeloop`,`overlaps`)
+              # print "Removing '%s' with overlaps '%s'" % (`byebyeloop`,`overlaps`)
               self.remove_loop(byebyeloop)
               self.AddCifItem(((overlaps,),(new_data,)))
               for pd in packet_data:
@@ -373,12 +351,6 @@ def merge(self,new_block,mode="strict",match_att="",nosaves=False):
                         #to something in place
                         self[overlaps[i]].append(pd[i]) 
                           
-@ Removing a data item.  Rename to underlying STAR function.
-
-<<Remove a data item>>=
-def RemoveCifItem(self,itemname):
-    CifLoopBlock.RemoveLoopItem(self,itemname)
-
 @ Adding a data item.  We are passed a tuple with the (set) of data
 names at the beginning, and a (set) of values for them following. 
 
@@ -435,8 +407,8 @@ def checklengths(self):
 postcheck for nested loops and other disallowed STAR funkiness.
 
 <<Read in a CIF file>>=
-def ReadCif(filestream,strict=1,maxlength=2048):
-    proto_cif = StarFile.ReadStar(filestream,maxlength)
+def ReadCif(filename,strict=1,maxlength=2048):
+    proto_cif = StarFile.ReadStar(filename,maxlength)
     # convert to CifFile
     proto_cif = CifFile(proto_cif)
     # check for nested loops
@@ -445,7 +417,7 @@ def ReadCif(filestream,strict=1,maxlength=2048):
         if len(nests) > 0:
             raise CifError, "Block %s contains nested loops"
         # check for save frame references (not yet implemented in PySTARRW)
-        # check for global blocks
+        # check for global blocks (not yet implemented in PySTARRW)
     return proto_cif
 
 @ Defining an error class: we simply derive a 'nothing' class from the root

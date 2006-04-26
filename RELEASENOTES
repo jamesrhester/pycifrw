@@ -34,8 +34,8 @@ Incompatible changes
 The following changes may break existing code:
 
 * Loop blocks are now accessible as separate objects. The
-method 'GetLoop' now returns a CifLoopBlock object, which
-will break existing code using this method.
+method 'GetLoop' returns a CifLoopBlock object, which
+will break existing code.  
 
 * The CifBlock method "loops()" now returns a list of
 CifLoopBlock objects
