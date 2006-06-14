@@ -174,6 +174,16 @@ class BlockChangeTestCase(unittest.TestCase):
        self.cf["_Item_NaMe_1"] = "the quick pewse fox"
        self.assertEqual(self.cf["_Item_NaMe_1"],self.cf["_item_name_1"])
 
+#  Test iteration
+#
+   def testIteration(self):
+       """We create an iterator and iterate"""
+       testloop = self.cf.GetLoop("_item_name_1")
+       i = 0
+       for test_pack in testloop:
+           self.assertEqual(test_pack["_item_name_1"],self.values[0][0][i]) 
+           self.assertEqual(test_pack["_item_name#2"],self.values[0][1][i]) 
+           i += 1
 #
 #  Test setting of block names
 #

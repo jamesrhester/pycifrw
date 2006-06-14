@@ -169,7 +169,10 @@ class CifLoopBlock(StarFile.LoopBlock):
         if dimension > 1: 
             raise CifError, 'Attempt to nest loops, loop level %d' % dimension
         StarFile.LoopBlock.__init__(self,data,dimension=dimension,**kwargs)
-        self.__iter__ = self.recursive_iter
+        # self.__iter__ = self.recursive_iter
+
+    def __iter__(self):
+        return self.recursive_iter()
  
     def AddLoopItem(self,data,precheck=False):
         StarFile.LoopBlock.AddLoopItem(self,data,precheck,maxlength=75)
