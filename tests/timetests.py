@@ -14,10 +14,10 @@ valfiles = [ ('1YGG.cif',cached_mmdic),
 
 for file in testfiles:
     start_time = time.time()
-    jj = CifFile.CifFile(file)      # no profiling, approx usage
+    jj = CifFile.ReadCif(file,scantype='flex')      # no profiling, approx usage
     finish_time = time.time()
     print "File %s: wallclock time %8.1f\n" % (file,finish_time - start_time)
-    profile.run("jj = CifFile.CifFile(file) ","profout")
+    profile.run("jj = CifFile.ReadCif(file,scantype='flex') ","profout")
     p = pstats.Stats( "profout")
     p.strip_dirs().sort_stats("cumulative").print_stats()
     # try to validate  

@@ -3,7 +3,8 @@
 #
 package: CifFile.py StarFile.py YappsStarParser.py documentation
 	python setup.py sdist
-	python setup.py bdist_wininst
+	python setup.py bdist
+#	python setup.py bdist_wininst
 #
 ../PyCifRW.tar: clean package
 	(cd ..; tar cvf PyCifRW.tar --exclude tests --exclude CVS --exclude yapps2 --exclude error_reports --exclude old_stuff PyCifRW)

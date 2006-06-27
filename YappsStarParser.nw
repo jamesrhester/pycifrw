@@ -92,7 +92,11 @@ def makeloop(loopstructure,itemlists):
     nowloop = loopstructure
     for datalist in itemlists:
        for datavalue in datalist:
-           nowloop,target = storage_iter.next()
+	   try:
+               nowloop,target = storage_iter.next()
+	   except StopIteration:
+	       print "StopIter at %s/%s" % (datavalue,datalist)
+	       raise StopIteration
            # print 'Got %s %s ->' % (`nowloop`,`target`),
 	   target.append(datavalue)
            # print '%s' % `target`

@@ -1,10 +1,18 @@
 # Yapps 2.0 Runtime
 #
 # This module is needed to run generated parsers.
+#
+# Modified for PyCIFRW by JRH to allow external scanner
+#
 
 from string import *
 import exceptions
 import re
+try:
+    import StarScan
+    have_star_scan = True
+except ImportError:
+    have_star_scan = False
 
 class SyntaxError(Exception):
     """When we run into an unexpected token, this is the exception to use"""
@@ -20,23 +28,33 @@ class NoMoreTokens(Exception):
     pass
 
 class Scanner:
-    def __init__(self, patterns, ignore, input):
+    def __init__(self, patterns, ignore, input,scantype="standard"):
 	"""Patterns is [(terminal,regex)...]
         Ignore is [terminal,...];
 	Input is a string"""
 	self.tokens = []
 	self.restrictions = []
 	self.input = input
-	self.pos = 0
 	self.ignore = ignore
-	# The stored patterns are a pair (compiled regex,source
-	# regex).  If the patterns variable passed in to the
-	# constructor is None, we assume that the class already has a
-	# proper .patterns list constructed
-        if patterns is not None:
-            self.patterns = []
-            for k,r in patterns:
-                self.patterns.append( (k, re.compile(r)) )
+	self.pos = 0
+	self.scantype = scantype
+	if self.scantype == "flex" and have_star_scan:
+	    StarScan.prepare(input)
+	    self.scan = self.compiled_scan
+	elif self.scantype == "flex":
+                print "Warning: using Python scanner"
+		self.scan = self.interp_scan
+		self.scantype = "standard"
+	if self.scantype != "flex":
+	    self.scan = self.interp_scan
+            # The stored patterns are a pair (compiled regex,source
+            # regex).  If the patterns variable passed in to the
+            # constructor is None, we assume that the class already has a
+            # proper .patterns list constructed
+            if patterns is not None:
+                self.patterns = []
+                for k,r in patterns:
+                    self.patterns.append( (k, re.compile(r)) )
 	
     def token(self, i, restrict=0):
 	"""Get the i'th token, and if i is one past the end, then scan 
@@ -59,7 +77,20 @@ class Scanner:
 	    output = '%s\n  (@%s)  %s  =  %s' % (output,t[0],t[2],`t[3]`)
 	return output
     
-    def scan(self, restrict):
+    def compiled_scan(self,restrict):
+	"""Should scan another token and add it to the list, self.tokens,
+	and add the restriction to self.restrictions"""
+        token = StarScan.scan()
+	if token[2] not in restrict:
+	    msg = "Bad Token"
+	    if restrict:
+	        msg = "Trying to find one of "+join(restrict,", ")
+	    raise SyntaxError(self.pos, msg)
+	self.tokens.append(token)
+	self.restrictions.append(restrict)
+	return
+
+    def interp_scan(self,restrict):
 	"""Should scan another token and add it to the list, self.tokens,
 	and add the restriction to self.restrictions"""
 	# Keep looking for a token, ignoring any in self.ignore

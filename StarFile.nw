@@ -432,14 +432,13 @@ our initialisation function, which may be a subclass which takes other arguments
 """
 
 @ Reading in a file.  We now use the Yapps2-generated [[YappsStarParser]] module to provide grammar
-services.  The structure returned from parsing is an array of blocks,
-which we convert to a dictionary and place in [[self.dictionary]].
+services.  The structure returned from parsing is a StarFile, with
+possible grammar violations due to duplicate block or item names.
 
-We take an already-opened file as an argument to facilitate reading STARs across
-the network.
-
+We allow attempted fast reads using the compiled StarScan module
+by passing the option 'flex' to this routine.
 <<Read in a STAR file>>=
-def ReadStar(filename,maxlength=2048,dest=StarFile()):
+def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard'):
     import YappsStarParser,string
     filestream = urlopen(filename)
     text = filestream.read()
@@ -457,7 +456,10 @@ def ReadStar(filename,maxlength=2048,dest=StarFile()):
             pos = split.index(toolong[0])
             raise StarError, 'Line %d contains more than %d characters' % (pos+1,maxlength)
     try: 
-        parser = YappsStarParser.StarParser(YappsStarParser.StarParserScanner(text))
+	if scantype == 'standard':
+            parser = YappsStarParser.StarParser(YappsStarParser.StarParserScanner(text))
+        else:
+	    parser = YappsStarParser.StarParser(YappsStarParser.Scanner(None,[],text,scantype='flex'))
         proto_star = getattr(parser,"input")()
     except YappsStarParser.SyntaxError:
         errorstring = 'Syntax error in input file: last value parsed was %s' % YappsStarParser.lastval
@@ -692,17 +694,17 @@ def load_iter(self,coords=[]):
         for iname in self.item_order:
             if isinstance(iname,LoopBlock):       #into a nested loop
 	        for subitems in iname.load_iter(coords=coords+[count]):
-                    print 'Yielding %s' % `subitems`
+                    # print 'Yielding %s' % `subitems`
 	            yield subitems
-                print 'End of internal loop'
+                # print 'End of internal loop'
             else:
                 if self.dimension == 0:
-                    print 'Yielding %s' % `self[iname]`
+                    # print 'Yielding %s' % `self[iname]`
       	            yield self,self[iname]
                 else:
                     backval = self.block[iname]
                     for i in range(len(coords)):
-                       print 'backval, coords: %s, %s' % (`backval`,`coords`)
+                       # print 'backval, coords: %s, %s' % (`backval`,`coords`)
                        backval = backval[coords[i]]
                     yield self,backval
         count = count + 1      # count packets
@@ -1279,7 +1281,10 @@ by spaces we output a semicolon-terminated string to avoid to much
 messing around.  This routine is called very often and could be 
 improved.
 
-We have to catch empty strings as well, which are legal.
+We have to catch empty strings as well, which are legal.  Another gotcha 
+concerns 'embedded' strings; if the datavalue begins with a quote, it
+will be output verbatim (and misunderstood) unless spaces elsewhere
+force quotation.
 
 <<Format a string>>=
 def _formatstring(self,instring):
@@ -1287,7 +1292,8 @@ def _formatstring(self,instring):
     if len(instring)==0: return "''"
     if len(instring)< (self.maxoutlength-2) and '\n' not in instring and not ('"' in instring and '\'' in instring):
         if not ' ' in instring and not '\t' in instring and not '\v' \
-          in instring and not '_' in instring:                  # no blanks
+          in instring and not '_' in instring and not (instring[0]=="'" or \
+             instring[0]=='"'):                  # no blanks
             return ' %s ' % (instring)
         if not "'" in instring:                                       #use apostrophes
             return "'%s'" % (instring)
