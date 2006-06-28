@@ -41,12 +41,14 @@ class Scanner:
 	if self.scantype == "flex" and have_star_scan:
 	    StarScan.prepare(input)
 	    self.scan = self.compiled_scan
+	    self.token = self.compiled_token
+	    self.__del__ = StarScan.cleanup
 	elif self.scantype == "flex":
-                print "Warning: using Python scanner"
-		self.scan = self.interp_scan
-		self.scantype = "standard"
+            print "Warning: using Python scanner"
+            self.scantype = "standard"
 	if self.scantype != "flex":
 	    self.scan = self.interp_scan
+	    self.token = self.interp_token
             # The stored patterns are a pair (compiled regex,source
             # regex).  If the patterns variable passed in to the
             # constructor is None, we assume that the class already has a
@@ -56,7 +58,7 @@ class Scanner:
                 for k,r in patterns:
                     self.patterns.append( (k, re.compile(r)) )
 	
-    def token(self, i, restrict=0):
+    def interp_token(self, i, restrict=0):
 	"""Get the i'th token, and if i is one past the end, then scan 
 	for another token; restrict is a list of tokens that
 	are allowed, or 0 for any token."""
@@ -70,11 +72,20 @@ class Scanner:
 	    return self.tokens[i]
 	raise NoMoreTokens()
     
+    def compiled_token(self,i,restrict=0):
+	"""Get the i'th token, and if i is one past the end, then scan 
+	for another token; restrict is a list of tokens that
+	are allowed, or 0 for any token."""
+	try:
+	    return StarScan.token(i)
+	except IndexError:
+	    raise NoMoreTokens()
+	
     def __repr__(self):
 	"""Print the last 10 tokens that have been scanned in"""
 	output = ''
-	for t in self.tokens[-10:]:
-	    output = '%s\n  (@%s)  %s  =  %s' % (output,t[0],t[2],`t[3]`)
+	# for t in self.tokens[-10:]:
+	#     output = '%s\n  (@%s)  %s  =  %s' % (output,t[0],t[2],`t[3]`)
 	return output
     
     def compiled_scan(self,restrict):

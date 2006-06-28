@@ -515,7 +515,7 @@ Present code by JRH to work with PyCIFRW v 3.1
 
 #include "star_scanner.h"
 
-#define YY_DECL char * star_scanner() 
+#define YY_DECL int star_scanner() 
 
 /* redefine YY_INPUT to come from our global string */
 #define YY_INPUT(buf,result,max_size)\
@@ -774,37 +774,37 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 YY_RULE_SETUP
 #line 73 "star.l"
-{return("LBLOCK");}
+{return(DLBLOCK);}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
 #line 74 "star.l"
-{return("GLOBAL");}
+{return(DGLOBAL);}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
 #line 75 "star.l"
-{return("STOP");}
+{return(DSTOP);}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
 #line 76 "star.l"
-{return("save_heading");}
+{return(DSAVE_HEADING);}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
 #line 77 "star.l"
-{return("save_end");}
+{return(DSAVE_END);}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
 #line 78 "star.l"
-{return("data_heading");}
+{return(DDATA_HEADING);}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
 #line 79 "star.l"
-{return("data_name");}
+{return(DDATA_NAME);}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
@@ -829,24 +829,24 @@ case 11:
 /* rule 11 can match eol */
 YY_RULE_SETUP
 #line 84 "star.l"
-{BEGIN(Alltext);return("start_sc_line");}
+{BEGIN(Alltext);return(DSTART_SC_LINE);}
 	YY_BREAK
 case 12:
 /* rule 12 can match eol */
 YY_RULE_SETUP
 #line 85 "star.l"
-{return("sc_line_of_text");}
+{return(DSC_LINE_OF_TEXT);}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
 #line 86 "star.l"
 {BEGIN(INITIAL);
-					    return("end_sc_line");}
+					    return(DEND_SC_LINE);}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
 #line 89 "star.l"
-{return("data_value_1");}
+{return(DDATA_VALUE_1);}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
@@ -873,7 +873,7 @@ YY_RULE_SETUP
                        int       i = yyleng - strlen(p);
                        yyless( i );
                        }
-                 return("data_value_1");
+                 return(DDATA_VALUE_1);
                  }
 	YY_BREAK
 case 16:
@@ -901,13 +901,13 @@ YY_RULE_SETUP
                        int       i = yyleng - strlen(p);
                        yyless( i );
                        }
-                 return("data_value_1");
+                 return(DDATA_VALUE_1);
                  }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
 #line 141 "star.l"
-{YY_FLUSH_BUFFER; return("END");}
+{YY_FLUSH_BUFFER; return(DEND);}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
@@ -916,7 +916,7 @@ YY_RULE_SETUP
 			printf("Unexpected Character\n");
 			printf("<%d>\n",yytext[0]);
                         YY_FLUSH_BUFFER;
-                        return("(error)");
+                        return(DERROR);
 			}
 	YY_BREAK
 case 19:

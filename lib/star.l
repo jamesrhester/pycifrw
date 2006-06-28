@@ -16,7 +16,7 @@ Present code by JRH to work with PyCIFRW v 3.1
 
 #include "star_scanner.h"
 
-#define YY_DECL char * star_scanner() 
+#define YY_DECL int star_scanner() 
 
 /* redefine YY_INPUT to come from our global string */
 #define YY_INPUT(buf,result,max_size)\
@@ -70,23 +70,23 @@ EndOfLine	{Spaces}({Comment})?(\n|\r|\r\n)
 
 /* Lex Rules fo a STAR File */
 %%
-{Loop_}                 {return("LBLOCK");}
-{Global_}               {return("GLOBAL");}
-{Stop_}                 {return("STOP");}
-{Save_}{NonBlank}+      {return("save_heading");}
-{Save_}                 {return("save_end");}
-{Data_}{NonBlank}+      {return("data_heading");}
-_{NonBlank}+            {return("data_name");}
+{Loop_}                 {return(DLBLOCK);}
+{Global_}               {return(DGLOBAL);}
+{Stop_}                 {return(DSTOP);}
+{Save_}{NonBlank}+      {return(DSAVE_HEADING);}
+{Save_}                 {return(DSAVE_END);}
+{Data_}{NonBlank}+      {return(DDATA_HEADING);}
+_{NonBlank}+            {return(DDATA_NAME);}
 {Spaces}                {/* do nothing */}
 {Comment}               {/* do nothing */}
 {EndOfLine}/[^;]        {/* do nothing */}
 
-(\n|\r\n);([^\n\r])*(\r\n|\r|\n)+ {BEGIN(Alltext);return("start_sc_line");}
-<Alltext>[^;\r\n]([^\r\n])*(\r\n|\r|\n)+   {return("sc_line_of_text");}
+(\n|\r\n);([^\n\r])*(\r\n|\r|\n)+ {BEGIN(Alltext);return(DSTART_SC_LINE);}
+<Alltext>[^;\r\n]([^\r\n])*(\r\n|\r|\n)+   {return(DSC_LINE_OF_TEXT);}
 <Alltext>;                                 {BEGIN(INITIAL);
-					    return("end_sc_line");}
+					    return(DEND_SC_LINE);}
 
-([^\n\r\t \"#$\'_\[\]\0]{NonBlank}*) {return("data_value_1");}
+([^\n\r\t \"#$\'_\[\]\0]{NonBlank}*) {return(DDATA_VALUE_1);}
 
 \'[^\n\r\f]*\'  {/* this code borrowed from star.l in
                  starbase.  We can't write a rule in 
@@ -110,7 +110,7 @@ _{NonBlank}+            {return("data_name");}
                        int       i = yyleng - strlen(p);
                        yyless( i );
                        }
-                 return("data_value_1");
+                 return(DDATA_VALUE_1);
                  }
 
 \"[^\n\r\f]*\"  {/* this code borrowed from star.l in
@@ -135,16 +135,16 @@ _{NonBlank}+            {return("data_name");}
                        int       i = yyleng - strlen(p);
                        yyless( i );
                        }
-                 return("data_value_1");
+                 return(DDATA_VALUE_1);
                  }
 
-\0                      {YY_FLUSH_BUFFER; return("END");}
+\0                      {YY_FLUSH_BUFFER; return(DEND);}
 
 .			{
 			printf("Unexpected Character\n");
 			printf("<%d>\n",yytext[0]);
                         YY_FLUSH_BUFFER;
-                        return("(error)");
+                        return(DERROR);
 			}
 %%
 /* This routine is called during initialisation to avoid any problems
