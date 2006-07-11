@@ -9,7 +9,7 @@ def lookup(map, name):
 
 from string import *
 import re
-from yappsrt import *
+from yapps_compiled_rt import *
 
 class CalculatorScanner(Scanner):
     patterns = [

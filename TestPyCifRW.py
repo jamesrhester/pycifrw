@@ -221,6 +221,8 @@ class FileWriteTestCase(unittest.TestCase):
              ('_item_4','Some very long data which we hope will overflow the single line and force printing of another line aaaaa bbbbbb cccccc dddddddd eeeeeeeee fffffffff hhhhhhhhh iiiiiiii jjjjjj'),
              ('_item_2','Some_underline_data'),
              ('_item_empty',''),
+             ('_item_quote',"'ABC"),
+             ('_item_apost','"def'),
              (('_item_5','_item_7','_item_6'),
              ([1,2,3,4],
               ['a','b','c','d'],
@@ -275,6 +277,12 @@ class FileWriteTestCase(unittest.TestCase):
        self.failUnless(self.cfs['_sitem_1']==self.dfs['_sitem_1'])
        self.failUnless(self.cfs['_sitem_2']==self.dfs['_sitem_2'])
 
+   def testApostropheInOut(self):
+       """Test correct behaviour for values starting with apostrophes
+       or quotation marks"""
+       self.failUnless(self.cf['_item_quote']==self.df['_item_quote'])
+       self.failUnless(self.cf['_item_apost']==self.df['_item_apost'])
+       
    def testNumberInOut(self):
        """Test writing number in and out"""
        self.failUnless(self.cf['_item_3']==(self.df['_item_3']))

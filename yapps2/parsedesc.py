@@ -37,7 +37,7 @@ def resolve_name(tokens, id, args):
 
 from string import *
 import re
-from yappsrt import *
+from yapps_compiled_rt import *
 
 class ParserDescriptionScanner(Scanner):
     patterns = [

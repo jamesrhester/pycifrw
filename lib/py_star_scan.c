@@ -9,11 +9,13 @@ static PyObject * get_input(PyObject * self, PyObject * args);
 static PyObject * flex_scan(PyObject * self,PyObject * args);
 static PyObject * get_token(PyObject * self,PyObject * args);
 static PyObject * drop_mem(PyObject * self,PyObject * args);
+static PyObject * get_last_ten(PyObject * self,PyObject * args);
 
 static PyMethodDef StarScanMethods[] = {
     {"prepare",get_input, METH_VARARGS,"Prepare scanner input"},
     {"scan", flex_scan, METH_VARARGS, "Get next token"},
     {"token",get_token, METH_VARARGS, "Return i'th token"},
+    {"last_ten",get_last_ten, METH_VARARGS, "Return last 10 tokens"},
     {"cleanup", drop_mem, METH_VARARGS, "Free used memory"},
     {NULL,NULL,0,NULL}
     };
@@ -129,4 +131,26 @@ drop_mem(PyObject * self, PyObject * args)
 {
 clear_mem();
 return NULL;
+}
+
+/* For error reporting we need to supply the last 10 tokens */
+
+static PyObject *
+get_last_ten(PyObject * self, PyObject * args)
+{
+int start_pt;
+int ret_list_pos;
+PyObject * newlist;
+PyObject * newtuple;     /* store each tuple */
+if(current_len<=10) start_pt = 0;
+else start_pt = current_len - 10;
+newlist = PyList_New(current_len - start_pt);
+for(ret_list_pos=0;start_pt+ret_list_pos<current_len;ret_list_pos++){
+   printf("Build token %d\n",start_pt+ret_list_pos);
+   newtuple = Py_BuildValue("iiss",0,0,tokens[token_list[start_pt + ret_list_pos]],
+                value_list[start_pt+ret_list_pos]);
+   printf("Set list pos %d\n",ret_list_pos);
+   PyList_SET_ITEM(newlist,ret_list_pos,newtuple);
+}
+return newlist;
 }

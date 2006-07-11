@@ -13,6 +13,6 @@ setup(name="PyCifRW",
       author = "James Hester",
       author_email = "jrh at anbf2.kek.jp",
       url="http://anbf2.kek.jp/CIF/index.html",
-      py_modules = ['CifFile','yappsrt','YappsStarParser','StarFile'],
+      py_modules = ['CifFile','yapps_compiled_rt','YappsStarParser','StarFile'],
       ext_modules = [c_scanner]
       )

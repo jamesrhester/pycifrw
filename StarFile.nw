@@ -416,7 +416,7 @@ our initialisation function, which may be a subclass which takes other arguments
             self.maxoutlength = maxoutlength
         if type(datasource) is StringType:
             newself = ReadStar(datasource,self.maxinlength)
-            print "Reinjecting by calling %s.__init__ with kwargs %s" % (`self.__init__.im_class`,kwargs)
+            # print "Reinjecting by calling %s.__init__ with kwargs %s" % (`self.__init__.im_class`,kwargs)
 	    self.__init__.im_class.__init__(self,datasource=newself,maxoutlength=maxoutlength,**kwargs)
         self.header_comment = \
 """#\\#STAR
@@ -649,7 +649,7 @@ def copy(self):
             placeholder = -1
         newcopy.item_order.remove(loop)   #gone
         newobject = loop.copy()
-        print "Adding loop %s -> %s" % (`loop`,`newobject`)
+        # print "Adding loop %s -> %s" % (`loop`,`newobject`)
         newcopy.insert_loop(newobject,position=placeholder)
     return newcopy
 
@@ -709,7 +709,7 @@ def load_iter(self,coords=[]):
                     yield self,backval
         count = count + 1      # count packets
     self.popout = False        # reinitialise
-    print 'Finished iterating'
+    # print 'Finished iterating'
     yield self,'###Blank###'     #this value should never be used
 
 # an experimental fast iterator for level-1 loops (ie CIF)
@@ -727,7 +727,7 @@ def new_enclosing_packet(self):
             for i in range(3,self.dimension): #dim 2 upwards are lists of lists of... 
                 target_list = target_list[-1]
             target_list.append([])
-            print '%s now %s' % (iname,`self[iname]`)
+            # print '%s now %s' % (iname,`self[iname]`)
 
 @ We recursively expand out all values in nested loops and return a 
 simple dictionary type.  Although it only seems to make sense to call
@@ -777,7 +777,7 @@ def coord_to_group(self,dataname,coords):
       for c in coords:
           # print "Coord_to_group: %s ->" % (`newm`),
           newm = newm[c]
-          print `newm`
+          # print `newm`
       return newm 
 
 @ Return a series of LoopBlocks with the appropriate packet chosen. This
@@ -821,8 +821,8 @@ def insert_loop(self,newloop,position=-1,audit=True):
 
 <<Remove a nested loop>>=
 def remove_loop(self,oldloop):
-    print "Removing %s: item_order %s" % (`oldloop`,self.item_order)
-    print "Length %d" % len(oldloop)
+    # print "Removing %s: item_order %s" % (`oldloop`,self.item_order)
+    # print "Length %d" % len(oldloop)
     self.item_order.remove(oldloop)
     self.loops.remove(oldloop)
  
@@ -880,7 +880,7 @@ def GetPacket(self,index):
     for myitem in self.item_order:
         if isinstance(myitem,LoopBlock):
             pack_list = map(lambda b:myitem[b][index],myitem.item_order)
-            print 'Pack_list -> %s' % `pack_list`
+            # print 'Pack_list -> %s' % `pack_list`
             thispack.append(pack_list)
         elif self.dimension==0:
             thispack.append(self[myitem])
@@ -968,7 +968,7 @@ def RemoveLoopItem(self,itemname):
         except ValueError:    #must be in a lower loop
             for aloop in self.loops:
                 if aloop.has_key(itemname):
-                    print "Deleting %s (%s)" % (itemname,aloop[itemname])
+                    # print "Deleting %s (%s)" % (itemname,aloop[itemname])
                     del aloop[itemname]
                     if len(aloop)==0:  # all gone
                        self.remove_loop(aloop)
@@ -1159,7 +1159,7 @@ def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
     # print loop delimiter
     outstring.write(blockstart)
     while len(order)>0:
-        print "Order now: " + `order`
+        # print "Order now: " + `order`
         itemname = order.pop(0)
         if self.dimension == 0:            # ie value next to tag
    	    if not isinstance(itemname,LoopBlock):  #no loop

@@ -153,7 +153,7 @@ class Generator:
         self.write(self.preparser)
         self.write("from string import *\n")
         self.write("import re\n")
-        self.write("from yappsrt import *\n")
+        self.write("from yapps_compiled_rt import *\n")
 	self.write("\n")
 	self.write("class ", self.name, "Scanner(Scanner):\n")
         self.write("    patterns = [\n")

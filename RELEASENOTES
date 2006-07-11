@@ -1,42 +1,28 @@
-Release Notes for PyCIFRW-3.0
+Release Notes for PyCIFRW-3.1
 =============================
 
-This is a beta release of PyCifRW-3.0.  It differs
+This is a beta release of PyCifRW-3.1.  It differs
 from previous releases in that all CIF objects are
 now derived from StarFile objects. 
  
-Bug fixes (since 2.0)
+Bug fixes (since 3.0)
 =====================
 
-* Data values of '' (empty string) caused crashing.  This
-has been fixed (thanks Anders Madsen).
+* deepcopy failed when copying CifFile objects due to the
+way the __iter__ method was set.  This has been fixed.
 
-Improvements/Changes
-====================
+* Data values which began with an apostrophe or quotation
+mark were not necessarily put inside quotes when output, leading to
+potential corruption of the output file. 
 
-* CifFile/CifBlock/CifLoopBlock objects are now based on
-the corresponding Star objects.
+Improvements/Changes (since 3.0)
+================================
 
-* Order is mostly preserved when writing out CIF files, 
-and loop positioning in the enclosing data block can be 
-specified (see method 'insert_loop').  Save frames will
-always appear at the top of a block, however.
+* A compiled tokenizer is now available to increase speed of file
+input.  The option 'scantype="flex"' should be passed to the 
+ReadCif/ReadStar commands.  Error reporting is minimal.
 
-* Iterators (flat_iterator, recursive_iter) are provided
-for looping over all packets in a loop
+Incompatible changes (since 3.0)
+================================
 
-* If a number is provided to a CifLoopBlock object instead of 
-a dataname, that packet number is returned.
-
-Incompatible changes
-====================
-
-The following changes may break existing code:
-
-* Loop blocks are now accessible as separate objects. The
-method 'GetLoop' returns a CifLoopBlock object, which
-will break existing code.  
-
-* The CifBlock method "loops()" now returns a list of
-CifLoopBlock objects
-
+None

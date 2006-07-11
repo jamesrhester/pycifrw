@@ -84,8 +84,12 @@ class Scanner:
     def __repr__(self):
 	"""Print the last 10 tokens that have been scanned in"""
 	output = ''
-	# for t in self.tokens[-10:]:
-	#     output = '%s\n  (@%s)  %s  =  %s' % (output,t[0],t[2],`t[3]`)
+        if self.scantype != "flex": 
+            out_tokens = self.tokens[-10:]
+        else:
+            out_tokens = StarScan.last_ten()
+	for t in out_tokens:
+	    output = '%s\n  (@%s)  %s  =  %s' % (output,t[0],t[2],`t[3]`)
 	return output
     
     def compiled_scan(self,restrict):
