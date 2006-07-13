@@ -9,3 +9,4 @@ include Programs/*.py
 include Programs/*.cif
 include Changelog
 include Makefile
+include lib/*

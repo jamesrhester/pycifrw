@@ -32,6 +32,9 @@ PyCIFRW is written entirely in Python.  While this makes parsing of large
 CIF files rather slow, it will run wherever Python runs.  It has been
 tested on Unix (Linux,Solaris) and Windows 95/98/2000 under Python 2.3.
 
+A compiled extension module is available under Linux to accelerate CIF file
+reading.
+
 Files
 -----
 
@@ -51,11 +54,12 @@ YappsStarParser.g              Grammar specifications for input to Yapps2
 YappsStarParser.html           Programming notes for the grammar
 YappsStarParser.nw             Literate format grammar notes
 Makefile                       How to derive .html, .py and .g files from .nw files
+StarScan.so                    Compiled Python extension module for Linux
 
 Files derived from other programs:
 
-yappsrt.py                     Yapps2 runtime support (Scanner etc.).  Part of the
-                               Yapps2 distribution 
+yapps_compiled_rt.py           Yapps2 runtime support (modified part of the
+                               Yapps2 distribution)
 
 Installation
 ------------

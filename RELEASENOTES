@@ -1,9 +1,7 @@
 Release Notes for PyCIFRW-3.1
 =============================
 
-This is a beta release of PyCifRW-3.1.  It differs
-from previous releases in that all CIF objects are
-now derived from StarFile objects. 
+PyCifRW-3.1 is mostly a bug-fix release. 
  
 Bug fixes (since 3.0)
 =====================
