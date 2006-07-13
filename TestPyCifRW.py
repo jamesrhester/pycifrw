@@ -2,6 +2,10 @@
 # the PyUnit framework
 #
 # 
+# note that some tests rely on the presence of the StarScan
+# dynamic library under Linux, so will be redundant on other
+# platforms
+#
 import unittest, CifFile
 import StarFile
 import re
@@ -184,6 +188,18 @@ class BlockChangeTestCase(unittest.TestCase):
            self.assertEqual(test_pack["_item_name_1"],self.values[0][0][i]) 
            self.assertEqual(test_pack["_item_name#2"],self.values[0][1][i]) 
            i += 1
+
+#
+#  Test changing item order
+#
+   def testChangeOrder(self):
+       """We move some stuff around"""
+       testloop = self.cf.GetLoop("_item_name_1")
+       self.cf.ChangeItemOrder("_Number_Item",0)
+       testloop.ChangeItemOrder("_Item_Name_1",2)
+       self.assertEqual(testloop.GetItemOrder()[2],"_Item_Name_1")
+       self.assertEqual(self.cf.GetItemOrder()[0],"_Number_Item")
+       
 #
 #  Test setting of block names
 #
@@ -262,13 +278,19 @@ class FileWriteTestCase(unittest.TestCase):
        self.ef = CifFile.CifFile('test.cif')
        self.df = self.ef['testblock']
        self.dfs = self.df["saves"]["test_save_frame"]
+       flfile = CifFile.ReadCif('test.cif',scantype="flex")
+       self.flf = flfile['testblock']
+       self.flfs = self.flf["saves"]["test_save_frame"]
 
    def tearDown(self):
        import os
        #os.remove('test.cif')
+       del self.dfs
        del self.df
        del self.cf
        del self.ef
+       del self.flf
+       del self.flfs
 
    def testStringInOut(self):
        """Test writing short strings in and out"""
@@ -276,17 +298,23 @@ class FileWriteTestCase(unittest.TestCase):
        self.failUnless(self.cf['_item_2']==self.df['_item_2'])
        self.failUnless(self.cfs['_sitem_1']==self.dfs['_sitem_1'])
        self.failUnless(self.cfs['_sitem_2']==self.dfs['_sitem_2'])
+       self.failUnless(self.cfs['_sitem_1']==self.flfs['_sitem_1'])
+       self.failUnless(self.cfs['_sitem_2']==self.flfs['_sitem_2'])
 
    def testApostropheInOut(self):
        """Test correct behaviour for values starting with apostrophes
        or quotation marks"""
        self.failUnless(self.cf['_item_quote']==self.df['_item_quote'])
        self.failUnless(self.cf['_item_apost']==self.df['_item_apost'])
+       self.failUnless(self.cf['_item_quote']==self.flf['_item_quote'])
+       self.failUnless(self.cf['_item_apost']==self.flf['_item_apost'])
        
    def testNumberInOut(self):
        """Test writing number in and out"""
        self.failUnless(self.cf['_item_3']==(self.df['_item_3']))
        self.failUnless(self.cfs['_sitem_3']==(self.dfs['_sitem_3']))
+       self.failUnless(self.cf['_item_3']==(self.flf['_item_3']))
+       self.failUnless(self.cfs['_sitem_3']==(self.flfs['_sitem_3']))
 
    def testLongStringInOut(self):
        """Test writing long string in and out
@@ -297,33 +325,42 @@ class FileWriteTestCase(unittest.TestCase):
        self.failUnless(compstring == self.cf['_item_4'])
        compstring = re.sub('\n','',self.dfs['_sitem_4'])
        self.failUnless(compstring == self.cfs['_sitem_4'])
+       compstring = re.sub('\n','',self.flf['_item_4'])
+       self.failUnless(compstring == self.cf['_item_4'])
+       compstring = re.sub('\n','',self.flfs['_sitem_4'])
+       self.failUnless(compstring == self.cfs['_sitem_4'])
 
    def testEmptyStringInOut(self):
        """An empty string is in fact kosher""" 
        self.failUnless(self.cf['_item_empty']=='')
+       self.failUnless(self.flf['_item_empty']=='')
 
    def testLoopDataInOut(self):
        """Test writing in and out loop data"""
        olditems = self.cf.GetLoop('_item_5')
        for key,value in olditems.items():
            self.failUnless(tuple(map(str,value))==tuple(self.df[key]))
+           self.failUnless(tuple(map(str,value))==tuple(self.flf[key]))
        # save frame test
        olditems = self.cfs.GetLoop('_sitem_5').items()
        for key,value in olditems:
            self.failUnless(tuple(map(str,value))==tuple(self.dfs[key]))
+           self.failUnless(tuple(map(str,value))==tuple(self.flfs[key]))
 
    def testLoopStringInOut(self):
        """Test writing in and out string loop data"""
        olditems = self.cf.GetLoop('_string_1')
        newitems = self.df.GetLoop('_string_1')
+       flexnewitems = self.flf.GetLoop('_string_1')
        for key,value in olditems.items():
            compstringa = map(lambda a:re.sub('\n','',a),value)
            compstringb = map(lambda a:re.sub('\n','',a),self.df[key])
-           self.failUnless(compstringa==compstringb)
+           compstringc = map(lambda a:re.sub('\n','',a),self.flf[key])
+           self.failUnless(compstringa==compstringb and compstringa==compstringc)
 
    def testGetLoopData(self):
        """Test the get method for looped data"""
-       newvals = self.cf.get('_string_1')
+       newvals = self.df.get('_string_1')
        self.failUnless(len(newvals)==3)
 
    def testAddSaveFrame(self):

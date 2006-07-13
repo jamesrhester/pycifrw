@@ -500,6 +500,7 @@ class LoopBlock:
     <<Get complete looped data>>
     <<Get nth loop packet>>
     <<Get item order>>
+    <<Change data item order>>
     <<Collapse to nth packet>>
     <<Audit for repeated names>>
     <<Get co-looped names>>
@@ -893,6 +894,29 @@ def GetPacket(self,index):
 <<Get item order>>=
 def GetItemOrder(self):
     return self.item_order[:]
+
+@ Move an item to a different position in the loop.  This only affects
+the printout order.  We allow different capitalisation and have to
+absorb the possibility of nested loops in the order list, and being
+passed a loop reference in the [[itemname]] argument.  
+
+<<Change data item order>>=
+def ChangeItemOrder(self,itemname,newpos):
+    import string
+    def low_case(item):       #need to skip Loop blocks
+        try:
+            return string.lower(item)
+        except AttributeError:
+            return item
+    lowcase_order = map(low_case,self.item_order)
+    try:
+        testname = string.lower(itemname)
+    except AttributeError: 
+        testname = itemname
+    testpos = lowcase_order.index(testname)
+    del self.item_order[testpos]
+    # so we have an object ready for action
+    self.item_order.insert(newpos,itemname)
 
 @ This returns a copy, in theory independent (check that) with just
 the nth packet selected, and order preserved.

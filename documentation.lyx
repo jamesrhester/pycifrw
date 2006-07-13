@@ -506,6 +506,60 @@ mysym.append('x-1/2,y+1/2,z')
 \end_layout
 
 \begin_layout Paragraph
+Changing item order
+\end_layout
+
+\begin_layout Standard
+The 
+\family typewriter
+ChangeItemOrder
+\family default
+ method allows the order in which data items appear in the printed file
+ to be changed:
+\end_layout
+
+\begin_layout LyX-Code
+mycif['testblock'].ChangeItemOrder('_item_5',0)
+\end_layout
+
+\begin_layout Standard
+will move 
+\family typewriter
+_item_5
+\family default
+ to the beginning of the datablock.
+ When changing the order inside a loop block, the loop block's method must
+ be called i.e.:
+\end_layout
+
+\begin_layout LyX-Code
+aloop = mycif['testblock'].GetLoop('_loop_item_1')
+\end_layout
+
+\begin_layout LyX-Code
+aloop.ChangeItemOrder('_loop_item_1',4)
+\end_layout
+
+\begin_layout Standard
+Note also that the position of a loop within the file can be changed in
+ this way as well, simply by passing the 
+\family typewriter
+CifLoopBlock
+\family default
+ object as the first argument:
+\end_layout
+
+\begin_layout Standard
+
+\family typewriter
+mycif['testblock'].ChangeItemOrder(aloop,0)
+\end_layout
+
+\begin_layout Standard
+will move the loop block to the beginning of the printed datablock.
+\end_layout
+
+\begin_layout Paragraph
 Examples using loops
 \end_layout
 
@@ -802,17 +856,20 @@ comment
 \end_layout
 
 \begin_layout Standard
-There is currently no way to easily specify the order of output of items
- within a 
+The order of output of items within a 
 \family typewriter
 CifFile
 \family default
  or 
 \family typewriter
-CifBlock.
- 
+CifBlock 
 \family default
-Items are output in the order that they were inserted or read in to the
+is specified using the 
+\family typewriter
+ChangeItemOrder
+\family default
+ method (see above).
+ The default order is the order that items were inserted or read in to the
  
 \family typewriter
 CifFile/CifBlock
