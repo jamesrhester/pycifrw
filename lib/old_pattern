@@ -1,3 +1,0 @@
-/*
-([^\n\r\t \"#$\'_\[\]]{NonBlank}*)|\'((\'{NonBlank})|([^\n\r\f\']))*\'+|\"((\"/{Spaces})|([^\n\r\"]))*\"+  {printf("Value: %s\n",yytext)}
-*/
