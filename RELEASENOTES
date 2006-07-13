@@ -20,6 +20,9 @@ Improvements/Changes (since 3.0)
 input.  The option 'scantype="flex"' should be passed to the 
 ReadCif/ReadStar commands.  Error reporting is minimal.
 
+* Method ChangeItemOrder added to allow moving item position in the
+output file
+
 Incompatible changes (since 3.0)
 ================================
 
