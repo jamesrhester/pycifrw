@@ -1,7 +1,7 @@
-Release Notes for PyCIFRW-3.1
-=============================
+Release Notes for PyCIFRW-3.1.1
+===============================
 
-PyCifRW-3.1 is mostly a bug-fix release. 
+PyCifRW-3.1.1 is mostly a bug-fix release. 
  
 Bug fixes (since 3.0)
 =====================
@@ -13,6 +13,16 @@ way the __iter__ method was set.  This has been fixed.
 mark were not necessarily put inside quotes when output, leading to
 potential corruption of the output file. 
 
+(3.1.1)
+* Replacing items in a loop could cause a duplicate item error to
+be raised, instead of silently replacing the item
+
+* Loop validation has been broken since 2.0. This should now work
+properly
+
+* _category_mandatory checking behaved differently to that described
+in the journal article; this has been fixed
+
 Improvements/Changes (since 3.0)
 ================================
 
@@ -22,6 +32,9 @@ ReadCif/ReadStar commands.  Error reporting is minimal.
 
 * Method ChangeItemOrder added to allow moving item position in the
 output file
+
+(3.1.1)
+* A simple CIF server for doing validation reporting is now bundled
 
 Incompatible changes (since 3.0)
 ================================
