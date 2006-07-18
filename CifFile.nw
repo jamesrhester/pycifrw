@@ -837,10 +837,23 @@ def ddl1_cat_load(self):
         
     map(get_cat_info,deflist)       # apply the above function
     for cat in cat_mand_dic.keys():
-        self["_" + cat+"_[]"]["_category_mandatory.name"] = cat_mand_dic[cat]
+        cat_entry = self.get_ddl1_entry(cat)
+        self[cat_entry]["_category_mandatory.name"] = cat_mand_dic[cat]
     for cat in cat_unique_dic.keys():
-        self["_" + cat+"_[]"]["_category_key.name"] = cat_unique_dic[cat]
+        cat_entry = self.get_ddl1_entry(cat)
+        self[cat_entry]["_category_key.name"] = cat_unique_dic[cat]
 
+# A helper function get find the entry corresponding to a given category name:
+# yes, in DDL1 the actual name is different in the category block due to the
+# addition of square brackets which may or may not contain stuff.
+
+def get_ddl1_entry(self,cat_name):
+    chop_len = len(cat_name) 
+    possibles = filter(lambda a:a[1:chop_len+3]==cat_name+"_[",self.keys())
+    if len(possibles) > 1 or possibles == []:
+        raise ValidCifError, "Category name %s can't be matched to category entry" % cat_name
+    else:
+        return possibles[0]
 
 @ Dictionaries have the category-wide information in the category
 definition area.  We create a map from data block / save frame header to
@@ -873,8 +886,8 @@ def run_global_validation(self,item_name,item_value,data_block,provisional_items
     results = map(lambda f:(f.__name__,f(item_name,item_value,data_block,provisional_items,globals)),self.global_validation_funs)
     return {item_name:results}
 
-def run_block_validation(self,whole_block,globals={}):
-    results = map(lambda f:(f.__name__,f(whole_block,globals)),self.block_validation_funs)
+def run_block_validation(self,whole_block,globals={},fake_mand=False):
+    results = map(lambda f:(f.__name__,f(whole_block,globals,fake_mand)),self.block_validation_funs)
     # fix up the return values
     return {"whole_block":results}
 
@@ -1438,6 +1451,7 @@ def validate_uniqueness(self,item_name,item_value,whole_block,provisional_items=
 
 <<Block-level validation>>=
 <<Validate category presence>>
+<<Fake mandatory category information>>
 
 @ DDL2 introduces a new idea, that of a mandatory category, items of
 which must be present.  We check only this particular fact, and 
@@ -1445,23 +1459,72 @@ leave the checks for mandatory items within the category, keys etc.
 to the relevant routines.  This would appear to be applicable to
 dictionaries only.
 
+Also, although the natural meaning for a DDL2 dictionary would be that
+items from these categories must appear in every definition block, this is not what
+happens in practice, as category definitions do not have anything from the
+(mandatory) _item_description category.  We therefore adopt the supremely
+useless meaning that mandatory categories in a dictionary context mean only
+that somewhere, maybe in only one save frame, an item from this category
+exists.  This interpretation is forced by using the "fake_mand" argument,
+which then assumes that the alternative routine will be used to set the
+error information on a dictionary-wide basis.
+
+Note that this routine is constructed such that not all mandatory categories
+are checked in the event of a single failure.
+
 <<Validate category presence>>=
-def validate_mandatory_category(self,whole_block,globals={}):
+def validate_mandatory_category(self,whole_block,globals={},fake_mand=False):
+    if fake_mand:
+	return {"result":True}
     mand_cats = filter(lambda a:self[a].get("_category.mandatory_code","no")=="yes",
                 self.keys())
     # map to actual ids
     catlist = self.cat_map.items()
     # print "Mandatory categories - %s" % `mand_cats`
+    all_keys = whole_block.keys() #non-save block keys
+    if globals:         #
+        all_keys.extend(globals.abs_all_keys)
     for mand_cat in mand_cats:
         cat_id = filter(lambda a:a[1]==mand_cat,catlist)[0][0]
-        all_keys = whole_block.keys()
-        if globals:         #
-            all_keys.extend(globals.keys())
         no_of_items = len(filter(lambda a:self[a].get(self.cat_spec)==cat_id,
                              all_keys))
         if no_of_items == 0:
             return {"result":False,"bad_items":cat_id}
     return {"result":True}
+
+@  Given a block containing save frames, this routine compiles a
+list of categories which appear in any of the save frames.
+It then returns a list of mandatory categories which are not
+present in the save frames or enclosing block.
+
+This is for efficiency; as the validation routines are constructed
+on a per-block basis, and we try to treat save frames as block
+equivalents, we don't want to repeat checks more than we have to.
+
+As this is run outside the normal procedure, which is block based,
+we return the information in the same way that the run_data_checks
+routine would format it.
+
+<<Fake mandatory category information>>=
+def find_prob_cats(self,whole_block):
+    mand_cats = filter(lambda a:self[a].get("_category.mandatory_code","no")=="yes",
+                self.keys())
+    # map to actual ids
+    catlist = self.cat_map.items()
+    # find missing categories
+    wbs = whole_block["saves"]
+    abs_all_keys = whole_block.keys()
+    abs_all_keys.extend(reduce(lambda a,b:a+(wbs[b].keys()),wbs.keys(),[]))
+    prob_cats = []
+    for mand_cat in mand_cats:
+        cat_id = filter(lambda a:a[1]==mand_cat,catlist)[0][0]
+	
+        if len(filter(lambda a:self[a].get(self.cat_spec)==cat_id,abs_all_keys))==0:
+	    prob_cats.append(cat_id)
+    if len(prob_cats) > 0:
+	return (False,{'whole_block':[('validate_mandatory_category',{"result":False,"bad_items":problem_cats})]})
+    else:
+	return (True,{})
 
 @ Preparing our type expressions
 
@@ -1591,8 +1654,8 @@ def run_data_checks(self,verbose=False):
     for dataname in self.keys():
         update_value(self.v_result,self.fulldic.run_item_validation(dataname,self[dataname]))
         update_value(self.v_result,self.fulldic.run_global_validation(dataname,self[dataname],self))
-    for loop in self.loopnames():
-        update_value(self.v_result,self.fulldic.run_loop_validation(loop))
+    for loop in self.loops:
+        update_value(self.v_result,self.fulldic.run_loop_validation(loop.keys()))
     # now run block-level checks
     update_value(self.v_result,self.fulldic.run_block_validation(self))
     # return false and list of baddies if anything didn't match
@@ -1823,7 +1886,7 @@ flag [[isdic]].  This should only be used for DDL2 dictionaries.  DDL1
 dictionaries validate OK if (any) global block is deleted.
 
 <<Validate against the given dictionaries>>=
-def validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
+def validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False,fake_mand=True):
     check_file = CifFile(ciffile)
     if not dic:
         fulldic = merge_dic(diclist,mergemode)
@@ -1844,6 +1907,14 @@ def validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
 	    if len(new_vals)>0:
 	        check_globals[parent] = new_vals
 	        # print "Added %s (len %d)" % (parent,len(check_globals[parent]))
+	# next dictionary problem: the main DDL2 dictionary has what
+	# I would characterise as a mandatory_category problem, but
+	# in order to gloss over it, we allow a different 
+	# interpretation, which requires only a single check for one
+	# block.
+	if fake_mand:
+	    valid_result[blockname] = fulldic.find_prob_cats(check_globals)
+	    no_matches[blockname] = filter(lambda a:not fulldic.has_key(a),check_globals.keys())
     else:
         check_bc = check_file
         check_globals = CifBlock()   #empty
@@ -1854,24 +1925,46 @@ def validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
         # print "Not matched: " + `no_matches[block]`
         for nogood in no_matches[block]:
              del check_bc[block][nogood]
-        valid_result[block] = run_data_checks(check_bc[block],fulldic,globals=check_globals)
+        valid_result[block] = run_data_checks(check_bc[block],fulldic,globals=check_globals,fake_mand=fake_mand)
     return valid_result,no_matches
 
-def validate_report(val_result):
+def validate_report(val_result,use_html=False):
     import cStringIO
     valid_result,no_matches = val_result
     outstr = cStringIO.StringIO()
-    outstr.write( "Validation results\n")
-    outstr.write( "------------------\n")
+    if use_html:
+        outstr.write("<h2>Validation results</h2>")
+    else:
+        outstr.write( "Validation results\n")
+        outstr.write( "------------------\n")
+    if len(valid_result) > 10:  
+        suppress_valid = True         #don't clutter with valid messages
+        if use_html:
+           outstr.write("<p>For brevity, valid blocks are not reported in the output.</p>")
+    else:
+        suppress_valid = False
     for block in valid_result.keys():
         block_result = valid_result[block]
         if block_result[0]:
-            outstr.write( "\n Block %s is VALID\n" % block)
-        else: 
-            outstr.write( "\n Block %s is INVALID\n" % block)
+            out_line = "Block '%s' is VALID" % block
+        else:
+            out_line = "Block '%s' is INVALID" % block
+        if use_html:
+            if (block_result[0] and (not suppress_valid or len(no_matches[block])>0)) or not block_result[0]:
+                outstr.write( "<h3>%s</h3><p>" % out_line)
+        else:
+                outstr.write( "\n %s\n" % out_line)
         if len(no_matches[block])!= 0:
-            outstr.write( "\n The following items were not found in the dictionary:\n")
-            map(lambda it:outstr.write("%s\n" % it),no_matches[block])
+            if use_html:
+                outstr.write( "<p>The following items were not found in the dictionary")
+                outstr.write(" (note that this does not invalidate the data block):</p>")
+                outstr.write("<p><table>\n")
+                map(lambda it:outstr.write("<tr><td>%s</td></tr>" % it),no_matches[block])
+                outstr.write("</table>\n")
+            else:
+                outstr.write( "\n The following items were not found in the dictionary:\n")
+                outstr.write("Note that this does not invalidate the data block\n")
+                map(lambda it:outstr.write("%s\n" % it),no_matches[block])
         # now organise our results by type of error, not data item...
         error_type_dic = {}
         for error_item, error_list in block_result[1].items():
@@ -1913,8 +2006,11 @@ def validate_report(val_result):
             "A required category is missing from this block"}
 
         for test_name,test_results in error_type_dic.items():
-           outstr.write(error_report(test_name,info_table[test_name],test_results)) 
-           outstr.write("\n\n")
+           if use_html:
+               outstr.write(html_error_report(test_name,info_table[test_name],test_results)) 
+           else:
+               outstr.write(error_report(test_name,info_table[test_name],test_results)) 
+               outstr.write("\n\n")
     return outstr.getvalue()
          
 # A function to lay out a single error report.  We are passed
@@ -1947,6 +2043,35 @@ def error_report(error_name,error_explanation,error_dics):
           bodystring += "%-20s" % error["parent"]
    return retstring + headstring + bodystring 
 
+#  This lays out an HTML error report
+
+def html_error_report(error_name,error_explanation,error_dics,annotate=[]):
+   retstring = "<h4>" + error_explanation + ":</h4>"
+   retstring = retstring + "<table cellpadding=5><tr>"
+   headstring = "<th>Item name</th>"
+   bodystring = ""
+   if error_dics[0].has_key("bad_values"):
+      headstring += "<th>Bad value(s)</th>"
+   if error_dics[0].has_key("bad_items"):
+      headstring += "<th>Bad dataname(s)</th>"
+   if error_dics[0].has_key("child"):
+      headstring += "<th>Child</th>"
+   if error_dics[0].has_key("parent"):
+      headstring += "<th>Parent</th>" 
+   headstring +="</tr>\n"
+   for error in error_dics:
+      bodystring += "<tr><td><tt>%s</tt></td>" % error["item_name"]
+      if error.has_key("bad_values"):
+          bodystring += "<td>%s</td>" % error["bad_values"]
+      if error.has_key("bad_items"):
+          bodystring += "<td><tt>%s</tt></td>" % error["bad_items"]
+      if error.has_key("child"):
+          bodystring += "<td><tt>%s</tt></td>" % error["child"]
+      if error.has_key("parent"):
+          bodystring += "<td><tt>%s</tt></td>" % error["parent"]
+      bodystring += "</tr>\n"
+   return retstring + headstring + bodystring + "</table>\n"
+
 @ This function executes validation checks provided in the CifDic.  The 
 validation calls create a dictionary containing the test results for each
 item name.  Each item has a list of (test name,result) tuples.  After running
@@ -1954,14 +2079,14 @@ the tests, we contract these lists to contain only false results, and then
 remove all items containing no false results.
 
 <<Run dictionary validation checks>>=
-def run_data_checks(check_block,fulldic,globals={}):
+def run_data_checks(check_block,fulldic,globals={},fake_mand=False):
     v_result = {}
     for key in check_block.keys():
         update_value(v_result, fulldic.run_item_validation(key,check_block[key]))
         update_value(v_result, fulldic.run_global_validation(key,check_block[key],check_block,globals=globals))
-    for loop in check_block.loopnames():
-        update_value(v_result, fulldic.run_loop_validation(loop))
-    update_value(v_result,fulldic.run_block_validation(check_block,globals=globals))
+    for loop in check_block.loops:
+        update_value(v_result, fulldic.run_loop_validation(loop.keys()))
+    update_value(v_result,fulldic.run_block_validation(check_block,globals=globals,fake_mand=fake_mand))
     # return false and list of baddies if anything didn't match
     for test_key in v_result.keys():
         v_result[test_key] = filter(lambda a:a[1]["result"]==False,v_result[test_key])

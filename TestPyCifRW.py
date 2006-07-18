@@ -161,6 +161,14 @@ class BlockChangeTestCase(unittest.TestCase):
        except StarFile.StarLengthError:
            pass 
        else: self.Fail()
+
+   def testChangeLoop(self):
+       """Test changing pre-existing item in loop"""
+       # Items should be silently replaced, but if an
+       # item exists in a loop already, it should be
+       # deleted from that loop first
+       self.cf["_item_name_1"] = (5,6,7,8)
+
 #
 #  Test the mapping type implementation
 #

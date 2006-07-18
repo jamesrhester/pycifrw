@@ -1016,7 +1016,13 @@ sure they match already-existing items.  We make a special exception
 for an empty list on the assumption that it is going to be filled
 manually (in particular, using load_iter during file reading).
 
-If an item is already stored, it will be silently replaced. 
+If an item is already stored, it will be silently replaced.  Note
+that we can only guarantee this behaviour, and that duplicate items
+are not present, if this is called in the top loop.  If it is called
+as a method of an inner loop, only subloops are visible for checking/
+replacing.  We could
+get around this restriction by being passed a function which would
+fix things up for us.
 
 We also check for consistency, by making sure the new item is
 not in the block already.  If it is, we replace it (consistent with
@@ -1033,6 +1039,14 @@ def AddLoopItem(self,data,precheck=False,maxlength=-1):
     # we accept only tuples, strings and lists!!
     if isinstance(data[0],(TupleType,ListType)):
        # internal loop
+       # first we remove any occurences of these datanames in
+       # other loops
+       for one_item in data[0]:
+	   if self.has_key(one_item):
+	       if not self.overwrite:
+                   raise StarError, 'Attempt to insert duplicate item name %s' % data[0]
+               else:
+		   del self[one_item]
        newloop = self.loopclass(dimension = self.dimension+1)
        keyvals = zip(data[0],data[1])
        for key,val in keyvals:
