@@ -34,7 +34,10 @@ ReadCif/ReadStar commands.  Error reporting is minimal.
 output file
 
 (3.1.1)
-* A simple CIF server for doing validation reporting is now bundled
+
+* HTML-formatted validity reporting is now available
+
+* A simple HTML server script for doing validation reporting is now bundled
 
 Incompatible changes (since 3.0)
 ================================
