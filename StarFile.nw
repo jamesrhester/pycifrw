@@ -150,7 +150,7 @@ def checklengths(self,maxlength):
         errorstring = ""
         for bn in toolong:
             errorstring += "\n" + bn
-        raise StarError, 'Following block name(s) too long: \n' + errorstring
+        raise StarError( 'Following block name(s) too long: \n' + errorstring)
  
 @ Emulation of a mapping type.  When called via __setitem__, we do not
 check that a new blockname replaces an old block name.  If you need this,
@@ -251,14 +251,14 @@ def NewBlock(self,blockname,blockcontents=(),replace=False,fix=True):
     elif isinstance(blockcontents,DictType):
         blockcontents = self.element_class(blockcontents)
     if not isinstance(blockcontents,self.element_class):
-        raise StarError, 'Block is not of required type %s, is %s' % self.element_class.__name__,blockcontents.__class__.__name__
+        raise StarError( 'Block is not of required type %s, is %s' % self.element_class.__name__,blockcontents.__class__.__name__)
     if fix:
         newblockname = re.sub('[  \t]','_',blockname)
     else: newblockname = blockname
     new_lowerbn = newblockname.lower()
     if self.lower_keys.count(new_lowerbn):    #already in CIF
         if not replace:
-            raise StarError, "Attempt to replace existing block" + blockname
+            raise StarError( "Attempt to replace existing block" + blockname)
         # generate a list of lower-case keys in correct order
         current_keys = self.dictionary.keys()
         blocknames = map(lambda a:a.lower(),current_keys)
@@ -333,11 +333,11 @@ def merge(self,new_bc,mode="strict",single_block=[],
             self.dictionary[basekey] = new_bc[key]
         else:
             if mode=="strict":
-                raise StarError, "In strict merge mode: block %s in old and block %s in new files" % (basekey,key)
+                raise StarError( "In strict merge mode: block %s in old and block %s in new files" % (basekey,key))
             elif mode=="overlay":
                 self.dictionary[basekey].merge(new_bc[key],mode,match_att=match_att)
             else:  
-                raise StarError, "Merge called with unknown mode %s" % mode
+                raise StarError( "Merge called with unknown mode %s" % mode)
 
 @ When validating DDL2-type dictionaries against the DDL spec file, we have
 to be able to see all values of parent data items across all save frames
@@ -370,7 +370,7 @@ implement this using the cStringIO module for faster work.  Note that
 the default output comment specifies a CIF 1.1 standard file.
 
 <<Write out to string representation>>=
-    def WriteOut(self,comment=''):
+    def WriteOut(self,comment='',wraplength=80,maxoutlength=2048):
         import cStringIO
         if not comment:
             comment = self.header_comment
@@ -378,6 +378,7 @@ the default output comment specifies a CIF 1.1 standard file.
         outstring.write(comment)
         for datablock in self.dictionary.keys():
             outstring.write('\n' + self.type_tag +datablock+'\n')
+            self.dictionary[datablock].SetOutputLength(wraplength,maxoutlength)
             outstring.write(str(self.dictionary[datablock]))
         returnstring =  outstring.getvalue()
         outstring.close()
@@ -435,8 +436,9 @@ our initialisation function, which may be a subclass which takes other arguments
 services.  The structure returned from parsing is a StarFile, with
 possible grammar violations due to duplicate block or item names.
 
-We allow attempted fast reads using the compiled StarScan module
+We allow fast reads using the compiled StarScan module
 by passing the option 'flex' to this routine.
+
 <<Read in a STAR file>>=
 def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard'):
     import YappsStarParser,string
@@ -454,7 +456,7 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard'):
         toolong = filter(lambda a:len(a)>maxlength,split)
         if toolong:
             pos = split.index(toolong[0])
-            raise StarError, 'Line %d contains more than %d characters' % (pos+1,maxlength)
+            raise StarError( 'Line %d contains more than %d characters' % (pos+1,maxlength))
     try: 
 	if scantype == 'standard':
             parser = YappsStarParser.StarParser(YappsStarParser.StarParserScanner(text))
@@ -464,12 +466,12 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard'):
     except YappsStarParser.SyntaxError:
         errorstring = 'Syntax error in input file: last value parsed was %s' % YappsStarParser.lastval
         errorstring = errorstring + '\nParser status: %s' % `parser._scanner`
-        raise StarError, errorstring
+        raise StarError( errorstring)
     # duplication check on all blocks
     audit_result = map(lambda a:(a,proto_star[a].audit()),proto_star.keys())
     audit_result = filter(lambda a:len(a[1])>0,audit_result)
     if audit_result:
-        raise StarError, 'Duplicate keys as follows: %s' % `audit_result`
+        raise StarError( 'Duplicate keys as follows: %s' % `audit_result`)
     return proto_star
 
 @ \section{Loop Block class}
@@ -750,7 +752,7 @@ def recursive_iter(self,dict_so_far={},coord=[]):
         if len(drill_values)>0:
             drill_values=drill_values[0]  #drill in
         else:
-            raise StarError,"Malformed loop packet %s" % `top_items[0]`
+            raise StarError("Malformed loop packet %s" % `top_items[0]`)
     my_length = len(drill_values)
     if self.dimension == 0:
         for aloop in self.loops:
@@ -807,13 +809,13 @@ a file, for efficiency we only do this at the end of input.
 def insert_loop(self,newloop,position=-1,audit=True):
     # check that new loop is kosher
     if newloop.dimension != self.dimension + 1:
-        raise StarError, 'Insertion of loop of wrong nesting level %d, should be %d' % (newloop.dimension, self.dimension+1)
+        raise StarError( 'Insertion of loop of wrong nesting level %d, should be %d' % (newloop.dimension, self.dimension+1))
     self.loops.append(newloop)
     if audit:
         dupes = self.audit()
         if dupes:
             dupenames = map(lambda a:a[0],dupes)
-            raise StarError, 'Duplicate names: %s' % `dupenames`
+            raise StarError( 'Duplicate names: %s' % `dupenames`)
     if position >= 0:
         self.item_order.insert(position,newloop)
     else:
@@ -924,7 +926,7 @@ the nth packet selected, and order preserved.
 <<Collapse to nth packet>>=
 def collapse(self,packet_no):
     if self.dimension == 0:
-        raise StarError, "Attempt to select non-existent packet"
+        raise StarError( "Attempt to select non-existent packet")
     newlb = LoopBlock(dimension=self.dimension-1)
     for one_item in self.item_order:
         if isinstance(one_item,LoopBlock):
@@ -1044,7 +1046,7 @@ def AddLoopItem(self,data,precheck=False,maxlength=-1):
        for one_item in data[0]:
 	   if self.has_key(one_item):
 	       if not self.overwrite:
-                   raise StarError, 'Attempt to insert duplicate item name %s' % data[0]
+                   raise StarError( 'Attempt to insert duplicate item name %s' % data[0])
                else:
 		   del self[one_item]
        newloop = self.loopclass(dimension = self.dimension+1)
@@ -1061,14 +1063,14 @@ def AddLoopItem(self,data,precheck=False,maxlength=-1):
            # check that we can replace data
            if not self.overwrite:
                if self.has_key(data[0]):
-                   raise StarError, 'Attempt to insert duplicate item name %s' % data[0]
+                   raise StarError( 'Attempt to insert duplicate item name %s' % data[0])
            # now make sure the data is OK type
            regval = self.regularise_data(data[1])
            if not precheck:
                try:
                    self.check_item_value(regval)
                except StarError, errmes:
-                   raise StarError, "Item name " + data[0] + " " + `errmes`
+                   raise StarError( "Item name " + data[0] + " " + `errmes`)
            if self.dimension > 0:
                if self.no_packets <= 0:
                    self.no_packets = len(data[1])  #first item
@@ -1091,11 +1093,11 @@ that the item has been regularised before this check is called.
 def check_data_name(self,dataname,maxlength=-1): 
     if maxlength > 0:
         if len(dataname)>maxlength:
-            raise StarError, 'Dataname %s exceeds maximum length %d' % (dataname,maxlength)
+            raise StarError( 'Dataname %s exceeds maximum length %d' % (dataname,maxlength))
     if dataname[0]!='_':
-        raise StarError, 'Dataname ' + dataname + ' does not begin with _'
+        raise StarError( 'Dataname ' + dataname + ' does not begin with _')
     if len (filter (lambda a: ord(a) < 33 or ord(a) > 126, dataname)) > 0:
-        raise StarError, 'Dataname ' + dataname + ' contains forbidden characters'
+        raise StarError( 'Dataname ' + dataname + ' contains forbidden characters')
 
 <<Check data item for STAR conformance>>=
 def check_item_value(self,item):
@@ -1107,10 +1109,10 @@ def check_item_value(self,item):
             if it=='': return
             me = self.char_check.match(it)            
             if not me:
-                raise StarError, 'Bad character in %s' % it
+                raise StarError( 'Bad character in %s' % it)
             else:
                 if me.span() != (0,len(it)):
-                    raise StarError, 'Data item "' + it + '"... contains forbidden characters'
+                    raise StarError('Data item "' + it + '"... contains forbidden characters')
     map(check_one,test_item)
 
 @ Regularising data.  We want the copy.deepcopy operation to work, so
@@ -1129,7 +1131,7 @@ def regularise_data(self,dataitem):
     try:
         regval = list(dataitem)
     except TypeError, value:
-        raise StarError, str(dataitem) + ' is wrong type for data value\n' 
+        raise StarError( str(dataitem) + ' is wrong type for data value\n' )
     return regval
     
 @ Dimension of data.  This would ordinarily be the number of nested levels, 
@@ -1152,11 +1154,32 @@ def get_dim(self,dataitem,current=0,packlen=0):
     
 
 <<Functions for printing out>>=
+<<Set the output length>>
 <<Print a loop block>>
 <<Format loop names>>
 <<Format loop packets>>
 <<Format a single packet item>>
 <<Format a string>>
+
+@ For non-default output lengths, we include a function which will set
+the internal attribute that controls maximum line length.  As this is
+a per-block value, this function is most likely called by the StarFile
+object rather than directly.
+
+Two values control output line formatting: [[self.wraplength]] and 
+[[self.maxoutlength]].  [[self.wraplength]] is the value at which the
+line will be wrapped normally, but long strings will not force an
+internal wrap inside the string; [[self.maxoutlength]] is the absolute
+maximum length.
+ 
+<<Set the output length>>=
+def SetOutputLength(self,wraplength=80,maxoutlength=2048):
+    if wraplength > maxoutlength:
+        raise StarError("Wrap length (requested %d) must be <= Maximum line length (requested %d)" % (wraplength,maxoutlength))
+    self.wraplength = wraplength
+    self.maxoutlength = maxoutlength
+    for loop in self.loops:
+        loop.SetOutputLength(wraplength,maxoutlength)
 
 @ Printing a section.  We allow an optional order list to be given, in
 case the caller wants to order things in some nice way.  By default, we
@@ -1177,6 +1200,9 @@ our choice for every non-specified dimension.
 
 This routine should not be called recursively.
 
+We attempt some nice formatting by printing non-packet items with an apparent
+tab stop at 40 characters.
+
 <<Print a loop block>>=
 def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
     import cStringIO
@@ -1193,7 +1219,7 @@ def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
     else:
         coords = coord
     if(len(coords)<self.dimension-1):
-        raise StarError, "Not enough block packet coordinates to uniquely define data"
+        raise StarError("Not enough block packet coordinates to uniquely define data")
     # print loop delimiter
     outstring.write(blockstart)
     while len(order)>0:
@@ -1205,8 +1231,12 @@ def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
                if isinstance(itemvalue,StringType):  #need to sanitize
                      thisstring = self._formatstring(itemvalue)
                else: thisstring = str(itemvalue)
-               if len(thisstring) + len(itemname) < (self.wraplength-2):
-                     outstring.write('%s %s\n' % (itemname,thisstring))
+               # try for a tabstop at 40
+               if len(itemname)<40 and (len(thisstring)-40 < self.wraplength-1):
+                   itemname = itemname + ' '*(40-len(itemname))
+               else: itemname = itemname + ' '
+               if len(thisstring) + len(itemname) < (self.wraplength-1):
+                     outstring.write('%s%s\n' % (itemname,thisstring))
                else:
                      outstring.write('%s\n %s\n' % (itemname, thisstring))
             else:   # we are asked to print an internal loop block
@@ -1260,17 +1290,26 @@ def format_packets(self,outstring,coordinates,indent=0):
    # print 'Alldata: %s' % `alldata`
    packet_data = apply(zip,alldata)
    # print 'Packet data: %s' % `packet_data`
-   curstring = ' ' * indent
+   curstring = ''
    for position in range(len(packet_data)):
        for point in range(len(packet_data[position])):
            datapoint = packet_data[position][point]
-           curstring = curstring + self.format_packet_item(datapoint,indent)
+           packstring = self.format_packet_item(datapoint,indent)
+           if len(curstring) + len(packstring)> self.wraplength-2: #past end of line with space
+               curstring = curstring + '\n' + ' '*indent + packstring
+           elif curstring == '':
+               curstring = curstring + ' '*indent + packstring
+           else:
+               curstring = curstring + ' ' + packstring
        outstring.write(curstring + '\n')     #end of one packet
        curstring = ''
    outstring.write(' ' + curstring + '\n')    #last time through
            
 @ Formatting a single packet item - could be a nested packet!  If we have a
-list of nested packets, we have to transpose first.
+list of nested packets, we have to transpose first.  Note also that a nested
+packet implies a STAR file, which means there are no line length restrictions.
+We are therefore a bit sloppy with our checking against [[wraplength]] and
+[[maxoutlength]].
 
 <<Format a single packet item>>=
 def format_packet_item(self,pack_item,indent):
@@ -1284,9 +1323,9 @@ def format_packet_item(self,pack_item,indent):
                curstring = curstring + (' ' * indent)
                thisstring = ''
        else: 
-           thisstring = ' %s ' % str(pack_item)
+           thisstring = '%s' % str(pack_item)
        if len(curstring) + len(thisstring)> self.wraplength-2: #past end of line with space
-           curstring = curstring + ' \n' #add the space
+           curstring = curstring + '\n' #add the space
            curstring = curstring + (' ' * indent) + thisstring
        else: 
            curstring = curstring + ' ' + thisstring
@@ -1298,7 +1337,7 @@ def format_packet_item(self,pack_item,indent):
        else:
            item_list = apply(zip,pack_item)
        for sub_item in item_list:
-           curstring = curstring + self.format_packet_item(sub_item,indent)
+           curstring = curstring + ' ' + self.format_packet_item(sub_item,indent)
        # stop_ is not issued at the end of each innermost packet
        if isinstance(pack_item[0],(ListType,TupleType)):
            curstring = curstring + ' stop_ '
@@ -1315,7 +1354,7 @@ first character of a line is a semicolon.
 
 The STAR specification states that embedded quotes are allowed so long
 as they are not followed by a space.  So if we find any quotes followed
-by spaces we output a semicolon-terminated string to avoid to much
+by spaces we output a semicolon-terminated string to avoid too much
 messing around.  This routine is called very often and could be 
 improved.
 
@@ -1332,13 +1371,13 @@ def _formatstring(self,instring):
         if not ' ' in instring and not '\t' in instring and not '\v' \
           in instring and not '_' in instring and not (instring[0]=="'" or \
              instring[0]=='"'):                  # no blanks
-            return ' %s ' % (instring)
+            return instring
         if not "'" in instring:                                       #use apostrophes
             return "'%s'" % (instring)
         elif not "\"" in instring:
             return '"%s"' % (instring)
     # is a long one or one that needs semicolons due to carriage returns
-    outstring = "\n;\n"
+    outstring = "\n;"
     # if there are returns in the string, try to work with them
     while 1:
         retin = string.find(instring,'\n')+1
@@ -1349,7 +1388,7 @@ def _formatstring(self,instring):
             outstring = outstring + instring + '\n;\n'
             break
         else:                             # find a space
-            for letter in range(self.maxoutlength-1,80,-1): 
+            for letter in range(self.maxoutlength-1,self.wraplength-1,-1): 
                 if instring[letter] in ' \t\f': break
             outstring = outstring + instring[:letter+1]
             outstring = outstring + '\n'
@@ -1409,6 +1448,7 @@ def __str__(self):
     retstr = ''
     for sb in self.saves.keys(): 
         retstr = retstr + '\nsave_%s\n\n' % sb
+        self.saves[sb].SetOutputLength(self.wraplength,self.maxoutlength)
         retstr = retstr + str(self.saves[sb])
         retstr = retstr + '\nsave_\n\n'
     return retstr + LoopBlock.__str__(self)
@@ -1418,10 +1458,10 @@ class StarError(Exception):
     def __init__(self,value):
         self.value = value
     def __str__(self):
-        print '\nStar Format error: '+ self.value 
+        return '\nStar Format error: '+ self.value 
 
 class StarLengthError(Exception):
     def __init__(self,value):
         self.value = value
     def __str__(self):
-        print '\nStar length error: ' + self.value
+        return '\nStar length error: ' + self.value

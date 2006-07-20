@@ -3,7 +3,7 @@ import sys
 from CifFile import *
 from StarFile import *
 
-def runtests():
+def runtests(scantype):
     test_table = [
     ["ciftest1", "OK"],
     ["ciftest2", "OK"],
@@ -27,7 +27,7 @@ def runtests():
 
     for filename, testresult in test_table:
         try:
-        	CifFile(filename)
+        	ReadCif(filename,scantype=scantype)
         except:
         	if testresult == 'OK':
            	    print "%s causes error where none expected" % filename
@@ -43,4 +43,7 @@ def runtests():
         	else:
         	    print "%s: Expected %s, got nothing" % (filename,`testresult`)
 if __name__ == "__main__":
-    runtests()
+    print "Testing interpreted tokenizer"
+    runtests("standard")
+    print "Testing compiled tokenizer"
+    runtests("flex")

@@ -2,6 +2,8 @@
 #  All of these are valid CIF constructs.  However, we have added reserved
 #  words in some places, which are not allowed to begin data values
 #
+#  We have included some html to make sure html-ised error reports don't
+#  do anything nasty
 #
 data_testblock
 _dataname 
@@ -24,7 +26,7 @@ _test8a
 ;
 _test9 "make sure we're allowed the single quote ' with spaces here " 
 _test10 
- ;Hi_there         #this checks that non-first character semicolons make it in
+ ;Hi_<em>&&</em>here         #this checks that non-first character semicolons make it in
 # we once had an error where a test string was empty
 _test14 
 ;

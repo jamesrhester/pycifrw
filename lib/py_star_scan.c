@@ -27,6 +27,7 @@ initStarScan(void)
     (void) Py_InitModule("StarScan", StarScanMethods);
     token_list =  NULL;
     value_list =  NULL;
+    line_no_list = NULL;
     current_len = 0;
     alloc_mem = 0;
 }
@@ -53,10 +54,12 @@ for(i=0;i<current_len;i++){
 free(token_list);
 /* printf("Freeing value_list\n"); */
 free(value_list);
+free(line_no_list);
 alloc_mem = 0;
 /* Now get our first block of storage */
 token_list = (int *) malloc(MEM_ALLOC_SIZE*sizeof(int *));
 value_list = (char **) malloc(MEM_ALLOC_SIZE*sizeof(char **));
+line_no_list = (int *) malloc(MEM_ALLOC_SIZE*sizeof(int *));
 alloc_mem += MEM_ALLOC_SIZE;
 current_len = 0;
 /* printf("New memory, val=%x,tok=%x\n",value_list,token_list);*/
@@ -82,7 +85,8 @@ if(tok_id == DEND) {
     }
 /* Get memory for storing token and value */
 if(current_len+1>alloc_mem) {
-    token_list = (int *) realloc(token_list,(alloc_mem+MEM_ALLOC_SIZE)*sizeof(size_t *));
+    token_list = (int *) realloc(token_list,(alloc_mem+MEM_ALLOC_SIZE)*sizeof(int *));
+    line_no_list = (int *) realloc(line_no_list,(alloc_mem+MEM_ALLOC_SIZE)*sizeof(int *));
     value_list = (char **) realloc(value_list,(alloc_mem+MEM_ALLOC_SIZE)*sizeof(char **));
     alloc_mem += MEM_ALLOC_SIZE;
     /* printf("Expanded memory, val=%x,tok=%x\n",value_list,token_list);*/
@@ -93,6 +97,7 @@ save_str = (char *) malloc((yyleng+1)*sizeof(char *));
 strncpy(save_str,yytext,yyleng+1);
 value_list[current_len] = save_str;
 token_list[current_len] = tok_id;
+line_no_list[current_len] = yylineno;
 current_len++;
 /* return(Py_BuildValue("(iiss)",0,0,token_str,yytext));*/
 return(Py_BuildValue(""));
@@ -106,7 +111,7 @@ if(!(PyArg_ParseTuple(args,"i",&list_pos))) return NULL;
 /* printf("Getting token %d\n",list_pos);*/
 if(list_pos==current_len) flex_scan(self,args); 
 if(list_pos<current_len)
-    return(Py_BuildValue("(iiss)",0,0,tokens[token_list[list_pos]],value_list[list_pos]));
+    return(Py_BuildValue("(iiss)",line_no_list[list_pos],0,tokens[token_list[list_pos]],value_list[list_pos]));
 else {
     PyErr_SetString(PyExc_IndexError,"No tokens left");
     return NULL;
@@ -122,6 +127,7 @@ for(i=0;i<current_len;i++){
     }
 free(token_list);
 free(value_list);
+free(line_no_list);
 current_len = 0;
 alloc_mem = 0;
 }
@@ -139,17 +145,18 @@ static PyObject *
 get_last_ten(PyObject * self, PyObject * args)
 {
 int start_pt;
-int ret_list_pos;
+int ret_list_pos,pos_ptr;
 PyObject * newlist;
 PyObject * newtuple;     /* store each tuple */
 if(current_len<=10) start_pt = 0;
 else start_pt = current_len - 10;
 newlist = PyList_New(current_len - start_pt);
 for(ret_list_pos=0;start_pt+ret_list_pos<current_len;ret_list_pos++){
-   printf("Build token %d\n",start_pt+ret_list_pos);
-   newtuple = Py_BuildValue("iiss",0,0,tokens[token_list[start_pt + ret_list_pos]],
-                value_list[start_pt+ret_list_pos]);
-   printf("Set list pos %d\n",ret_list_pos);
+   pos_ptr = start_pt+ret_list_pos;
+   /* printf("Build token %d\n",pos_ptr);*/
+   newtuple = Py_BuildValue("iiss",line_no_list[pos_ptr],0,tokens[token_list[pos_ptr]],
+                value_list[pos_ptr]);
+   /* printf("Set list pos %d\n",ret_list_pos);*/
    PyList_SET_ITEM(newlist,ret_list_pos,newtuple);
 }
 return newlist;

@@ -42,23 +42,26 @@ def monitor(location,value):
     lastval = `value`
     return value
 
+# Strip extras gets rid of leading and trailing whitespace, and
+# semicolons.
 def stripextras(value):
     # we get rid of semicolons and leading/trailing terminators etc.
      import re
      jj = re.compile("[\n\r\f \t\v]*")
      semis = re.compile("[\n\r\f \t\v]*[\n\r\f]\n*;")
      cut = semis.match(value)
-     if cut:
+     if cut:        #we have a semicolon-delimited string
           nv = value[cut.end():len(value)-2]
 	  try:
              if nv[-1]=='\r': nv = nv[:-1]
 	  except IndexError:    #empty data value
 	     pass
-     else: nv = value
-     cut = jj.match(nv)
-     if cut:
-          return stripstring(nv[cut.end():])
-     return nv
+          return nv 
+     else: 
+          cut = jj.match(value)
+          if cut:
+               return stripstring(value[cut.end():])
+          return value
 
 # helper function to get rid of inverted commas etc.
 

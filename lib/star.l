@@ -35,6 +35,8 @@ if(string_pos + max_size <= in_string_len) {\
 
 %}
 
+/* These have been modified from starbase, as they allow all sorts of
+   forbidden characters */
 a		[aA]
 b		[bB]
 d		[dD]
@@ -53,8 +55,10 @@ Global_		{g}{l}{o}{b}{a}{l}_
 Stop_		{s}{t}{o}{p}_
 Save_		{s}{a}{v}{e}_
 Char		[^\n\r\0]
+TrueChar        [][!%&\(\)*+,./:<=>?@0-9A-Za-z\\^`{}|~"#$';_ \t-]
 Blank		[\n \t\r\0]
 NonBlank	[^\n \t\r]
+TrueNonBlank    [][!%&\(\)*+,./:<=>?@0-9A-Za-z\\^`{}|~"#$';_-]
 NonDQuote	[^\n\r"\0]
 NonSQuote	[^\n\r'\0]
 NotUnderscore	[^\n \r\t_\0]
@@ -67,28 +71,29 @@ EndOfLine	{Spaces}({Comment})?(\n|\r|\r\n)
 %o 6000
 %x Alltext
 %option noyywrap
+%option yylineno
 
 /* Lex Rules fo a STAR File */
 %%
 {Loop_}                 {return(DLBLOCK);}
 {Global_}               {return(DGLOBAL);}
 {Stop_}                 {return(DSTOP);}
-{Save_}{NonBlank}+      {return(DSAVE_HEADING);}
+{Save_}{TrueNonBlank}+      {return(DSAVE_HEADING);}
 {Save_}                 {return(DSAVE_END);}
-{Data_}{NonBlank}+      {return(DDATA_HEADING);}
-_{NonBlank}+            {return(DDATA_NAME);}
+{Data_}{TrueNonBlank}+      {return(DDATA_HEADING);}
+_{TrueNonBlank}+            {return(DDATA_NAME);}
 {Spaces}                {/* do nothing */}
 {Comment}               {/* do nothing */}
 {EndOfLine}/[^;]        {/* do nothing */}
 
-(\n|\r\n);([^\n\r])*(\r\n|\r|\n)+ {BEGIN(Alltext);return(DSTART_SC_LINE);}
-<Alltext>[^;\r\n]([^\r\n])*(\r\n|\r|\n)+   {return(DSC_LINE_OF_TEXT);}
+(\n|\r\n);({TrueChar})*(\r\n|\r|\n)+ {BEGIN(Alltext);return(DSTART_SC_LINE);}
+<Alltext>[^;\r\n]({TrueChar})*(\r\n|\r|\n)+   {return(DSC_LINE_OF_TEXT);}
 <Alltext>;                                 {BEGIN(INITIAL);
 					    return(DEND_SC_LINE);}
 
-([^\n\r\t \"#$\'_\[\]\0]{NonBlank}*) {return(DDATA_VALUE_1);}
+([^\n\r\t \"#$\'_\[\]\0]{TrueNonBlank}*) {return(DDATA_VALUE_1);}
 
-\'[^\n\r\f]*\'  {/* this code borrowed from star.l in
+\'{TrueChar}*\'  {/* this code borrowed from star.l in
                  starbase.  We can't write a rule in 
                  flex to accept a quote if the following
                  character is not blank, and accepting
@@ -113,7 +118,7 @@ _{NonBlank}+            {return(DDATA_NAME);}
                  return(DDATA_VALUE_1);
                  }
 
-\"[^\n\r\f]*\"  {/* this code borrowed from star.l in
+\"{TrueChar}*\"  {/* this code borrowed from star.l in
                  starbase.  We can't write a rule in 
                  flex to accept a quote only if the following
                  character is not blank, and writing a
@@ -141,8 +146,8 @@ _{NonBlank}+            {return(DDATA_NAME);}
 \0                      {YY_FLUSH_BUFFER; return(DEND);}
 
 .			{
-			printf("Unexpected Character\n");
-			printf("<%d>\n",yytext[0]);
+			/* printf("Unexpected Character\n");*/
+			/* printf("<%d>\n",yytext[0]);*/
                         YY_FLUSH_BUFFER;
                         return(DERROR);
 			}
@@ -153,5 +158,6 @@ _{NonBlank}+            {return(DDATA_NAME);}
    flushed */
 void star_clear(void) {
     yy_flush_buffer(YY_CURRENT_BUFFER);
+    yylineno = 0;
     BEGIN(INITIAL);
     }

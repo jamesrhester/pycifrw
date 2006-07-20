@@ -33,7 +33,17 @@ try:
     os.remove(tmpfile)
 except CifFile.StarFile.StarError:
     os.remove(tmpfile)
-    print "File %s appears to have one or more syntax errors" % input_cif.filename
+    import sys,re
+    print "<h3>File reading error</h3>"
+    print "<p>File %s appears to have one or more syntax errors</p>" % input_cif.filename
+    print "<p>The detailed error message is as follows:</p><p><pre>"
+    etype,eval,trace = sys.exc_info()
+    unsafe_str = str(eval)
+    unsafe_str = unsafe_str.replace("&","&amp;")
+    unsafe_str = unsafe_str.replace("<","&lt;")
+    safe_str = unsafe_str.replace(">","&gt;")
+    print safe_str
+    print "</pre>"
 except:
     os.remove(tmpfile)
     print "Unspecified error reading file %s.  This is most likely a CIF syntax error."

@@ -167,7 +167,7 @@ class CifLoopBlock(StarFile.LoopBlock):
     def __init__(self,data=(),dimension=0,**kwargs):
         self.loopclass = CifLoopBlock
         if dimension > 1: 
-            raise CifError, 'Attempt to nest loops, loop level %d' % dimension
+            raise CifError( 'Attempt to nest loops, loop level %d' % dimension)
         StarFile.LoopBlock.__init__(self,data,dimension=dimension,**kwargs)
         # self.__iter__ = self.recursive_iter
 
@@ -179,7 +179,7 @@ class CifLoopBlock(StarFile.LoopBlock):
 
     def insert_loop(self,newloop,**kwargs):
         if newloop.dimension > 1:
-            raise  CifError, 'Attempt to insert inner loop, loop level %d' % dimension
+            raise  CifError( 'Attempt to insert inner loop, loop level %d' % dimension)
         StarFile.LoopBlock.insert_loop(self,newloop,**kwargs)
 
 @ \section{Cif Block class}
@@ -252,6 +252,7 @@ def __str__(self):
     retstr = ''
     for sb in self.saves.keys():
         retstr = retstr + '\nsave_%s\n\n' % sb
+        self.saves[sb].SetOutputLength(self.wraplength,self.maxoutlength)
         retstr = retstr + str(self.saves[sb])
         retstr = retstr + '\nsave_\n\n'
     return retstr + CifLoopBlock.__str__(self)
@@ -314,7 +315,7 @@ def merge(self,new_block,mode="strict",match_att="",nosaves=False):
     if mode == 'strict':
        for key in new_block.keys(): 
            if self.has_key(key) and key != match_att:
-              raise CifError, "Identical keys %s in strict merge mode" % key
+              raise CifError( "Identical keys %s in strict merge mode" % key)
            elif key != match_att:           #no change otherwise
               self[key] = new_block[key] 
     elif mode == 'replace':
@@ -404,7 +405,7 @@ def checklengths(self):
     outstring = ""
     for it in toolong: outstring += "\n" + it
     if toolong:
-       raise CifError, 'Following data names too long:' + outstring
+       raise CifError( 'Following data names too long:' + outstring)
 
 @ Reading in a file.  We now use the STAR grammar parser, and
 postcheck for nested loops and other disallowed STAR funkiness.
@@ -418,7 +419,7 @@ def ReadCif(filename,strict=1,maxlength=2048,scantype="standard"):
     for bname,bvalue in proto_cif.items():
         nests = filter(lambda a:len(a.loops)>0,bvalue.loops)
         if len(nests) > 0:
-            raise CifError, "Block %s contains nested loops"
+            raise CifError( "Block %s contains nested loops")
         # check for save frame references (not yet implemented in PySTARRW)
         # check for global blocks (not yet implemented in PySTARRW)
     return proto_cif
@@ -431,13 +432,13 @@ class CifError(Exception):
     def __init__(self,value):
         self.value = value
     def __str__(self):
-        print '\nCif Format error: '+ self.value 
+        return '\nCif Format error: '+ self.value 
 
 class ValidCifError(Exception):
     def __init__(self,value):
         self.value = value
     def __str__(self):
-        print '\nCif Validity error: ' + self.value
+        return '\nCif Validity error: ' + self.value
 
 @ \section {Dictionaries}
 
@@ -1068,7 +1069,7 @@ def validate_loop_membership(self,loop_names):
     try:
         categories = map(lambda a:self[a][self.cat_spec],loop_names)
     except KeyError:       #category is mandatory
-        raise ValidCifError, "%s missing from dictionary %s for item in loop containing %s" % (self.cat_spec,self.dicname,loop_names[0])
+        raise ValidCifError( "%s missing from dictionary %s for item in loop containing %s" % (self.cat_spec,self.dicname,loop_names[0]))
     bad_items =  filter(lambda a:a != categories[0],categories)
     if len(bad_items)>0:
         return {"result":False,"bad_items":bad_items}
@@ -1634,13 +1635,13 @@ def __init__(self,dic = None, diclist=[], mergemode = "replace",*args,**kwords):
     if isinstance(dic,CifDic):
         self.fulldic = dic
     else:
-        raise TypeError, "ValidCifBlock passed non-CifDic type in dic argument"
+        raise TypeError( "ValidCifBlock passed non-CifDic type in dic argument")
     if len(diclist)==0 and not dic:
-        raise ValidCifError, "At least one dictionary must be specified"
+        raise ValidCifError( "At least one dictionary must be specified")
     if diclist and not dic:
         self.fulldic = merge_dic(diclist,mergemode)
     if not self.run_data_checks()[0]:
-	raise ValidCifError, self.report()
+	raise ValidCifError( self.report())
 
 @ Run all of these data checks.  The dictionary validation methods return a
 list of tuples (validation function name, result) for each item.  
@@ -1774,7 +1775,7 @@ def report_if_invalid(self,valid,bad_list,data_name):
     if not valid:
         error_string = reduce(lambda a,b: a + "," + b[0], bad_list, "") 
         error_string = `data_name` + " fails following validity checks: "  + error_string
-        raise ValidCifError, error_string
+        raise ValidCifError( error_string)
 
 def __delitem__(self,key):
     # we don't need to run single item checks; we do need to run loop and
@@ -1850,7 +1851,7 @@ class ValidCifFile(CifFile):
 <<Initialise valid CIF>>=
 def __init__(self,dic=None,diclist=[],mergemode="replace",*args,**kwargs):
     if not diclist and not dic and not hasattr(self,'bigdic'):
-        raise ValidCifError, "At least one dictionary is required to create a ValidCifFile object"
+        raise ValidCifError( "At least one dictionary is required to create a ValidCifFile object")
     if not dic and diclist:     #merge here for speed
         self.bigdic = merge_dic(diclist,mergemode)
     elif dic and not diclist:

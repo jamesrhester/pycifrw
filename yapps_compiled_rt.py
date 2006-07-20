@@ -86,10 +86,12 @@ class Scanner:
 	output = ''
         if self.scantype != "flex": 
             out_tokens = self.tokens[-10:]
+	    for t in out_tokens:
+	        output = '%s\n  (@%s)  %s  =  %s' % (output,t[0],t[2],`t[3]`)
         else:
             out_tokens = StarScan.last_ten()
-	for t in out_tokens:
-	    output = '%s\n  (@%s)  %s  =  %s' % (output,t[0],t[2],`t[3]`)
+	    for t in out_tokens:
+	        output = '%s\n  (~line %s)  %s  =  %s' % (output,t[0],t[2],`t[3]`)
 	return output
     
     def compiled_scan(self,restrict):
@@ -167,6 +169,8 @@ class Parser:
         return tok[3]
 
 
+# This works only for the interpreted scanner version, as we have no 
+# idea of the current position in the case of the compiled version
 
 def print_error(input, err, scanner):
     """This is a really dumb long function to print error messages nicely."""

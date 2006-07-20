@@ -11,6 +11,7 @@ char * input_string;     /* where flex gets input */
 size_t string_pos;          /* current position */
 size_t in_string_len;       /* total length */
 int * token_list;           /* list of tokens */
+int * line_no_list;         /* list of token positions */
 char ** value_list;        /* list of values */
 size_t alloc_mem;           /* How much allocated */
 size_t current_len;         /* Length of list */
@@ -19,6 +20,7 @@ extern int star_scanner(void);
 extern void star_clear(void);
 extern char * yytext;
 extern size_t yyleng;
+extern size_t yylineno;
 #else
 extern char * input_string;
 extern size_t string_pos;

@@ -247,6 +247,7 @@ class FileWriteTestCase(unittest.TestCase):
              ('_item_empty',''),
              ('_item_quote',"'ABC"),
              ('_item_apost','"def'),
+             ('_item_sws'," \n "),
              (('_item_5','_item_7','_item_6'),
              ([1,2,3,4],
               ['a','b','c','d'],
@@ -342,6 +343,11 @@ class FileWriteTestCase(unittest.TestCase):
        """An empty string is in fact kosher""" 
        self.failUnless(self.cf['_item_empty']=='')
        self.failUnless(self.flf['_item_empty']=='')
+
+   def testSemiWhiteSpace(self):
+       """Test that white space in a semicolon string is preserved"""
+       self.failUnless(self.cf['_item_sws']==self.df['_item_sws'])
+       self.failUnless(self.cf['_item_sws']==self.flf['_item_sws'])
 
    def testLoopDataInOut(self):
        """Test writing in and out loop data"""
