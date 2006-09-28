@@ -82,7 +82,7 @@ YappsStarParser.py
 \family typewriter
 CifFile.py
 \family default
- to access all CIF features: 
+ into your python session or script to access all CIF features: 
 \end_layout
 
 \begin_layout LyX-Code
@@ -853,6 +853,52 @@ comment
 \end_inset
 
 ))
+\end_layout
+
+\begin_layout Standard
+Two additional keyword arguments control line length in the output file:
+ 
+\family typewriter
+wraplength
+\family default
+ and 
+\family typewriter
+maxoutlength
+\family default
+.
+ Lines in the output file are guaranteed to be shorter than 
+\family typewriter
+maxoutlength
+\family default
+ characters, and PyCIFRW will additionally insert a line break if putting
+ two data values or a dataname/datavalue pair together on the same line
+ would exceed 
+\family typewriter
+wraplength
+\family default
+.
+ In other words, unless data values are longer than 
+\family typewriter
+maxoutlength
+\family default
+ characters long, no line breaks will be inserted in the output file.
+ By default, 
+\family typewriter
+wraplength
+\family default
+ = 80 and 
+\family typewriter
+maxoutlength
+\family default
+ = 2048.
+\end_layout
+
+\begin_layout Standard
+These values may be set on a per block/loop basis by calling the 
+\family typewriter
+SetOutputLength
+\family default
+ method of the loop or block.
 \end_layout
 
 \begin_layout Standard

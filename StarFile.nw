@@ -303,20 +303,32 @@ particular attribute, rather than the block name itself.  This means
 we can do the right thing and compare [[_name]] entries rather than
 block names (the default behaviour).
 
+Note also a problem with the overlay protocol as written up in Vol. G:
+if we try matching on item.name, we will run into trouble where _item.name
+is looped in DDL2-style dictionaries.  We can't match on a complete match
+against all item names in the list, because we would like to be able to add
+item names in overlay mode.  So we have to deduce the 'main' item name
+from any parent-child information that we have using a helper function which
+is passed to us.
+
 <<Merge with another block collection>>=
 def merge(self,new_bc,mode="strict",single_block=[],
-               idblock="",match_att=""):
+               idblock="",match_att="",match_function=None):
     if single_block:
         self.dictionary[single_block[0]].merge(new_bc[single_block[1]],mode,
-					       match_att=match_att)
+					       match_att=match_att,
+                                               match_function=match_function)
         return None
     base_keys = self.keys()
     block_to_item = base_keys   #default
     new_keys = new_bc.keys()
     if match_att:
         #make a blockname -> item name map
-	block_to_item = map(lambda a:self[a].get(match_att,None),self.keys())
-	# print `block_to_item`
+        if match_function:
+            block_to_item = map(lambda a:match_function(self[a]),self.keys())
+	else:
+            block_to_item = map(lambda a:self[a].get(match_att,None),self.keys())
+	#print `block_to_item`
     for key in new_keys:
         if key == idblock: continue
 	basekey = key        #default value
@@ -335,6 +347,7 @@ def merge(self,new_bc,mode="strict",single_block=[],
             if mode=="strict":
                 raise StarError( "In strict merge mode: block %s in old and block %s in new files" % (basekey,key))
             elif mode=="overlay":
+                # print "Merging block %s with %s" % (basekey,key)
                 self.dictionary[basekey].merge(new_bc[key],mode,match_att=match_att)
             else:  
                 raise StarError( "Merge called with unknown mode %s" % mode)

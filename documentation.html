@@ -7,7 +7,7 @@
 <meta name="originator" content="TeX4ht (http://www.cis.ohio-state.edu/~gurari/TeX4ht/mn.html)"> 
 <!-- html --> 
 <meta name="src" content="documentation.tex"> 
-<meta name="date" content="2006-07-12 16:17:00"> 
+<meta name="date" content="2006-07-24 13:18:00"> 
 <link rel="stylesheet" type="text/css" href="documentation.css"> 
 </head><body 
 >
@@ -17,7 +17,7 @@
 <h2 class="titleHead">Programming with PyCIFRW and PySTARRW</h2>
 <div class="author" ></div><br>
 <div class="date" ><span 
-class="ecrm-1200">July 12, 2006</span></div>
+class="ecrm-1200">July 24, 2006</span></div>
    </div>PyCIFRW provides facilities for reading, manipulating and writing CIF and
 STAR files. In addition, CIF files and dictionaries may be validated against DDL1/2
 dictionaries.
@@ -32,8 +32,8 @@ class="ectt-1000">CifFile.py</span>, <span
 class="ectt-1000">StarFile.py, yapps_compiled_rt.py </span>and
 <span 
 class="ectt-1000">YappsStarParser.py</span>. It is then sufficient to import <span 
-class="ectt-1000">CifFile.py </span>to access all CIF
-features:
+class="ectt-1000">CifFile.py </span>into your python
+session or script to access all CIF features:
 <!--l. 45--><p class="noindent">
      <dl class="list1"><dt class="list">
      </dt><dd 
@@ -662,21 +662,39 @@ class="ectt-1000">&nbsp;a</span><span
 class="ectt-1000">&nbsp;test</span><span 
 class="ectt-1000">&nbsp;file&#8221;))</span></dd></dl>
 <!--l. 381--><p class="nopar">
-The order of output of items within a <span 
+Two additional keyword arguments control line length in the output file: <span 
+class="ectt-1000">wraplength</span>
+and <span 
+class="ectt-1000">maxoutlength</span>. Lines in the output file are guaranteed to be shorter
+than <span 
+class="ectt-1000">maxoutlength </span>characters, and PyCIFRW will additionally insert a line
+break if putting two data values or a dataname/datavalue pair together
+on the same line would exceed <span 
+class="ectt-1000">wraplength</span>. In other words, unless data
+values are longer than <span 
+class="ectt-1000">maxoutlength </span>characters long, no line breaks will be
+inserted in the output file. By default, <span 
+class="ectt-1000">wraplength </span>= 80 and <span 
+class="ectt-1000">maxoutlength </span>=
+2048.
+
+<!--l. 392--><p class="indent">   These values may be set on a per block/loop basis by calling the <span 
+class="ectt-1000">SetOutputLength</span>
+method of the loop or block.
+<!--l. 395--><p class="indent">   The order of output of items within a <span 
 class="ectt-1000">CifFile </span>or <span 
 class="ectt-1000">CifBlock </span>is specified using the
 <span 
 class="ectt-1000">ChangeItemOrder </span>method (see above). The default order is the order that items were
 inserted or read in to the <span 
 class="ectt-1000">CifFile/CifBlock</span>.
-<!--l. 388--><p class="noindent">
+<!--l. 401--><p class="noindent">
    <h3 class="sectionHead"><span class="titlemark">3   </span> <a 
   id="x1-160003"></a>Dictionaries and Validation</h3>
-
-<!--l. 391--><p class="noindent">
+<!--l. 404--><p class="noindent">
    <h4 class="subsectionHead"><span class="titlemark">3.1   </span> <a 
   id="x1-170003.1"></a>Dictionaries</h4>
-<!--l. 393--><p class="noindent">DDL dictionaries may also be read into <span 
+<!--l. 406--><p class="noindent">DDL dictionaries may also be read into <span 
 class="ectt-1000">CifFile </span>objects. For this purpose, <span 
 class="ectt-1000">CifBlock</span>
 objects automatically support save frames (used in DDL2 dictionaries), which
@@ -688,14 +706,14 @@ are similar to those available for a <span
 class="ectt-1000">CifFile</span>, which is also a collection of
 <span 
 class="ectt-1000">CifBlock</span>s.
-<!--l. 401--><p class="indent">   A <span 
+<!--l. 414--><p class="indent">   A <span 
 class="ectt-1000">CifDic </span>object hides the difference between DDL1 dictionaries, where all
 definitions are separate data blocks, and DDL2 dictionaries, where all definitions are
 in save frames of a single data block. A <span 
 class="ectt-1000">CifDic </span>is initialised with a single file name or
 <span 
 class="ectt-1000">CifFile </span>object:
-<!--l. 407--><p class="noindent">
+<!--l. 420--><p class="noindent">
      <dl class="list1"><dt class="list">
      </dt><dd 
 class="list">
@@ -703,14 +721,14 @@ class="list">
 class="ectt-1000">cd</span><span 
 class="ectt-1000">&nbsp;=</span><span 
 class="ectt-1000">&nbsp;CifFile.CifDic(&#8220;cif_core.dic&#8221;)</span></dd></dl>
-<!--l. 409--><p class="nopar">
+<!--l. 422--><p class="nopar">
 Definitions are accessed using the usual notation, e.g. <span 
 class="ectt-1000">cd[&#8217;_atom_site_aniso_label&#8217;]</span>.
 Return values are always <span 
 class="ectt-1000">CifBlock </span>objects. Additionally, the <span 
 class="ectt-1000">CifDic </span>object contains
 a number of instance variables derived from dictionary global data:
-<!--l. 415--><p class="indent">
+<!--l. 428--><p class="indent">
      <dl class="description"><dt class="description">
 <span 
 class="ecbx-1000">dicname</span> </dt><dd 
@@ -724,7 +742,8 @@ class="description">&#8217;DDL1&#8217; or &#8217;DDL2&#8217;
 class="ecbx-1000">typedic</span> </dt><dd 
 class="description">Python   dictionary   matching   typecode   with   compiled   regular
      expression</dd></dl>
-<!--l. 421--><p class="indent"><span 
+
+<!--l. 434--><p class="indent"><span 
 class="ectt-1000">CifDic </span>objects provide a large number of validation functions, which all return a
 Python dictionary which contains at least the key <span 
 class="ectt-1000">&#8220;result&#8221;</span>. <span 
@@ -735,12 +754,11 @@ class="ectt-1000">False </span>or <span
 class="ectt-1000">None </span>depending on the success, failure or non-applicability of
 each test. In case of failure, additional keys are returned depending on the nature of
 the error.
-<!--l. 429--><p class="noindent">
+<!--l. 442--><p class="noindent">
    <h4 class="subsectionHead"><span class="titlemark">3.2   </span> <a 
   id="x1-180003.2"></a>Validation</h4>
-<!--l. 431--><p class="noindent">A top level function is provided for convenient validation of CIF files:
-<!--l. 434--><p class="noindent">
-
+<!--l. 444--><p class="noindent">A top level function is provided for convenient validation of CIF files:
+<!--l. 447--><p class="noindent">
      <dl class="list1"><dt class="list">
      </dt><dd 
 class="list">
@@ -748,7 +766,7 @@ class="list">
 class="ectt-1000">CifFile.validate(&#8220;mycif.cif&#8221;,dic</span><span 
 class="ectt-1000">&nbsp;=</span><span 
 class="ectt-1000">&nbsp;&#8221;cif_core.dic&#8221;)</span></dd></dl>
-<!--l. 436--><p class="nopar">
+<!--l. 449--><p class="nopar">
 This returns a tuple <span 
 class="ectt-1000">(valid_result, no_matches)</span>. <span 
 class="ectt-1000">valid_result </span>and <span 
@@ -768,16 +786,16 @@ keys contain auxiliary information depending on the test. Each of the items
 in <span 
 class="ectt-1000">no_matches </span>is a simple list of item names which were not found in the
 dictionary.
-<!--l. 449--><p class="indent">   If a simple validation report is required, the function <span 
+<!--l. 462--><p class="indent">   If a simple validation report is required, the function <span 
 class="ectt-1000">validate_report </span>can be
 called on the output of the above function, printing a simple ASCII report. This
 function can be studied as an example of how to process the structure returned by
 the &#8217;<span 
 class="ectt-1000">validate</span>&#8217; function.
-<!--l. 455--><p class="noindent">
+<!--l. 468--><p class="noindent">
    <h5 class="subsubsectionHead"><span class="titlemark">3.2.1   </span> <a 
   id="x1-190003.2.1"></a>Limitations on validation</h5>
-<!--l. 457--><p class="noindent">
+<!--l. 470--><p class="noindent">
      <ol type="1" class="enumerate1" >
      <li class="enumerate" value="1" 
 ><a 
@@ -789,25 +807,25 @@ class="ectt-1000">validate</span>&#8217; function.
 ><a 
   id="x1-19004x2"></a>(DDL1 only) Some _type_construct attributes in the DDL1 spec file are
      not machine-readable, so values cannot be checked for consistency</li></ol>
-<!--l. 463--><p class="nopar">
-<!--l. 465--><p class="noindent">
+<!--l. 476--><p class="nopar">
+
+<!--l. 478--><p class="noindent">
    <h4 class="subsectionHead"><span class="titlemark">3.3   </span> <a 
   id="x1-200003.3"></a>ValidCifFile objects</h4>
-<!--l. 467--><p class="noindent">A <span 
+<!--l. 480--><p class="noindent">A <span 
 class="ectt-1000">ValidCifFile </span>object behaves identically to a <span 
 class="ectt-1000">CifFile </span>object with the additional
 characteristic that it is valid against the given dictionary object. Any attempt to set
 a data value, or add or remove a data name, that would invalidate the object raises a
 <span 
 class="ectt-1000">ValidCifFile </span>error.
-<!--l. 473--><p class="indent">   Additional keywords for initialisation are:
-<!--l. 475--><p class="indent">
+<!--l. 486--><p class="indent">   Additional keywords for initialisation are:
+<!--l. 488--><p class="indent">
      <dl class="description"><dt class="description">
 <span 
 class="ecbx-1000">dic</span> </dt><dd 
 class="description">A <span 
 class="ectt-1000">CifDic </span>object to use in validation
-
      </dd><dt class="description">
 <span 
 class="ecbx-1000">diclist</span> </dt><dd 
@@ -822,18 +840,18 @@ class="description">Choose merging method (one of &#8217;<span
 class="ectt-1000">strict</span>&#8217;,&#8217;<span 
 class="ectt-1000">overlay</span>&#8217;, &#8217;<span 
 class="ectt-1000">replace</span>&#8217;)</dd></dl>
-<!--l. 483--><p class="noindent">
+<!--l. 496--><p class="noindent">
    <h4 class="subsectionHead"><span class="titlemark">3.4   </span> <a 
   id="x1-210003.4"></a>Merging dictionaries</h4>
-<!--l. 485--><p class="noindent">PyCIFRW provides a top-level function to merge DDL1/2 dictionary files. It takes a
+<!--l. 498--><p class="noindent">PyCIFRW provides a top-level function to merge DDL1/2 dictionary files. It takes a
 list of CIF filenames or <span 
 class="ectt-1000">CifFile </span>objects, and a <span 
 class="ectt-1000">mergemode </span>keyword argument. CIF
 files are merged from left to right, that is, the second file in the list is merged into the
 first file in the list and so on.
-<!--l. 491--><p class="indent">   For completeness we list the arguments of the <span 
+<!--l. 504--><p class="indent">   For completeness we list the arguments of the <span 
 class="ectt-1000">CifFile merge </span>method:
-<!--l. 494--><p class="indent">
+<!--l. 507--><p class="indent">
      <dl class="description"><dt class="description">
 <span 
 class="ecbx-1000">new_block_set</span> </dt><dd 
@@ -859,30 +877,30 @@ class="description">This  block  is  ignored  when  merging  -  useful  when  me
      dictionaries in strict mode, in which case the <span 
 class="ectt-1000">on_this_dictionary </span>block
      would cause an error.</dd></dl>
-<!--l. 506--><p class="noindent">
+
+<!--l. 519--><p class="noindent">
    <h5 class="subsubsectionHead"><span class="titlemark">3.4.1   </span> <a 
   id="x1-220003.4.1"></a>Limitations on merging</h5>
-<!--l. 508--><p class="noindent">In overlay mode, the COMCIFS recommendations require that, when both
+<!--l. 521--><p class="noindent">In overlay mode, the COMCIFS recommendations require that, when both
 definitions contain identical attributes which can be looped, the merging
 process should construct those loops and include both sets of data in the new
 loop.
-<!--l. 513--><p class="indent">   This is not yet implemented in PyCIFRW, as it involves checking the
+<!--l. 526--><p class="indent">   This is not yet implemented in PyCIFRW, as it involves checking the
 DDL1/DDL2 spec to determine which attributes may be looped together.
-
-<!--l. 517--><p class="noindent">
+<!--l. 530--><p class="noindent">
    <h3 class="sectionHead"><span class="titlemark">4   </span> <a 
   id="x1-230004"></a>Working with STAR files</h3>
-<!--l. 520--><p class="noindent">
+<!--l. 533--><p class="noindent">
    <h4 class="subsectionHead"><span class="titlemark">4.1   </span> <a 
   id="x1-240004.1"></a>Creating STAR files</h4>
-<!--l. 522--><p class="noindent">Star files are created entirely analogously to CIF files, using the <span 
+<!--l. 535--><p class="noindent">Star files are created entirely analogously to CIF files, using the <span 
 class="ectt-1000">StarFile </span>object or
 <span 
 class="ectt-1000">ReadStar </span>function.
-<!--l. 526--><p class="noindent">
+<!--l. 539--><p class="noindent">
    <h4 class="subsectionHead"><span class="titlemark">4.2   </span> <a 
   id="x1-250004.2"></a>Manipulating values</h4>
-<!--l. 528--><p class="noindent">The usual square bracket notation applies, as for <span 
+<!--l. 541--><p class="noindent">The usual square bracket notation applies, as for <span 
 class="ectt-1000">CifFile </span>and <span 
 class="ectt-1000">CifBlock </span>objects.
 <span 
@@ -901,10 +919,10 @@ Loops are inserted into a <span
 class="ectt-1000">LoopBlock </span>by calling the <span 
 class="ectt-1000">insert_loop </span>method, and may
 be nested to an arbitrary level.
-<!--l. 539--><p class="noindent">
+<!--l. 552--><p class="noindent">
    <h5 class="subsubsectionHead"><span class="titlemark">4.2.1   </span> <a 
   id="x1-260004.2.1"></a>Iterators</h5>
-<!--l. 541--><p class="noindent">Any LoopBlock object has two iterator methods: <span 
+<!--l. 554--><p class="noindent">Any LoopBlock object has two iterator methods: <span 
 class="ectt-1000">recursive_iter </span>and <span 
 class="ectt-1000">flat_iterator</span>.
 On each call of the iterator created by a <span 
@@ -917,31 +935,31 @@ second loop block would have any relationship with values inside a first
 loop block. This iterator will thus return all possible sets of values for the
 <span 
 class="ectt-1000">LoopBlock</span>.
-<!--l. 551--><p class="indent">   The <span 
+<!--l. 564--><p class="indent">   The <span 
 class="ectt-1000">flat_iterator </span>method does not dig down into nested loops. Instead,
 iterators created from it return a new <span 
 class="ectt-1000">LoopBlock </span>with key-value pairs corresponding
 to a single top-level packet; nested loops are included, but they also have only
+
 data corresponding to the selected top-level packet available. This iterator
 thus iterates through the top-level packets, collapsing the nesting level by
 one.
-<!--l. 558--><p class="indent">   The default iterator for CifBlocks (as opposed to StarBlocks) is <span 
+<!--l. 571--><p class="indent">   The default iterator for CifBlocks (as opposed to StarBlocks) is <span 
 class="ectt-1000">recursive_iter</span>.
-<!--l. 561--><p class="noindent">
+<!--l. 574--><p class="noindent">
    <h3 class="sectionHead"><span class="titlemark">5   </span> <a 
   id="x1-270005"></a>Example programs</h3>
-<!--l. 563--><p class="noindent">A program which uses PyCIFRW for validation, <span 
+<!--l. 576--><p class="noindent">A program which uses PyCIFRW for validation, <span 
 class="ectt-1000">validate_cif.py</span>, is included in the
 distribution in the Programs subdirectory. It will validate a CIF file (including
-
 dictionaries) against one or more dictionaries which may be specified by name and
 version or as a filename on the local disk. If name and version are specified, the IUCr
 canonical registry or a local registry is used to find the dictionary and download it if
 necessary.
-<!--l. 572--><p class="noindent">
+<!--l. 585--><p class="noindent">
    <h4 class="subsectionHead"><span class="titlemark">5.1   </span> <a 
   id="x1-280005.1"></a>Usage</h4>
-<!--l. 574--><p class="noindent">
+<!--l. 587--><p class="noindent">
      <dl class="list1"><dt class="list">
      </dt><dd 
 class="list">
@@ -950,11 +968,11 @@ class="ectt-1000">python</span><span
 class="ectt-1000">&nbsp;validate_cif.py</span><span 
 class="ectt-1000">&nbsp;[options]</span><span 
 class="ectt-1000">&nbsp;ciffile</span></dd></dl>
-<!--l. 576--><p class="nopar">
-<!--l. 578--><p class="noindent">
+<!--l. 589--><p class="nopar">
+<!--l. 591--><p class="noindent">
    <h4 class="subsectionHead"><span class="titlemark">5.2   </span> <a 
   id="x1-290005.2"></a>Options</h4>
-<!--l. 580--><p class="noindent">
+<!--l. 593--><p class="noindent">
      <dl class="description"><dt class="description">
 <span 
 class="ecbx-1000">&#8211;version</span> </dt><dd 
@@ -973,6 +991,7 @@ class="description">directory to find/store dictionary files
 class="ecbx-1000">-f</span><span 
 class="ecbx-1000">&nbsp;dictname</span> </dt><dd 
 class="description">filename of locally-stored dictionary
+
      </dd><dt class="description">
 <span 
 class="ecbx-1000">-u</span><span 
@@ -991,7 +1010,6 @@ class="description">store downloaded dictionary locally (default True)
 <span 
 class="ecbx-1000">-c</span> </dt><dd 
 class="description">fetch and use canonical registry from IUCr
-
      </dd><dt class="description">
 <span 
 class="ecbx-1000">-r</span><span 
@@ -1001,10 +1019,10 @@ class="description">location of registry as filename or URL
 <span 
 class="ecbx-1000">-t</span> </dt><dd 
 class="description">The file to be checked is itself a DDL2 dictionary</dd></dl>
-<!--l. 593--><p class="noindent">
+<!--l. 606--><p class="noindent">
    <h3 class="sectionHead"><span class="titlemark">6   </span> <a 
   id="x1-300006"></a>Further information</h3>
-<!--l. 595--><p class="noindent">The source files are in a literate programming format (noweb) with file extension .nw.
+<!--l. 608--><p class="noindent">The source files are in a literate programming format (noweb) with file extension .nw.
 HTML documentation generated from these files and containing both code and
 copious comments is included in the downloaded package. Details of interpretation of
 the current standards as relates to validation can be found in these files.

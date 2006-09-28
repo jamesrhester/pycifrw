@@ -80,9 +80,9 @@ def parse_options():
 def execute_with_options(options,args):
     if options.dictnames: 
         diclist = map(lambda a:os.path.join(options.dirname,a),options.dictnames)
-	# print "Using following local dictionaries to validate:"
-	# for dic in diclist: print "%s" % dic
-	fulldic = CifFile.merge_dic(diclist)
+	print "Using following local dictionaries to validate:"
+	for dic in diclist: print "%s" % dic
+	fulldic = CifFile.merge_dic(diclist,mergemode='overlay')
     else:
 	# print "Locating dictionaries using registry at %s" % options.registry
 	dics = map(None,options.iucr_names,options.versions)

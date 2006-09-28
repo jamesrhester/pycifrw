@@ -208,7 +208,7 @@ def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80,overwri
     self.strict = strict
     CifLoopBlock.__init__(self,data=data,dimension=0,maxoutlength=maxoutlength,wraplength=wraplength,overwrite=overwrite)
     if isinstance(data,(StarFile.StarBlock,CifBlock)):
-        self.saves = StarFile.BlockCollection(datasource=data["saves"],element_class=CifLoopBlock,type_tag="save")
+        self.saves = StarFile.BlockCollection(datasource=data["saves"],element_class=CifBlock,type_tag="save")
     else:
         self.saves = StarFile.BlockCollection(element_class=CifLoopBlock,type_tag="save")
     if self.strict:
@@ -308,10 +308,11 @@ need to have a record of it just in case.
 The nosaves keyword means that save frames are ignored when merging.
 
 <<Merge with another block>>=
-def merge(self,new_block,mode="strict",match_att="",nosaves=False):
+def merge(self,new_block,mode="strict",match_att="",match_function=None,nosaves=False):
     # deal with save frames
     if not nosaves:
-        self["saves"].merge(new_block["saves"],mode,match_att=match_att)
+        self["saves"].merge(new_block["saves"],mode,match_att=match_att,
+                                                    match_function=match_function)
     if mode == 'strict':
        for key in new_block.keys(): 
            if self.has_key(key) and key != match_att:
@@ -332,13 +333,15 @@ def merge(self,new_block,mode="strict",match_att="",nosaves=False):
            #non-looped items
            if isinstance(new_value,StringType):
               self[attribute] = new_value 
+       these_atts = self.keys()
        for newloop in new_block.loops:              
-           these_atts = self.keys()
            overlaps = filter(lambda a: a in these_atts,newloop.keys())
            if len(overlaps)< len(newloop):#completely new loop
               self.insert_loop(newloop)
            elif len(overlaps)==len(newloop):
               # appending packets 
+              # print "In overlay merge mode, found extra loop items:"
+              # print `overlaps`
               overlap_data = map(lambda a:listify(self[a]),overlaps)
               new_data = map(lambda a:new_block[a],overlaps)
               packet_data = transpose(overlap_data)
@@ -346,7 +349,11 @@ def merge(self,new_block,mode="strict",match_att="",nosaves=False):
               # wipe out the old data and enter the new stuff
               byebyeloop = self.GetLoop(overlaps[0])
               # print "Removing '%s' with overlaps '%s'" % (`byebyeloop`,`overlaps`)
-              self.remove_loop(byebyeloop)
+              # Note that if, in the original dictionary, overlaps are not
+              # looped, GetLoop will return the block itself.  So we check
+              # for this case...
+              if byebyeloop != self:
+                  self.remove_loop(byebyeloop)
               self.AddCifItem(((overlaps,),(new_data,)))
               for pd in packet_data:
                  if pd not in new_p_data:
@@ -596,7 +603,7 @@ def dic_determine(self,cifdic):
         self.list_ref_spec = "xxx"
         self.primitive_type = "_type"
         self.dep_spec = "_item_dependent.dependent_name"
-	return (name+version,"DDL2",cifdic[name]["saves"])
+	return (name+version,"DDL2",cifdic[self.master_key]["saves"])
     else:
 	raise CifError, "Unable to determine dictionary DDL version"
     
@@ -738,11 +745,19 @@ Next: DDL2 contains aliases to DDL1 item names, so in theory we should be
 able to use a DDL2 dictionary to validate a DDL1-style CIF file.  We
 create separate definition blocks for each alias to enable this.
 
+Also, we flatten out any single-element lists for item_name.  This is
+simply to avoid the value of e.g. category_id being a single-element list
+instead of a string.
+
+Note also that _item.category_id in DDL2 is 'implicit', meaning in this case
+that you can determine it from the item name.  We add in the category for
+simplicity.
+
 <<Iron out DDL2 strangeness>>=
 def DDL2_normalise(self):
-   dodgy_defs = filter(lambda a:isinstance(self[a].get('_item.name'),ListType),self.keys()) 
+   listed_defs = filter(lambda a:isinstance(self[a].get('_item.name'),ListType),self.keys()) 
    # now filter out all the single element lists!
-   dodgy_defs = filter(lambda a:len(self[a]['_item.name']) > 1, dodgy_defs)
+   dodgy_defs = filter(lambda a:len(self[a]['_item.name']) > 1, listed_defs)
    for item_def in dodgy_defs:
       # print "DDL2 norm: processing %s" % item_def
       thisdef = self[item_def]
@@ -794,6 +809,12 @@ def DDL2_normalise(self):
               self[mychildren[0][0]]['_item_linked.child_name'] = map(lambda a:a[1],mychildren)
               # now make a new,smaller list
 	      notmychildren = filter(lambda a:a[0]!=mychildren[0][0],notmychildren)
+   # now flatten any single element lists
+   single_defs = filter(lambda a:len(self[a]['_item.name'])==1,listed_defs)
+   for flat_def in single_defs:
+       flat_keys = self[flat_def].GetLoop('_item.name').keys()
+       for flat_key in flat_keys: self[flat_def][flat_key] = self[flat_def][flat_key][0]
+   # now deal with the multiple lists
    # next we do aliases
    all_aliases = filter(lambda a:self[a].has_key('_item_aliases.alias_name'),self.keys()) 
    for aliased in all_aliases:
@@ -2017,7 +2038,7 @@ def validate_report(val_result,use_html=False):
 # A function to lay out a single error report.  We are passed
 # the name of the error (one of our validation functions), the
 # explanation to print out, and a dictionary with the error 
-# information
+# information.  We print no more than 50 characters of the item
 
 def error_report(error_name,error_explanation,error_dics):
    retstring = "\n\n " + error_explanation + ":\n\n"
@@ -2035,7 +2056,8 @@ def error_report(error_name,error_explanation,error_dics):
    for error in error_dics:
       bodystring += "\n%-32s" % error["item_name"]
       if error.has_key("bad_values"):
-          bodystring += "%-20s" % error["bad_values"]
+          out_vals = map(lambda a:a[:50],error["bad_values"])
+          bodystring += "%-20s" % out_vals 
       if error.has_key("bad_items"):
           bodystring += "%-20s" % error["bad_items"]
       if error.has_key("child"):
@@ -2103,6 +2125,7 @@ def run_data_checks(check_block,fulldic,globals={},fake_mand=False):
 <<Append update>>
 <<Transpose data>>
 <<Merge dictionaries as CIFs>>
+<<Get topmost parent>>
 
 @ This support function uses re capturing to work out the number's value. The
 re contains 7 groups: group 0 is the entire expression; group 1 is the overall
@@ -2178,6 +2201,10 @@ with an initial check to determine DDL1/DDL2 merge style.  In one
 case we merge save frames in a single block, in another case we
 merge data blocks.  These are different levels.
 
+Note that the data block name is passed to specify the parts of each object
+to be merged, rather than the objects themselves (not doing this was a bug
+that was caught a while ago).
+
 <<Merge dictionaries as CIFs>>=
 # merge ddl dictionaries.  We should be passed filenames or CifFile
 # objects
@@ -2199,6 +2226,28 @@ def merge_dic(diclist,mergemode="replace",ddlspec=None):
         for dic in dic_as_cif_list[1:]:
            new_block = dic[dic.keys()[0]]
            basedic.merge(dic,mode=mergemode,
-			 single_block=[old_block,new_block],
-			 match_att="_item.name")
+			 single_block=[basedic.keys()[0],dic.keys()[0]],
+			 match_att="_item.name",match_function=find_parent)
     return CifDic(basedic)
+
+@ Find the main item from a parent-child list.  We are asked to find the
+topmost parent in a ddl2 definition block containing multiple item.names.
+We use the insight that the parent item will be that item which is not in
+the list of children as well.  If there are no item names, that means
+that we are dealing with something like a category -can they be merged?? 
+
+<<Get topmost parent>>=
+def find_parent(ddl2_def):
+    if not ddl2_def.has_key("_item.name"):
+       return None 
+    if isinstance(ddl2_def["_item.name"],StringType):
+        return ddl2_def["_item.name"]
+    if not ddl2_def.has_key("_item_linked.child_name"):
+        raise CifError("Asked to find parent in block with no child_names")
+    if not ddl2_def.has_key("_item_linked.parent_name"):
+        raise CifError("Asked to find parent in block with no parent_names")
+    result = filter(lambda a:a not in ddl2_def["_item_linked.child_name"],ddl2_def["_item.name"]) 
+    if len(result)>1 or len(result)==0:
+        raise CifError("Unable to find single unique parent data item")
+    return result[0]
+

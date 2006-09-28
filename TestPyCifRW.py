@@ -404,6 +404,8 @@ class FileWriteTestCase(unittest.TestCase):
        jj = self.df.GetLoop('_item_5')
        print "  CifLoop is %s" % `jj.__class__`
        self.failUnless(jj.__class__==CifFile.CifLoopBlock)
+       print "Save frame block is %s" % `self.dfs.__class__`
+       self.failUnless(self.dfs.__class__==CifFile.CifBlock)
        jj = self.dfs.GetLoop('_sitem_5')
        print "  Save frame loop is %s" % `jj.__class__` 
        self.failUnless(jj.__class__==CifFile.CifLoopBlock)
