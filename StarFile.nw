@@ -450,14 +450,20 @@ services.  The structure returned from parsing is a StarFile, with
 possible grammar violations due to duplicate block or item names.
 
 We allow fast reads using the compiled StarScan module
-by passing the option 'flex' to this routine.
+by passing the option 'flex' to this routine.  We also permit an
+already-opened stream to be passed to us (thanks to Boris Dusek for
+this contribution).
 
 <<Read in a STAR file>>=
 def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard'):
     import YappsStarParser,string
-    filestream = urlopen(filename)
+    if isinstance(filename,basestring):
+        filestream = urlopen(filename)
+    else:
+	filestream = filename   #already opened for us
     text = filestream.read()
-    filestream.close()
+    if isinstance(filename,basestring): #we opened it, we close it
+        filestream.close()
     if not text:      # empty file, return empty block
         return dest
     # we recognise ctrl-Z as end of file

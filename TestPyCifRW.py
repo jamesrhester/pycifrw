@@ -288,6 +288,9 @@ class FileWriteTestCase(unittest.TestCase):
        self.df = self.ef['testblock']
        self.dfs = self.df["saves"]["test_save_frame"]
        flfile = CifFile.ReadCif('test.cif',scantype="flex")
+       # test passing a stream directly
+       tstream = open('test.cif')
+       CifFile.CifFile(tstream,scantype="flex")
        self.flf = flfile['testblock']
        self.flfs = self.flf["saves"]["test_save_frame"]
 
