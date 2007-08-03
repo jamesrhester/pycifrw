@@ -5,6 +5,7 @@ Andrew Gene HALL of I.N. Services Pty. Ltd., Scarborough WA, Australia,
 for the University of Western Australia, Crawley WA, Australia.
 
 Present code by JRH to work with PyCIFRW v 3.1
+Match for EOL at EOF contributed by Boris Dusek
 *******************************************************************************/
 /* Lex Definitions for a STAR File */
 
@@ -144,7 +145,7 @@ _{TrueNonBlank}+            {return(DDATA_NAME);}
                  }
 
 \0                      {YY_FLUSH_BUFFER; return(DEND);}
-
+[\n]                    {printf("Stray carriage return...\n");}
 .			{
 			/* printf("Unexpected Character\n");*/
 			/* printf("<%d>\n",yytext[0]);*/

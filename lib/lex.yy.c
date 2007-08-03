@@ -368,8 +368,8 @@ static void yy_fatal_error (yyconst char msg[]  );
 	*yy_cp = '\0'; \
 	(yy_c_buf_p) = yy_cp;
 
-#define YY_NUM_RULES 19
-#define YY_END_OF_BUFFER 20
+#define YY_NUM_RULES 20
+#define YY_END_OF_BUFFER 21
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -379,9 +379,9 @@ struct yy_trans_info
 	};
 static yyconst flex_int16_t yy_accept[72] =
     {   0,
-        8,    8,    0,    0,   20,   14,    8,   19,   18,   18,
-        9,   18,   18,   14,   14,   14,   14,   18,   17,   19,
-       19,   13,   14,    8,    0,    0,    0,   10,    0,   10,
+        8,    8,    0,    0,   21,   14,    8,   18,   19,   19,
+        9,   19,   19,   14,   14,   14,   14,   19,   17,   20,
+       20,   13,   14,    8,    0,    0,    0,   10,    0,   10,
         0,   16,    9,    0,   15,   14,   14,   14,   14,   14,
         7,    0,   12,   12,   10,    0,    0,   11,   11,   14,
        14,   14,   14,   14,   12,   11,   14,   14,   14,   14,
@@ -497,10 +497,10 @@ static yyconst flex_int16_t yy_chk[153] =
     } ;
 
 /* Table of booleans, true if rule could match eol. */
-static yyconst flex_int32_t yy_rule_can_match_eol[20] =
+static yyconst flex_int32_t yy_rule_can_match_eol[21] =
     {   0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 
-        };
+0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 
+    0,     };
 
 static yy_state_type yy_last_accepting_state;
 static char *yy_last_accepting_cpos;
@@ -524,9 +524,10 @@ Andrew Gene HALL of I.N. Services Pty. Ltd., Scarborough WA, Australia,
 for the University of Western Australia, Crawley WA, Australia.
 
 Present code by JRH to work with PyCIFRW v 3.1
+Match for EOL at EOF contributed by Boris Dusek
 *******************************************************************************/
 /* Lex Definitions for a STAR File */
-#line 12 "star.l"
+#line 13 "star.l"
 
 /* Global Definitions */
 #include <ctype.h>
@@ -555,7 +556,7 @@ if(string_pos + max_size <= in_string_len) {\
    forbidden characters */
 
 /* Lex Rules fo a STAR File */
-#line 559 "lex.yy.c"
+#line 560 "lex.yy.c"
 
 #define INITIAL 0
 #define Alltext 1
@@ -707,9 +708,9 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 77 "star.l"
+#line 78 "star.l"
 
-#line 713 "lex.yy.c"
+#line 714 "lex.yy.c"
 
 	if ( (yy_init) )
 		{
@@ -804,47 +805,47 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 78 "star.l"
+#line 79 "star.l"
 {return(DLBLOCK);}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 79 "star.l"
+#line 80 "star.l"
 {return(DGLOBAL);}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 80 "star.l"
+#line 81 "star.l"
 {return(DSTOP);}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 81 "star.l"
+#line 82 "star.l"
 {return(DSAVE_HEADING);}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 82 "star.l"
+#line 83 "star.l"
 {return(DSAVE_END);}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 83 "star.l"
+#line 84 "star.l"
 {return(DDATA_HEADING);}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 84 "star.l"
+#line 85 "star.l"
 {return(DDATA_NAME);}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 85 "star.l"
+#line 86 "star.l"
 {/* do nothing */}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 86 "star.l"
+#line 87 "star.l"
 {/* do nothing */}
 	YY_BREAK
 case 10:
@@ -853,35 +854,35 @@ case 10:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 87 "star.l"
+#line 88 "star.l"
 {/* do nothing */}
 	YY_BREAK
 case 11:
 /* rule 11 can match eol */
 YY_RULE_SETUP
-#line 89 "star.l"
+#line 90 "star.l"
 {BEGIN(Alltext);return(DSTART_SC_LINE);}
 	YY_BREAK
 case 12:
 /* rule 12 can match eol */
 YY_RULE_SETUP
-#line 90 "star.l"
+#line 91 "star.l"
 {return(DSC_LINE_OF_TEXT);}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 91 "star.l"
+#line 92 "star.l"
 {BEGIN(INITIAL);
 					    return(DEND_SC_LINE);}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 94 "star.l"
+#line 95 "star.l"
 {return(DDATA_VALUE_1);}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 96 "star.l"
+#line 97 "star.l"
 {/* this code borrowed from star.l in
                  starbase.  We can't write a rule in 
                  flex to accept a quote if the following
@@ -909,7 +910,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 121 "star.l"
+#line 122 "star.l"
 {/* this code borrowed from star.l in
                  starbase.  We can't write a rule in 
                  flex to accept a quote only if the following
@@ -937,12 +938,18 @@ YY_RULE_SETUP
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 146 "star.l"
+#line 147 "star.l"
 {YY_FLUSH_BUFFER; return(DEND);}
 	YY_BREAK
 case 18:
+/* rule 18 can match eol */
 YY_RULE_SETUP
 #line 148 "star.l"
+{printf("Stray carriage return...\n");}
+	YY_BREAK
+case 19:
+YY_RULE_SETUP
+#line 149 "star.l"
 {
 			/* printf("Unexpected Character\n");*/
 			/* printf("<%d>\n",yytext[0]);*/
@@ -950,12 +957,12 @@ YY_RULE_SETUP
                         return(DERROR);
 			}
 	YY_BREAK
-case 19:
+case 20:
 YY_RULE_SETUP
-#line 154 "star.l"
+#line 155 "star.l"
 ECHO;
 	YY_BREAK
-#line 959 "lex.yy.c"
+#line 966 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(Alltext):
 	yyterminate();
@@ -1931,7 +1938,7 @@ void yyfree (void * ptr )
 #undef YY_DECL_IS_OURS
 #undef YY_DECL
 #endif
-#line 154 "star.l"
+#line 155 "star.l"
 
 
 /* This routine is called during initialisation to avoid any problems
