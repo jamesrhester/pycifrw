@@ -1,17 +1,25 @@
-#LyX 1.4.1 created this file. For more info see http://www.lyx.org/
-\lyxformat 245
+#LyX 1.5.0rc2 created this file. For more info see http://www.lyx.org/
+\lyxformat 276
 \begin_document
 \begin_header
 \textclass article
 \language english
 \inputencoding auto
-\fontscheme helvet
+\font_roman default
+\font_sans helvet
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
 \graphics default
 \paperfontsize default
 \spacing single
 \papersize default
 \use_geometry false
 \use_amsmath 1
+\use_esint 0
 \cite_engine basic
 \use_bibtopic false
 \paperorientation portrait
@@ -24,7 +32,8 @@
 \papersides 1
 \paperpagestyle default
 \tracking_changes false
-\output_changes true
+\output_changes false
+\author "Anonymous" 
 \end_header
 
 \begin_body
@@ -142,7 +151,7 @@ Errors are raised if CIF syntax/grammar violations are encountered in the
 \end_layout
 
 \begin_layout Standard
-An experimental compiled extension (
+A compiled extension (
 \family typewriter
 StarScan.so
 \family default
@@ -289,6 +298,15 @@ CifFile
 CifBlock
 \family default
  objects.
+ Note also the convenience method 
+\family typewriter
+first_block
+\family default
+, which will reference the first datablock in a CIF file:
+\end_layout
+
+\begin_layout LyX-Code
+my_data = cf.first_block()
 \end_layout
 
 \begin_layout Standard
@@ -363,20 +381,8 @@ The corresponding datanames are accessible through method GetItemOrder:
 \end_layout
 
 \begin_layout Standard
-An alternative way of accessing loop data is through the built in 
-\family typewriter
-CifLoopBlock
-\family default
- iterator, which on each call to the iterator object returns a 
-\family typewriter
-CifLoopBlock
-\family default
- with single-valued datanames (for most purposes identical to a Python dictionar
-y):
-\end_layout
-
-\begin_layout LyX-Code
- 
+An alternative way of accessing loop data uses Python iterators, allowing
+ the following syntax:
 \end_layout
 
 \begin_layout LyX-Code
@@ -439,9 +445,9 @@ AddCifItem
 \family default
  method can be used to add multiple looped and unlooped data items in a
  single command.
-
+ 
 \family typewriter
- AddCifItem
+AddCifItem
 \family default
  is called with a 2-element tuple argument.
  The first element of the tuple is either a single dataname, or a list or
@@ -908,9 +914,9 @@ CifFile
 \family default
  or 
 \family typewriter
-CifBlock 
+CifBlock
 \family default
-is specified using the 
+ is specified using the 
 \family typewriter
 ChangeItemOrder
 \family default
@@ -1375,9 +1381,9 @@ CifFile
 CifBlock
 \family default
  objects.
-
+ 
 \family typewriter
- StarFiles
+StarFiles
 \family default
  are built out of 
 \family typewriter
