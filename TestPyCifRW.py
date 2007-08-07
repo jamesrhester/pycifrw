@@ -208,6 +208,17 @@ class BlockChangeTestCase(unittest.TestCase):
        self.assertEqual(testloop.GetItemOrder()[2],"_Item_Name_1")
        self.assertEqual(self.cf.GetItemOrder()[0],"_Number_Item")
        
+   def testGetOrder(self):
+       """Test that the correct order value is returned"""
+       self.assertEqual(self.cf.GetItemPosition("_Number_Item"),2)
+
+   def testReplaceOrder(self):
+       """Test that a replaced item is at the same position it
+	  previously held"""
+       testloop = self.cf.GetLoop("_item_name_1")
+       oldpos = testloop.GetItemPosition('_item_name#2')
+       testloop['_item_name#2'] = ("I'm",' a ','little','teapot')
+       self.assertEqual(testloop.GetItemPosition('_item_name#2'),oldpos)
 #
 #  Test setting of block names
 #
@@ -418,6 +429,11 @@ class FileWriteTestCase(unittest.TestCase):
           the loops are properly adjusted in the item order"""
        jj = self.df.GetLoop('_item_5')
        self.failUnless(jj in self.df.item_order, "Wanted %s, got %s" % (`jj`,`self.df.item_order`))
+
+   def testFirstBlock(self):
+       """Test that first_block returns a block"""
+       jj = self.ef.first_block()
+       self.failUnless(jj==self.df)
 
 ##############################################################
 #

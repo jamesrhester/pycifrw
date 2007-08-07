@@ -945,7 +945,7 @@ case 18:
 /* rule 18 can match eol */
 YY_RULE_SETUP
 #line 148 "star.l"
-{printf("Stray carriage return...\n");}
+{/*printf("Stray carriage return...\n");*/}
 	YY_BREAK
 case 19:
 YY_RULE_SETUP

@@ -145,7 +145,7 @@ _{TrueNonBlank}+            {return(DDATA_NAME);}
                  }
 
 \0                      {YY_FLUSH_BUFFER; return(DEND);}
-[\n]                    {printf("Stray carriage return...\n");}
+[\n]                    {/*printf("Stray carriage return...\n");*/}
 .			{
 			/* printf("Unexpected Character\n");*/
 			/* printf("<%d>\n",yytext[0]);*/

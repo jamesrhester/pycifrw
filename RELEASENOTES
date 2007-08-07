@@ -1,7 +1,7 @@
-Release Notes for PyCIFRW-3.1.3
+Release Notes for PyCIFRW-3.1.5
 ===============================
 
-PyCifRW-3.1.3 is  a bug-fix release. 
+PyCifRW-3.1.5 contains a new method and an enhancement. 
  
 Bug fixes (since 3.0)
 =====================
@@ -35,8 +35,13 @@ block is performed sensibly.
 
 * Only 50 characters of bad values are output in text error reporting
 
-* Save frames in CIF dictionaries has type CifLoopBlock instead of CifBlock.
-This has been fixed.
+* Save frames in CIF dictionaries had type CifLoopBlock instead of 
+  CifBlock.  This has been fixed.
+
+(3.1.4)
+
+* A stray newline on stdout during flex-based parsing has been 
+  fixed (Boris Dusek)
 
 Improvements/Changes (since 3.0)
 ================================
@@ -59,6 +64,22 @@ output file
 * Better control over output line length added  
 
 * Much better syntax error output added
+
+(3.1.4)
+
+* The ReadStar method accepts an output stream as an alternative 
+  to a filename (Boris Dusek)
+
+* A first_block method is provided for quick access to the first 
+  block in a file (Boris Dusek)
+
+(3.1.5)
+
+* The GetItemPosition call added to return a numeric value for the
+  item's position in the output (relative to loop/block beginning) 
+
+* Changing an item's value no longer moves it to the end of the file
+  (suggested by Boris Dusek)
 
 Incompatible changes (since 3.0)
 ================================
