@@ -522,6 +522,7 @@ class LoopBlock:
     <<Get nth loop packet>>
     <<Get item order>>
     <<Change data item order>>
+    <<Return position of data item>>
     <<Collapse to nth packet>>
     <<Audit for repeated names>>
     <<Get co-looped names>>
@@ -923,21 +924,29 @@ passed a loop reference in the [[itemname]] argument.
 
 <<Change data item order>>=
 def ChangeItemOrder(self,itemname,newpos):
+    testpos = GetItemPosition(itemname)
+    del self.item_order[testpos]
+    # so we have an object ready for action
+    self.item_order.insert(newpos,itemname)
+
+@ A utility function to get the numerical order in the printout
+of the given item.  We have the try: except: clauses in there as
+we may have Loop or Comment classes in our order list.
+
+<<Return position of data item>>=
+def GetItemPosition(self,itemname):
     import string
-    def low_case(item):       #need to skip Loop blocks
+    def low_case(item):
         try:
             return string.lower(item)
         except AttributeError:
             return item
-    lowcase_order = map(low_case,self.item_order)
     try:
         testname = string.lower(itemname)
     except AttributeError: 
         testname = itemname
-    testpos = lowcase_order.index(testname)
-    del self.item_order[testpos]
-    # so we have an object ready for action
-    self.item_order.insert(newpos,itemname)
+    lowcase_order = map(low_case,self.item_order)
+    return lowcase_order.index(testname)
 
 @ This returns a copy, in theory independent (check that) with just
 the nth packet selected, and order preserved.
@@ -1092,13 +1101,20 @@ def AddLoopItem(self,data,precheck=False,maxlength=-1):
                    raise StarError( "Item name " + data[0] + " " + `errmes`)
            if self.dimension > 0:
                if self.no_packets <= 0:
-                   self.no_packets = len(data[1])  #first item
+                   self.no_packets = len(data[1])  #first item in this loop
                if len(data[1]) != self.no_packets:
                    raise StarLengthError, 'Not enough values supplied for %s' % (data[0])
+           try:
+               oldpos = self.GetItemPosition(data[0])
+           except ValueError:
+               oldpos = len(self.item_order)#end of list 
            self.RemoveLoopItem(data[0])     # may be different case, so have to do this
            self.block.update({data[0]:regval})  # trust the data is OK
-           self.lower_keys.append(data[0].lower())
-           self.item_order.append(data[0])
+               self.lower_keys.insert(oldpos,data[0].lower())
+               self.item_order.insert(oldpos,data[0])
+           #    self.lower_keys.append(data[0].lower())
+           #    self.item_order.append(data[0])
+            
        else:            #dimension mismatch
            raise StarLengthError, "input data dim %d != required dim %d: %s %s" % (self.get_dim(data[1])[0],self.dimension,data[0],`data[1]`)
 
