@@ -486,9 +486,9 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard'):
 	if scantype == 'standard':
             parser = YappsStarParser.StarParser(YappsStarParser.StarParserScanner(text))
         else:
-	    parser = YappsStarParser.StarParser(YappsStarParser.Scanner(None,[],text,scantype='flex'))
+	    parser = YappsStarParser.StarParser(YappsStarParser.yappsrt.Scanner(None,[],text,scantype='flex'))
         proto_star = getattr(parser,"input")()
-    except YappsStarParser.SyntaxError:
+    except YappsStarParser.yappsrt.SyntaxError:
         errorstring = 'Syntax error in input file: last value parsed was %s' % YappsStarParser.lastval
         errorstring = errorstring + '\nParser status: %s' % `parser._scanner`
         raise StarError( errorstring)

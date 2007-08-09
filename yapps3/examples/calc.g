@@ -1,9 +1,15 @@
+# This calculator supports the usual (numbers, add, subtract,
+# multiply, divide), global variables (stored in a global variable in
+# Python), and local variables (stored in an attribute passed around
+# in the grammar).
+
+
 globalvars = {}       # We will store the calculator's variables here
 
 def lookup(map, name):
     for x,v in map:  
-        if x==name: return v
-    if name not in globalvars.keys(): print 'Undefined:', name
+        if x == name: return v
+    if not globalvars.has_key(name): print 'Undefined (defaulting to 0):', name
     return globalvars.get(name, 0)
 
 %%
@@ -41,7 +47,7 @@ parser Calculator:
                  "in" expr<<V>>           {{ return expr }}
 %%
 if __name__=='__main__':
-    print 'Welcome to the calculator sample for Yapps 2.0.'
+    print 'Welcome to the calculator sample for Yapps 2.'
     print '  Enter either "<expression>" or "set <var> <expression>",'
     print '  or just press return to exit.  An expression can have'
     print '  local variables:  let x = expr in expr'

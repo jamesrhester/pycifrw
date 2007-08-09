@@ -1,3 +1,5 @@
+# This parser can parse a simple subset of Lisp's syntax.
+
 parser Lisp:
     ignore:      r'\s+'
     token NUM:   r'[0-9]+'
@@ -6,7 +8,7 @@ parser Lisp:
 
     rule expr:   ID              {{ return ('id',ID) }}
                | STR             {{ return ('str',eval(STR)) }}
-               | NUM             {{ return ('num',atoi(NUM)) }}
+               | NUM             {{ return ('num',int(NUM)) }}
                | r"\("           
                         {{ e = [] }}             # initialize the list
                  ( expr {{ e.append(expr) }} ) * # put each expr into the list
