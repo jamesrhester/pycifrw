@@ -1,7 +1,7 @@
-Release Notes for PyCIFRW-3.1.5
+Release Notes for PyCIFRW-3.1.6
 ===============================
 
-PyCifRW-3.1.5 contains a new method and an enhancement. 
+PyCifRW-3.1.6 has an upgraded Yapps runtime file. 
  
 Bug fixes (since 3.0)
 =====================
@@ -80,6 +80,11 @@ output file
 
 * Changing an item's value no longer moves it to the end of the file
   (suggested by Boris Dusek)
+
+(3.1.6)
+
+* Runtime and parser generation is now provided by Yapps 2.1.1 (aka
+  Yapps 3)
 
 Incompatible changes (since 3.0)
 ================================

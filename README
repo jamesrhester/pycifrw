@@ -9,7 +9,7 @@ Information Format) files using Python.  It was developed at the
 Australian National Beamline Facility (ANBF), run by the Australian
 Synchrotron Research Program (ASRP), as part of a larger project to
 provide CIF input/output capabilities for data collection.  It is
-currently (Mar 2006) under active development and testing.
+currently (Aug 2007) under active development and testing.
 
 Conformance
 -----------
@@ -58,8 +58,8 @@ StarScan.so                    Compiled Python extension module for Linux
 
 Files derived from other programs:
 
-yapps_compiled_rt.py           Yapps2 runtime support (modified part of the
-                               Yapps2 distribution)
+yapps3_compiled_rt.py           Yapps2 runtime support (modified part of the
+                               Yapps2.1.1 distribution)
 
 Installation
 ------------

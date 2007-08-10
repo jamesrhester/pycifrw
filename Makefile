@@ -22,5 +22,5 @@ clean:
 #
 YappsStarParser.py: YappsStarParser.nw
 	notangle YappsStarParser.nw > YappsStarParser.g
-	python ./yapps2/yapps2.py YappsStarParser.g
+	python ./yapps3/yapps2.py YappsStarParser.g
 #

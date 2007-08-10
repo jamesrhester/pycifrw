@@ -171,9 +171,8 @@ in the definition of data_value_1.
 # first handle whitespace and comments, keeping whitespace
 # before a semicolon
 ignore: "([ \t\n\r](?!;))|[ \t]"
-ignore: "#.*[\n\r](?!;)"
-ignore: "#.*"
 # now the tokens
+token comment: "(#.*[\n\r](?!;))|(#.*)"
 token LBLOCK:  "(L|l)(O|o)(O|o)(P|p)_"        # loop_
 token GLOBAL: "(G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_"
 token STOP: "(S|s)(T|t)(O|o)(P|p)_"
@@ -197,36 +196,37 @@ duplicate blocknames and skipping name checks.
 <<Grammar specification>>=
 # now the rules
 
-rule input: ((
-            dblock              {{allblocks = StarFile(); allblocks.NewBlock(dblock[0],blockcontents=dblock[1],fix=False,replace=False)}}
+rule input: ((comment)* (( 
+            dblock         {{allblocks = StarFile(); allblocks.NewBlock(dblock[0],blockcontents=dblock[1],fix=False,replace=False)}}
             (
-            dblock              {{allblocks.NewBlock(dblock[0],blockcontents=monitor('input',dblock[1]),fix=False,replace=False)}} #
+            dblock         {{allblocks.NewBlock(dblock[0],blockcontents=monitor('input',dblock[1]),fix=False,replace=False)}} #
             )*
             END                
             )
             |
             (
-             END                 {{allblocks = StarFile()}}
-            ))                    {{return allblocks}}
+            END                 {{allblocks = StarFile()}}
+            )))                   {{return allblocks}}
 
-     rule dblock: (data_heading           {{heading = data_heading[5:];thisblock=StarBlock(overwrite=False)}}# a data heading
+     rule dblock: ( data_heading {{heading = data_heading[5:];thisblock=StarBlock(overwrite=False)}}# a data heading
+		   (comment)*
                   (
                    dataseq@<<thisblock>>  
                   |
-                  save_frame              {{thisblock["saves"].NewBlock(save_frame[0],save_frame[1],fix=False,replace=True)}}
+                  save_frame     {{thisblock["saves"].NewBlock(save_frame[0],save_frame[1],fix=False,replace=True)}}
                   )*
                    )                      {{return (heading,monitor('dblock',thisblock))}} # but may be empty
 
-     rule dataseq@<<starblock>>:  data@<<starblock>>   
+     rule dataseq@<<starblock>>:  data@<<starblock>> 
 		       (
-                       data@<<starblock>>            
+                       data@<<starblock>>
                        )*                         
 
      rule data@<<currentblock>>:        top_loop      {{currentblock.insert_loop(top_loop,audit=False)}} 
                                         | 
 		                        datakvpair    {{currentblock.AddLoopItem(datakvpair,precheck=True)}} #kv pair
 
-     rule datakvpair: data_name data_value  {{return (data_name,data_value) }} # name-value
+     rule datakvpair: data_name (comment)* data_value (comment)* {{return (data_name,data_value) }} # name-value
      rule data_value: (data_value_1          {{thisval = stripstring(data_value_1)}}
                       |
                       sc_lines_of_text      {{thisval = stripextras(sc_lines_of_text)}}
@@ -241,32 +241,32 @@ rule input: ((
 # due to the inability of the parser to backtrack, we contruct our loops in helper functions,
 # and simply collect data during parsing proper.
 
-     rule top_loop: LBLOCK loopfield loopvalues {{return makeloop(loopfield,loopvalues)}}
+     rule top_loop: LBLOCK ( comment )* loopfield ( comment )* loopvalues {{return makeloop(loopfield,loopvalues)}}
 
 # OK: a loopfield is either a sequence of dataname*,loopfield with stop
 # or else dataname,loopfield without stop
 
      rule loopfield: (            {{toploop=LoopBlock(dimension=1,overwrite=False);curloop=toploop;poploop=None;dim=1}}
                      (
-                                  data_name    {{curloop[data_name]=[]}}
+                                  ( data_name ( comment )* )  {{curloop[data_name]=[]}}
                                   |
-                                  LBLOCK       {{dim=dim+1;newloop=LoopBlock(dimension=dim,overwrite=False);poploop=curloop;curloop.insert_loop(newloop,audit=False);curloop=newloop}}
+                                  ( LBLOCK  ( comment )* )   {{dim=dim+1;newloop=LoopBlock(dimension=dim,overwrite=False);poploop=curloop;curloop.insert_loop(newloop,audit=False);curloop=newloop}}
                                   |
-                                  STOP         {{curloop=poploop;dim=dim-1}}
+                                  ( STOP  ( comment )* )     {{curloop=poploop;dim=dim-1}}
                       )*
                       )                        {{return toploop}} # sequence of data names 
                          
 
      rule loopvalues: ( 
-                       data_value    {{dataloop=[[data_value]]}}
+                       (data_value  ( comment )* ) {{dataloop=[[data_value]]}}
 		       ( 
-                       data_value     {{dataloop[-1].append(monitor('loopval',data_value))}}
+                       (data_value  ( comment )* ) {{dataloop[-1].append(monitor('loopval',data_value))}}
 		       |
-		       STOP           {{dataloop.append([])}} 
+		       (STOP       ( comment )* )  {{dataloop.append([])}} 
                        )*             
 		       )	      {{return dataloop}}
 
-     rule save_frame: save_heading       {{savehead = save_heading[5:];savebody = StarBlock(overwrite=False) }} 
+     rule save_frame: save_heading   {{savehead = save_heading[5:];savebody = StarBlock(overwrite=False) }} 
                       (
                       dataseq@<<savebody>> 
                       )*
