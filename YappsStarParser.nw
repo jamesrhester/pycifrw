@@ -196,7 +196,7 @@ duplicate blocknames and skipping name checks.
 <<Grammar specification>>=
 # now the rules
 
-rule input: (( (comment)*
+rule input: ((comment)* (( 
             dblock         {{allblocks = StarFile(); allblocks.NewBlock(dblock[0],blockcontents=dblock[1],fix=False,replace=False)}}
             (
             dblock         {{allblocks.NewBlock(dblock[0],blockcontents=monitor('input',dblock[1]),fix=False,replace=False)}} #
@@ -205,10 +205,11 @@ rule input: (( (comment)*
             )
             |
             (
-            (comment)* END                 {{allblocks = StarFile()}}
-            ))                    {{return allblocks}}
+            END                 {{allblocks = StarFile()}}
+            )))                   {{return allblocks}}
 
      rule dblock: ( data_heading {{heading = data_heading[5:];thisblock=StarBlock(overwrite=False)}}# a data heading
+		   (comment)*
                   (
                    dataseq@<<thisblock>>  
                   |

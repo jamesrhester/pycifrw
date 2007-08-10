@@ -1,21 +1,26 @@
 # Purpose: valid STAR/CIF file with potential traps for lazy parsers
-
+# Added by JRH: comments in any and every valid position
 # The first data block is the model block of ciftest4
 
-data_model
+data_model             #this is the datablock name
 
-_d1 char
-_d2 'model file'
+# now begins the datanames
+_d1 # an internal comment 
+     char
+# a pre-dataname comment
+_d2 'model file'   #a post-datavalue comment
 _d3 "with various types of field"
 _d4              # Comment
+#random comment
 ; all conforming to valid STAR syntax
   rules
 ;
 
-loop_
+# pre-loop comment
+loop_    #post loop-token comment
 
 _d5
-_d6
+_d6      #random loop dataname comment
 _d7
 _d8
 
