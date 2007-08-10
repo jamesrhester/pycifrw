@@ -147,6 +147,15 @@ def cif_update(old_dict,new_dict,loops):
 def order_update(order_array,new_name):
     order_array.append(new_name) 
     return new_name
+
+#
+# This deals with adding a comment
+def addcomments(block,kvpairstruct):
+    comment = kvpairstruct[2]
+    if len(comment)>1:
+	if comment[-1]=='\n': comment = comment[:-1] 
+	if len(comment)>1:
+	    block.AddComment(kvpairstruct[0],comment[1:])
 @
 
 The regular expressions aren't quite as easy to deal with as in kjParsing;
@@ -209,7 +218,6 @@ rule input: ((comment)* ((
             )))                   {{return allblocks}}
 
      rule dblock: ( data_heading {{heading = data_heading[5:];thisblock=StarBlock(overwrite=False)}}# a data heading
-		   (comment)*
                   (
                    dataseq@<<thisblock>>  
                   |
@@ -224,9 +232,12 @@ rule input: ((comment)* ((
 
      rule data@<<currentblock>>:        top_loop      {{currentblock.insert_loop(top_loop,audit=False)}} 
                                         | 
-		                        datakvpair    {{currentblock.AddLoopItem(datakvpair,precheck=True)}} #kv pair
+		                        datakvpair    {{currentblock.AddLoopItem(datakvpair[:2],precheck=True);addcomments(currentblock,datakvpair)}} #kv pair
 
-     rule datakvpair: data_name (comment)* data_value (comment)* {{return (data_name,data_value) }} # name-value
+     rule datakvpair: data_name (comment)* data_value {{thisval= [data_name,data_value];thiscomment=""}} # name-value
+		      (
+		       comment      {{thiscomment += comment}}
+		      )*            {{thisval.append(thiscomment);return thisval}}
      rule data_value: (data_value_1          {{thisval = stripstring(data_value_1)}}
                       |
                       sc_lines_of_text      {{thisval = stripextras(sc_lines_of_text)}}

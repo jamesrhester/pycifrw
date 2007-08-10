@@ -1283,12 +1283,8 @@ def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
         itemname = order.pop(0)
         if self.dimension == 0:            # ie value next to tag
    	    if not isinstance(itemname,LoopBlock):  #no loop
-	       # send out any comment
+	       # grab any comment
 	       thiscomment = self.comment_list.get(itemname.lower(),'') 
-	       if thiscomment:
-	           outstring.write("# ")
-	           outstring.write(thiscomment)
-	           outstring.write("\n")
                itemvalue = self[itemname]
                if isinstance(itemvalue,StringType):  #need to sanitize
                      thisstring = self._formatstring(itemvalue)
@@ -1298,9 +1294,18 @@ def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
                    itemname = itemname + ' '*(40-len(itemname))
                else: itemname = itemname + ' '
                if len(thisstring) + len(itemname) < (self.wraplength-1):
-                     outstring.write('%s%s\n' % (itemname,thisstring))
+                     outstring.write('%s%s' % (itemname,thisstring))
+		     if thiscomment:
+		         if len(thiscomment)+len(thisstring)+len(itemname)< (self.wraplength-3):
+			     outstring.write(' #'+thiscomment)
                else:
-                     outstring.write('%s\n %s\n' % (itemname, thisstring))
+                     outstring.write('%s\n %s' % (itemname, thisstring))
+		     if thiscomment:
+			 if len(thiscomment)+len(thisstring)<(self.wraplength-3):
+		             outstring.write(' #'+thiscomment)
+                         else:
+			     outstring.write('\n#'+thiscomment)
+               outstring.write('\n')
             else:   # we are asked to print an internal loop block
                 #first make sure we have sensible coords.  Length should be one
                 #less than the current dimension
