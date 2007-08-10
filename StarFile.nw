@@ -517,6 +517,8 @@ class LoopBlock:
     <<Selection of iterators>>
     <<Insert a nested loop>>
     <<Remove a nested loop>>
+    <<Add a comment>>
+    <<Remove a comment>>
     <<Return value of item>>
     <<Remove a data item>>
     <<Add a data item>>
@@ -564,6 +566,7 @@ def __init__(self,data = (), dimension = 0, maxoutlength=2048, wraplength=80, ov
     self.no_packets = 0
     self.item_order = []
     self.lower_keys = []    #for efficiency
+    self.comment_list = {}
     self.dimension = dimension
     self.popout = False         #used during load iteration
     self.curitem = -1           #used during iteration
@@ -580,6 +583,7 @@ def __init__(self,data = (), dimension = 0, maxoutlength=2048, wraplength=80, ov
         self.block = data.block.copy() 
         self.item_order = data.item_order[:]
         self.lower_keys = data.lower_keys[:]
+	self.comment_list = data.comment_list.copy()
         self.dimension = data.dimension
         # loops as well; change loop class 
         for loopno in range(len(data.loops)):
@@ -855,6 +859,17 @@ def remove_loop(self,oldloop):
     self.item_order.remove(oldloop)
     self.loops.remove(oldloop)
  
+@ Dealing with comments.  Comments are attached to a data name, and
+will be printed on the line before that name appears.
+
+<<Add a comment>>=
+def AddComment(self,itemname,comment):
+    self.comment_list[itemname.lower()] = comment
+
+<<Remove a comment>>=
+def RemoveComment(self,itemname):
+    del self.comment_list[itemname.lower()]
+
 @ Returning an item value.  Note that a looped block has little
 meaning without all the items in the loop.  Routine [[GetLoop]] is
 better in this case.  This is a real time-intensive loop, so we
@@ -1268,6 +1283,12 @@ def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
         itemname = order.pop(0)
         if self.dimension == 0:            # ie value next to tag
    	    if not isinstance(itemname,LoopBlock):  #no loop
+	       # send out any comment
+	       thiscomment = self.comment_list.get(itemname.lower(),'') 
+	       if thiscomment:
+	           outstring.write("# ")
+	           outstring.write(thiscomment)
+	           outstring.write("\n")
                itemvalue = self[itemname]
                if isinstance(itemvalue,StringType):  #need to sanitize
                      thisstring = self._formatstring(itemvalue)

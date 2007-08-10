@@ -287,6 +287,9 @@ class FileWriteTestCase(unittest.TestCase):
                'a string with a " and a safe\';',
                'a string with a final \''])))
        self.cf = CifFile.CifBlock(items)
+       # Add some comments
+       self.cf.AddComment('_item_empty',"Test of an empty string")
+       self.cf.AddComment('_item_apost',"Test of a trailing apostrophe")
        self.save_block = CifFile.CifBlock(s_items)
        self.cf["saves"]["test_save_frame"] = self.save_block
        self.cfs = self.cf["saves"]["test_save_frame"]
