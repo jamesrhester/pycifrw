@@ -81,7 +81,7 @@ Note also that a StarFile object can be accessed as a mapping type, ie using
 square brackets.  Most mapping operations have been implemented (see below).
 
 We import type objects at the module level, as required by later versions
-of Python.
+of Python. 
 
 <<*>>=
 <<Copyright statement>>
@@ -89,6 +89,7 @@ from types import *
 from urllib import *         # for arbitrary opening
 import re
 import copy
+<<Define a collection datatype>>
 <<LoopBlock class>>
 <<StarBlock class>>
 <<BlockCollection class>>
@@ -498,6 +499,22 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard'):
     if audit_result:
         raise StarError( 'Duplicate keys as follows: %s' % `audit_result`)
     return proto_star
+
+@ \section{Collection datatype}
+
+DDLm introduced data values which could be lists, tuples or hash tables.  As
+we use lists in the API for loop values, and think this is convenient, we
+define a pseudo collection class to hold CIF lists/tuples/hashes.
+
+<<Define a collection datatype>>=
+class StarList(list):
+    pass
+
+class StarTuple(tuple):
+    pass
+
+class StarDict(dict):
+    pass
 
 @ \section{Loop Block class}
 
@@ -1172,7 +1189,8 @@ def check_item_value(self,item):
     map(check_one,test_item)
 
 @ Regularising data.  We want the copy.deepcopy operation to work, so
-we can't have any arrays passed into the master dictionary.  We make
+we can't have any arrays (such as those from numpy etc) passed into the 
+master dictionary.  We make
 sure everything goes in either as a single item or as a list/tuple.
 
 <<Regularise data values>>=
@@ -1182,6 +1200,10 @@ def regularise_data(self,dataitem):
     okmappingtypes = [TupleType, ListType]
     thistype = type(dataitem)
     if thistype in alrighttypes or thistype in okmappingtypes:
+        return dataitem
+    if isinstance(dataitem,StarTuple) or \
+       isinstance(dataitem,StarList) or \
+       isinstance(dataitem,StarDict):
         return dataitem
     # so try to make into a list
     try:
@@ -1195,7 +1217,8 @@ and if we have a naked string, we have to return zero.
 We recursively burrow down to the lowest level.  If a list is of zero length,
 we can't burrow any further, so simply return one more than the current level.
 
-We return as well the length of the received packet.
+We return as well the length of the received packet.  Note that we consider
+dataitems which are Star tuples/lists/tables as being primitive.
 
 <<Get data dimension>>=
 def get_dim(self,dataitem,current=0,packlen=0):
@@ -1203,6 +1226,10 @@ def get_dim(self,dataitem,current=0,packlen=0):
                     FloatType, StringType]
     if type(dataitem) in zerotypes:
         return current, packlen
+    if isinstance(dataitem,StarDict) or \
+       isinstance(dataitem,StarList) or \
+       isinstance(dataitem,StarTuple):
+       return current, packlen
     elif len(dataitem)>0: 
     #    print "Get_dim: %d: %s" % (current,`dataitem`)
         return self.get_dim(dataitem[0],current+1,len(dataitem))

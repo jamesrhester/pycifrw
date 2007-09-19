@@ -272,13 +272,13 @@ rule input: ((comment)* ((
                             |
                               curly_bracket_expr    {{return 'curly brackets'}}
                             |
-                              round_bracket_expr    {{return 'round brackets'}}
+                              round_bracket_expr    {{return round_bracket_expr}}
 
      rule nested_bracket_expression:  nest_square_bracket_expr   {{return 'square bracket'}}
                             |
                               nest_curly_bracket_expr    {{return 'curly brackets'}}
                             |
-                              nest_round_bracket_expr    {{return 'round brackets'}}
+                              nest_round_bracket_expr    {{return nest_round_bracket_expr}}
 
      rule square_bracket_expr: o_s_b 
                             (
@@ -342,33 +342,33 @@ rule input: ((comment)* ((
 
      rule round_bracket_expr: o_r_b 
                             (
-                              dat_val_nocomma_nornd
+                              dat_val_nocomma_nornd     {{this_tuple = [stripstring(dat_val_nocomma_nornd)]}}
                               |
-                              nested_bracket_expression 
+                              nested_bracket_expression {{this_tuple = [nested_bracket_expression]}}
                             )
                             ( ","  
                               (
-                              dat_val_nocomma_nornd
+                              dat_val_nocomma_nornd     {{this_tuple.append(stripstring(dat_val_nocomma_nornd))}}
                               |
-                              nested_bracket_expression
+                              nested_bracket_expression {{this_tuple.append(nested_bracket_expression)}}
                               )
                             ) *
-                              c_r_b 
+                              c_r_b                      {{return StarTuple(this_tuple)}}
 
-     rule nest_round_bracket_expr: o_r_b 
+     rule nest_round_bracket_expr: o_r_b     
                             (
-                              dat_val_nocomma_nornd
+                              dat_val_nocomma_nornd  {{this_tuple = [stripstring(dat_val_nocomma_nornd)]}}
                               |
-                              nested_bracket_expression 
+                              nested_bracket_expression {{this_tuple = [nested_bracket_expression]}}
                             )
                             ( ","  
                               (
-                              dat_val_nocomma_nornd
+                              dat_val_nocomma_nornd   {{this_tuple.append(stripstring(dat_val_nocomma_nornd))}}
                               |
-                              nested_bracket_expression
+                              nested_bracket_expression {{this_tuple.append(nested_bracket_expression)}}
                               )
                             ) *
-                              c_r_b 
+                              c_r_b     {{return tuple(this_tuple)}}
 
 # due to the inability of the parser to backtrack, we contruct our loops in helper functions,
 # and simply collect data during parsing proper.
