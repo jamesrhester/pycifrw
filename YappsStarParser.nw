@@ -192,7 +192,16 @@ token data_heading: "(D|d)(A|a)(T|t)(A|a)_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}
 token start_sc_line: "(\n|\r\n);([^\n\r])*(\r\n|\r|\n)+"
 token sc_line_of_text: "[^;\r\n]([^\r\n])*(\r\n|\r|\n)+"
 token end_sc_line: ";"
-token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$'_\[\]][^\s]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
+token c_r_b: "\)"
+token o_r_b: "\("
+token c_c_b: "\}"
+token o_c_b: "\{"
+token c_s_b: "\]"
+token o_s_b: "\["
+token dat_val_nocomma_nosq: "([^\s\"#$,'_\(\{\[\]][^\s,\]]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
+token dat_val_nocomma_nocurl: "([^\s\"#$,'_\(\{\[\]][^\s,}]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
+token dat_val_nocomma_nornd: "([^\s\"#$,'_\(\{\[\]][^\s,)]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
+token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$'_\(\{\[\]][^\s]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
 token END: '$'
 
 @
@@ -201,6 +210,14 @@ The final returned value is a StarFile, with each key a datablock name.
 The value attached to each key is an entire dictionary for that block. We
 bypass the standard __setitem__ methods to gain precision in checking for
 duplicate blocknames and skipping name checks.
+
+Note in the following grammar that we have adjusted for some yapps idiosyncracies:
+in particular, a nested bracket expression needs to be distinguished from the
+top-level nested bracket expression otherwise the context-sensitive parser 
+will search for all those items which could follow the top level bracket
+expression in nested expressions.  The current version produces slightly
+incorrect error messages in that any type of close bracket is supposedly
+OK, even though only a particular type will be accepted.
 
 <<Grammar specification>>=
 # now the rules
@@ -241,6 +258,8 @@ rule input: ((comment)* ((
      rule data_value: (data_value_1          {{thisval = stripstring(data_value_1)}}
                       |
                       sc_lines_of_text      {{thisval = stripextras(sc_lines_of_text)}}
+                      |
+                      bracket_expression    {{thisval = bracket_expression}}
                       )                     {{return monitor('data_value',thisval)}}
 
      rule sc_lines_of_text: start_sc_line   {{lines = start_sc_line}}
@@ -248,6 +267,108 @@ rule input: ((comment)* ((
                             sc_line_of_text {{lines = lines+sc_line_of_text}}
                             )*
                             end_sc_line     {{return monitor('sc_line_of_text',lines+end_sc_line)}}
+
+     rule bracket_expression:  square_bracket_expr   {{return 'square bracket'}}
+                            |
+                              curly_bracket_expr    {{return 'curly brackets'}}
+                            |
+                              round_bracket_expr    {{return 'round brackets'}}
+
+     rule nested_bracket_expression:  nest_square_bracket_expr   {{return 'square bracket'}}
+                            |
+                              nest_curly_bracket_expr    {{return 'curly brackets'}}
+                            |
+                              nest_round_bracket_expr    {{return 'round brackets'}}
+
+     rule square_bracket_expr: o_s_b 
+                            (
+                              dat_val_nocomma_nosq
+                              |
+                              nested_bracket_expression 
+                            )
+                            ( ","  
+                              (
+                              dat_val_nocomma_nosq
+                              |
+                              nested_bracket_expression
+                              )
+                            ) *
+                               c_s_b 
+
+     rule nest_square_bracket_expr: o_s_b 
+                            (
+                              dat_val_nocomma_nosq
+                              |
+                              nested_bracket_expression 
+                            )
+                            ( ","  
+                              (
+                              dat_val_nocomma_nosq
+                              |
+                              nested_bracket_expression
+                              )
+                            ) *
+                               c_s_b 
+
+     rule curly_bracket_expr: o_c_b 
+                            (
+                              dat_val_nocomma_nocurl
+                              |
+                              nested_bracket_expression 
+                            )
+                            ( ","  
+                              (
+                              dat_val_nocomma_nocurl
+                              |
+                              nested_bracket_expression
+                              )
+                            ) *
+                              c_c_b 
+
+     rule nest_curly_bracket_expr: o_c_b 
+                            (
+                              dat_val_nocomma_nocurl
+                              |
+                              nested_bracket_expression 
+                            )
+                            ( ","  
+                              (
+                              dat_val_nocomma_nocurl
+                              |
+                              nested_bracket_expression
+                              )
+                            ) *
+                              c_c_b 
+
+     rule round_bracket_expr: o_r_b 
+                            (
+                              dat_val_nocomma_nornd
+                              |
+                              nested_bracket_expression 
+                            )
+                            ( ","  
+                              (
+                              dat_val_nocomma_nornd
+                              |
+                              nested_bracket_expression
+                              )
+                            ) *
+                              c_r_b 
+
+     rule nest_round_bracket_expr: o_r_b 
+                            (
+                              dat_val_nocomma_nornd
+                              |
+                              nested_bracket_expression 
+                            )
+                            ( ","  
+                              (
+                              dat_val_nocomma_nornd
+                              |
+                              nested_bracket_expression
+                              )
+                            ) *
+                              c_r_b 
 
 # due to the inability of the parser to backtrack, we contruct our loops in helper functions,
 # and simply collect data during parsing proper.
