@@ -180,8 +180,8 @@ in the definition of data_value_1.
 # first handle whitespace and comments, keeping whitespace
 # before a semicolon
 ignore: "([ \t\n\r](?!;))|[ \t]"
+ignore: "(#.*[\n\r](?!;))|(#.*)"
 # now the tokens
-token comment: "(#.*[\n\r](?!;))|(#.*)"
 token LBLOCK:  "(L|l)(O|o)(O|o)(P|p)_"        # loop_
 token GLOBAL: "(G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_"
 token STOP: "(S|s)(T|t)(O|o)(P|p)_"
@@ -198,7 +198,8 @@ token c_c_b: "\}"
 token o_c_b: "\{"
 token c_s_b: "\]"
 token o_s_b: "\["
-token dat_val_nocomma_nosq: "([^\s\"#$,'_\(\{\[\]][^\s,\]]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
+token dat_val_nocomma_nosq: "([^\s\"#$,'_\(\{\[\]][^\s,\[\]]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
+token dat_val_internal_sq: "\[([^\s\[\]]*)\]"
 token dat_val_nocomma_nocurl: "([^\s\"#$,'_\(\{\[\]][^\s,}]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
 token dat_val_nocomma_nornd: "([^\s\"#$,'_\(\{\[\]][^\s,)]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
 token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$'_\(\{\[\]][^\s]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
@@ -219,10 +220,18 @@ expression in nested expressions.  The current version produces slightly
 incorrect error messages in that any type of close bracket is supposedly
 OK, even though only a particular type will be accepted.
 
+We also have to deal with Dimension-type lists, where there may be square brackets
+as part of the value (e.g. [4[5]]).  This requires catching internal square brackets 
+as well.  The current grammar specification catches only this case i.e. the first 
+element of the array can be of the form xxx[yyy].  No other elements can have this
+form, and there can be no trailing characters.  This form can be allowed for other
+elements by trivial expansion of the current description but, until further notice,
+I don't think it is useful to allow square brackets in list values.
+
 <<Grammar specification>>=
 # now the rules
 
-rule input: ((comment)* (( 
+rule input: ( (( 
             dblock         {{allblocks = StarFile(); allblocks.NewBlock(dblock[0],blockcontents=dblock[1],fix=False,replace=False)}}
             (
             dblock         {{allblocks.NewBlock(dblock[0],blockcontents=monitor('input',dblock[1]),fix=False,replace=False)}} #
@@ -249,12 +258,10 @@ rule input: ((comment)* ((
 
      rule data@<<currentblock>>:        top_loop      {{currentblock.insert_loop(top_loop,audit=False)}} 
                                         | 
-		                        datakvpair    {{currentblock.AddLoopItem(datakvpair[:2],precheck=True);addcomments(currentblock,datakvpair)}} #kv pair
+		                        datakvpair    {{currentblock.AddLoopItem(datakvpair[:2],precheck=True)}} #kv pair
 
-     rule datakvpair: data_name (comment)* data_value {{thisval= [data_name,data_value];thiscomment=""}} # name-value
-		      (
-		       comment      {{thiscomment += comment}}
-		      )*            {{thisval.append(thiscomment);return thisval}}
+     rule datakvpair: data_name data_value {{return [data_name,data_value]}} # name-value
+
      rule data_value: (data_value_1          {{thisval = stripstring(data_value_1)}}
                       |
                       sc_lines_of_text      {{thisval = stripextras(sc_lines_of_text)}}
@@ -268,13 +275,13 @@ rule input: ((comment)* ((
                             )*
                             end_sc_line     {{return monitor('sc_line_of_text',lines+end_sc_line)}}
 
-     rule bracket_expression:  square_bracket_expr   {{return 'square bracket'}}
+     rule bracket_expression:  square_bracket_expr   {{return square_bracket_expr}}
                             |
                               curly_bracket_expr    {{return 'curly brackets'}}
                             |
                               round_bracket_expr    {{return round_bracket_expr}}
 
-     rule nested_bracket_expression:  nest_square_bracket_expr   {{return 'square bracket'}}
+     rule nested_bracket_expression:  nest_square_bracket_expr   {{return nest_square_bracket_expr}}
                             |
                               nest_curly_bracket_expr    {{return 'curly brackets'}}
                             |
@@ -282,33 +289,39 @@ rule input: ((comment)* ((
 
      rule square_bracket_expr: o_s_b 
                             (
-                              dat_val_nocomma_nosq
+                              dat_val_nocomma_nosq       {{this_list = [stripstring(dat_val_nocomma_nosq)]}}
+                              (
+                                dat_val_internal_sq      {{this_list[0]+=dat_val_internal_sq}}
+                                (
+                                "\*"                      {{this_list[0]+="*"}}
+                                )?
+                              )?
                               |
-                              nested_bracket_expression 
+                              nested_bracket_expression  {{this_list = [nested_bracket_expression]}}
                             )
                             ( ","  
                               (
-                              dat_val_nocomma_nosq
+                              dat_val_nocomma_nosq       {{this_list.append(stripstring(dat_val_nocomma_nosq))}}
                               |
-                              nested_bracket_expression
+                              nested_bracket_expression  {{this_list.append(nested_bracket_expression)}}
                               )
                             ) *
-                               c_s_b 
+                               c_s_b                     {{return StarList(this_list)}}
 
      rule nest_square_bracket_expr: o_s_b 
                             (
-                              dat_val_nocomma_nosq
+                              dat_val_nocomma_nosq     {{this_list = [stripstring(dat_val_nocomma_nosq)]}}
                               |
-                              nested_bracket_expression 
+                              nested_bracket_expression  {{this_list = [nested_bracket_expression]}}
                             )
                             ( ","  
                               (
-                              dat_val_nocomma_nosq
+                              dat_val_nocomma_nosq       {{this_list.append(stripstring(dat_val_nocomma_nosq))}}
                               |
-                              nested_bracket_expression
+                              nested_bracket_expression  {{this_list.append(nested_bracket_expression)}}
                               )
                             ) *
-                               c_s_b 
+                               c_s_b                     {{return this_list}}
 
      rule curly_bracket_expr: o_c_b 
                             (
@@ -373,28 +386,28 @@ rule input: ((comment)* ((
 # due to the inability of the parser to backtrack, we contruct our loops in helper functions,
 # and simply collect data during parsing proper.
 
-     rule top_loop: LBLOCK ( comment )* loopfield ( comment )* loopvalues {{return makeloop(loopfield,loopvalues)}}
+     rule top_loop: LBLOCK loopfield loopvalues {{return makeloop(loopfield,loopvalues)}}
 
 # OK: a loopfield is either a sequence of dataname*,loopfield with stop
 # or else dataname,loopfield without stop
 
      rule loopfield: (            {{toploop=LoopBlock(dimension=1,overwrite=False);curloop=toploop;poploop=None;dim=1}}
                      (
-                                  ( data_name ( comment )* )  {{curloop[data_name]=[]}}
+                                  ( data_name  )  {{curloop[data_name]=[]}}
                                   |
-                                  ( LBLOCK  ( comment )* )   {{dim=dim+1;newloop=LoopBlock(dimension=dim,overwrite=False);poploop=curloop;curloop.insert_loop(newloop,audit=False);curloop=newloop}}
+                                  ( LBLOCK   )   {{dim=dim+1;newloop=LoopBlock(dimension=dim,overwrite=False);poploop=curloop;curloop.insert_loop(newloop,audit=False);curloop=newloop}}
                                   |
-                                  ( STOP  ( comment )* )     {{curloop=poploop;dim=dim-1}}
+                                  ( STOP   )     {{curloop=poploop;dim=dim-1}}
                       )*
                       )                        {{return toploop}} # sequence of data names 
                          
 
      rule loopvalues: ( 
-                       (data_value  ( comment )* ) {{dataloop=[[data_value]]}}
+                       (data_value   ) {{dataloop=[[data_value]]}}
 		       ( 
-                       (data_value  ( comment )* ) {{dataloop[-1].append(monitor('loopval',data_value))}}
+                       (data_value  ) {{dataloop[-1].append(monitor('loopval',data_value))}}
 		       |
-		       (STOP       ( comment )* )  {{dataloop.append([])}} 
+		       (STOP        )  {{dataloop.append([])}} 
                        )*             
 		       )	      {{return dataloop}}
 
