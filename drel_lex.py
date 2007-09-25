@@ -2,28 +2,55 @@
 import ply.lex as lex
 
 tokens = (
-    'STRING',
+    'SHORTSTRING',
+    'LONGSTRING',
     'INTEGER',
     'BININT',
     'HEXINT',
     'OCTINT',
-    'ADD',
-    'MULTIPLY',
     'POWER',
-    'SUBTRACT',
-    'DIVIDE',
     'EQUALS',
     'NEQ',
     'GTE',
     'LTE',
     'ID',            #variable name
+    'COMMENT',
+    'ASSIGN',        #assignment
+    'COMPLEX',
+    'STRPREFIX',
+    'ELLIPSIS',
+    'AND',
+    'OR',
+    'IN',
+    'NOT',
+    'DO',
+    'FOR',
+    'LOOP',
+    'AS',
+    'WITH',
+    'WHERE',
+    'ELSE',
+    'BREAK',
+    'NEXT',
+    'IF',
+    'SWITCH',
+    'CASE',
+    'DEFAULT'
      )
 
-t_ADD = r'\+'
-t_MULTIPLY = r'\*'
-t_SUBTRACT = r'-'
+literals = '+*-/;()[],:^'
+t_ignore = ' \t'
+def t_error(t):
+    print 'Illegal character %s' % repr(t.value[0])
+
 t_POWER = r'\*\*'
-t_DIVIDE = r'/'
+t_EQUALS = r'=='
+t_NEQ = r'!='
+t_GTE = r'>='
+t_LTE = r'<='
+t_ASSIGN = r'='
+t_COMPLEX = r'[jJ]'
+t_ELLIPSIS = r'...'
 
 def t_INTEGER(t):
     r'[+-]?[0-9]+'
@@ -31,6 +58,18 @@ def t_INTEGER(t):
         t.value = int(t.value)
     except ValueError:
         print 'Incorrect integer value %s' % t.value
+    return t
+
+def t_STRPREFIX(t):
+    r'r|u|R|U|ur|UR|Ur|uR'
+    return t
+
+def t_SHORTSTRING(t):
+    '''('([^'\\\\n]|(\\.))*')|("([^"\\\\n]|(\\.))*")'''
+    return t
+
+def t_LONGSTRING(t):
+    '''("""([^\\]|(\\.))*""")|\'\'\'([^\\]|(\\.))*\'\'\''''
     return t
 
 def t_BININT(t):
@@ -85,3 +124,15 @@ reserved = {
     'default' : 'DEFAULT'
     }
 
+def t_ID(t):
+    r'[a-zA-Z][a-zA-z0-9_.$]*'
+    t.type = reserved.get(t.value,'ID')
+    return t
+
+def t_COMMENT(t):
+    r'#.*'
+    pass
+
+lexer = lex.lex()
+if __name__ == "__main__":
+    lex.runmain(lexer)
