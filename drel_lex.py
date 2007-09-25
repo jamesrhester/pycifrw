@@ -8,6 +8,7 @@ tokens = (
     'BININT',
     'HEXINT',
     'OCTINT',
+    'REAL',
     'POWER',
     'EQUALS',
     'NEQ',
@@ -15,7 +16,6 @@ tokens = (
     'LTE',
     'ID',            #variable name
     'COMMENT',
-    'ASSIGN',        #assignment
     'COMPLEX',
     'STRPREFIX',
     'ELLIPSIS',
@@ -35,11 +35,13 @@ tokens = (
     'IF',
     'SWITCH',
     'CASE',
+    'NEWLINE',
     'DEFAULT'
      )
 
-literals = '+*-/;()[],:^'
+literals = '+*-/;()[],:^<>'
 t_ignore = ' \t'
+
 def t_error(t):
     print 'Illegal character %s' % repr(t.value[0])
 
@@ -48,14 +50,25 @@ t_EQUALS = r'=='
 t_NEQ = r'!='
 t_GTE = r'>='
 t_LTE = r'<='
-t_ASSIGN = r'='
 t_COMPLEX = r'[jJ]'
-t_ELLIPSIS = r'...'
+t_ELLIPSIS = r'\.\.\.'
+t_NEWLINE = r'\n'
+
+# Do the reals before the integers, otherwise the integer will
+# match the first part of the real
+#
+def t_REAL(t):
+    r'[+-]?(([0-9]+[.][0-9]*)|([.][0-9]+))([Ee][+-]?[0-9]+)?'
+    try:
+        value = float(t.value)
+    except ValueError:
+        print 'Error converting %s to real' % t.value
+    return t
 
 def t_INTEGER(t):
     r'[+-]?[0-9]+'
     try:
-        t.value = int(t.value)
+        value = int(t.value)
     except ValueError:
         print 'Incorrect integer value %s' % t.value
     return t
@@ -69,13 +82,13 @@ def t_SHORTSTRING(t):
     return t
 
 def t_LONGSTRING(t):
-    '''("""([^\\]|(\\.))*""")|\'\'\'([^\\]|(\\.))*\'\'\''''
+    '''("""([^\\\\]|(\\.))*""")|\'\'\'([^\\\\]|(\\.))*\'\'\''''
     return t
 
 def t_BININT(t):
     r'0[bB][0-1]+'
     try:
-        t.value = int(t.value[2:],base=2)
+        t.value = `int(t.value[2:],base=2)`
     except ValueError:
         print 'Unable to convert binary value %s' % t.value
     return t
@@ -83,7 +96,7 @@ def t_BININT(t):
 def t_OCTINT(t):
     r'0[oO][0-7]+'
     try:
-        t.value = int(t.value[2:],base=8)
+        t.value = `int(t.value[2:],base=8)`
     except ValueError:
         print 'Unable to convert octal value %s' % t.value
     return t
@@ -91,17 +104,9 @@ def t_OCTINT(t):
 def t_HEXINT(t):
     r'0[xX][0-9a-fA-F]+'
     try:
-        t.value = int(t.value,base=16)
+        value = int(t.value,base=16)
     except ValueError:
         print 'Unable to convert hex value %s' % t.value
-    return t
-
-def t_REAL(t):
-    r'[+-]?(([0-9]+.[0-9]*)|(.[0-9]+))[Ee][+-]?[0-9]+'
-    try:
-        t.value = float(t.value)
-    except ValueError:
-        print 'Error converting %s to real' % t.value
     return t
 
 reserved = {
@@ -130,7 +135,7 @@ def t_ID(t):
     return t
 
 def t_COMMENT(t):
-    r'#.*'
+    r'\#.*'
     pass
 
 lexer = lex.lex()
