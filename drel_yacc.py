@@ -153,22 +153,17 @@ def p_literal(p):
                   | OCTINT
                   | BININT
                   | REAL
-                  | imagnumber'''
+                  | IMAGINARY'''
     print 'literal-> %s' % repr(p[1])
     p[0] = p[1]
-
-def p_imagnumber(p):
-    '''imagnumber : REAL COMPLEX
-                   | INTEGER COMPLEX'''
-    p[0] = p[1]+'j'
-    pass
 
 def p_stringliteral(p):
     '''stringliteral : STRPREFIX SHORTSTRING
                      | STRPREFIX LONGSTRING
                      | SHORTSTRING
                      | LONGSTRING'''
-    pass
+    if len(p)==3: p[0] = p[1]+p[2]
+    else: p[0] = p[1]
 
 def p_enclosure(p):
     '''enclosure : parenth_form

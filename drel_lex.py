@@ -1,5 +1,6 @@
 #Attempt to implement dREL using PLY (Python Lex Yacc)
 import ply.lex as lex
+import re    #for multiline flag
 
 tokens = (
     'SHORTSTRING',
@@ -14,9 +15,9 @@ tokens = (
     'NEQ',
     'GTE',
     'LTE',
+    'IMAGINARY',
     'ID',            #variable name
     'COMMENT',
-    'COMPLEX',
     'STRPREFIX',
     'ELLIPSIS',
     'AND',
@@ -39,7 +40,7 @@ tokens = (
     'DEFAULT'
      )
 
-literals = '+*-/;()[],:^<>'
+literals = '+*-/;()[],:^<>{}'
 t_ignore = ' \t'
 
 def t_error(t):
@@ -50,13 +51,16 @@ t_EQUALS = r'=='
 t_NEQ = r'!='
 t_GTE = r'>='
 t_LTE = r'<='
-t_COMPLEX = r'[jJ]'
 t_ELLIPSIS = r'\.\.\.'
 t_NEWLINE = r'\n'
 
 # Do the reals before the integers, otherwise the integer will
 # match the first part of the real
 #
+def t_IMAGINARY(t):
+    r'([+-]?((([0-9]+[.][0-9]*)|([.][0-9]+))([Ee][+-]?[0-9]+)?)|([0-9]+))[jJ]'
+    return t
+
 def t_REAL(t):
     r'[+-]?(([0-9]+[.][0-9]*)|([.][0-9]+))([Ee][+-]?[0-9]+)?'
     try:
@@ -65,26 +69,9 @@ def t_REAL(t):
         print 'Error converting %s to real' % t.value
     return t
 
-def t_INTEGER(t):
-    r'[+-]?[0-9]+'
-    try:
-        value = int(t.value)
-    except ValueError:
-        print 'Incorrect integer value %s' % t.value
-    return t
-
-def t_STRPREFIX(t):
-    r'r|u|R|U|ur|UR|Ur|uR'
-    return t
-
-def t_SHORTSTRING(t):
-    '''('([^'\\\\n]|(\\.))*')|("([^"\\\\n]|(\\.))*")'''
-    return t
-
-def t_LONGSTRING(t):
-    '''("""([^\\\\]|(\\.))*""")|\'\'\'([^\\\\]|(\\.))*\'\'\''''
-    return t
-
+# Do the binary,octal etc before decimal integer otherwise the 0 at
+# the front will match the decimal integer 0
+#
 def t_BININT(t):
     r'0[bB][0-1]+'
     try:
@@ -104,9 +91,30 @@ def t_OCTINT(t):
 def t_HEXINT(t):
     r'0[xX][0-9a-fA-F]+'
     try:
-        value = int(t.value,base=16)
+        t.value = `int(t.value,base=16)`
     except ValueError:
         print 'Unable to convert hex value %s' % t.value
+    return t 
+
+def t_INTEGER(t):
+    r'[+-]?[0-9]+'
+    try:
+        value = int(t.value)
+    except ValueError:
+        print 'Incorrect integer value %s' % t.value
+    return t
+def t_STRPREFIX(t):
+    r'r|u|R|U|ur|UR|Ur|uR'
+    return t
+
+# try longstring first as otherwise the '' will match a shortstring
+def t_LONGSTRING(t):
+    r"('''([^\\]|(\\.))*''')|(\"\"\"([^\\]|(\\.))*\"\"\")"
+    return t
+
+
+def t_SHORTSTRING(t):
+    r"('([^'\n]|(\\.))*')|(\"([^\"\n]|(\\.))*\")"
     return t
 
 reserved = {
@@ -138,6 +146,6 @@ def t_COMMENT(t):
     r'\#.*'
     pass
 
-lexer = lex.lex()
+lexer = lex.lex(reflags=re.MULTILINE,debug=1)
 if __name__ == "__main__":
     lex.runmain(lexer)
