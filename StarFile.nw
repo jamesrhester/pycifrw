@@ -91,6 +91,7 @@ import re
 import copy
 <<LoopBlock class>>
 <<StarBlock class>>
+<<Star packet class>>
 <<BlockCollection class>>
 <<StarFile class>>
 <<Define an error class>>
@@ -918,9 +919,17 @@ nested loops.  For a nested loop, we want the set of packets corresponding
 to the nth outer packet; so after picking out the appropriate elements, we
 have to transpose so that we have a packet.
 
+We return a StarPacket object, which looks very much like a list, in order
+to support the proposed DDLm semantics of allowing a particular value to
+be accessed by attribute.
+
+<<Star packet class>>=
+class StarPacket(list):
+    pass
+
 <<Get nth loop packet>>=
 def GetPacket(self,index):
-    thispack = []
+    thispack = StarPacket([])
     for myitem in self.item_order:
         if isinstance(myitem,LoopBlock):
             pack_list = map(lambda b:myitem[b][index],myitem.item_order)
@@ -930,6 +939,7 @@ def GetPacket(self,index):
             thispack.append(self[myitem])
         else:
             thispack.append(self[myitem][index])
+            setattr(thispack,myitem,thispack[-1])
     return thispack 
 
 @ Return order of items - this is just a copy of our item_order array.

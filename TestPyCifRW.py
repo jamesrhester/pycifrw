@@ -197,6 +197,10 @@ class BlockChangeTestCase(unittest.TestCase):
            self.assertEqual(test_pack["_item_name#2"],self.values[0][1][i]) 
            i += 1
 
+   def testPacketAttr(self):
+       """Test that packets have attributes"""
+       testloop = self.cf.GetLoop("_item_name_1")
+       self.assertEqual(testloop[1]._item_name_1,2)
 #
 #  Test changing item order
 #
