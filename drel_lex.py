@@ -11,7 +11,7 @@ tokens = (
     'OCTINT',
     'REAL',
     'POWER',
-    'EQUALS',
+    'ISEQUAL',
     'NEQ',
     'GTE',
     'LTE',
@@ -36,33 +36,31 @@ tokens = (
     'IF',
     'SWITCH',
     'CASE',
-    'NEWLINE',
     'DEFAULT'
      )
 
-literals = '+*-/;()[],:^<>{}'
-t_ignore = ' \t'
+literals = '+*-/;()[],:^<>{}='
+t_ignore = ' \t\n'
 
 def t_error(t):
     print 'Illegal character %s' % repr(t.value[0])
 
 t_POWER = r'\*\*'
-t_EQUALS = r'=='
+t_ISEQUAL = r'=='
 t_NEQ = r'!='
 t_GTE = r'>='
 t_LTE = r'<='
 t_ELLIPSIS = r'\.\.\.'
-t_NEWLINE = r'\n'
 
 # Do the reals before the integers, otherwise the integer will
 # match the first part of the real
 #
 def t_IMAGINARY(t):
-    r'([+-]?((([0-9]+[.][0-9]*)|([.][0-9]+))([Ee][+-]?[0-9]+)?)|([0-9]+))[jJ]'
+    r'(((([0-9]+[.][0-9]*)|([.][0-9]+))([Ee][+-]?[0-9]+)?)|([0-9]+))[jJ]'
     return t
 
 def t_REAL(t):
-    r'[+-]?(([0-9]+[.][0-9]*)|([.][0-9]+))([Ee][+-]?[0-9]+)?'
+    r'(([0-9]+[.][0-9]*)|([.][0-9]+))([Ee][+-]?[0-9]+)?'
     try:
         value = float(t.value)
     except ValueError:
@@ -97,7 +95,7 @@ def t_HEXINT(t):
     return t 
 
 def t_INTEGER(t):
-    r'[+-]?[0-9]+'
+    r'[0-9]+'
     try:
         value = int(t.value)
     except ValueError:
@@ -146,6 +144,6 @@ def t_COMMENT(t):
     r'\#.*'
     pass
 
-lexer = lex.lex(reflags=re.MULTILINE,debug=1)
+lexer = lex.lex(reflags=re.MULTILINE)
 if __name__ == "__main__":
     lex.runmain(lexer)

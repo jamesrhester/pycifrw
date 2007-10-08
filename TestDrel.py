@@ -59,5 +59,74 @@ class SimpleStatementTestCase(unittest.TestCase):
         self.failUnless(ress == jk)
         self.failUnless(resr == jl)
 
+    def testmathexpr(self):
+        """test simple maths expressions """
+        testexpr = ("5.45 + 23.6e05", "11 - 45" , "45.6 / 22.2")
+        for test in testexpr:
+            res = self.parser.parse(test+"\n",lexer=self.lexer)
+            print `res`
+            self.failUnless(res == test)
+
+    def testexprlist(self):
+        """test comma-separated expressions"""
+        test = "5,6,7+8.5e2"
+        res = self.parser.parse(test+"\n",lexer=self.lexer) 
+        self.failUnless(res == "5 , 6 , 7 + 8.5e2")
+
+    def testparen(self):
+        """test parentheses"""
+        test = "('once', 'upon', 6,7j +.5e2)"
+        res = self.parser.parse(test+"\n",lexer=self.lexer) 
+        self.failUnless(res == "( 'once' , 'upon' , 6 , 7j + .5e2 )")
+
+    def testlists(self):
+        """test list parsing"""
+        test = "['once', 'upon', 6,7j +.5e2]"
+        res = self.parser.parse(test+"\n",lexer=self.lexer) 
+        self.failUnless(res == "[ 'once' , 'upon' , 6 , 7j + .5e2 ]")
+
+class MoreComplexTestCase(unittest.TestCase):
+   def setUp(self):
+       #create our lexer and parser
+       self.lexer = drel_lex.lexer
+       self.parser = drel_yacc.parser
+
+   def testassignment(self):
+       pass 
+    
+   def test_with_stmt(self):
+       """Test what comes out of a simple flow statement"""
+       teststrg = """
+       with q as testcat {
+           x = 22
+           j = 25
+           q = 26
+           }"""
+       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       print res
+
+   def test_do_stmt(self):
+       """Test how a do statement comes out"""
+       teststrg = """
+       do jkl = 0,20,2 { total = total + i
+          }
+       do emm = 1,5 {
+          emm = emm + 1
+          }
+       """
+       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       print res
+
+   def test_nested_stmt(self):
+       """Test how a nested do statement prints"""
+       teststrg = """
+       do jkl = 0,20,2 { total = total + jkl 
+          do emm = 1,5 { emm = emm + 1 } 
+          }
+       end_of_loop = -25.6
+       """
+       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       print res
+
 if __name__=='__main__':
     unittest.main()
