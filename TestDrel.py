@@ -4,6 +4,7 @@
 import unittest
 import drel_lex
 import drel_yacc
+import CifFile
 
 # Test simple statements
 
@@ -92,41 +93,74 @@ class MoreComplexTestCase(unittest.TestCase):
        self.parser = drel_yacc.parser
 
    def testassignment(self):
-       pass 
+       """Test that an assignment works"""
+       teststrg = "jk = 11" 
+       res = self.parser.parse(teststrg,lexer=self.lexer)
+       realfunc = drel_yacc.make_func(res,"myfunc","jk")
+       exec realfunc
+       self.failUnless(myfunc(self,self)==11)
     
-   def test_with_stmt(self):
-       """Test what comes out of a simple flow statement"""
-       teststrg = """
-       with q as testcat {
-           x = 22
-           j = 25
-           q = 26
-           }"""
-       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       print res
-
    def test_do_stmt(self):
        """Test how a do statement comes out"""
        teststrg = """
-       do jkl = 0,20,2 { total = total + i
+       total = 0
+       do jkl = 0,20,2 { total = total + jkl
           }
        do emm = 1,5 {
-          emm = emm + 1
+          total = total + emm
           }
        """
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       realfunc = drel_yacc.make_func(res,"myfunc","total")
+       exec realfunc
+       realres = myfunc(self,self)
+       # Do statements are inclusive
+       print "Do statement returns %d" % realres
+       self.failUnless(realres==125)
        print res
 
    def test_nested_stmt(self):
        """Test how a nested do statement prints"""
        teststrg = """
+       total = 0
+       othertotal = 0
        do jkl = 0,20,2 { total = total + jkl 
-          do emm = 1,5 { emm = emm + 1 } 
+          do emm = 1,5 { othertotal = othertotal + 1 } 
           }
        end_of_loop = -25.6
        """
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
-       print res
+       realfunc = drel_yacc.make_func(res,"myfunc","othertotal,total")
+       print "Nested do:\n" + realfunc
+       exec realfunc
+       othertotal,total = myfunc(self,self)
+       print "nested do returns %d, %d" % (othertotal,total) 
+       self.failUnless(othertotal==55)
+       self.failUnless(total==110)
+
+class WithDictTestCase(unittest.TestCase):
+   """Now test flow control which requires a dictionary present"""
+   def setUp(self):
+       #create our lexer and parser
+       self.lexer = drel_lex.lexer
+       self.parser = drel_yacc.parser
+       #create a simple dictionary
+       self.testdic = CifFile.CifDic("testdic")
+       self.testblock = CifFile.CifFile("testdic")["DDL_DIC"]  #slackers
+
+   def test_with_stmt(self):
+       """Test what comes out of a simple flow statement"""
+       teststrg = """
+       with q as dictionary {
+           x = 22
+           j = 25
+           jj = q.date
+           }"""
+       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       realfunc = drel_yacc.make_func(res,"myfunc","jj")
+       print "With statement -> \n" + realfunc
+       exec realfunc
+       self.failUnless(myfunc(self.testdic,self.testblock)=="2007-03-18")
 
 if __name__=='__main__':
     unittest.main()

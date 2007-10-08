@@ -39,7 +39,7 @@ tokens = (
     'DEFAULT'
      )
 
-literals = '+*-/;()[],:^<>{}='
+literals = '+*-/;()[],:^<>{}=.'
 t_ignore = ' \t\n'
 
 def t_error(t):
@@ -136,7 +136,7 @@ reserved = {
     }
 
 def t_ID(t):
-    r'[a-zA-Z][a-zA-z0-9_.$]*'
+    r'[a-zA-Z][a-zA-z0-9_$]*'
     t.type = reserved.get(t.value,'ID')
     return t
 

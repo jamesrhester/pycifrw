@@ -16,7 +16,7 @@ tokens = drel_lex.tokens
 def p_input(p):
     '''input : statement
              | input statement'''
-    p[0] = "".join(p[1:])
+    p[0] = "\n".join(p[1:])
 
 def p_statement(p):
     '''statement : stmt_list
@@ -226,7 +226,15 @@ def p_list_if(p):
 
 def p_attributeref(p):
     '''attributeref : primary "." ID ''' 
-    p[0] = " ".join(p[1:]) 
+    # intercept special loop variables
+    print `p.parser.special_id`
+    for idtable in p.parser.special_id:
+        newid = idtable.get(p[1],0)
+        if newid: break
+    if newid: 
+        p[0] = "ciffile["+'"_'+newid+"."+p[3]+'"]' 
+    else:
+        p[0] = " ".join(p[1:]) 
 
 def p_subscription(p):
     '''subscription : primary "[" expression_list "]" '''
@@ -375,15 +383,24 @@ def p_do_stmt(p):
     '''do_stmt : do_stmt_head suite'''
     p[0] = p[1] + p[2]
 
+# To translate the dREL do to a for statement, we need to make the
+# end of the range included in the range
+
 def p_do_stmt_head(p):
     '''do_stmt_head : DO ID "=" expression "," expression
                     | DO ID "=" expression "," expression "," expression '''
-    p[0] = "for " + p[2] + " in range(" + " ".join(p[4:]) + "):"
+    incr = "1"
+    if len(p)==9: 
+       incr = p[8]
+       rangeend = p[6]+"+%s/2" % incr   # avoid float expressions 
+    else:
+       rangeend = p[6]+"+%s" % incr     # because 1/2 = 0
+    p[0] = "for " + p[2] + " in range(" + p[4] + "," + rangeend + "," + incr + "):"
 
 def p_with_stmt(p):
     '''with_stmt : with_head suite'''
     p.parser.special_id.pop()
-    p[0] = p[1] + p[2]
+    p[0] = p[1] + p[2] + "\n" + p.parser.indent + "except IndexError:\n" + p.parser.indent + "    " + "pass\n"
 
 # Done here to capture the id before processing the suite
 # A with statement doesn't need any indenting...
@@ -392,6 +409,7 @@ def p_with_head(p):
     p.parser.special_id.append({p[2]: p[4]})
     print "%s means %s" % (p[2],p[4])
     p[0] = "__pycitems = self.names_in_cat('%s')" % p[4]
+    p[0] +="\ntry:"
     
 
 def p_where_stmt(p):
@@ -410,6 +428,17 @@ def p_caselist(p):
 def p_error(p):
     print 'Syntax error at token %s, value %s' % (p.type,p.value)
  
+### Now some helper functions
+
+def make_func(parser_string,funcname,returnname):
+    preamble = "def %s(self,ciffile):\n" % funcname
+    postamble = "\n    return %s" % returnname   #note indent
+    # now indent the string
+    noindent = parser_string.splitlines()
+    indented = map(lambda a:"    " + a+"\n",noindent)  
+    final = preamble + "".join(indented) + postamble
+    return final
+
 parser = yacc.yacc()    
 parser.indent = ""
 parser.special_id=[]
