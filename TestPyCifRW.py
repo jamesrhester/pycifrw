@@ -201,6 +201,13 @@ class BlockChangeTestCase(unittest.TestCase):
        """Test that packets have attributes"""
        testloop = self.cf.GetLoop("_item_name_1")
        self.assertEqual(testloop[1]._item_name_1,2)
+
+   def testKeyPacket(self):
+       """Test that a packet can be returned by key value"""
+       testloop = self.cf.GetLoop("_item_name_1")
+       testpack = testloop.GetKeyedPacket("_item_name_1",2)[0]
+       self.assertEqual("good_bye",testpack["_item_name#2"])
+       
 #
 #  Test changing item order
 #

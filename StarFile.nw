@@ -529,6 +529,7 @@ class LoopBlock:
     <<Get data dimension>>
     <<Get complete looped data>>
     <<Get nth loop packet>>
+    <<Get packet by key>>
     <<Get item order>>
     <<Change data item order>>
     <<Return position of data item>>
@@ -941,6 +942,19 @@ def GetPacket(self,index):
             thispack.append(self[myitem][index])
             setattr(thispack,myitem,thispack[-1])
     return thispack 
+
+@ The draft DDLm specification uses square brackets next to a pre-specified
+identifier to mean "the packet containing this key item".  As the meaning in
+PyCIFRW is always that of a simple table, we instead implement a function which
+fullfils this role and pre-process the DRel script later to remove the
+square brackets where necessary.   At the LoopBlock level we have no idea as
+to which data name is the key, so that is passed to us from the dictionary
+processing layer.  Note we assume a single key rather than multiple keys for
+this call, and let the calling layer handle multiple or missing packets.
+
+<<Get packet by key>>=
+def GetKeyedPacket(self,keyname,keyvalue):
+    return filter(lambda a:a[keyname]==keyvalue,self)
 
 @ Return order of items - this is just a copy of our item_order array.
 
