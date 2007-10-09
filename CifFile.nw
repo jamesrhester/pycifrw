@@ -483,9 +483,13 @@ class CifDic(StarFile.BlockCollection):
     <<Dictionary determination function>>
     <<Deal with DDL1 differences>>
     <<Iron out DDL2 strangeness>> 
+    <<Normalise DDLm save frame names>>
+    <<Parse DDLm validity information>>
     <<Load categories with DDL2-type information>>
     <<Add type information>>
     <<Add category information>>
+    <<List all items in a category>>
+    <<Return a single packet by key>>
     <<Extract number and esd>>
     <<Analyse range>>
     <<Item-level validation>>
@@ -514,17 +518,22 @@ def __init__(self,dic):
         self.dic_as_cif = CifFile(dic)
     (self.dicname,self.diclang,self.defdata) = self.dic_determine(self.dic_as_cif)
     StarFile.BlockCollection.__init__(self,element_class=CifBlock,datasource=self.defdata) 
+    self.scopes_mandatory = {"dictionary":[],"category":[],"item":[]}
+    self.scopes_naughty = {"dictionary":[],"category":[],"item":[]}
     # rename and expand out definitions using "_name" in DDL dictionaries
     if self.diclang == "DDL1":
         self.DDL1_normalise()   #this removes any non-definition entries
         self.ddl1_cat_load()
-    else:
+    elif self.diclang == "DDL2":
         self.DDL2_normalise()   #iron out some DDL2 tricky bits
+    elif self.diclang == "DDLm":
+        self.ddlm_normalise()
+        self.ddlm_parse_valid() #extract validity information from data block
+    self.add_category_info()
     # initialise type information
     self.typedic={}
     self.primdic = {}   #typecode<->primitive type translation
     self.add_type_info()
-    self.add_category_info()
     self.item_validation_funs = [
 	self.validate_item_type,
         self.validate_item_esd,
@@ -554,11 +563,11 @@ def __init__(self,dic):
     # j.write(self.__str__())
     # j.close()
 
-@ This function determines whether we have a DDL2 or DDL1 dictionary.  We are
+@ This function determines whether we have a DDLm, DDL2 or DDL1 dictionary.  We are
 passed a [[CifFile]] object.   The current method looks for an
 [[on_this_dictionary]] block, which implies DDL1, or a single block,
-which implies DDL2.  This is also where we define some universal
-keys for uniform access to DDL1/DDL2 attributes.    
+which implies DDL2/DDLM.  This is also where we define some universal
+keys for uniform access to DDL attributes.    
 
 <<Dictionary determination function>>=
 def dic_determine(self,cifdic):
@@ -582,12 +591,16 @@ def dic_determine(self,cifdic):
 	name = cifdic["on_this_dictionary"]["_dictionary_name"]
 	version = cifdic["on_this_dictionary"]["_dictionary_version"]
 	return (name+version,"DDL1",cifdic)
-    elif len(cifdic.keys()) == 1:              # DDL2
+    elif len(cifdic.keys()) == 1:              # DDL2/DDLm
         self.master_key = cifdic.keys()[0]	
 	name = cifdic[self.master_key]["_dictionary.title"]
 	version = cifdic[self.master_key]["_dictionary.version"]
 	if name != self.master_key:
 	    print "Warning: DDL2 blockname %s not equal to dictionary name %s" % (self.master_key,name)
+        if cifdic[self.master_key].has_key("_dictionary.namespace"):   #DDLm
+            self.unique_spec = "_category_key.generic"
+            return(name+version,"DDLm",cifdic[self.master_key]["saves"]) 
+        #otherwise DDL2
 	self.type_spec = "_item_type.code" 
 	self.enum_spec = "_item_enumeration.value"
         self.esd_spec = "_item_type_conditions.code"
@@ -877,20 +890,91 @@ def get_ddl1_entry(self,cat_name):
     else:
         return possibles[0]
 
+@ Normalise DDLm datanames.  While there is no strict requirement that the save frame name
+corresponds to the name of the data item defined therein, we make it equivalent so that
+all of our access methods work nicely.  Pending a detailed description of how variable
+names used in dREL methods are derived, we go the harder route and concatenate the category
+name with the object id (although it may be possible to use the _definition.id).  Note
+that we do not alter category definitions.
+
+<<Normalise DDLm save frame names>>=
+def ddlm_normalise(self):
+    for key,value in self.dictionary.items():
+       if value.has_key("_name.category_id"):
+           real_name = "_" + value["_name.category_id"] + "." + value["_name.object_id"]
+           self.dictionary[real_name] = value
+           # delete the old one
+           del self.dictionary[key]
+    
+@ DDLm introduces validity information in the enclosing datablock.  It is a loop of scope,
+attribute values where the scope is one of dictionary (everywhere), category (whole
+category) and item (just the single definition).  Validity can be [[+]] (mandatory), 
+[[.]] encouraged and [[!]] not allowed.
+
+<<Parse DDLm validity information>>=
+def ddlm_parse_valid(self):
+    for scope_pack in self.dic_as_cif[self.master_key].GetLoop("_dictionary_valid.scope"):
+        scope = scope_pack["_dictionary_valid.scope"]
+        valid_info = scope_pack["_dictionary_valid.attributes"]
+        valid_info = valid_info.split()
+        for i in range(0,len(valid_info),2): 
+            if valid_info[i]=="+":
+               self.scopes_mandatory[scope.lower()].append(valid_info[i+1].lower())
+            elif valid_info[i]=="!":
+               self.scopes_naughty[scope.lower()].append(valid_info[i+1].lower())
+
 @ Dictionaries have the category-wide information in the category
 definition area.  We create a map from data block / save frame header to
-category id.  For DDL1 the block name has square brackets appended.
+category id.  For DDL1 the block name has square brackets appended. For DDL2
+the category name is kept in the _category.id attribute.  For DDLm, we need
+to find all entries with a _definition.scope of "Category".
 
 <<Add category information>>=
 def add_category_info(self):
-    categories = filter(lambda a:self[a].has_key("_category.id"),self.keys())
-    # get the category id
-    category_ids = map(lambda a:self[a]["_category.id"],categories)
+    if self.diclang == "DDLm":
+        <<Get list of DDLm categories>>
+    else:
+        <<Get list of DDL1/2 categories>>
     # match ids and entries in the dictionary
     catpairs = map(None,category_ids,categories)
     self.cat_map = {}
     for catid,cat in catpairs:self.cat_map[catid] = cat
 
+<<Get list of DDL1/2 categories>>=
+categories = filter(lambda a:self[a].has_key("_category.id"),self.keys())
+# get the category id
+category_ids = map(lambda a:self[a]["_category.id"],categories)
+
+@ Note that as of Oct 2007 we don't know if _definition.scope is mandatory,
+so we use a get instead of a straight square bracket.
+
+<<Get list of DDLm categories>>=
+categories = filter(lambda a:self[a].get("_definition.scope","Item")=="Category",self.keys())
+category_ids = map(lambda a:self[a]["_definition.id"],categories)
+
+
+@ This method was added to facilitate running dREL scripts, which treat
+certain variables as having attributes which all belong to a single category.
+We may have to improve this routine later to allow for hierarchical
+resolution of datanames.  We return only the extension in keeping with
+dREL syntax.
+
+<<List all items in a category>>=
+def names_in_cat(self,cat):
+    nameblocks = filter(lambda a:self[a].get("_name.category_id","").lower()
+                         ==cat.lower(),self.keys())
+    return map(lambda a:self[a]["_name.object_id"],nameblocks)
+    
+@ This method was added for DDLm support.  We are passed a category and a
+value, and must find a packet which has a matching key.  We use the keyname
+as a way of finding the loop.
+
+<<Return a single packet by key>>=
+def get_key_pack(self,category,value,data):
+    keyname = self[category][self.unique_spec]
+    onepack = data.GetPackKey(keyname,value)
+    return onepack
+ 
 @ These validation checks are intended to be called externally.  They return
 a dictionary keyed by item name with value being a list of the
 results of the check functions.  The individual functions return a 
