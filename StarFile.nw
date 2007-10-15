@@ -81,7 +81,7 @@ Note also that a StarFile object can be accessed as a mapping type, ie using
 square brackets.  Most mapping operations have been implemented (see below).
 
 We import type objects at the module level, as required by later versions
-of Python. 
+of Python.
 
 <<*>>=
 <<Copyright statement>>
@@ -92,6 +92,7 @@ import copy
 <<Define a collection datatype>>
 <<LoopBlock class>>
 <<StarBlock class>>
+<<Star packet class>>
 <<BlockCollection class>>
 <<StarFile class>>
 <<Define an error class>>
@@ -545,6 +546,7 @@ class LoopBlock:
     <<Get data dimension>>
     <<Get complete looped data>>
     <<Get nth loop packet>>
+    <<Get packet by key>>
     <<Get item order>>
     <<Change data item order>>
     <<Return position of data item>>
@@ -935,9 +937,17 @@ nested loops.  For a nested loop, we want the set of packets corresponding
 to the nth outer packet; so after picking out the appropriate elements, we
 have to transpose so that we have a packet.
 
+We return a StarPacket object, which looks very much like a list, in order
+to support the proposed DDLm semantics of allowing a particular value to
+be accessed by attribute.
+
+<<Star packet class>>=
+class StarPacket(list):
+    pass
+
 <<Get nth loop packet>>=
 def GetPacket(self,index):
-    thispack = []
+    thispack = StarPacket([])
     for myitem in self.item_order:
         if isinstance(myitem,LoopBlock):
             pack_list = map(lambda b:myitem[b][index],myitem.item_order)
@@ -947,7 +957,21 @@ def GetPacket(self,index):
             thispack.append(self[myitem])
         else:
             thispack.append(self[myitem][index])
+            setattr(thispack,myitem,thispack[-1])
     return thispack 
+
+@ The draft DDLm specification uses square brackets next to a pre-specified
+identifier to mean "the packet containing this key item".  As the meaning in
+PyCIFRW is always that of a simple table, we instead implement a function which
+fullfils this role and pre-process the DRel script later to remove the
+square brackets where necessary.   At the LoopBlock level we have no idea as
+to which data name is the key, so that is passed to us from the dictionary
+processing layer.  Note we assume a single key rather than multiple keys for
+this call, and let the calling layer handle multiple or missing packets.
+
+<<Get packet by key>>=
+def GetKeyedPacket(self,keyname,keyvalue):
+    return filter(lambda a:a[keyname]==keyvalue,self)
 
 @ Return order of items - this is just a copy of our item_order array.
 
@@ -1189,8 +1213,7 @@ def check_item_value(self,item):
     map(check_one,test_item)
 
 @ Regularising data.  We want the copy.deepcopy operation to work, so
-we can't have any arrays (such as those from numpy etc) passed into the 
-master dictionary.  We make
+we can't have any arrays passed into the master dictionary.  We make
 sure everything goes in either as a single item or as a list/tuple.
 
 <<Regularise data values>>=
