@@ -144,10 +144,15 @@ def p_primary(p):
 
 def p_atom(p):
     '''atom : ID 
+             | item_tag 
              | literal
              | enclosure'''
     # print 'Atom -> %s' % repr(p[1])
     p[0] = p[1]
+
+def p_item_tag(p):
+    '''item_tag : ITEM_TAG'''
+    p[0] = "ciffile['%s']" % p[1]
 
 def p_literal(p): 
     '''literal : stringliteral
@@ -224,20 +229,40 @@ def p_list_if(p):
                | IF or_test list_iter'''
     pass
 
+# We have to intercept attribute references which relate to
+# aliased category variables, as well as to catch literal
+# item names containing a period.
+
 def p_attributeref(p):
     '''attributeref : primary "." ID ''' 
     # intercept special loop variables
-    print `p.parser.special_id`
+    # print `p.parser.special_id`
     for idtable in p.parser.special_id:
         newid = idtable.get(p[1],0)
         if newid: break
     if newid: 
         p[0] = "ciffile["+'"_'+newid+"."+p[3]+'"]' 
+    elif p.parser.special_id[0].has_key("".join(p[1:])):
+        # a global variable from the dictionary
+        p[0] = 'ciffile['+"".join(p[1:])+']'
     else:
         p[0] = " ".join(p[1:]) 
 
+# A subscription becomes a key lookup if the primary is a 
+# pre-defined 'category variable'
 def p_subscription(p):
     '''subscription : primary "[" expression_list "]" '''
+    # intercept special loop variables
+    # print `p.parser.special_id`
+    for idtable in p.parser.special_id:
+        newid = idtable.get(p[1],0)
+        if newid: break
+    if newid: 
+        key_item = self[p[1]]["_"+newid+"."+p[3]]
+        get_loop = "newpack = ciffile.GetLoop('%s')\n" % key_item
+        p[0] = "ciffile["+'"_'+newid+"."+p[3]+'"]' 
+    else:
+        p[0] = " ".join(p[1:]) 
     p[0] = " ".join(p[1:]) 
 
 def p_slicing(p):
@@ -314,6 +339,7 @@ def p_target_list(p):
 
 def p_target(p):
     '''target : ID
+              | item_tag 
               | "(" target_list ")"
               | "[" target_list "]"
               | attributeref
@@ -321,6 +347,7 @@ def p_target(p):
               | slicing  '''
     # search our enclosing blocks for special ids
     newid = 0
+    # print 'Special ids: %s' % `p.parser.special_id`
     for idtable in p.parser.special_id:
         newid = idtable.get(p[1],0)
         if newid: break
@@ -400,7 +427,7 @@ def p_do_stmt_head(p):
 def p_with_stmt(p):
     '''with_stmt : with_head suite'''
     p.parser.special_id.pop()
-    p[0] = p[1] + p[2] + "\n" + p.parser.indent + "except IndexError:\n" + p.parser.indent + "    " + "pass\n"
+    p[0] = p[1] + p[2] + "\n" + p.parser.indent + "except IndexError:\n" + p.parser.indent + "    " + "print 'Index Error in with statement'\n"
 
 # Done here to capture the id before processing the suite
 # A with statement doesn't need any indenting...
@@ -429,10 +456,15 @@ def p_error(p):
     print 'Syntax error at token %s, value %s' % (p.type,p.value)
  
 ### Now some helper functions
-
+# The following function creates a function.  If returnname is None,
+# no variable is returned.  In practice, this means the function
+# modifies the 'ciffile' argument in place
+#
 def make_func(parser_string,funcname,returnname):
     preamble = "def %s(self,ciffile):\n" % funcname
-    postamble = "\n    return %s" % returnname   #note indent
+    postamble = ""
+    if returnname:
+        postamble = "\n    return %s" % returnname   #note indent
     # now indent the string
     noindent = parser_string.splitlines()
     indented = map(lambda a:"    " + a+"\n",noindent)  

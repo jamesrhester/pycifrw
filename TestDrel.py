@@ -147,6 +147,10 @@ class WithDictTestCase(unittest.TestCase):
        #create a simple dictionary
        self.testdic = CifFile.CifDic("testdic")
        self.testblock = CifFile.CifFile("testdic")["DDL_DIC"]  #slackers
+       #create the global namespace
+       self.namespace = self.testdic.keys()
+       self.namespace = dict(map(None,self.namespace,self.namespace))
+       self.parser.special_id = [self.namespace]
 
    def test_with_stmt(self):
        """Test what comes out of a simple flow statement"""
@@ -155,12 +159,15 @@ class WithDictTestCase(unittest.TestCase):
            x = 22
            j = 25
            jj = q.date
+           _dictionary.date = "2007-04-01"
            }"""
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = drel_yacc.make_func(res,"myfunc","jj")
+       realfunc = drel_yacc.make_func(res,"myfunc",None)
        print "With statement -> \n" + realfunc
        exec realfunc
-       self.failUnless(myfunc(self.testdic,self.testblock)=="2007-03-18")
+       myfunc(self.testdic,self.testblock)
+       print 'date now %s' % self.testblock["_dictionary.date"]
+       self.failUnless(self.testblock["_dictionary.date"]=="2007-04-01")
 
 if __name__=='__main__':
     unittest.main()

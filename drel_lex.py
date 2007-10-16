@@ -17,6 +17,7 @@ tokens = (
     'LTE',
     'IMAGINARY',
     'ID',            #variable name
+    'ITEM_TAG',      #cif item as variable
     'COMMENT',
     'STRPREFIX',
     'ELLIPSIS',
@@ -101,6 +102,7 @@ def t_INTEGER(t):
     except ValueError:
         print 'Incorrect integer value %s' % t.value
     return t
+
 def t_STRPREFIX(t):
     r'r|u|R|U|ur|UR|Ur|uR'
     return t
@@ -138,6 +140,12 @@ reserved = {
 def t_ID(t):
     r'[a-zA-Z][a-zA-z0-9_$]*'
     t.type = reserved.get(t.value,'ID')
+    return t
+
+# Item tags can have periods and underscores inside, and must have
+# at least one of them at the front 
+def t_ITEM_TAG(t):
+    r'_[a-zA-Z_.]+'
     return t
 
 def t_COMMENT(t):
