@@ -73,7 +73,7 @@ class BlockRWTestCase(unittest.TestCase):
         try:
             self.cf[dataname] = "nnn"
         except StarFile.StarError: pass
-        else: self.Fail()
+        else: self.fail()
 
     def testMoreBadStrings(self):
         dataname = "_name_is_ok"
@@ -81,12 +81,18 @@ class BlockRWTestCase(unittest.TestCase):
         try:
             self.cf[dataname] = val
         except StarFile.StarError: pass
-        else: self.Fail()
+        else: self.fail()
 
     def testEmptyString(self):
         """An empty string is, in fact, legal"""
         self.cf['_an_empty_string'] = ''
         
+    def testStarList(self):
+        """Test that a StarList is treated as a primitive item"""
+        self.cf['_a_star_list'] = StarFile.StarList([1,2,3,4])
+        jj = self.cf.GetLoop('_a_star_list')
+        self.failUnless(jj.dimension==0)
+ 
 # Now test operations which require a preexisting block
 #
 
@@ -121,15 +127,19 @@ class BlockChangeTestCase(unittest.TestCase):
        try:
            a = self.cf['_non_loop_item']
        except KeyError: pass
-       else: self.Fail()
+       else: self.fail()
 
    def testLoopRemove(self):
        """Check item deletion inside loop"""
+       print "Before:\n"
+       print self.cf.printsection()
        self.cf.RemoveCifItem(self.names[0][1])
+       print "After:\n"
+       print self.cf.printsection()
        try:
            a = self.cf[self.names[0][1]]
        except KeyError: pass
-       else: self.Fail()
+       else: self.fail()
 
    def testFullLoopRemove(self):
        """Check removal of all loop items"""
@@ -155,12 +165,12 @@ class BlockChangeTestCase(unittest.TestCase):
        try:
            self.cf.AddToLoop('_no_item',adddict)
        except KeyError: pass
-       else: self.Fail()
+       else: self.fail()
        try:
            self.cf.AddToLoop('_item_name#2',adddict)
        except StarFile.StarLengthError:
            pass 
-       else: self.Fail()
+       else: self.fail()
 
    def testChangeLoop(self):
        """Test changing pre-existing item in loop"""
@@ -524,7 +534,7 @@ class DDL1TestCase(unittest.TestCase):
         try:
             self.cf["test_block"]["_diffrn_source_target"]="2.5"
         except CifFile.ValidCifError: pass 
-        else: self.Fail()
+        else: self.fail()
 
     def testItemRange(self):
         """Test that ranges are correctly handled"""
@@ -544,7 +554,7 @@ class DDL1TestCase(unittest.TestCase):
                 "_diffrn_radiation_wavelength",
                 "_diffrn_radiation_wavelength_wt"),(("0.75","0.71"),("0.5","0.1"))))
         except CifFile.ValidCifError: pass
-        else: self.Fail()
+        else: self.fail()
         
     def testUniqueness(self):
         """Test that non-unique values are found"""
@@ -558,7 +568,7 @@ class DDL1TestCase(unittest.TestCase):
                    ("section","section","section","section") 
                      )))
         except CifFile.ValidCifError: pass
-        else: self.Fail()
+        else: self.fail()
 
     def testParentChild(self):
 	"""Test that non-matching values are reported"""

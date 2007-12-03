@@ -53,6 +53,8 @@ must be a [[StarBlock]] object (see below).  If replace is [[False]], attempts t
 replace a pre-existing block will cause an error.
 \item [[WriteOut(comment)]]: return the contents of the current file as a
 CIF-conformant string, with optional [[comment]] at the beginning.
+\item [[set_uri(URI)]]: set the URI of the file.  Typically this is done internally when
+loading from a file, or else is set to the current working directory
 \end{enumerate}
 
 The methods available for the StarBlock type are:
@@ -417,6 +419,7 @@ length.
 <<StarFile class>>=
 class StarFile(BlockCollection):
 <<Initialise data structures>>
+<<Set URI>>
 
 @ When initialising, we add those parts that are unique to the StarFile as
 opposed to a simple collection of blocks - i.e. reading in from a file,
@@ -431,6 +434,8 @@ our initialisation function, which may be a subclass which takes other arguments
 <<Initialise data structures>>=
     def __init__(self,datasource=None,maxinlength=-1,maxoutlength=0,blocktype=StarBlock,**kwargs):
         BlockCollection.__init__(self,datasource=datasource,element_class=blocktype,type_tag='data_')
+        if isinstance(datasource, StarFile):
+            self.my_uri = datasource.my_uri
         self.maxinlength = maxinlength      #no restriction
         if maxoutlength == 0:
             self.maxoutlength = 2048 
@@ -452,6 +457,10 @@ our initialisation function, which may be a subclass which takes other arguments
 #
 ##########################################################################
 """
+@ A function to make sure we have the correct file location
+
+<<Set URI>>=
+    def set_uri(self,my_uri): self.my_uri = my_uri
 
 @ Reading in a file.  We now use the Yapps2-generated [[YappsStarParser]] module to provide grammar
 services.  The structure returned from parsing is a StarFile, with
@@ -462,6 +471,9 @@ by passing the option 'flex' to this routine.  We also permit an
 already-opened stream to be passed to us (thanks to Boris Dusek for
 this contribution).
 
+We save our URL for possible later use in finding files relative to the location of
+this file e.g. with DDLm dictionary imports.
+
 <<Read in a STAR file>>=
 def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard'):
     import YappsStarParser,string
@@ -469,10 +481,12 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard'):
         filestream = urlopen(filename)
     else:
 	filestream = filename   #already opened for us
+    my_uri = filestream.geturl()
     text = filestream.read()
     if isinstance(filename,basestring): #we opened it, we close it
         filestream.close()
     if not text:      # empty file, return empty block
+        dist.set_uri(my_uri)
         return dest
     # we recognise ctrl-Z as end of file
     endoffile = text.find('\x1a')
@@ -499,6 +513,7 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard'):
     audit_result = filter(lambda a:len(a[1])>0,audit_result)
     if audit_result:
         raise StarError( 'Duplicate keys as follows: %s' % `audit_result`)
+    proto_star.set_uri(my_uri)
     return proto_star
 
 @ \section{Collection datatype}
@@ -1432,7 +1447,7 @@ We are therefore a bit sloppy with our checking against [[wraplength]] and
 def format_packet_item(self,pack_item,indent):
     # print 'Formatting %s' % `pack_item`
     curstring = ''
-    if isinstance(pack_item,(StringType,IntType,FloatType,LongType)):
+    if isinstance(pack_item,(StringType,IntType,FloatType,LongType,StarTuple,StarList)):
        if isinstance(pack_item,StringType):
            thisstring = self._formatstring(pack_item) #no spaces yet
            if '\n' in thisstring:    #must have semicolon digraph then 

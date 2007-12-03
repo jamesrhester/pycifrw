@@ -73,6 +73,8 @@ current block.  Same as typing [['del block[item]']]
 \item [[AddLoop(dataname,data)]]: add [[data]] to the loop containing
 [[dataname]].  If dataname is not a looped item, an error is returned.
 If (data) has the wrong length, an error is returned. 
+\item [[AddDictionary(dicname)]]: add [[dicname]] to the list of dictionaries
+which this datablock conforms to.
 \end{enumerate}
 
 Note also that a CifFile object can be accessed as a mapping type, ie using
@@ -91,6 +93,10 @@ wishes to do them.
 from types import *
 import re
 import StarFile
+import sys
+#### Remove in final version!!
+sys.path.append('../drel-ply')
+####
 <<CifLoopBlock class>>
 <<CifBlock class>>
 <<CifFile class>>
@@ -196,6 +202,7 @@ class CifBlock(CifLoopBlock):
     <<Add a data item>>
     <<Check data name lengths>>
     <<Return all looped names>>
+    <<Assign a Cif Dictionary>>
     <<Merge with another block>>
 
 @ We include the dimension argument in initialisation, as the initialisation
@@ -213,21 +220,27 @@ def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80,overwri
         self.saves = StarFile.BlockCollection(element_class=CifLoopBlock,type_tag="save")
     if self.strict:
 	self.checklengths()
-    #
-    # simple alias for following methods
-    #
+    self.dictionary = None
 
 def RemoveCifItem(self,itemname): 
     CifLoopBlock.RemoveLoopItem(self,itemname)
 
-@ Just as for star blocks, we add in the save frame key.
+@ Just as for star blocks, we add in the save frame key.  If the
+dictionary as supplied doesn't have the item we want, we call the
+dictionary method to try to fix the situation. 
 
 <<Adjust emulation of a mapping type>>=
 def __getitem__(self,key):
     if key == "saves":
         return self.saves
-    else:
-        return CifLoopBlock.__getitem__(self,key)
+    try:     
+       return CifLoopBlock.__getitem__(self,key)
+    except KeyError:
+       if self.dictionary:
+           # send the dictionary the required key and a pointer to us
+           return self.dictionary.derive_item(key,self)
+       else:
+           raise KeyError
 
 def __setitem__(self,key,value):
     if key == "saves":
@@ -276,6 +289,23 @@ corresponding to the names in each loop of the file.
 <<Return all looped names>>=
 def loopnames(self):
     return map(lambda a:a.keys(),self.loops)
+
+@ In DDL1 and DDL2, there is not a whole lot of point associating a DDL
+dictionary with a CIF file in an ongoing way.  However, with DDLm the dictionary
+can be used when searching for attributes, so is no longer simply a checking
+mechanism but is now also a generative mechanism.  So there are advantages to
+making this assignment for DDLm.
+
+If we are passed a non-DDLm dictionary, we ignore the request as there is
+nothing we can do with it outside the normal validity checking, for which
+a different routine is in place.
+
+<<Assign a Cif Dictionary>>=
+def assign_dictionary(self,dic):
+    if not dic.diclang=="DDLm":
+        print "Warning: ignoring dictionary %s" % dic.dic_as_cif.my_uri
+        return
+    self.dictionary = dic
 
 @ Merging.  Normally merging of dictionaries is done at the data file 
 level, i.e. a whole block is replaced or added.  However, in 'overlay'
@@ -391,7 +421,7 @@ def AddCifItem(self,data):
     # single items passed straight through to underlying routine
     # we catch single item loops as well...
     if isinstance(data[0],StringType):
-        if isinstance(data[1],(TupleType,ListType)):
+        if isinstance(data[1],(TupleType,ListType)) and not isinstance(data[1],(StarFile.StarList,StarFile.StarTuple)):
             CifLoopBlock.AddLoopItem(self,((data[0],),((data[1],))))
         else:
             CifLoopBlock.AddLoopItem(self,data)
@@ -485,6 +515,7 @@ class CifDic(StarFile.BlockCollection):
     <<Iron out DDL2 strangeness>> 
     <<Normalise DDLm save frame names>>
     <<Parse DDLm validity information>>
+    <<Perform DDLm imports>>
     <<Load categories with DDL2-type information>>
     <<Add type information>>
     <<Add category information>>
@@ -492,6 +523,8 @@ class CifDic(StarFile.BlockCollection):
     <<Return a single packet by key>>
     <<Extract number and esd>>
     <<Analyse range>>
+    <<Transform drel to python>>
+    <<Derive item information>>
     <<Item-level validation>>
     <<Loop-level validation>>
     <<Cross-item validation>>
@@ -529,6 +562,8 @@ def __init__(self,dic):
     elif self.diclang == "DDLm":
         self.ddlm_normalise()
         self.ddlm_parse_valid() #extract validity information from data block
+        self.transform_drel()   #parse the drel functions
+        self.ddlm_import()
     self.add_category_info()
     # initialise type information
     self.typedic={}
@@ -909,10 +944,13 @@ def ddlm_normalise(self):
 @ DDLm introduces validity information in the enclosing datablock.  It is a loop of scope,
 attribute values where the scope is one of dictionary (everywhere), category (whole
 category) and item (just the single definition).  Validity can be [[+]] (mandatory), 
-[[.]] encouraged and [[!]] not allowed.
+[[.]] encouraged and [[!]] not allowed.  It only appears in the DDLm attributes dictionary, so
+this information is blank unless we are dealing with the DDLm dictionary.
 
 <<Parse DDLm validity information>>=
 def ddlm_parse_valid(self):
+    if not self.dic_as_cif[self.master_key].has_key("_dictionary_valid.scope"):
+        return
     for scope_pack in self.dic_as_cif[self.master_key].GetLoop("_dictionary_valid.scope"):
         scope = scope_pack["_dictionary_valid.scope"]
         valid_info = scope_pack["_dictionary_valid.attributes"]
@@ -975,7 +1013,128 @@ def get_key_pack(self,category,value,data):
     onepack = data.GetPackKey(keyname,value)
     return onepack
  
-@ These validation checks are intended to be called externally.  They return
+@ Section{DDLm functionality}
+
+DDLm is a far more complex dictionary standard than DDL2.  We are able to import
+definitions, for example.  The top-level dictionary notionally contains a very
+minimal set of save frame definitions.  We start at this top level and work down,
+resolving import references recursively.  This will satisfy the requirement that
+conflicts are resolved from the most nested level upwards.
+
+We use the built-in PyCIFRW merging methods.  Note that this merging is done on
+the CIFDIC object, and so the dic_as_cif object remains untouched.  In future,
+audit and tracking information could be stored here.
+
+<<Perform DDLm imports>>=
+<<Master import routine>>
+<<Add another DDLM dictionary>>
+<<Add an external DDLM category>>
+<<Add an external DDLM category with children>>
+
+<<Master import routine>>=
+def ddlm_import(self):
+    #first check the outermost datablocks.  Note we expect our dREL
+    #machinery to create _import_list.id only if the others are available
+    #For this to happen, we need the ddl.dic to have been assigned
+    try:
+        to_be_imported = self.dic_as_cif[self.master_key]["_import_list.id"]
+    except KeyError:
+        pass
+    else:
+        for scope,dict_block,file_loc,on_dupl,on_miss in to_be_imported: 
+            if scope == 'Att' or scope == 'Sta' or scope == 'Val':
+                print 'Improper import directive at top level in %s: ignored' % self.master.key
+                next
+            # resolve URI  
+            full_uri = resolve_path(file_loc)
+            import_from = CifDic(urllib.urlopen(full_uri))  #this will recurse internal imports
+            # and now merge these definitions
+            if scope == "Dic":
+                self.get_whole_dict(import_from,on_dupl,on_miss)
+            elif scope=="Cat":
+                self.get_one_cat(import_from,dict_block,on_dupl,on_miss)
+            elif scope=="Grp":
+                self.get_one_cat_with_children(import_from,dict_block,on_dupl,on_miss)
+    # next we resolve per-definition imports
+    for one_def in self.keys():
+        try: 
+            to_be_imported = self[one_def]["_import_list.id"]
+        except KeyError:
+            pass
+        else:
+            for scope,block,file_loc,on_dupl,on_miss in to_be_imported: 
+                if scope == 'Dic' or scope == 'Cat' or scope == 'Grp' or scope == "Itm":
+                    print 'Improper import directive at definition level in %s: ignored' % self.master.key
+           
+def resolve_path(self,file_loc):
+    import urlparse
+    url_comps = urlparse.urlparse(file_loc)
+    if file_loc[0]: return file_loc    #already full URI
+    new_url = urlparse.urljoin(self.my_uri,file_loc)
+    print "Transformed %s to %s for import " % (file_loc,new_url)
+    
+@ Merging a whole dictionary.  A dictionary is a collection of categories for
+the purposes of merging (later we may want to keep some audit information).
+
+<<Add another DDLM dictionary>>=
+def get_whole_dict(self,source_dict,on_dupl,on_miss):
+    for source_cat in source_dict.cat_map.values():
+        self.get_one_cat(source_dict,source_cat,on_dupl,on_miss)
+   
+@ Merging a single category.  If this category does not exist, we simply add
+the category block and any members of the category.  If it does exist, we
+use the 'on_dupl' flag to resolve our behaviour, either ignoring, replacing,
+or dying a horrible death.
+
+If the specified block is missing in the external dictionary, we either skip
+it or die a horrible death.
+
+<<Add an external DDLM category>>=
+def get_one_cat(self,source_dict,source_cat,on_dupl,on_miss):
+    ext_cat = source_dict.get(source_cat,"")
+    this_cat = self.get(source_cat,"")
+    if not ext_cat:
+        if on_miss == "Ignore":
+           pass
+        else:
+           raise CifError, "Missing category %s" % source_cat 
+    else:
+        all_ext_defns = source_dict.keys()
+        cat_list = filter(lambda a:source_dict[a]["_category.id"]==source_cat,
+                           all_ext_defns) 
+        if this_cat:     # The category block itself is duplicated
+            if on_dupl=="Ignore":
+                pass
+            elif on_dupl == "Exit":
+                raise CifError, "Duplicate category %s" % source_cat
+            else: 
+                self[source_cat] = ext_cat
+                self.cat_map[source_cat] = source_cat
+        else:
+            self[source_cat] = ext_cat
+            #housekeeping
+            self.cat_map[source_cat] = source_cat   #identical
+        # now do all member definitions
+        for cat_defn in cat_list:
+            if self.has_key(cat_defn):
+                if on_dupl == "Ignore": pass
+                elif on_dupl == "Exit": 
+                   raise CifError, "Duplicate definition %s" % cat_defn
+                else: self[cat_defn] = source_dict[cat_defn]
+            else: self[cat_defn] = source_dict[cat_defn]
+    
+@ This actually follows the children of the category down.  We get a list of
+child categories and add them one by one recursively.
+
+<<Add an external DDLM category with children>>=
+def get_one_cat_with_children(self,source_dict,source_cat,on_dupl,on_miss):
+    self.get_one_cat(source_dict,source_cat,on_dupl,on_miss)
+    child_cats = filter(lambda a:source_dict[a]["_category.parent_id"]==source_dict[source_cat]["_definition.id"],source_dict.cat_map.values())
+    for child_cat in child_cats: self.get_one_cat(source_dict,child_cat,on_dupl,on_miss) 
+
+@ Section{Validation}
+
+These validation checks are intended to be called externally.  They return
 a dictionary keyed by item name with value being a list of the
 results of the check functions.  The individual functions return a 
 dictionary which contains at least the key "result", and in case of error
@@ -1688,6 +1847,59 @@ def add_type_info(self):
         packed_up = map(None,types,prim_types)
         for typecode,primtype in packed_up:
             self.primdic[typecode] = primtype
+
+@ \section{Linkage to dREL}
+
+The drel_yacc package will create a python function for us.  We use
+it during initialisation to transform all methods to python expressions,
+and then the [[derive_item]] method will use this to try to derive the
+expression.
+
+<<Transform drel to python>>=
+def transform_drel(self):
+    import drel_yacc
+    parser = drel_yacc.parser
+    derivable_list = filter(lambda a:self[a].has_key("_method.expression"),self.keys())
+    for derivable in derivable_list:
+        drel_expr = self[derivable]["_method.expression"]
+        if isinstance(drel_expr,ListType):
+           drel_expr = drel_expr[0] 
+        print "Transforming %s" % drel_expr
+        # Temporarily commented out
+        # pyth_meth = parser.parse(drel_expr)
+        # self[derivable]["_method.expression"] = drel_yacc.make_func(pyth_meth,"pyfunc") 
+        # print "Final result:\n " + self[derivable]["_method.expression"]
+
+@ This is the corresponding method to call to find out the item information,
+assuming that the above method was called during initialisation.  For single-valued items, we
+call the method directly.  For non-single-valued items, we need to call repeatedly to build up
+a complete packet.
+
+<<Derive item information>>=
+def derive_item(self,key,cifdata):
+    the_func = self[key]["_method.expression"]   #raise a KeyError now if necessary
+    # read it in
+    the_category = self[key]["_name.category_id"]
+    the_type = self[the_category]["_definition.class"]
+    exec the_func in locals()         #puts "pyfunc" in scope
+    if not (the_type=="List"):
+        return pyfunc(self,cifdata,None)
+    # get any relevant loops
+    pack_index = 0
+    packlist = []
+    try:
+        while True:
+           packlist.append(pyfunc(self,cifdata,"__drelpacket",__pi=pack_index))
+           pack_index += 1
+    except IndexError:
+        pass
+    # now try to insert the new information into the right place
+    # find if items of this category already appear...
+    cat_names = filter(lambda a:self[a].get["_name.category_id",None]==the_category,self.keys())
+    has_cat_names = filter(lambda a:cifdata.has_key(a),cat_names)
+    if len(has_cat_names)>0:
+        target_loop = cifdata.GetLoop(has_cat_names[0])
+        target_loop[key] = packlist      #lengths must match or else!!
 
 @ This function analyses a DDL1-type range expression,  returning
 a maximum and minimum value.  If the number
