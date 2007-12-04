@@ -127,6 +127,7 @@ reserved = {
     'loop': 'LOOP',
     'as': 'AS',
     'with': 'WITH',
+    'With': 'WITH',
     'where': 'WHERE',
     'else': 'ELSE',
     'break': 'BREAK',
@@ -138,7 +139,7 @@ reserved = {
     }
 
 def t_ID(t):
-    r'[a-zA-Z][a-zA-z0-9_$]*'
+    r'[a-zA-Z][a-zA-Z0-9_$]*'
     t.type = reserved.get(t.value,'ID')
     return t
 

@@ -152,7 +152,11 @@ def p_atom(p):
 
 def p_item_tag(p):
     '''item_tag : ITEM_TAG'''
-    p[0] = "ciffile['%s']" % p[1]
+    # print "Target %s, treating %s" % (p.parser.target_name,"".join(p[1:]))
+    if p.parser.target_name == "".join(p[1:]) and p.parser.looped_value:
+        p[0] = "__dreltarget"
+    else:
+        p[0] = "ciffile['%s']" % p[1]
 
 def p_literal(p): 
     '''literal : stringliteral
@@ -241,9 +245,14 @@ def p_attributeref(p):
         newid = idtable.get(p[1],0)
         if newid: break
     if newid: 
-        p[0] = "ciffile["+'"_'+newid+"."+p[3]+'"]' 
+        p[0] = "ciffile["+'"_'+newid[0]+"."+p[3]+'"]' 
+        print "In ID processing: %s\n" % `newid`
+        # a with statement may require an index
+        if newid[1]:
+            p[0] = p[0] + "[" + newid[1] + "]"
     elif p.parser.special_id[0].has_key("".join(p[1:])):
         # a global variable from the dictionary
+        print "Using global dictionary variable "+p[1:]
         p[0] = 'ciffile['+"".join(p[1:])+']'
     else:
         p[0] = " ".join(p[1:]) 
@@ -311,7 +320,11 @@ def p_long_slice(p):
 def p_call(p):
     '''call : primary "(" ")"
             | primary "(" argument_list ")" '''
-    pass
+    # we translate built-in functions only at this stage
+    builtins = {"list":"StarFile.StarList","tuple":"StarFile.StarTuple"}
+    funcname = builtins.get(p[1].lower(),p[1])
+    p[0] = funcname + " ".join(p[2:])
+    print "Function call: %s" % p[0]
 
 # It seems that in dREL the arguments are expressed differently
 # in the form arg [: specifier], arg ...
@@ -324,7 +337,7 @@ def p_argument_list(p):
     p[0] = " ".join(p[1:])
 
 def p_func_arg(p):
-    '''func_arg : ID
+    '''func_arg : expression 
                 | ID ":" list_display ''' 
     p[0] = p[1]   #ignore list structure for now
                  
@@ -426,17 +439,27 @@ def p_do_stmt_head(p):
 
 def p_with_stmt(p):
     '''with_stmt : with_head suite'''
-    p.parser.special_id.pop()
     p[0] = p[1] + p[2] + "\n" + p.parser.indent + "except IndexError:\n" + p.parser.indent + "    " + "print 'Index Error in with statement'\n"
+    p[0] = p[0] + p.parser.indent + "    " + "raise IndexError\n"
+    outgoing = p.parser.special_id.pop()
+    outindents = filter(lambda a:a[2],outgoing.values())
+    p.parser.indent = p.parser.indent[:len(p.parser.indent)-4*len(outindents)]
 
 # Done here to capture the id before processing the suite
 # A with statement doesn't need any indenting...
+# We assume a variable 'loopable_cats' is available to us
 def p_with_head(p):
     '''with_head : WITH ID AS ID'''
-    p.parser.special_id.append({p[2]: p[4]})
-    print "%s means %s" % (p[2],p[4])
     p[0] = "__pycitems = self.names_in_cat('%s')" % p[4]
-    p[0] +="\ntry:"
+    p.parser.special_id.append({p[2]: [p[4],"",False]})
+    print "%s means %s" % (p[2],p[4][0])
+    if p[4] in p.parser.loopable_cats:   #loop over another index
+        loop_index =  "__pi%d" % len(p.parser.special_id)
+        p.parser.special_id[-1][p[2]][1] = loop_index
+        p.parser.special_id[-1][p[2]][2] = True 
+        p[0] += "\n" + p.parser.indent + "for %s in range(len(ciffile[__pycitems[0]])):" % loop_index
+        p.parser.indent += 4*" "
+    p[0] +="\n" + p.parser.indent + "try:"
     
 
 def p_where_stmt(p):
@@ -456,15 +479,18 @@ def p_error(p):
     print 'Syntax error at token %s, value %s' % (p.type,p.value)
  
 ### Now some helper functions
-# The following function creates a function.  If returnname is None,
-# no variable is returned.  In practice, this means the function
-# modifies the 'ciffile' argument in place
+# The following function creates a function. The function
+# modifies the 'ciffile' argument in place.  The pi argument is a 
+# packet index for when we are accessing looped data using a
+# 'with' statement.  Returnname is the variable name for returned
+# data, and for looped data this should always be "__dreltarget".
+# See the test file for ways of using this
 #
 def make_func(parser_string,funcname,returnname):
-    preamble = "def %s(self,ciffile):\n" % funcname
+    preamble = "def %s(self,ciffile,__pi=None):\n    import StarFile\n" % funcname
     postamble = ""
     if returnname:
-        postamble = "\n    return %s" % returnname   #note indent
+        postamble = "    return %s" % returnname
     # now indent the string
     noindent = parser_string.splitlines()
     indented = map(lambda a:"    " + a+"\n",noindent)  
@@ -474,3 +500,5 @@ def make_func(parser_string,funcname,returnname):
 parser = yacc.yacc()    
 parser.indent = ""
 parser.special_id=[]
+parser.looped_value = False    #Determines with statement construction 
+parser.target_name = None

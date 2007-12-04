@@ -5,6 +5,7 @@ import unittest
 import drel_lex
 import drel_yacc
 import CifFile
+import StarFile
 
 # Test simple statements
 
@@ -144,11 +145,11 @@ class WithDictTestCase(unittest.TestCase):
        #create our lexer and parser
        self.lexer = drel_lex.lexer
        self.parser = drel_yacc.parser
-       #create a simple dictionary
+       #use a simple dictionary
        self.testdic = CifFile.CifDic("testdic")
-       self.testblock = CifFile.CifFile("testdic")["DDL_DIC"]  #slackers
+       self.testblock = CifFile.CifFile("testdic")["DDL_DIC"]
        #create the global namespace
-       self.namespace = self.testdic.keys()
+       self.namespace = self.testblock.keys()
        self.namespace = dict(map(None,self.namespace,self.namespace))
        self.parser.special_id = [self.namespace]
 
@@ -161,13 +162,37 @@ class WithDictTestCase(unittest.TestCase):
            jj = q.date
            _dictionary.date = "2007-04-01"
            }"""
+       self.parser.loopable_cats = []   #category dictionary is not looped
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = drel_yacc.make_func(res,"myfunc",None)
        print "With statement -> \n" + realfunc
        exec realfunc
-       myfunc(self.testdic,self.testblock)
+       myfunc(self.testblock,self.testblock)
        print 'date now %s' % self.testblock["_dictionary.date"]
        self.failUnless(self.testblock["_dictionary.date"]=="2007-04-01")
+
+   def test_functions(self):
+       """Test that functions are converted correctly"""
+       struct_testdic = CifFile.CifFile("../pycifrw-ddlm/DDLm_20071010/cif_core.dic")
+       struct_testblock = struct_testdic["CIF_CORE"]
+       self.parser.loopable_cats = ["import"]   #category import is looped
+       self.parser.target_name = "_import_list.id"
+       teststrg = """
+       with i as import 
+           _import_list.id = List([i.scope, i.block, i.file, i.if_dupl, i.if_miss])
+       """
+       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       realfunc = drel_yacc.make_func(res,"myfunc","__dreltarget")
+       print "With statement -> \n" + realfunc
+       print "Before execution:\n"
+       print struct_testblock.printsection()
+       exec realfunc
+       retval = myfunc(self.testdic,struct_testblock)
+       # struct_testblock["_import_list.id"] = ret_list
+       print "After execution"
+       print struct_testblock.printsection()
+       self.failUnless(struct_testblock["_import_list.id"][3] == StarFile.StarList(["dic","CORE_MODEL","core_model.dic","exit","exit"]))
+       
 
 if __name__=='__main__':
     unittest.main()
