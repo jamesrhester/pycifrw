@@ -13,6 +13,13 @@ import ply.yacc as yacc
 tokens = drel_lex.tokens
 
 # Overall translation unit
+# We return the text of the function, as well as a table of 'with' packets 
+# and corresponding index names
+# 
+def p_final_input(p):
+    '''final_input : input'''
+    p[0] = [p[1],p.parser.withtable]
+
 def p_input(p):
     '''input : statement
              | input statement'''
@@ -153,7 +160,7 @@ def p_atom(p):
 def p_item_tag(p):
     '''item_tag : ITEM_TAG'''
     # print "Target %s, treating %s" % (p.parser.target_name,"".join(p[1:]))
-    if p.parser.target_name == "".join(p[1:]) and p.parser.looped_value:
+    if p.parser.target_id == "".join(p[1:]):
         p[0] = "__dreltarget"
     else:
         p[0] = "ciffile['%s']" % p[1]
@@ -417,7 +424,15 @@ def p_for_stmt(p):
 
 def p_loop_stmt(p):
     '''loop_stmt : LOOP ID AS target_list suite'''
-    pass
+    p[0] = "__pycitems = self.names_in_cat('%s')" % p[4]
+    p.parser.special_id.append({p[2]: [p[4],"",False]})
+    print "%s means %s" % (p[2],p[4][0])
+    if p[4] in p.parser.loopable_cats:   #loop over another index
+        loop_index =  "__pi%d" % len(p.parser.special_id)
+        p.parser.special_id[-1][p[2]][1] = loop_index
+        p.parser.special_id[-1][p[2]][2] = True 
+        p[0] += "\n" + p.parser.indent + "for %s in range(len(ciffile[__pycitems[0]])):" % loop_index
+        p.parser.indent += 4*" "
 
 def p_do_stmt(p):
     '''do_stmt : do_stmt_head suite'''
@@ -448,17 +463,21 @@ def p_with_stmt(p):
 # Done here to capture the id before processing the suite
 # A with statement doesn't need any indenting...
 # We assume a variable 'loopable_cats' is available to us
+# We have a somewhat complex structure to allow for multiple simultaneous
+# with statements, although that is not in the standard.  We could
+# probably assume a single packet variable per with statement and
+# simplify the special_id structure a bit
 def p_with_head(p):
     '''with_head : WITH ID AS ID'''
     p[0] = "__pycitems = self.names_in_cat('%s')" % p[4]
     p.parser.special_id.append({p[2]: [p[4],"",False]})
-    print "%s means %s" % (p[2],p[4][0])
-    if p[4] in p.parser.loopable_cats:   #loop over another index
-        loop_index =  "__pi%d" % len(p.parser.special_id)
-        p.parser.special_id[-1][p[2]][1] = loop_index
-        p.parser.special_id[-1][p[2]][2] = True 
-        p[0] += "\n" + p.parser.indent + "for %s in range(len(ciffile[__pycitems[0]])):" % loop_index
-        p.parser.indent += 4*" "
+    if p[4] in p.parser.loopable_cats:
+        tb_length = len(p.parser.withtable)  #generate unique id
+        p.parser.withtable.update({p[4]:"__pi%d" % tb_length})
+        p.parser.special_id[-1][p[2]][1] = p.parser.withtable[p[4]]
+    print "%s means %s" % (p[2],p.parser.special_id[-1][p[2]][0])
+    if p.parser.special_id[-1][p[2]][1]:
+        print "%s looped using %s" % (p[2],p.parser.special_id[-1][p[2]][1])
     p[0] +="\n" + p.parser.indent + "try:"
     
 
@@ -486,13 +505,18 @@ def p_error(p):
 # data, and for looped data this should always be "__dreltarget".
 # See the test file for ways of using this
 #
-def make_func(parser_string,funcname,returnname):
-    preamble = "def %s(self,ciffile,__pi=None):\n    import StarFile\n" % funcname
-    postamble = ""
-    if returnname:
-        postamble = "    return %s" % returnname
+# The parser data is a two-element list with the first element the text of
+# the function, and the second element a table of looped values
+
+def make_func(parser_data,funcname,returnname):
+    func_text = parser_data[0]
+    with_indices = parser_data[1].values()
+    w_i_list = ",".join(with_indices)
+    preamble = "def %s(self,ciffile,%s):\n    import StarFile\n" % (funcname,w_i_list)
+    if not returnname: returnname = "__dreltarget"
+    postamble = "    return %s" % returnname
     # now indent the string
-    noindent = parser_string.splitlines()
+    noindent = func_text.splitlines()
     indented = map(lambda a:"    " + a+"\n",noindent)  
     final = preamble + "".join(indented) + postamble
     return final
@@ -502,3 +526,4 @@ parser.indent = ""
 parser.special_id=[]
 parser.looped_value = False    #Determines with statement construction 
 parser.target_name = None
+parser.withtable = {}          #Table of 'with' packet access info
