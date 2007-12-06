@@ -562,8 +562,8 @@ def __init__(self,dic):
     elif self.diclang == "DDLm":
         self.ddlm_normalise()
         self.ddlm_parse_valid() #extract validity information from data block
-        self.transform_drel()   #parse the drel functions
         self.ddlm_import()
+        self.transform_drel()   #parse the drel functions
     self.add_category_info()
     # initialise type information
     self.typedic={}
@@ -1001,7 +1001,7 @@ dREL syntax.
 def names_in_cat(self,cat):
     nameblocks = filter(lambda a:self[a].get("_name.category_id","").lower()
                          ==cat.lower(),self.keys())
-    return map(lambda a:self[a]["_name.object_id"],nameblocks)
+    return map(lambda a:"_" + self[a]["_name.category_id"]+"." + self[a]["_name.object_id"],nameblocks)
     
 @ This method was added for DDLm support.  We are passed a category and a
 value, and must find a packet which has a matching key.  We use the keyname
@@ -1046,7 +1046,7 @@ def ddlm_import(self):
                 print 'Improper import directive at top level in %s: ignored' % self.master.key
                 next
             # resolve URI  
-            full_uri = resolve_path(file_loc)
+            full_uri = self.resolve_path(file_loc)
             import_from = CifDic(urllib.urlopen(full_uri))  #this will recurse internal imports
             # and now merge these definitions
             if scope == "Dic":
@@ -1093,6 +1093,7 @@ it or die a horrible death.
 def get_one_cat(self,source_dict,source_cat,on_dupl,on_miss):
     ext_cat = source_dict.get(source_cat,"")
     this_cat = self.get(source_cat,"")
+    print "Adding category %s" % source_cat
     if not ext_cat:
         if on_miss == "Ignore":
            pass
@@ -1100,7 +1101,7 @@ def get_one_cat(self,source_dict,source_cat,on_dupl,on_miss):
            raise CifError, "Missing category %s" % source_cat 
     else:
         all_ext_defns = source_dict.keys()
-        cat_list = filter(lambda a:source_dict[a]["_category.id"]==source_cat,
+        cat_list = filter(lambda a:source_dict[a].get("_name.category.id","")==source_cat,
                            all_ext_defns) 
         if this_cat:     # The category block itself is duplicated
             if on_dupl=="Ignore":
@@ -1855,51 +1856,76 @@ it during initialisation to transform all methods to python expressions,
 and then the [[derive_item]] method will use this to try to derive the
 expression.
 
+In order to correctly treat loops over items within drel, we make a list
+of all listable categories, and a list of all items which can be made into
+an arbitrary length list.  This latter method is very crude, as it
+simply searches for an asterisk in the dimension method.
+
+The parser will return a 2-element list [function text, looped categories].
+We capture the last element in order to properly loop when the function is
+called later.
+
+We cannot restrict ourselves to local values as the transformed functions
+are called elsewhere.  We could include assignments to these variable names
+within the generated functions.
+
 <<Transform drel to python>>=
 def transform_drel(self):
     import drel_yacc
     parser = drel_yacc.parser
+    parser.loopable_cats = filter(lambda a:self[a]["_definition.class"]=="List",self.keys())
+    parser.loopable_cats = map(lambda a:self[a]["_definition.id"],parser.loopable_cats) 
+    parser.listable_items = filter(lambda a:"*" in self[a].get("_type.dimension",""),self.keys()) 
     derivable_list = filter(lambda a:self[a].has_key("_method.expression"),self.keys())
     for derivable in derivable_list:
+        parser.target_id = derivable
+        print "Target id: %s" % derivable
         drel_expr = self[derivable]["_method.expression"]
         if isinstance(drel_expr,ListType):
            drel_expr = drel_expr[0] 
         print "Transforming %s" % drel_expr
-        # Temporarily commented out
-        # pyth_meth = parser.parse(drel_expr)
-        # self[derivable]["_method.expression"] = drel_yacc.make_func(pyth_meth,"pyfunc") 
-        # print "Final result:\n " + self[derivable]["_method.expression"]
+        # List categories are treated differently...
+        pyth_meth = parser.parse(drel_expr)
+        self[derivable]["_loop_categories"] = pyth_meth[1].keys()
+        self[derivable]["_method.expression"] = drel_yacc.make_func(pyth_meth,"pyfunc",None) 
+        print "Final result:\n " + self[derivable]["_method.expression"]
 
 @ This is the corresponding method to call to find out the item information,
 assuming that the above method was called during initialisation.  For single-valued items, we
 call the method directly.  For non-single-valued items, we need to call repeatedly to build up
-a complete packet.
+a complete packet.  We make use of our list of listable categories etc.
+
+If we are building a List rather than a loop, we simply assign the value.  In
+a later incarnation, this software should conduct a conformance check on values
+which are thus inserted.
 
 <<Derive item information>>=
-def derive_item(self,key,cifdata):
+def derive_item(self,key,cifdata,store_value = False):
     the_func = self[key]["_method.expression"]   #raise a KeyError now if necessary
     # read it in
     the_category = self[key]["_name.category_id"]
     the_type = self[the_category]["_definition.class"]
     exec the_func in locals()         #puts "pyfunc" in scope
-    if not (the_type=="List"):
-        return pyfunc(self,cifdata,None)
-    # get any relevant loops
-    pack_index = 0
-    packlist = []
-    try:
-        while True:
-           packlist.append(pyfunc(self,cifdata,"__drelpacket",__pi=pack_index))
-           pack_index += 1
-    except IndexError:
-        pass
+    if self[key]["_loop_categories"]: 
+       loop_category = self[key]["_loop_categories"][0]
+       loop_names = self.names_in_cat(loop_category)
+       no_of_packs = len(cifdata[loop_names[0]])
+       packlist = []
+       for pack_index in range(no_of_packs):
+          packlist.append(pyfunc(self,cifdata,pack_index))
     # now try to insert the new information into the right place
     # find if items of this category already appear...
-    cat_names = filter(lambda a:self[a].get["_name.category_id",None]==the_category,self.keys())
-    has_cat_names = filter(lambda a:cifdata.has_key(a),cat_names)
-    if len(has_cat_names)>0:
-        target_loop = cifdata.GetLoop(has_cat_names[0])
-        target_loop[key] = packlist      #lengths must match or else!!
+       if store_value: 
+           cat_names = filter(lambda a:self[a].get["_name.category_id",None]==the_category,self.keys())
+           has_cat_names = filter(lambda a:cifdata.has_key(a),cat_names)
+           if len(has_cat_names)>0:
+              target_loop = cifdata.GetLoop(has_cat_names[0])
+              target_loop[key] = packlist      #lengths must match or else!!
+           else:
+              cifdata[key] = packlist  
+       return packlist
+    else:              # No looped categories
+       return pyfunc(self,cifdata)
 
 @ This function analyses a DDL1-type range expression,  returning
 a maximum and minimum value.  If the number
