@@ -92,12 +92,16 @@ class MoreComplexTestCase(unittest.TestCase):
        #create our lexer and parser
        self.lexer = drel_lex.lexer
        self.parser = drel_yacc.parser
+       self.parser.withtable = {}
+       self.parser.special_id = []
+       self.parser.target_id = None
+       self.parser.indent = ""
 
    def testassignment(self):
        """Test that an assignment works"""
-       teststrg = "jk = 11" 
+       teststrg = "n  = 11" 
        res = self.parser.parse(teststrg,lexer=self.lexer)
-       realfunc = drel_yacc.make_func(res,"myfunc","jk")
+       realfunc = drel_yacc.make_func(res,"myfunc","n")
        exec realfunc
        self.failUnless(myfunc(self,self)==11)
     
@@ -120,6 +124,26 @@ class MoreComplexTestCase(unittest.TestCase):
        self.failUnless(realres==125)
        print res
 
+   def test_do_stmt_2(self):
+       """Test how another do statement comes out"""
+       teststrg = """
+       pp = 0
+       geom_hbond = [(1,2),(2,3),(3,4)]
+       do i= 0,1 {
+          l,s = geom_hbond [i] 
+          pp += s
+          }
+       """
+       self.parser.special_id = [{'axy':1}]
+       res = self.parser.parse(teststrg + "\n",debug=True,lexer=self.lexer)
+       realfunc = drel_yacc.make_func(res,"myfunc","pp")
+       exec realfunc
+       realres = myfunc(self,self)
+       # Do statements are inclusive
+       print "Do statement returns %d" % realres
+       self.failUnless(realres==5)
+       print res
+
    def test_nested_stmt(self):
        """Test how a nested do statement prints"""
        teststrg = """
@@ -139,6 +163,44 @@ class MoreComplexTestCase(unittest.TestCase):
        self.failUnless(othertotal==55)
        self.failUnless(total==110)
 
+   def test_if_stmt(self):
+       """test parsing of if statement"""
+       teststrg = """
+       dmin = 5.0
+       d1 = 4.0
+       rad1 = 2.2
+       radius_bond = 2.0
+       If (d1<dmin or d1>(rad1+radius_bond)) b = 5 
+       """
+       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       realfunc = drel_yacc.make_func(res,"myfunc","b")
+       exec realfunc
+       b = myfunc(self,self)
+       print "if returns %d" %  b 
+       self.failUnless(b==5)
+
+# We don't test the return value until we have a way to actually access it!
+   def test_fancy_assign(self):
+       """Test fancy assignment"""
+       teststrg = """
+       a = [2,3,4] 
+       b = 3
+       c= 4
+       do jkl = 1,5,1 {
+          geom_angle( .id = Tuple(a,b,c),
+                      .distances = Tuple(b,c),
+                      .value = jkl)
+                      }
+       """
+       self.parser.target_id = "geom_angle"
+       res = self.parser.parse(teststrg + "\n",debug=True,lexer=self.lexer)
+       realfunc = drel_yacc.make_func(res,"myfunc",None,cat_meth = True)
+       print "Fancy assign: %s" % res[0]
+       exec realfunc
+       b = myfunc(self,self)
+       print "Geom_angle.angle = %s" % b['geom_angle.value']
+       self.failUnless(b['geom_angle.value']==[1,2,3,4])
+
 class WithDictTestCase(unittest.TestCase):
    """Now test flow control which requires a dictionary present"""
    def setUp(self):
@@ -152,47 +214,68 @@ class WithDictTestCase(unittest.TestCase):
        self.namespace = self.testblock.keys()
        self.namespace = dict(map(None,self.namespace,self.namespace))
        self.parser.special_id = [self.namespace]
+       self.parser.withtable = {}
+       self.parser.target_id = None
+       self.parser.indent = ""
 
    def test_with_stmt(self):
-       """Test what comes out of a simple flow statement"""
+       """Test what comes out of a simple flow statement, including
+          multiple with statements"""
        teststrg = """
+       with p as description
        with q as dictionary {
            x = 22
            j = 25
            jj = q.date
+           px = p.text
            _dictionary.date = "2007-04-01"
            }"""
        self.parser.loopable_cats = []   #category dictionary is not looped
+       self.parser.target_id = '_dictionary.date'
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = drel_yacc.make_func(res,"myfunc",None)
        print "With statement -> \n" + realfunc
        exec realfunc
-       myfunc(self.testblock,self.testblock)
-       print 'date now %s' % self.testblock["_dictionary.date"]
-       self.failUnless(self.testblock["_dictionary.date"]=="2007-04-01")
+       newdate = myfunc(self.testdic,self.testblock)
+       print 'date now %s' % newdate 
+       self.failUnless(newdate == "2007-04-01")
 
+   def test_loop_statement(self):
+       """Test proper processing of loop statements"""
+       teststrg = """
+       n = 0
+       loop p as dictionary_audit n += 1
+           _symmetry.ops = n 
+            """
+       self.parser.loopable_cats = ['dictionary_audit']   #category dictionary is not looped
+       self.parser.target_id = '_symmetry.ops'
+       res = self.parser.parse(teststrg+"\n",lexer=self.lexer,debug=1)
+       realfunc = drel_yacc.make_func(res,"myfunc",None)
+       print "Loop statement -> \n" + realfunc
+       exec realfunc
+       symops = myfunc(self.testdic,self.testblock)
+       print 'symops now %d' % symops 
+       self.failUnless(symops == 81)
+       
    def test_functions(self):
        """Test that functions are converted correctly"""
        struct_testdic = CifFile.CifFile("../pycifrw-ddlm/DDLm_20071010/cif_core.dic")
        struct_testblock = struct_testdic["CIF_CORE"]
        self.parser.loopable_cats = ["import"]   #category import is looped
-       self.parser.target_name = "_import_list.id"
+       self.parser.target_id = "_import_list.id"
+       self.parser.withtable = {}
        teststrg = """
        with i as import 
            _import_list.id = List([i.scope, i.block, i.file, i.if_dupl, i.if_miss])
        """
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = drel_yacc.make_func(res,"myfunc","__dreltarget")
+       realfunc = drel_yacc.make_func(res,"myfunc",None)
        print "With statement -> \n" + realfunc
-       print "Before execution:\n"
-       print struct_testblock.printsection()
        exec realfunc
-       retval = myfunc(self.testdic,struct_testblock)
-       # struct_testblock["_import_list.id"] = ret_list
-       print "After execution"
-       print struct_testblock.printsection()
-       self.failUnless(struct_testblock["_import_list.id"][3] == StarFile.StarList(["dic","CORE_MODEL","core_model.dic","exit","exit"]))
+       retval = myfunc(self.testdic,struct_testblock,3)
+       self.failUnless(retval == StarFile.StarList(["dic","CORE_MODEL","core_model.dic","exit","exit"]))
        
+
 
 if __name__=='__main__':
     unittest.main()

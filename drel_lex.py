@@ -37,7 +37,8 @@ tokens = (
     'IF',
     'SWITCH',
     'CASE',
-    'DEFAULT'
+    'DEFAULT',
+    'AUGOP'
      )
 
 literals = '+*-/;()[],:^<>{}=.'
@@ -52,6 +53,10 @@ t_NEQ = r'!='
 t_GTE = r'>='
 t_LTE = r'<='
 t_ELLIPSIS = r'\.\.\.'
+
+def t_AUGOP(t):
+    r'(\+\+=)|(\+=)|(-=)|(\*=)|(/=)'
+    return t
 
 # Do the reals before the integers, otherwise the integer will
 # match the first part of the real
@@ -104,7 +109,7 @@ def t_INTEGER(t):
     return t
 
 def t_STRPREFIX(t):
-    r'r|u|R|U|ur|UR|Ur|uR'
+    r'r(?=["\'])|u(?=["\'])|R(?=["\'])|U(?=["\'])|ur(?=["\'])|UR(?=["\'])|Ur(?=["\'])|uR(?=["\'])'
     return t
 
 # try longstring first as otherwise the '' will match a shortstring
@@ -123,16 +128,23 @@ reserved = {
     'in': 'IN',
     'not': 'NOT',
     'do': 'DO',
+    'Do': 'DO',
     'for': 'FOR',
+    'For': 'FOR',
     'loop': 'LOOP',
+    'Loop': 'LOOP',
     'as': 'AS',
     'with': 'WITH',
     'With': 'WITH',
     'where': 'WHERE',
+    'Where': 'WHERE',
     'else': 'ELSE',
+    'Else': 'ELSE',
     'break': 'BREAK',
     'next': 'NEXT',
+    'Next': 'NEXT',
     'if': 'IF',
+    'If': 'IF',
     'switch': 'SWITCH',
     'case' : 'CASE',
     'default' : 'DEFAULT'

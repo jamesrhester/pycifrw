@@ -40,9 +40,12 @@ def p_stmt_list(p):
 def p_simple_stmt(p):
     '''simple_stmt : expression_list
                     | assignment_stmt
+                    | augmented_assignment_stmt
+                    | fancy_drel_assignment_stmt
                     | BREAK
                     | NEXT'''
     p[0] = p[1]
+    print "Simple statement: " + p[0]
 
 # note do not accept trailing commas
 
@@ -56,11 +59,32 @@ def p_expression_list(p):
         print "constructing expr list: %s" % `p[0]`
 
 
+# Simplified from the python 2.5 version due to apparent conflict with
+# the other type of IF expression...
+#
 def p_expression(p):
-    '''expression : or_test 
-                   | or_test IF or_test ELSE or_test'''
+    '''expression : or_test '''
     if len(p) == 2: p[0] = p[1]
-    else: p[0] = " ".join((p[1],"if",p[3],"else", p[5]))
+    # else: p[0] = " ".join((p[1],"if",p[3],"else", p[5]))
+
+def p_target(p):
+    '''target : ID
+              | item_tag 
+              | "(" target_list ")"
+              | "[" target_list "]"
+              | attributeref
+              | subscription
+              | slicing  '''
+    # search our enclosing blocks for special ids
+    newid = 0
+    # print 'Special ids: %s' % `p.parser.special_id`
+    for idtable in p.parser.special_id:
+        newid = idtable.get(p[1],0)
+        if newid: break
+    if newid: 
+        p[0] = newid
+    else: 
+        p[0] = " ".join(p[1:]) 
 
 def p_or_test(p):
     ''' or_test : and_test
@@ -96,7 +120,7 @@ def p_comp_operator(p):
                      | ISEQUAL
                      | IN
                      | NOT IN '''
-    if len(p)==2:
+    if len(p)==3:
         p[0] = " not in "
     else: p[0] = p[1]
 
@@ -195,7 +219,7 @@ def p_parenth_form(p):
     if len(p) == 3: p[0] = "( )"
     else:
         p[0] = " ".join(p[1:])
-    print 'Parens: %s' % `p[0]`
+    # print 'Parens: %s' % `p[0]`
 
 def p_list_display(p):
     ''' list_display : "[" listmaker "]"
@@ -211,7 +235,7 @@ def p_listmaker(p):
                    | expression list_for '''
 
     p[0] = " ".join(p[1:])   #no need to rewrite for dREL->python 
-    print 'listmaker: %s' % `p[0]`
+    # print 'listmaker: %s' % `p[0]`
 
 def p_listmaker2(p):
     '''listmaker2 : "," expression 
@@ -348,6 +372,43 @@ def p_func_arg(p):
                 | ID ":" list_display ''' 
     p[0] = p[1]   #ignore list structure for now
                  
+def p_augmented_assignment_stmt(p):
+    '''augmented_assignment_stmt : target AUGOP expression_list'''
+    if p[2] == "++=":          #append to list
+        p[0] = p[1] + "+= [" + p[3] + "]"
+    p[0] = " ".join(p[1:])
+
+# We simultaneously create multiple results for a single category.  In 
+# this case __dreltarget is a dictionary with keys for each category
+# entry.
+
+def p_fancy_drel_assignment_stmt(p):
+    '''fancy_drel_assignment_stmt : target "(" dotlist ")" '''
+    del p.parser.fancy_drel_id 
+    p[0] = p[3]
+    print "Fancy assignment -> " + p[0]
+
+# Something made up specially for drel.  We accumulate results for a series of
+# items in a dictionary which is returned
+
+def p_dotlist(p):
+    '''dotlist : "." ID "=" expression 
+               | dotlist "," "." ID "=" expression'''
+    if len(p) == 5:   #first element of dotlist, element -2 is category id
+        p.parser.fancy_drel_id = p[-2]
+        if p[-2] == p.parser.target_id:      #we will return the results
+            realid = p[-2]+"."+p[2]
+            p[0] = "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (realid,realid,p[4])
+        else:
+            p[0] = p[-2] + "".join(p[1:]) + "\n"
+        print 'Fancy id is ' + `p[-2]`
+    else:
+        if p.parser.fancy_drel_id == p.parser.target_id:
+            realid = p.parser.fancy_drel_id + "." + p[4]
+            p[0] = p[1] + p.parser.indent + "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (realid,realid,p[6])
+        else:
+            p[0] =  p[1] + p.parser.indent + p.parser.fancy_drel_id + "".join(p[3:]) + "\n"
+
 def p_assignment_stmt(p):
     '''assignment_stmt : target_list "=" expression_list'''
     p[0] = " ".join(p[1:])
@@ -356,25 +417,6 @@ def p_target_list(p):
     '''target_list : target 
                    | target_list "," target '''
     p[0] = " ".join(p[1:]) 
-
-def p_target(p):
-    '''target : ID
-              | item_tag 
-              | "(" target_list ")"
-              | "[" target_list "]"
-              | attributeref
-              | subscription
-              | slicing  '''
-    # search our enclosing blocks for special ids
-    newid = 0
-    # print 'Special ids: %s' % `p.parser.special_id`
-    for idtable in p.parser.special_id:
-        newid = idtable.get(p[1],0)
-        if newid: break
-    if newid: 
-        p[0] = newid
-    else: 
-        p[0] = " ".join(p[1:]) 
 
 # now for the compound statements
 
@@ -387,15 +429,24 @@ def p_compound_stmt(p):
                      | where_stmt
                      | switch_stmt '''
     p[0] = p[1]
+    print "Compound statement: " + p[0]
 
 def p_if_stmt(p):
     '''if_stmt : IF expression suite
-               | if_stmt ELSE if_stmt
                | if_stmt ELSE suite '''
-    pass 
+    if p[1].lower() == "if":    #to avoid capitalisation issues
+        p[0] = "if "
+    else:
+        p[0] = p[1]
+    p[0]  += p[2] + ":" + p[3]
+    print "If statement: " + p[0]
+
+# Note the divergence from Python here: we allow compound
+# statements to follow without a separate block (like C etc.)
 
 def p_suite(p):
     '''suite : simple_stmt
+             | compound_stmt
              | open_brace statement_block close_brace '''
     if len(p) == 2: p[0] =  p[1]
     else:
@@ -422,17 +473,35 @@ def p_for_stmt(p):
     '''for_stmt : FOR target_list IN expression_list suite'''
     pass
 
+# We split the loop statement into parts so that we can capture the
+# ID before the suite is processed.  Note that we should record that
+# we have an extra indent due to the loop test and remove it at the
+# end, but we haven't done this yet.
+
 def p_loop_stmt(p):
-    '''loop_stmt : LOOP ID AS target_list suite'''
+    '''loop_stmt : loop_head suite'''
+    p[0] = p[1] + p[2]
+
+def p_loop_head(p):
+    '''loop_head : LOOP ID AS ID 
+                 | LOOP ID AS ID ":" ID
+                 | LOOP ID AS ID ":" ID comp_operator ID'''
     p[0] = "__pycitems = self.names_in_cat('%s')" % p[4]
-    p.parser.special_id.append({p[2]: [p[4],"",False]})
-    print "%s means %s" % (p[2],p[4][0])
+    p.parser.special_id[-1].update({p[2]: [p[4],"",False]})
+    print "%s means %s" % (p[2],p.parser.special_id[-1][p[2]][0])
     if p[4] in p.parser.loopable_cats:   #loop over another index
-        loop_index =  "__pi%d" % len(p.parser.special_id)
+        if len(p)>5:  #are provided with index
+            loop_index = p[6]
+        else:
+            loop_index =  "__pi%d" % len(p.parser.special_id[-1])
         p.parser.special_id[-1][p[2]][1] = loop_index
         p.parser.special_id[-1][p[2]][2] = True 
         p[0] += "\n" + p.parser.indent + "for %s in range(len(ciffile[__pycitems[0]])):" % loop_index
+    if len(p)==9:             # do an "if" test before proceeding
+        iftest = "if " + "".join(p[6:9]) + ":"
+        # get indentation right
         p.parser.indent += 4*" "
+        p[0] += "\n" + p.parser.indent + iftest
 
 def p_do_stmt(p):
     '''do_stmt : do_stmt_head suite'''
@@ -444,6 +513,7 @@ def p_do_stmt(p):
 def p_do_stmt_head(p):
     '''do_stmt_head : DO ID "=" expression "," expression
                     | DO ID "=" expression "," expression "," expression '''
+    print "Do stmt: " + `p[1:]`
     incr = "1"
     if len(p)==9: 
        incr = p[8]
@@ -452,13 +522,14 @@ def p_do_stmt_head(p):
        rangeend = p[6]+"+%s" % incr     # because 1/2 = 0
     p[0] = "for " + p[2] + " in range(" + p[4] + "," + rangeend + "," + incr + "):"
 
+# Statement blocks after with statements do not require indenting so we
+# undo our indentation
 def p_with_stmt(p):
     '''with_stmt : with_head suite'''
-    p[0] = p[1] + p[2] + "\n" + p.parser.indent + "except IndexError:\n" + p.parser.indent + "    " + "print 'Index Error in with statement'\n"
-    p[0] = p[0] + p.parser.indent + "    " + "raise IndexError\n"
-    outgoing = p.parser.special_id.pop()
-    outindents = filter(lambda a:a[2],outgoing.values())
-    p.parser.indent = p.parser.indent[:len(p.parser.indent)-4*len(outindents)]
+    p[0] = p[2] 
+    #outgoing = p.parser.special_id.pop()
+    #outindents = filter(lambda a:a[2],outgoing.values())
+    #p.parser.indent = p.parser.indent[:len(p.parser.indent)-4*len(outindents)]
 
 # Done here to capture the id before processing the suite
 # A with statement doesn't need any indenting...
@@ -467,9 +538,12 @@ def p_with_stmt(p):
 # with statements, although that is not in the standard.  We could
 # probably assume a single packet variable per with statement and
 # simplify the special_id structure a bit
+
+# Note that we allow multiple with statements grouped together (as long
+# as nothing else separates them)
 def p_with_head(p):
     '''with_head : WITH ID AS ID'''
-    p[0] = "__pycitems = self.names_in_cat('%s')" % p[4]
+    # p[0] = "__pycitems = self.names_in_cat('%s')" % p[4]
     p.parser.special_id.append({p[2]: [p[4],"",False]})
     if p[4] in p.parser.loopable_cats:
         tb_length = len(p.parser.withtable)  #generate unique id
@@ -478,8 +552,6 @@ def p_with_head(p):
     print "%s means %s" % (p[2],p.parser.special_id[-1][p[2]][0])
     if p.parser.special_id[-1][p[2]][1]:
         print "%s looped using %s" % (p[2],p.parser.special_id[-1][p[2]][1])
-    p[0] +="\n" + p.parser.indent + "try:"
-    
 
 def p_where_stmt(p):
     '''where_stmt : WHERE expression suite ELSE suite'''
@@ -508,16 +580,25 @@ def p_error(p):
 # The parser data is a two-element list with the first element the text of
 # the function, and the second element a table of looped values
 
-def make_func(parser_data,funcname,returnname):
-    func_text = parser_data[0]
-    with_indices = parser_data[1].values()
-    w_i_list = ",".join(with_indices)
-    preamble = "def %s(self,ciffile,%s):\n    import StarFile\n" % (funcname,w_i_list)
+def make_func(parser_data,funcname,returnname,cat_meth = False):
+    import re
     if not returnname: returnname = "__dreltarget"
-    postamble = "    return %s" % returnname
+    func_text = parser_data[0]
     # now indent the string
     noindent = func_text.splitlines()
+    # get the minimum indent and remove empty lines
+    noindent = filter(lambda a:a,noindent)
+    no_spaces = map(lambda a:re.match(r' *',a),noindent)
+    no_spaces = map(lambda a:a.end(),no_spaces)
+    min_spaces = min(no_spaces)+4   # because we add 4 ourselves to everything
+    with_indices = parser_data[1].values()
+    w_i_list = ",".join(with_indices)
+    preamble = "def %s(self,ciffile,%s):\n" % (funcname,w_i_list)
+    preamble += min_spaces*" " + "import StarFile\n"
+    if cat_meth:
+        preamble += min_spaces*" " + "%s = {}\n" % returnname
     indented = map(lambda a:"    " + a+"\n",noindent)  
+    postamble = " "*min_spaces + "return %s" % returnname
     final = preamble + "".join(indented) + postamble
     return final
 
@@ -525,5 +606,5 @@ parser = yacc.yacc()
 parser.indent = ""
 parser.special_id=[]
 parser.looped_value = False    #Determines with statement construction 
-parser.target_name = None
+parser.target_id = None
 parser.withtable = {}          #Table of 'with' packet access info
