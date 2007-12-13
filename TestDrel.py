@@ -201,6 +201,19 @@ class MoreComplexTestCase(unittest.TestCase):
        print "Geom_angle.angle = %s" % b['geom_angle.value']
        self.failUnless(b['geom_angle.value']==[1,2,3,4])
 
+   def test_tables(self):
+       """Test that tables are parsed correctly"""
+       teststrg = """
+       jk = Table()
+       jk['bx'] = 25
+       """
+       res = self.parser.parse(teststrg+"\n",debug=True,lexer=self.lexer)
+       realfunc = drel_yacc.make_func(res,"myfunc","jk")
+       print "Table: %s" % `res[0]`
+       exec realfunc
+       b = myfunc(self,self)
+       self.failUnless(b['bx']==25)
+       
 class WithDictTestCase(unittest.TestCase):
    """Now test flow control which requires a dictionary present"""
    def setUp(self):

@@ -267,16 +267,24 @@ def p_list_if(p):
 # We have to intercept attribute references which relate to
 # aliased category variables, as well as to catch literal
 # item names containing a period.
+#
+# Note that we need to catch tags of the form 't.12', which
+# our lexer will interpret as ID REAL.  We therefore also
+# accept t.12(3), which is not allowed, but we don't bother
+# implementing this here.
+#
+# Drel has no attribute reference apart from the special form,
+# so we can use ID instead of 'primary' before the "."
 
 def p_attributeref(p):
-    '''attributeref : primary "." ID ''' 
+    '''attributeref : ID attribute_tag '''
     # intercept special loop variables
     # print `p.parser.special_id`
     for idtable in p.parser.special_id:
         newid = idtable.get(p[1],0)
         if newid: break
     if newid: 
-        p[0] = "ciffile["+'"_'+newid[0]+"."+p[3]+'"]' 
+        p[0] = "ciffile["+'"_'+newid[0]+p[2]+'"]' 
         print "In ID processing: %s\n" % `newid`
         # a with statement may require an index
         if newid[1]:
@@ -288,12 +296,18 @@ def p_attributeref(p):
     else:
         p[0] = " ".join(p[1:]) 
 
+def p_attribute_tag(p):
+    '''attribute_tag : "." ID 
+                     | REAL '''
+    p[0] = "".join(p[1:])
+
 # A subscription becomes a key lookup if the primary is a 
 # pre-defined 'category variable'
 def p_subscription(p):
     '''subscription : primary "[" expression_list "]" '''
     # intercept special loop variables
     # print `p.parser.special_id`
+    newid = None
     for idtable in p.parser.special_id:
         newid = idtable.get(p[1],0)
         if newid: break
@@ -352,7 +366,7 @@ def p_call(p):
     '''call : primary "(" ")"
             | primary "(" argument_list ")" '''
     # we translate built-in functions only at this stage
-    builtins = {"list":"StarFile.StarList","tuple":"StarFile.StarTuple"}
+    builtins = {"list":"StarFile.StarList","tuple":"StarFile.StarTuple","table":"dict"}
     funcname = builtins.get(p[1].lower(),p[1])
     p[0] = funcname + " ".join(p[2:])
     print "Function call: %s" % p[0]
@@ -471,7 +485,7 @@ def p_statement_block(p):
 
 def p_for_stmt(p):
     '''for_stmt : FOR target_list IN expression_list suite'''
-    pass
+    p[0] = "for " + p[2] + "in" + p[4] + ":\n" + p[5]
 
 # We split the loop statement into parts so that we can capture the
 # ID before the suite is processed.  Note that we should record that
