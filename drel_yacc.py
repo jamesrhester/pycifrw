@@ -37,9 +37,13 @@ def p_stmt_list(p):
     if len(p) == 2: p[0] = p[1]
     else: p[0] = ";".join((p[1],p[3]))
 
+# differs from Python in that an expression list is not
+# allowed.  Thus no procedure calls, for example.
+# This is done to avoid a reduce/reduce conflict for
+# identifiers (start of expression? start of target?)
+
 def p_simple_stmt(p):
-    '''simple_stmt : expression_list
-                    | assignment_stmt
+    '''simple_stmt :  assignment_stmt
                     | augmented_assignment_stmt
                     | fancy_drel_assignment_stmt
                     | BREAK
@@ -67,14 +71,13 @@ def p_expression(p):
     if len(p) == 2: p[0] = p[1]
     # else: p[0] = " ".join((p[1],"if",p[3],"else", p[5]))
 
+# This is too generous, as it allows a function call on the
+# LHS to be assigned to.
+
 def p_target(p):
-    '''target : ID
-              | item_tag 
+    '''target : primary 
               | "(" target_list ")"
-              | "[" target_list "]"
-              | attributeref
-              | subscription
-              | slicing  '''
+              | "[" target_list "]" '''
     # search our enclosing blocks for special ids
     newid = 0
     # print 'Special ids: %s' % `p.parser.special_id`
@@ -271,7 +274,7 @@ def p_list_if(p):
 # Note that we need to catch tags of the form 't.12', which
 # our lexer will interpret as ID REAL.  We therefore also
 # accept t.12(3), which is not allowed, but we don't bother
-# implementing this here.
+# trying to catch this error here.
 #
 # Drel has no attribute reference apart from the special form,
 # so we can use ID instead of 'primary' before the "."
@@ -397,7 +400,7 @@ def p_augmented_assignment_stmt(p):
 # entry.
 
 def p_fancy_drel_assignment_stmt(p):
-    '''fancy_drel_assignment_stmt : target "(" dotlist ")" '''
+    '''fancy_drel_assignment_stmt : primary "(" dotlist ")" '''
     del p.parser.fancy_drel_id 
     p[0] = p[3]
     print "Fancy assignment -> " + p[0]

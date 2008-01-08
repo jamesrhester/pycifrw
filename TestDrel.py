@@ -15,77 +15,108 @@ class SimpleStatementTestCase(unittest.TestCase):
         self.lexer = drel_lex.lexer
         self.parser = drel_yacc.parser
 
+# as we disallow simple expressions on a separate line to avoid a 
+# reduce/reduce conflict for identifiers, we need at least an 
+# assignment statement
+
     def testrealnum(self):
         """test parsing of real numbers"""
-        [res,ww] = self.parser.parse('5.45\n',lexer=self.lexer)
-        self.failUnless(res=='5.45')
-        [res,ww] = self.parser.parse('.45e-24\n',lexer=self.lexer)
-        self.failUnless(res=='.45e-24')
+        res = self.parser.parse('a=5.45\n',debug=True,lexer=self.lexer)
+        realfunc = drel_yacc.make_func(res,"myfunc","a")
+        exec realfunc
+        self.failUnless(myfunc(self,self)==5.45)
+        res = self.parser.parse('a=.45e-24\n',debug=True,lexer=self.lexer)
+        realfunc = drel_yacc.make_func(res,"myfunc","a")
+        exec realfunc
+        self.failUnless(myfunc(self,self) ==.45e-24)
 
     def testinteger(self):
         """test parsing an integer"""
-        [resd,ww] = self.parser.parse('1230\n',lexer=self.lexer)
-        [resx,ww] = self.parser.parse('0x4D\n',lexer=self.lexer)
-        [resb,ww] = self.parser.parse('0B0101\n',lexer=self.lexer)
-        [reso,ww] = self.parser.parse('0o731\n',lexer=self.lexer)
-        self.failUnless(resd=='1230')
-        self.failUnless(resx=='77')
-        self.failUnless(resb=='5')
-        self.failUnless(reso=='473')
+        resm = [0,0,0,0]
+        checkm = [1230,77,5,473]
+        resm[0] = self.parser.parse('a = 1230\n',lexer=self.lexer)
+        resm[1] = self.parser.parse('a = 0x4D\n',lexer=self.lexer)
+        resm[2] = self.parser.parse('a = 0B0101\n',lexer=self.lexer)
+        resm[3] = self.parser.parse('a = 0o731\n',lexer=self.lexer)
+        for res,check in zip(resm,checkm):
+            realfunc = drel_yacc.make_func(res,"myfunc","a")
+            exec realfunc
+            self.failUnless(myfunc(self,self) == check)
 
     def testcomplex(self):
         """test parsing a complex number"""
-        [resc,ww] = self.parser.parse('13.45j\n',lexer=self.lexer)
-        self.failUnless(resc=='13.45j')
+        resc = self.parser.parse('a = 13.45j\n',lexer=self.lexer)
+        realfunc = drel_yacc.make_func(resc,"myfunc","a")
+        exec realfunc
+        self.failUnless(myfunc(self,self) == 13.45j)
 
     def testshortstring(self):
         """test parsing a one-line string"""
-        jk = "\"my pink pony's mane\""
-        jl = "'my pink pony\"s mane'"
-        [ress,ww] = self.parser.parse(jk+"\n",lexer=self.lexer)
-        [resr,ww] = self.parser.parse(jl+"\n",lexer=self.lexer)
-        print 'short string: %s' % ress
-        self.failUnless(ress == jk)
-        self.failUnless(resr == jl)
-
+        jk = "a = \"my pink pony's mane\""
+        jl = "a = 'my pink pony\"s mane'"
+        ress = self.parser.parse(jk+"\n",lexer=self.lexer)
+        resr = self.parser.parse(jl+"\n",lexer=self.lexer)
+        realfunc = drel_yacc.make_func(ress,"myfunc","a")
+        exec realfunc
+        self.failUnless(myfunc(self,self) == jk[5:-1])
+        realfunc = drel_yacc.make_func(resr,"myfunc","a")
+        exec realfunc
+        self.failUnless(myfunc(self,self) == jl[5:-1])
+#
+# This fails due to extra indentation introduced when constructing the
+# enclosing function
+#
     def testlongstring(self):
         """test parsing multi-line strings"""
-        jk = '''"""  a  long string la la la '"'
+        jk = '''a = """  a  long string la la la '"'
                   some more
-             """'''
-        jl = """'''  a  long string la la la '"'
+          end"""'''
+        jl = """a = '''  a  long string la la la '"'
                   some more
-             '''"""
-        [ress,ww] = self.parser.parse(jk+"\n",lexer=self.lexer)
-        [resr,ww] = self.parser.parse(jl+"\n",lexer=self.lexer)
-        self.failUnless(ress == jk)
-        self.failUnless(resr == jl)
+          end'''"""
+        ress = self.parser.parse(jk+"\n",lexer=self.lexer)
+        resr = self.parser.parse(jl+"\n",lexer=self.lexer)
+        realfunc = drel_yacc.make_func(ress,"myfunc","a")
+        exec realfunc
+        self.failUnless(myfunc(self,self) == jk[7:-3])
+        realfunc = drel_yacc.make_func(resr,"myfunc","a")
+        exec realfunc
+        self.failUnless(myfunc(self,self) == jl[7:-3])
 
     def testmathexpr(self):
         """test simple maths expressions """
-        testexpr = ("5.45 + 23.6e05", "11 - 45" , "45.6 / 22.2")
-        for test in testexpr:
-            [res,ww] = self.parser.parse(test+"\n",lexer=self.lexer)
-            print `res`
-            self.failUnless(res == test)
+        testexpr = (("a = 5.45 + 23.6e05",5.45+23.6e05), 
+                    ("a = 11 - 45",11-45),
+                    ("a = 45.6 / 22.2",45.6/22.2))
+        for test,check in testexpr:
+            res = self.parser.parse(test+"\n",lexer=self.lexer)
+            realfunc = drel_yacc.make_func(res,"myfunc","a")
+            exec realfunc
+            self.failUnless(myfunc(self,self) == check)
 
     def testexprlist(self):
         """test comma-separated expressions"""
-        test = "5,6,7+8.5e2"
-        [res,ww] = self.parser.parse(test+"\n",lexer=self.lexer) 
-        self.failUnless(res == "5 , 6 , 7 + 8.5e2")
+        test = "a = 5,6,7+8.5e2"
+        res = self.parser.parse(test+"\n",lexer=self.lexer) 
+        realfunc = drel_yacc.make_func(res,"myfunc","a")
+        exec realfunc
+        self.failUnless(myfunc(self,self) ==(5,6,7+8.5e2))
 
     def testparen(self):
         """test parentheses"""
-        test = "('once', 'upon', 6,7j +.5e2)"
-        [res,ww] = self.parser.parse(test+"\n",lexer=self.lexer) 
-        self.failUnless(res == "( 'once' , 'upon' , 6 , 7j + .5e2 )")
+        test = "a = ('once', 'upon', 6,7j +.5e2)"
+        res = self.parser.parse(test+"\n",lexer=self.lexer) 
+        realfunc = drel_yacc.make_func(res,"myfunc","a")
+        exec realfunc
+        self.failUnless(myfunc(self,self) ==('once' , 'upon' , 6 , 7j + .5e2 ))
 
     def testlists(self):
         """test list parsing"""
-        test = "['once', 'upon', 6,7j +.5e2]"
-        [res,ww] = self.parser.parse(test+"\n",lexer=self.lexer) 
-        self.failUnless(res == "[ 'once' , 'upon' , 6 , 7j + .5e2 ]")
+        test = "a = ['once', 'upon', 6,7j +.5e2]"
+        res = self.parser.parse(test+"\n",lexer=self.lexer) 
+        realfunc = drel_yacc.make_func(res,"myfunc","a")
+        exec realfunc
+        self.failUnless(myfunc(self,self) ==['once' , 'upon' , 6 , 7j + .5e2 ])
 
 class MoreComplexTestCase(unittest.TestCase):
    def setUp(self):
@@ -207,6 +238,7 @@ class MoreComplexTestCase(unittest.TestCase):
        jk = Table()
        jk['bx'] = 25
        """
+       print "Table test:"
        res = self.parser.parse(teststrg+"\n",debug=True,lexer=self.lexer)
        realfunc = drel_yacc.make_func(res,"myfunc","jk")
        print "Table: %s" % `res[0]`
