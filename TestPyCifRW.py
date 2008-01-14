@@ -93,6 +93,12 @@ class BlockRWTestCase(unittest.TestCase):
         jj = self.cf.GetLoop('_a_star_list')
         self.failUnless(jj.dimension==0)
  
+    def testStarTuple(self):
+        """Test that a StarTuple is treated as a primitive item"""
+        self.cf['_a_star_tuple'] = StarFile.StarTuple(1,2,3,4)
+        jj = self.cf.GetLoop('_a_star_tuple')
+        self.failUnless(jj.dimension==0)
+       
 # Now test operations which require a preexisting block
 #
 

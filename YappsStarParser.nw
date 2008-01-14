@@ -201,7 +201,7 @@ token o_s_b: "\["
 token dat_val_nocomma_nosq: "([^\s\"#$,'_\(\{\[\]][^\s,\[\]]*)|'(('(?![\s,]))|([^\n\r\f']))*'+|\"((\"(?![\s,]))|([^\n\r\"]))*\"+"
 token dat_val_internal_sq: "\[([^\s\[\]]*)\]"
 token dat_val_nocomma_nocurl: "([^\s\"#$,'_\(\{\[\]][^\s,}]*)|'(('(?![\s,]))|([^\n\r\f']))*'+|\"((\"(?![\s,]))|([^\n\r\"]))*\"+"
-token dat_val_nocomma_nornd: "([^\s\"#$,'_\(\{\[\]][^\s,)]*)|'(('(?![\s,]))|([^\n\r\f']))*'+|\"((\"(?![\s,]))|([^\n\r\"]))*\"+"
+token dat_val_nocomma_nornd: "([^\s\"#$,'\(\{\[\]][^\s,)]*)|'(('(?![\s,]))|([^\n\r\f']))*'+|\"((\"(?![\s,]))|([^\n\r\"]))*\"+"
 token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$'_\(\{\[\]][^\s]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
 token END: '$'
 
@@ -289,7 +289,7 @@ rule input: ( ((
 
      rule square_bracket_expr: o_s_b 
                             (
-                              dat_val_nocomma_nosq       {{this_list = [stripstring(dat_val_nocomma_nosq)];print "Inside '[': this_list = %s" % this_list}}
+                              dat_val_nocomma_nosq       {{this_list = [stripstring(dat_val_nocomma_nosq)]}}
                               (
                                 dat_val_internal_sq      {{this_list[0]+=dat_val_internal_sq}}
                                 (

@@ -338,27 +338,35 @@ need to have a record of it just in case.
 The nosaves keyword means that save frames are ignored when merging.
 
 <<Merge with another block>>=
-def merge(self,new_block,mode="strict",match_att="",match_function=None,nosaves=False):
+def merge(self,new_block,mode="strict",match_att=[],match_function=None,nosaves=False):
     # deal with save frames
     if not nosaves:
         self["saves"].merge(new_block["saves"],mode,match_att=match_att,
                                                     match_function=match_function)
     if mode == 'strict':
-       for key in new_block.keys(): 
-           if self.has_key(key) and key != match_att:
+       for key in new_block.item_order: 
+           if self.has_key(key) and key not in match_att:
               raise CifError( "Identical keys %s in strict merge mode" % key)
-           elif key != match_att:           #no change otherwise
-              self[key] = new_block[key] 
+           elif key not in match_att:           #no change otherwise
+              if isinstance(key,StringType):
+                  self[key] = new_block[key] 
+              else:
+                  self.insert_loop(key)
     elif mode == 'replace':
        newkeys = new_block.keys()
-       try:
-           newkeys.remove(match_att)        #don't touch the special one
-       except ValueError:
-           pass
-       for key in newkeys: self[key] = new_block[key]
+       for ma in match_att:
+          try:
+               newkeys.remove(ma)        #don't touch the special ones
+          except ValueError:
+               pass
+       for key in new_block.item_order: 
+              if isinstance(key,StringType):
+                  self[key] = new_block[key] 
+              else:
+                  self.insert_loop(key)   #assume is a loop
     elif mode == 'overlay': 
        for attribute in new_block.keys():
-           if attribute == match_att: continue      #ignore this one
+           if attribute in match_att: continue      #ignore this one
            new_value = new_block[attribute]
            #non-looped items
            if isinstance(new_value,StringType):
@@ -544,9 +552,17 @@ Validation functions are listed so that it would be possible to
 add and remove them from the "valid set".  This behaviour has
 not yet been implemented.
 
+When loading DDLm dictionaries we may call this initialisation
+function with a dictionary to be imported as the argument.  In this
+case we don't want to do all the method derivation, as the necessary
+categories will be loaded into the calling dictionary.  So there is
+a keyword argument to stop the more advanced operations taking place.
+
 <<Initialise Cif dictionary>>=
-def __init__(self,dic):
+def __init__(self,dic,do_minimum=False):
+    self.do_minimum = do_minimum
     self.dic_as_cif = dic
+    self.template_cache = {}    #for DDLm imports
     if isinstance(dic,StringType):
         self.dic_as_cif = CifFile(dic)
     (self.dicname,self.diclang,self.defdata) = self.dic_determine(self.dic_as_cif)
@@ -561,9 +577,11 @@ def __init__(self,dic):
         self.DDL2_normalise()   #iron out some DDL2 tricky bits
     elif self.diclang == "DDLm":
         self.ddlm_normalise()
-        self.ddlm_parse_valid() #extract validity information from data block
         self.ddlm_import()
-        self.transform_drel()   #parse the drel functions
+        if not self.do_minimum:
+            print "Doing full dictionary initialisation" 
+            self.ddlm_parse_valid() #extract validity information from data block
+            self.transform_drel()   #parse the drel functions
     self.add_category_info()
     # initialise type information
     self.typedic={}
@@ -1030,9 +1048,11 @@ audit and tracking information could be stored here.
 <<Add another DDLM dictionary>>
 <<Add an external DDLM category>>
 <<Add an external DDLM category with children>>
+<<Add attributes to definitions>>
 
 <<Master import routine>>=
 def ddlm_import(self):
+    import urllib
     #first check the outermost datablocks.  Note we expect our dREL
     #machinery to create _import_list.id only if the others are available
     #For this to happen, we need the ddl.dic to have been assigned
@@ -1042,19 +1062,24 @@ def ddlm_import(self):
         pass
     else:
         for scope,dict_block,file_loc,on_dupl,on_miss in to_be_imported: 
-            if scope == 'Att' or scope == 'Sta' or scope == 'Val':
+            if scope == 'att' or scope == 'sta' or scope == 'val':
                 print 'Improper import directive at top level in %s: ignored' % self.master.key
-                next
+                continue 
             # resolve URI  
             full_uri = self.resolve_path(file_loc)
-            import_from = CifDic(urllib.urlopen(full_uri))  #this will recurse internal imports
+            dic_as_cif = CifFile(urllib.urlopen(full_uri))
+            import_from = CifDic(dic_as_cif,do_minimum=True)  #this will recurse internal imports
             # and now merge these definitions
-            if scope == "Dic":
+            if scope == "dic":
                 self.get_whole_dict(import_from,on_dupl,on_miss)
-            elif scope=="Cat":
+            elif scope=="cat":
                 self.get_one_cat(import_from,dict_block,on_dupl,on_miss)
-            elif scope=="Grp":
+            elif scope=="grp":
                 self.get_one_cat_with_children(import_from,dict_block,on_dupl,on_miss)
+            elif scope=="itm":  #not clear what to do if category is missing
+                self.add_one_defn(import_from,dict_block,on_dupl,on_miss)
+        # it will never happen again...
+        del self.dic_as_cif[self.master_key]["_import_list.id"]
     # next we resolve per-definition imports
     for one_def in self.keys():
         try: 
@@ -1062,22 +1087,45 @@ def ddlm_import(self):
         except KeyError:
             pass
         else:
+            if len(to_be_imported) == 5 and len(to_be_imported[0])!=5:
+                #catch an error in earlier versions of the dictionaries where
+                #the outer brackets were missing
+                to_be_imported = [to_be_imported]
             for scope,block,file_loc,on_dupl,on_miss in to_be_imported: 
                 if scope == 'Dic' or scope == 'Cat' or scope == 'Grp' or scope == "Itm":
                     print 'Improper import directive at definition level in %s: ignored' % self.master.key
-           
+                    continue 
+                full_uri = self.resolve_path(file_loc)
+                if full_uri not in self.template_cache:
+                    dic_as_cif = CifFile(urllib.urlopen(full_uri))
+                    self.template_cache[full_uri] = CifDic(dic_as_cif,do_minimum=True)  #this will recurse internal imports
+                    print 'Added %s to cached dictionaries' % full_uri
+                import_from = self.template_cache[full_uri]
+                if scope == 'att': 
+                    self.import_attributes(one_def,import_from,block,on_dupl,on_miss) 
+                elif scope == 'sta': 
+                    self.import_loop(one_def,import_from,block,'_enumeration_set.state',on_miss)
+                elif scope == 'val': 
+                    self.import_loop(one_def,import_from,block,'_enumeration_default.value',on_miss)
+                else:
+                    raise CifError, "Unrecognised import scope %s" % scope
+            # remove the import attribute 
+            del self[one_def]["_import_list.id"]   
+                
 def resolve_path(self,file_loc):
     import urlparse
     url_comps = urlparse.urlparse(file_loc)
-    if file_loc[0]: return file_loc    #already full URI
-    new_url = urlparse.urljoin(self.my_uri,file_loc)
+    if url_comps[0]: return file_loc    #already full URI
+    new_url = urlparse.urljoin(self.dic_as_cif.my_uri,file_loc)
     print "Transformed %s to %s for import " % (file_loc,new_url)
+    return new_url
     
 @ Merging a whole dictionary.  A dictionary is a collection of categories for
 the purposes of merging (later we may want to keep some audit information).
 
 <<Add another DDLM dictionary>>=
 def get_whole_dict(self,source_dict,on_dupl,on_miss):
+    print "Cat_map: `%s`" % source_dict.cat_map.values()
     for source_cat in source_dict.cat_map.values():
         self.get_one_cat(source_dict,source_cat,on_dupl,on_miss)
    
@@ -1101,8 +1149,9 @@ def get_one_cat(self,source_dict,source_cat,on_dupl,on_miss):
            raise CifError, "Missing category %s" % source_cat 
     else:
         all_ext_defns = source_dict.keys()
-        cat_list = filter(lambda a:source_dict[a].get("_name.category.id","")==source_cat,
+        cat_list = filter(lambda a:source_dict[a].get("_name.category_id","").lower()==source_cat.lower(),
                            all_ext_defns) 
+        print "Items: %s" % `cat_list`
         if this_cat:     # The category block itself is duplicated
             if on_dupl=="Ignore":
                 pass
@@ -1110,19 +1159,20 @@ def get_one_cat(self,source_dict,source_cat,on_dupl,on_miss):
                 raise CifError, "Duplicate category %s" % source_cat
             else: 
                 self[source_cat] = ext_cat
-                self.cat_map[source_cat] = source_cat
         else:
             self[source_cat] = ext_cat
-            #housekeeping
-            self.cat_map[source_cat] = source_cat   #identical
         # now do all member definitions
         for cat_defn in cat_list:
-            if self.has_key(cat_defn):
-                if on_dupl == "Ignore": pass
-                elif on_dupl == "Exit": 
-                   raise CifError, "Duplicate definition %s" % cat_defn
-                else: self[cat_defn] = source_dict[cat_defn]
-            else: self[cat_defn] = source_dict[cat_defn]
+            self.add_one_defn(source_dict,cat_defn,on_dupl)
+
+def add_one_defn(self,source_dict,cat_defn,on_dupl):
+    if self.has_key(cat_defn):
+       if on_dupl == "Ignore": pass
+       elif on_dupl == "Exit": 
+               raise CifError, "Duplicate definition %s" % cat_defn
+       else: self[cat_defn] = source_dict[cat_defn]
+    else: self[cat_defn] = source_dict[cat_defn]
+    print "    "+cat_defn
     
 @ This actually follows the children of the category down.  We get a list of
 child categories and add them one by one recursively.
@@ -1133,6 +1183,31 @@ def get_one_cat_with_children(self,source_dict,source_cat,on_dupl,on_miss):
     child_cats = filter(lambda a:source_dict[a]["_category.parent_id"]==source_dict[source_cat]["_definition.id"],source_dict.cat_map.values())
     for child_cat in child_cats: self.get_one_cat(source_dict,child_cat,on_dupl,on_miss) 
 
+@ Importing into definitions.  We are adjusting only the attributes of a single
+definition.
+
+<<Add attributes to definitions>>=
+def import_attributes(self,mykey,source_dict,source_def,on_dupl,on_miss):
+    # process missing 
+    if not source_dict.has_key(source_def): 
+        if on_miss == 'Exit':
+            raise CifError, 'Missing definition for import %s' % source_def
+        else: return          #nothing else to do
+    # now do the import
+    print 'Adding attributes from %s to %s' % (source_def,mykey)
+    self[mykey].merge(source_dict[source_def],mode='replace',match_att= \
+          ['_definition.id','_name.category_id','_name.object_id'])
+
+def import_loop(self,mykey,source_dict,source_def,loop_name,on_miss):
+    # process imssing
+    if not source_dict.has_key(source_def): 
+        if on_miss == 'Exit':
+            raise CifError, 'Missing definition for import %s' % source_def
+        else: return          #nothing else to do
+    print 'Adding %s attributes from %s to %s' % (loop_name,source_def,mykey)
+    state_loop = source_dict[source_def].GetLoop(loop_name)
+    self[mykey].insert_loop(state_loop) 
+   
 @ Section{Validation}
 
 These validation checks are intended to be called externally.  They return
@@ -1869,23 +1944,36 @@ We cannot restrict ourselves to local values as the transformed functions
 are called elsewhere.  We could include assignments to these variable names
 within the generated functions.
 
+If we were really serious about dictionary-driven software, the attribute
+lookups that follow would not use get(), but brackets and allow default
+values to be returned.  However, that would require assigning a dictionary
+to the dictionary and consequent automated searches which I can't be bothered
+to do at this stage.  Just be aware that the default value in the get()
+statement is the _enumeration.default specified in ddl.dic...
+
 <<Transform drel to python>>=
 def transform_drel(self):
     import drel_yacc
     parser = drel_yacc.parser
-    parser.loopable_cats = filter(lambda a:self[a]["_definition.class"]=="List",self.keys())
+    my_namespace = self.keys()
+    my_namespace = dict(map(None,my_namespace,my_namespace)) 
+    parser.loopable_cats = filter(lambda a:self[a].get("_definition.class","Datum")=="List",self.keys())
     parser.loopable_cats = map(lambda a:self[a]["_definition.id"],parser.loopable_cats) 
     parser.listable_items = filter(lambda a:"*" in self[a].get("_type.dimension",""),self.keys()) 
-    derivable_list = filter(lambda a:self[a].has_key("_method.expression"),self.keys())
+    derivable_list = filter(lambda a:self[a].has_key("_method.expression") and self[a].get("_definition.scope","")!='Category',self.keys())
     for derivable in derivable_list:
         parser.target_id = derivable
+        # reset the list of visible names for parser
+        parser.special_id = [my_namespace]
+        # reset list of looped with statements
+        parser.withtable = {}
         print "Target id: %s" % derivable
         drel_expr = self[derivable]["_method.expression"]
         if isinstance(drel_expr,ListType):
            drel_expr = drel_expr[0] 
         print "Transforming %s" % drel_expr
         # List categories are treated differently...
-        pyth_meth = parser.parse(drel_expr)
+        pyth_meth = parser.parse(drel_expr,debug=True)
         self[derivable]["_loop_categories"] = pyth_meth[1].keys()
         self[derivable]["_method.expression"] = drel_yacc.make_func(pyth_meth,"pyfunc",None) 
         print "Final result:\n " + self[derivable]["_method.expression"]
@@ -1899,9 +1987,16 @@ If we are building a List rather than a loop, we simply assign the value.  In
 a later incarnation, this software should conduct a conformance check on values
 which are thus inserted.
 
+We also check out any default values which we could return in case of error.
+During development, we deliberately allow errors arising from the method to
+be propagated so that we can see anything that might be wrong.
+
 <<Derive item information>>=
 def derive_item(self,key,cifdata,store_value = False):
-    the_func = self[key]["_method.expression"]   #raise a KeyError now if necessary
+    # store any default value in case we have a problem
+    def_val = self[key].get("_enumeration.default","")
+    the_func = self[key].get("_method.expression","")  
+    if def_val and not the_func : return def_val
     # read it in
     the_category = self[key]["_name.category_id"]
     the_type = self[the_category]["_definition.class"]
@@ -2542,14 +2637,14 @@ def merge_dic(diclist,mergemode="replace",ddlspec=None):
     basedic = dic_as_cif_list[0]
     if basedic.has_key("on_this_dictionary"):   #DDL1 style only
         for dic in dic_as_cif_list[1:]:
-           basedic.merge(dic,mode=mergemode,match_att="_name")
+           basedic.merge(dic,mode=mergemode,match_att=["_name"])
     elif len(basedic.keys()) == 1:                     #One block: DDL2 style
         old_block = basedic[basedic.keys()[0]]
         for dic in dic_as_cif_list[1:]:
            new_block = dic[dic.keys()[0]]
            basedic.merge(dic,mode=mergemode,
 			 single_block=[basedic.keys()[0],dic.keys()[0]],
-			 match_att="_item.name",match_function=find_parent)
+			 match_att=["_item.name"],match_function=find_parent)
     return CifDic(basedic)
 
 @ Find the main item from a parent-child list.  We are asked to find the

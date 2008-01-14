@@ -207,6 +207,7 @@ def keys(self):
 
 # changes to take case independence into account
 def has_key(self,key):
+    if not isinstance(key,StringType): return 0
     if self.dictionary.has_key(key):
        return 1
     if key.lower() in self.lower_keys:
@@ -323,7 +324,7 @@ is passed to us.
 
 <<Merge with another block collection>>=
 def merge(self,new_bc,mode="strict",single_block=[],
-               idblock="",match_att="",match_function=None):
+               idblock="",match_att=[],match_function=None):
     if single_block:
         self.dictionary[single_block[0]].merge(new_bc[single_block[1]],mode,
 					       match_att=match_att,
@@ -337,12 +338,12 @@ def merge(self,new_bc,mode="strict",single_block=[],
         if match_function:
             block_to_item = map(lambda a:match_function(self[a]),self.keys())
 	else:
-            block_to_item = map(lambda a:self[a].get(match_att,None),self.keys())
+            block_to_item = map(lambda a:self[a].get(match_att[0],None),self.keys())
 	#print `block_to_item`
     for key in new_keys:
         if key == idblock: continue
 	basekey = key        #default value
-	attval = new_bc[key].get(match_att,0)
+	attval = new_bc[key].get(match_att[0],0)
 	for ii in range(len(block_to_item)):  #do this way to get looped names
 	    thisatt = block_to_item[ii]
 	    #print "Looking for %s in %s" % (attval,thisatt)
@@ -441,7 +442,7 @@ our initialisation function, which may be a subclass which takes other arguments
             self.maxoutlength = 2048 
         else:
             self.maxoutlength = maxoutlength
-        if type(datasource) is StringType:
+        if type(datasource) is StringType or hasattr(datasource,"read"):
             newself = ReadStar(datasource,self.maxinlength)
             # print "Reinjecting by calling %s.__init__ with kwargs %s" % (`self.__init__.im_class`,kwargs)
 	    self.__init__.im_class.__init__(self,datasource=newself,maxoutlength=maxoutlength,**kwargs)
@@ -481,12 +482,14 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard'):
         filestream = urlopen(filename)
     else:
 	filestream = filename   #already opened for us
-    my_uri = filestream.geturl()
+    my_uri = ""
+    if hasattr(filestream,"geturl"): 
+        my_uri = filestream.geturl()
     text = filestream.read()
     if isinstance(filename,basestring): #we opened it, we close it
         filestream.close()
     if not text:      # empty file, return empty block
-        dist.set_uri(my_uri)
+        dest.set_uri(my_uri)
         return dest
     # we recognise ctrl-Z as end of file
     endoffile = text.find('\x1a')
@@ -526,8 +529,10 @@ define a pseudo collection class to hold CIF lists/tuples/hashes.
 class StarList(list):
     pass
 
+# Because DDLm makes a tuple from a tuple...
 class StarTuple(tuple):
-    pass
+    def __new__(cls,*arglist):
+        return tuple.__new__(cls,arglist)
 
 class StarDict(dict):
     pass
