@@ -320,7 +320,29 @@ class WithDictTestCase(unittest.TestCase):
        retval = myfunc(self.testdic,struct_testblock,3)
        self.failUnless(retval == StarFile.StarList(["dic","CORE_MODEL","core_model.dic","exit","exit"]))
        
+   def test_attributes(self):
+       """Test that attributes of complex expressions come out OK"""
+       # We need to do a scary funky attribute of a key lookup 
+       pass
 
+   def test_funcdef(self):
+       """Test function conversion"""
+       teststrg = """
+       function Closest( v :[Array, Real],   # coord vector to be cell translated
+                       w :[Array, Real]) { # target vector
 
+            d  =  v - w
+            t  =  Int( Mod( 99.5 + d, 1.0 ) - d )
+
+            Closest = Tuple ( v+t, t )
+       } """
+       self.parser.target_id = 'Closest'
+       res,ww = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       print "Function -> \n" + res
+       exec res
+       retval = Closest(0.2,0.8)
+       print 'Closest 0.2,0.8 returns ' + ",".join([`retval[0]`,`retval[1]`])
+       self.failUnless(retval == StarFile.StarTuple(1.2,1))
+       
 if __name__=='__main__':
     unittest.main()

@@ -72,7 +72,8 @@ def p_expression(p):
     # else: p[0] = " ".join((p[1],"if",p[3],"else", p[5]))
 
 # This is too generous, as it allows a function call on the
-# LHS to be assigned to.
+# LHS to be assigned to.  This will cause a syntax error on
+# execution we hope.
 
 def p_target(p):
     '''target : primary 
@@ -275,12 +276,9 @@ def p_list_if(p):
 # our lexer will interpret as ID REAL.  We therefore also
 # accept t.12(3), which is not allowed, but we don't bother
 # trying to catch this error here.
-#
-# Drel has no attribute reference apart from the special form,
-# so we can use ID instead of 'primary' before the "."
-
+ 
 def p_attributeref(p):
-    '''attributeref : ID attribute_tag '''
+    '''attributeref : primary attribute_tag '''
     # intercept special loop variables
     # print `p.parser.special_id`
     for idtable in p.parser.special_id:
@@ -368,10 +366,17 @@ def p_long_slice(p):
 def p_call(p):
     '''call : primary "(" ")"
             | primary "(" argument_list ")" '''
-    # we translate built-in functions only at this stage
-    builtins = {"list":"StarFile.StarList","tuple":"StarFile.StarTuple","table":"dict"}
+    # simple built-in functions only at this stage
+    builtins = {"list":"StarFile.StarList",
+                "tuple":"StarFile.StarTuple",
+                "table":"dict",
+                "int": "int"}
     funcname = builtins.get(p[1].lower(),p[1])
-    p[0] = funcname + " ".join(p[2:])
+    # try to catch a few straightforward trickier ones
+    if funcname.lower() == "mod":
+        p[0] = "divmod" + "".join(p[2:]) + "[1]"
+    else: 
+        p[0] = funcname + " ".join(p[2:])
     print "Function call: %s" % p[0]
 
 # It seems that in dREL the arguments are expressed differently
@@ -385,8 +390,7 @@ def p_argument_list(p):
     p[0] = " ".join(p[1:])
 
 def p_func_arg(p):
-    '''func_arg : expression 
-                | ID ":" list_display ''' 
+    '''func_arg : expression '''
     p[0] = p[1]   #ignore list structure for now
                  
 def p_augmented_assignment_stmt(p):
@@ -444,7 +448,8 @@ def p_compound_stmt(p):
                      | loop_stmt
                      | with_stmt
                      | where_stmt
-                     | switch_stmt '''
+                     | switch_stmt
+                     | funcdef '''
     p[0] = p[1]
     print "Compound statement: " + p[0]
 
@@ -582,6 +587,18 @@ def p_caselist(p):
     '''caselist : CASE target_list suite
                 | caselist CASE target_list suite'''
     pass
+
+def p_funcdef(p):
+    ''' funcdef : FUNCTION ID "(" arglist ")" suite '''
+    p[0] = "def " + "".join(p[2:6]) + ":"
+    # add a return statement as the last statement of the suite
+    p[0] += "\n" + p[6] + " "*4 + 'return ' + p[2] + '\n'
+
+def p_arglist(p):
+    ''' arglist : ID ":" list_display
+                | arglist "," ID ":" list_display '''
+    if len(p) == 4: p[0] = p[1]
+    else: p[0] = p[1] + "," + p[3]
 
 def p_error(p):
     print 'Syntax error at token %s, value %s' % (p.type,p.value)

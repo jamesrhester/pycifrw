@@ -38,7 +38,8 @@ tokens = (
     'SWITCH',
     'CASE',
     'DEFAULT',
-    'AUGOP'
+    'AUGOP',
+    'FUNCTION'
      )
 
 literals = '+*-/;()[],:^<>{}=.'
@@ -147,6 +148,8 @@ reserved = {
     'If': 'IF',
     'switch': 'SWITCH',
     'case' : 'CASE',
+    'Function' : 'FUNCTION',
+    'function' : 'FUNCTION',
     'default' : 'DEFAULT'
     }
 
