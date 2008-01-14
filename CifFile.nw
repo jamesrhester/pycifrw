@@ -563,6 +563,7 @@ def __init__(self,dic,do_minimum=False):
     self.do_minimum = do_minimum
     self.dic_as_cif = dic
     self.template_cache = {}    #for DDLm imports
+    self.ddlm_functions = {}    #for DDLm functions
     if isinstance(dic,StringType):
         self.dic_as_cif = CifFile(dic)
     (self.dicname,self.diclang,self.defdata) = self.dic_determine(self.dic_as_cif)
@@ -650,7 +651,7 @@ def dic_determine(self,cifdic):
 	version = cifdic[self.master_key]["_dictionary.version"]
 	if name != self.master_key:
 	    print "Warning: DDL2 blockname %s not equal to dictionary name %s" % (self.master_key,name)
-        if cifdic[self.master_key].has_key("_dictionary.namespace"):   #DDLm
+        if cifdic[self.master_key].has_key("_dictionary.class"):   #DDLm
             self.unique_spec = "_category_key.generic"
             return(name+version,"DDLm",cifdic[self.master_key]["saves"]) 
         #otherwise DDL2
