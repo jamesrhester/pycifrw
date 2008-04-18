@@ -321,7 +321,7 @@ rule input: ( ((
                               nested_bracket_expression  {{this_list.append(nested_bracket_expression)}}
                               )
                             ) *
-                               c_s_b                     {{return this_list}}
+                               c_s_b                     {{return StarList(this_list)}}
 
      rule curly_bracket_expr: o_c_b 
                             (

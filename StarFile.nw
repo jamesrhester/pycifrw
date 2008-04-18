@@ -99,6 +99,7 @@ import copy
 <<StarFile class>>
 <<Define an error class>>
 <<Read in a STAR file>>
+<<Get data dimension>>
 
 @ \section{BlockCollection}
 
@@ -523,7 +524,8 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard'):
 
 DDLm introduced data values which could be lists, tuples or hash tables.  As
 we use lists in the API for loop values, and think this is convenient, we
-define a pseudo collection class to hold CIF lists/tuples/hashes.
+define a pseudo collection class to hold CIF lists/tuples/hashes.  Note that
+we have to recursively modify all contents as well.
 
 <<Define a collection datatype>>=
 class StarList(list):
@@ -563,7 +565,6 @@ class LoopBlock:
     <<Check data name for STAR conformance>>
     <<Check data item for STAR conformance>>
     <<Regularise data values>>
-    <<Get data dimension>>
     <<Get complete looped data>>
     <<Get nth loop packet>>
     <<Get packet by key>>
@@ -1167,7 +1168,7 @@ def AddLoopItem(self,data,precheck=False,maxlength=-1):
     elif not isinstance(data[0],StringType):
               raise TypeError, 'Star datanames are strings only (got %s)' % `data[0]`
     else:
-       if data[1] == [] or self.get_dim(data[1])[0] == self.dimension:
+       if data[1] == [] or get_dim(data[1])[0] == self.dimension:
            if not precheck:
                self.check_data_name(data[0],maxlength)    # make sure no nasty characters   
            # check that we can replace data
@@ -1198,7 +1199,7 @@ def AddLoopItem(self,data,precheck=False,maxlength=-1):
            #    self.item_order.append(data[0])
             
        else:            #dimension mismatch
-           raise StarLengthError, "input data dim %d != required dim %d: %s %s" % (self.get_dim(data[1])[0],self.dimension,data[0],`data[1]`)
+           raise StarLengthError, "input data dim %d != required dim %d: %s %s" % (get_dim(data[1])[0],self.dimension,data[0],`data[1]`)
 
 @ Checking the data names.  The CIF 1.1 standard restricts characters in
 a data name to ASCII 33-126 and there should be a leading underscore.  Items
@@ -1261,21 +1262,28 @@ We recursively burrow down to the lowest level.  If a list is of zero length,
 we can't burrow any further, so simply return one more than the current level.
 
 We return as well the length of the received packet.  Note that we consider
-dataitems which are Star tuples/lists/tables as being primitive.
+dataitems which are *not* tuples or lists to be primitive.  This includes
+StarLists (which are a single data item) and numpy arrays.  Unfortunately
+this means we have to use the ungainly check involving the __class__ property,
+as StarLists and Tuples are subclasses of list and tuple and will therefore
+count as instances of them.  In the context of DDLm it is probably more
+elegant to define a special class for looped data rather than for primitive
+lists as data items.
+
+This is a method of the module, rather than belonging to any particular class.
 
 <<Get data dimension>>=
-def get_dim(self,dataitem,current=0,packlen=0):
+def get_dim(dataitem,current=0,packlen=0):
     zerotypes = [IntType, LongType, 
                     FloatType, StringType]
     if type(dataitem) in zerotypes:
         return current, packlen
-    if isinstance(dataitem,StarDict) or \
-       isinstance(dataitem,StarList) or \
-       isinstance(dataitem,StarTuple):
+    if not dataitem.__class__ == ().__class__ and \
+       not dataitem.__class__ == [].__class__:
        return current, packlen
     elif len(dataitem)>0: 
     #    print "Get_dim: %d: %s" % (current,`dataitem`)
-        return self.get_dim(dataitem[0],current+1,len(dataitem))
+        return get_dim(dataitem[0],current+1,len(dataitem))
     else: return current+1,0
     
 

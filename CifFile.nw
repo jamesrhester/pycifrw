@@ -227,20 +227,25 @@ def RemoveCifItem(self,itemname):
 
 @ Just as for star blocks, we add in the save frame key.  If the
 dictionary as supplied doesn't have the item we want, we call the
-dictionary method to try to fix the situation. 
+dictionary method to try to fix the situation.   Once we have a
+dictionary supplied, we are able to determine the type of the returned
+object, and make the appropriate changes.
 
 <<Adjust emulation of a mapping type>>=
 def __getitem__(self,key):
     if key == "saves":
         return self.saves
     try:     
-       return CifLoopBlock.__getitem__(self,key)
+       rawitem = CifLoopBlock.__getitem__(self,key)
     except KeyError:
        if self.dictionary:
            # send the dictionary the required key and a pointer to us
-           return self.dictionary.derive_item(key,self)
+           rawitem = self.dictionary.derive_item(key,self)
        else:
            raise KeyError
+    # we now have an item, we can try to convert it to a number if that is appropriate
+    if not self.dictionary or not self.dictionary.has_key(key): return rawitem
+    return self.dictionary.change_type(key,rawitem)
 
 def __setitem__(self,key,value):
     if key == "saves":
@@ -508,12 +513,16 @@ dictionary is absorbed into special methods (and I'm thinking here
 of the [[_item_type_list.construct]] stuff which appears at the
 global level), which we initialise
 ourselves for a DDL1 dictionary.  The square bracket notation
-then refers only to the definitions.
+then refers only to the definitions and not to the original
+CIF file.
 
 Note that the underscore following the data or save frame header is
 technically not part of the name, and so in DDL2 dictionaries there are
 two underscores after the word "save".  DDL1 people hadn't figured this
-out yet, so we have to add it in by changing each block name.
+out yet, so we have to add it in by changing each block name.  DDLm
+reverts to the DDL1 behaviour, perhaps as a way of emphasizing that
+the block name and the contents are semantically different.  Or alternatively,
+that the leading underscore is not part of the name.
 
 <<CIF Dictionary type>>=
 class CifDic(StarFile.BlockCollection):
@@ -532,7 +541,9 @@ class CifDic(StarFile.BlockCollection):
     <<Extract number and esd>>
     <<Analyse range>>
     <<Transform drel to python>>
+    <<Switch on numpy arrays>>
     <<Derive item information>>
+    <<Convert string to appropriate type>>
     <<Item-level validation>>
     <<Loop-level validation>>
     <<Cross-item validation>>
@@ -552,11 +563,19 @@ Validation functions are listed so that it would be possible to
 add and remove them from the "valid set".  This behaviour has
 not yet been implemented.
 
-When loading DDLm dictionaries we may call this initialisation
+When loading DDLm dictionaries we may recursively call this initialisation
 function with a dictionary to be imported as the argument.  In this
 case we don't want to do all the method derivation, as the necessary
-categories will be loaded into the calling dictionary.  So there is
-a keyword argument to stop the more advanced operations taking place.
+categories will be loaded into the calling dictionary rather than the
+currently initialising dictionary.  So there is
+a keyword argument to stop the operations that should operate on the
+dictionary as a whole taking place.
+
+The dREL methods require Numpy support, but we do not wish to introduce
+a global dependence on Numpy.  Therefore, we introduce a 'switch' which
+will return Numpy arrays from the __getitem__ method instead of StarLists.
+It is intended that the dREL methods will turn this on only during
+execution, then turn it off afterwards. 
 
 <<Initialise Cif dictionary>>=
 def __init__(self,dic,do_minimum=False):
@@ -564,6 +583,7 @@ def __init__(self,dic,do_minimum=False):
     self.dic_as_cif = dic
     self.template_cache = {}    #for DDLm imports
     self.ddlm_functions = {}    #for DDLm functions
+    self.switch_numpy(False)    #no Numpy arrays returned 
     if isinstance(dic,StringType):
         self.dic_as_cif = CifFile(dic)
     (self.dicname,self.diclang,self.defdata) = self.dic_determine(self.dic_as_cif)
@@ -949,16 +969,18 @@ corresponds to the name of the data item defined therein, we make it equivalent 
 all of our access methods work nicely.  Pending a detailed description of how variable
 names used in dREL methods are derived, we go the harder route and concatenate the category
 name with the object id (although it may be possible to use the _definition.id).  Note
-that we do not alter category definitions.
+that we do not alter category definitions., and we operate through the standard __setitem__
+method of the block collection class in order to properly manage the upper/lower case
+housekeeping.
 
 <<Normalise DDLm save frame names>>=
 def ddlm_normalise(self):
     for key,value in self.dictionary.items():
        if value.has_key("_name.category_id"):
            real_name = "_" + value["_name.category_id"] + "." + value["_name.object_id"]
-           self.dictionary[real_name] = value
+           self[real_name] = value
            # delete the old one
-           del self.dictionary[key]
+           del self[key]
     
 @ DDLm introduces validity information in the enclosing datablock.  It is a loop of scope,
 attribute values where the scope is one of dictionary (everywhere), category (whole
@@ -1041,8 +1063,12 @@ resolving import references recursively.  This will satisfy the requirement that
 conflicts are resolved from the most nested level upwards.
 
 We use the built-in PyCIFRW merging methods.  Note that this merging is done on
-the CIFDIC object, and so the dic_as_cif object remains untouched.  In future,
+the CIFDIC object, and so the dic_as_cif object remains untouched.  Therefore, in future,
 audit and tracking information could be stored here.
+
+We originally used the _import_list.id list as the guide for how to import, however, the
+draft dictionaries left off items that have a default value, and rather than edit them
+all in we defined how to extract the individual items instead.
 
 <<Perform DDLm imports>>=
 <<Master import routine>>
@@ -1055,14 +1081,20 @@ audit and tracking information could be stored here.
 def ddlm_import(self):
     import urllib
     #first check the outermost datablocks.  Note we expect our dREL
-    #machinery to create _import_list.id only if the others are available
+    #machinery to create _import_list.id only if the individual values are available
     #For this to happen, we need the ddl.dic to have been assigned
     try:
         to_be_imported = self.dic_as_cif[self.master_key]["_import_list.id"]
     except KeyError:
         pass
     else:
+        # deal with foreshortened import blocks
+        for import_target in to_be_imported:
+            if len(import_target)==3:                     #default values have been left off
+                import_target.append('Exit')
+                import_target.append('Exit')
         for scope,dict_block,file_loc,on_dupl,on_miss in to_be_imported: 
+            scope = scope.lower()                         #work around capitalisation in draft dics
             if scope == 'att' or scope == 'sta' or scope == 'val':
                 print 'Improper import directive at top level in %s: ignored' % self.master.key
                 continue 
@@ -1092,8 +1124,14 @@ def ddlm_import(self):
                 #catch an error in earlier versions of the dictionaries where
                 #the outer brackets were missing
                 to_be_imported = [to_be_imported]
+            # deal with foreshortened import blocks
+            for import_target in to_be_imported:
+                if len(import_target)==3:                     #default values have been left off
+                    import_target.append('Exit')
+                    import_target.append('Exit')
             for scope,block,file_loc,on_dupl,on_miss in to_be_imported: 
-                if scope == 'Dic' or scope == 'Cat' or scope == 'Grp' or scope == "Itm":
+                scope = scope.lower()                         #work around capitalisation in draft dics
+                if scope == 'dic' or scope == 'cat' or scope == 'grp' or scope == "itm":
                     print 'Improper import directive at definition level in %s: ignored' % self.master.key
                     continue 
                 full_uri = self.resolve_path(file_loc)
@@ -1988,7 +2026,8 @@ If we are building a List rather than a loop, we simply assign the value.  In
 a later incarnation, this software should conduct a conformance check on values
 which are thus inserted.
 
-We also check out any default values which we could return in case of error.
+We also check out any default values which we could return in case of error.  Note that ddlm
+adds the '_enumerations.def_index_id' as an alternative way to derive a value from a table.
 During development, we deliberately allow errors arising from the method to
 be propagated so that we can see anything that might be wrong.
 
@@ -1996,13 +2035,29 @@ be propagated so that we can see anything that might be wrong.
 def derive_item(self,key,cifdata,store_value = False):
     # store any default value in case we have a problem
     def_val = self[key].get("_enumeration.default","")
+    def_index_val = self[key].get("_enumeration.def_index_id","")
     the_func = self[key].get("_method.expression","")  
     if def_val and not the_func : return def_val
+    if def_index_val and not the_func:            #derive a default value
+        index_vals = self[key]["_enumeration_default.index"]
+        val_to_index = cifdata[def_index_val]     #what we are keying on
+        # Handle loops
+        if isinstance(val_to_index,ListType):
+            keypos = map(lambda a:index_vals.index(a),val_to_index)
+            result = map(lambda a:self[key]["_enumeration_default.value"][a] ,keypos)
+        else:
+            keypos = index_vals.index(val_to_index)   #value error if no such value available
+            result = self[key]["_enumeration_default.value"][keypos] 
+        print "Indexed on %s to get %s for %s" % (def_index_val,`result`,`val_to_index`)
+        return result
     # read it in
     the_category = self[key]["_name.category_id"]
     the_type = self[the_category]["_definition.class"]
     exec the_func in locals()         #puts "pyfunc" in scope
-    if self[key]["_loop_categories"]: 
+    print 'Executing following function'
+    print the_func
+    print 'With following loop categories:' + `self[key].get("_loop_categories","")`
+    if self[key].get("_loop_categories",""): 
        loop_category = self[key]["_loop_categories"][0]
        loop_names = self.names_in_cat(loop_category)
        no_of_packs = len(cifdata[loop_names[0]])
@@ -2023,6 +2078,83 @@ def derive_item(self,key,cifdata,store_value = False):
     else:              # No looped categories
        return pyfunc(self,cifdata)
 
+@ In the single case of executing dREL methods, we wish to return numpy
+Arrays from our __getitem__ so that the mathematical operations proceed
+as expected for matrix etc. objects.  So we provide an alternative
+dictionary 'numerify' routine.  This switch might also work for general
+cases (i.e. non-dREL) but that is not tested.
+
+<<Switch on numpy arrays>>=
+def switch_numpy(self,to_val):
+    if to_val:
+        self.recursive_numerify = self.numpy_numerify
+    else:
+        self.recursive_numerify = self.normal_numerify
+
+@ This function converts the string-valued items returned from the parser into
+types that correspond to the dictionary specifications.  For DDLm it must also
+deal with potentially complex structures containing both strings and numbers. We
+have tried to avoid introducing a dependence on Numpy in general for PyCIFRW,
+but once we get into the realm of DDLm we require Numpy arrays in order to
+handle the various processing tasks.  This routine is the one that will
+create the arrays from the StarList types, so needs access to numpy.  However,
+this routine is only called if a DDLm dictionary has been provided, so we
+should still have no Numpy dependence for non DDLm cases
+
+<<Convert string to appropriate type>>=
+def change_type(self,itemname,inval):
+    import numpy
+    # we need to iterate over the structure description.  For now we deal only with
+    # Single and Array containers, with types that are a simple specification
+    item_type = self[itemname]["_type.contents"]
+    item_container = self[itemname]["_type.container"]
+    isnumeric = (item_type == "Real" or \
+       item_type == "Float" or \
+       item_type == "Count" or \
+       item_type == "Integer" or \
+       item_type == "Digit")
+    if not isnumeric: return inval   # we don't attempt any changes
+    # even for a 'Single' container, it may be looped 
+    # print 'Changing type for %s' % `inval`
+    if StarFile.get_dim(inval)[0] == 0:
+        if item_container == 'Single': return float_with_esd(inval)
+        if item_container == 'Array':
+            return self.recursive_numerify(inval) 
+    else:
+        if item_container == 'Single': return map(float_with_esd,inval)
+        if item_container == 'Array': return map(self.recursive_numerify,inval)
+ 
+# A utility function to recursively make all atomic values numeric
+# All embedded values will be either StarTuples or StarLists
+def normal_numerify(self,valarray): 
+    # print 'Recursive evaluation of %s' % `valarray`
+    if isinstance(valarray,StarFile.StarTuple):
+        return StarFile.StarTuple(map(self.recursive_numerify,valarray))
+    if isinstance(valarray,StarFile.StarList):
+        return StarFile.StarList(map(self.recursive_numerify,valarray))
+    if isinstance(valarray,(StringType,IntType,LongType)):
+        return float_with_esd(valarray)
+    else:
+        return valarray    #assume is OK
+            
+# Identical to the above except that a numpy array is returned.  We
+# do the normal_numerify call in order to perform the float conversion.
+#
+def numpy_numerify(self,valarray):
+    import numpy
+    return numpy.array(self.normal_numerify(valarray))
+
+@ We may be passed float values which have esds appended.  We catch this case
+by searching for an opening round bracket
+<<Convert value to float, ignore esd>>=
+def float_with_esd(inval):
+    if isinstance(inval,StringType):
+        j = inval.find("(")
+        if j>=0:  return float(inval[:j])
+    return float(inval)
+        
+    
+                
 @ This function analyses a DDL1-type range expression,  returning
 a maximum and minimum value.  If the number
 format were ever to change, we need to change this right here, right
@@ -2540,6 +2672,7 @@ def run_data_checks(check_block,fulldic,globals={},fake_mand=False):
     
 <<Utility functions>>=
 <<Extract number and esd>>
+<<Convert value to float, ignore esd>>
 <<Append update>>
 <<Transpose data>>
 <<Merge dictionaries as CIFs>>
