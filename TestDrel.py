@@ -22,11 +22,11 @@ class SimpleStatementTestCase(unittest.TestCase):
     def testrealnum(self):
         """test parsing of real numbers"""
         res = self.parser.parse('a=5.45\n',debug=True,lexer=self.lexer)
-        realfunc = drel_yacc.make_func(res,"myfunc","a")
+        realfunc = drel_yacc.make_func(res,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self)==5.45)
         res = self.parser.parse('a=.45e-24\n',debug=True,lexer=self.lexer)
-        realfunc = drel_yacc.make_func(res,"myfunc","a")
+        realfunc = drel_yacc.make_func(res,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) ==.45e-24)
 
@@ -39,14 +39,14 @@ class SimpleStatementTestCase(unittest.TestCase):
         resm[2] = self.parser.parse('a = 0B0101\n',lexer=self.lexer)
         resm[3] = self.parser.parse('a = 0o731\n',lexer=self.lexer)
         for res,check in zip(resm,checkm):
-            realfunc = drel_yacc.make_func(res,"myfunc","a")
+            realfunc = drel_yacc.make_func(res,"myfunc","a",have_sn=False)
             exec realfunc
             self.failUnless(myfunc(self,self) == check)
 
     def testcomplex(self):
         """test parsing a complex number"""
         resc = self.parser.parse('a = 13.45j\n',lexer=self.lexer)
-        realfunc = drel_yacc.make_func(resc,"myfunc","a")
+        realfunc = drel_yacc.make_func(resc,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) == 13.45j)
 
@@ -56,10 +56,10 @@ class SimpleStatementTestCase(unittest.TestCase):
         jl = "a = 'my pink pony\"s mane'"
         ress = self.parser.parse(jk+"\n",lexer=self.lexer)
         resr = self.parser.parse(jl+"\n",lexer=self.lexer)
-        realfunc = drel_yacc.make_func(ress,"myfunc","a")
+        realfunc = drel_yacc.make_func(ress,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) == jk[5:-1])
-        realfunc = drel_yacc.make_func(resr,"myfunc","a")
+        realfunc = drel_yacc.make_func(resr,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) == jl[5:-1])
 #
@@ -76,10 +76,10 @@ class SimpleStatementTestCase(unittest.TestCase):
           end'''"""
         ress = self.parser.parse(jk+"\n",lexer=self.lexer)
         resr = self.parser.parse(jl+"\n",lexer=self.lexer)
-        realfunc = drel_yacc.make_func(ress,"myfunc","a")
+        realfunc = drel_yacc.make_func(ress,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) == jk[7:-3])
-        realfunc = drel_yacc.make_func(resr,"myfunc","a")
+        realfunc = drel_yacc.make_func(resr,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) == jl[7:-3])
 
@@ -90,7 +90,7 @@ class SimpleStatementTestCase(unittest.TestCase):
                     ("a = 45.6 / 22.2",45.6/22.2))
         for test,check in testexpr:
             res = self.parser.parse(test+"\n",lexer=self.lexer)
-            realfunc = drel_yacc.make_func(res,"myfunc","a")
+            realfunc = drel_yacc.make_func(res,"myfunc","a",have_sn=False)
             exec realfunc
             self.failUnless(myfunc(self,self) == check)
 
@@ -98,7 +98,7 @@ class SimpleStatementTestCase(unittest.TestCase):
         """test comma-separated expressions"""
         test = "a = 5,6,7+8.5e2"
         res = self.parser.parse(test+"\n",lexer=self.lexer) 
-        realfunc = drel_yacc.make_func(res,"myfunc","a")
+        realfunc = drel_yacc.make_func(res,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) ==(5,6,7+8.5e2))
 
@@ -106,7 +106,7 @@ class SimpleStatementTestCase(unittest.TestCase):
         """test parentheses"""
         test = "a = ('once', 'upon', 6,7j +.5e2)"
         res = self.parser.parse(test+"\n",lexer=self.lexer) 
-        realfunc = drel_yacc.make_func(res,"myfunc","a")
+        realfunc = drel_yacc.make_func(res,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) ==('once' , 'upon' , 6 , 7j + .5e2 ))
 
@@ -114,7 +114,7 @@ class SimpleStatementTestCase(unittest.TestCase):
         """test list parsing"""
         test = "a = ['once', 'upon', 6,7j +.5e2]"
         res = self.parser.parse(test+"\n",lexer=self.lexer) 
-        realfunc = drel_yacc.make_func(res,"myfunc","a")
+        realfunc = drel_yacc.make_func(res,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) ==['once' , 'upon' , 6 , 7j + .5e2 ])
 
@@ -132,7 +132,7 @@ class MoreComplexTestCase(unittest.TestCase):
        """Test that an assignment works"""
        teststrg = "n  = 11" 
        res = self.parser.parse(teststrg,lexer=self.lexer)
-       realfunc = drel_yacc.make_func(res,"myfunc","n")
+       realfunc = drel_yacc.make_func(res,"myfunc","n",have_sn=False)
        exec realfunc
        self.failUnless(myfunc(self,self)==11)
     
@@ -147,7 +147,7 @@ class MoreComplexTestCase(unittest.TestCase):
           }
        """
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
-       realfunc = drel_yacc.make_func(res,"myfunc","total")
+       realfunc = drel_yacc.make_func(res,"myfunc","total",have_sn=False)
        exec realfunc
        realres = myfunc(self,self)
        # Do statements are inclusive
@@ -167,7 +167,7 @@ class MoreComplexTestCase(unittest.TestCase):
        """
        self.parser.special_id = [{'axy':1}]
        res = self.parser.parse(teststrg + "\n",debug=True,lexer=self.lexer)
-       realfunc = drel_yacc.make_func(res,"myfunc","pp")
+       realfunc = drel_yacc.make_func(res,"myfunc","pp",have_sn=False)
        exec realfunc
        realres = myfunc(self,self)
        # Do statements are inclusive
@@ -186,7 +186,7 @@ class MoreComplexTestCase(unittest.TestCase):
        end_of_loop = -25.6
        """
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
-       realfunc = drel_yacc.make_func(res,"myfunc","othertotal,total")
+       realfunc = drel_yacc.make_func(res,"myfunc","othertotal,total",have_sn=False)
        print "Nested do:\n" + realfunc
        exec realfunc
        othertotal,total = myfunc(self,self)
@@ -204,7 +204,7 @@ class MoreComplexTestCase(unittest.TestCase):
        If (d1<dmin or d1>(rad1+radius_bond)) b = 5 
        """
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
-       realfunc = drel_yacc.make_func(res,"myfunc","b")
+       realfunc = drel_yacc.make_func(res,"myfunc","b",have_sn=False)
        exec realfunc
        b = myfunc(self,self)
        print "if returns %d" %  b 
@@ -225,7 +225,7 @@ class MoreComplexTestCase(unittest.TestCase):
        """
        self.parser.target_id = "geom_angle"
        res = self.parser.parse(teststrg + "\n",debug=True,lexer=self.lexer)
-       realfunc = drel_yacc.make_func(res,"myfunc",None,cat_meth = True)
+       realfunc = drel_yacc.make_func(res,"myfunc",None,cat_meth = True,have_sn=False)
        print "Fancy assign: %s" % res[0]
        exec realfunc
        b = myfunc(self,self)
@@ -240,7 +240,7 @@ class MoreComplexTestCase(unittest.TestCase):
        """
        print "Table test:"
        res = self.parser.parse(teststrg+"\n",debug=True,lexer=self.lexer)
-       realfunc = drel_yacc.make_func(res,"myfunc","jk")
+       realfunc = drel_yacc.make_func(res,"myfunc","jk",have_sn=False)
        print "Table: %s" % `res[0]`
        exec realfunc
        b = myfunc(self,self)
@@ -323,7 +323,31 @@ class WithDictTestCase(unittest.TestCase):
    def test_attributes(self):
        """Test that attributes of complex expressions come out OK"""
        # We need to do a scary funky attribute of a key lookup 
-       pass
+       ourdic = CifFile.CifDic("testdic2")
+       testblock = CifFile.CifFile("test_data.cif")["testdata"]
+       self.parser.loopable_cats = ['geom','position'] #
+       teststrg = """
+       LineList = []
+       PointList = []
+       With p as position
+       Loop g as geom {
+       If (g.type == "point") {
+             PointList += Tuple([g.vertex1_id,p[g.vertex1_id].vector_xyz])
+       }
+       Else if (g.type == "line") {
+             LineList ++= [[g.vertex1_id, g.vertex2_id],
+                                   [p[g.vertex1_id].vector_xyz,
+                                           p[g.vertex2_id].vector_xyz]]
+       }}
+       """
+       self.parser.target_id = 'LineList'
+       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       realfunc = drel_yacc.make_func(res,"myfunc","LineList")
+       print "Function -> \n" + realfunc
+       exec realfunc
+       retval = myfunc(ourdic,testblock,"LineList")
+       print "testdic2 return value" + `retval`
+       print "Value for comparison with docs: %s" % `retval[0]`
 
    def test_funcdef(self):
        """Test function conversion"""

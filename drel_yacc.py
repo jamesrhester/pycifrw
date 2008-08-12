@@ -46,10 +46,15 @@ def p_simple_stmt(p):
     '''simple_stmt :  assignment_stmt
                     | augmented_assignment_stmt
                     | fancy_drel_assignment_stmt
+                    | print_stmt
                     | BREAK
                     | NEXT'''
     p[0] = p[1]
     print "Simple statement: " + p[0]
+
+def p_print_stmt(p):
+    '''print_stmt : PRINT expression '''
+    p[0] = 'print ' + p[2]
 
 # note do not accept trailing commas
 
@@ -146,7 +151,9 @@ def p_m_expr(p):
         p[0] = p[1]
     else: 
         if p[2] == "^":
-            p[0] = "mat_cross_prod(" + p[1] + " , " + p[3] + ")"
+            p[0] = "numpy.cross(" + p[1] + " , " + p[3] + ")"
+        elif p[2] == "*":   #need to invoke numpy version 
+            p[0] = "numpy.dot("+p[1]+","+p[3]+")"
         else:
             p[0] = " ".join((p[1] , p[2] , p[3]))
 
@@ -170,11 +177,18 @@ def p_power(p):
 
 def p_primary(p):
     '''primary : atom
-                | attributeref
+                | primary_att
                 | subscription
                 | slicing
                 | call'''
     # print 'Primary -> %s' % repr(p[1])
+    p[0] = p[1]
+
+# Separated out so that we can re-initialise subscription category
+def p_primary_att(p):
+    '''primary_att : attributeref'''
+    print "Reinitialising sub_subject from %s to null" % p.parser.sub_subject
+    p.parser.sub_subject = ""
     p[0] = p[1]
 
 def p_atom(p):
@@ -214,6 +228,7 @@ def p_stringliteral(p):
 
 def p_enclosure(p):
     '''enclosure : parenth_form
+                  | string_conversion
                   | list_display '''
     p[0]=p[1]
 
@@ -225,12 +240,16 @@ def p_parenth_form(p):
         p[0] = " ".join(p[1:])
     # print 'Parens: %s' % `p[0]`
 
+def p_string_conversion(p):
+    '''string_conversion : "`" expression_list "`" '''
+    p[0] = "".join(p[1:])
+
 def p_list_display(p):
     ''' list_display : "[" listmaker "]"
                      | "[" "]" '''
-    if len(p) == 3: p[0] = "( )"
+    if len(p) == 3: p[0] = "StarFile.StarList([])"
     else:
-        p[0] = " ".join(p[1:])
+        p[0] = "StarFile.StarList("+"".join(p[1:])+")"
     
 
 # scrap the trailing comma
@@ -276,6 +295,11 @@ def p_list_if(p):
 # our lexer will interpret as ID REAL.  We therefore also
 # accept t.12(3), which is not allowed, but we don't bother
 # trying to catch this error here.
+#
+# Note that there is no other meaning for '.' in drel beyond
+# category-item specifications, so we adopt a default stance
+# of converting all otherwise unresolvable attribute references
+# to simple table references to fit in with the PyCIFRW practice.
  
 def p_attributeref(p):
     '''attributeref : primary attribute_tag '''
@@ -294,8 +318,9 @@ def p_attributeref(p):
         # a global variable from the dictionary
         print "Using global dictionary variable "+p[1:]
         p[0] = 'ciffile['+"".join(p[1:])+']'
-    else:
-        p[0] = " ".join(p[1:]) 
+    else:   #could be a keyed index operation, add back category val
+        p[0] = p[1]+'["'+ p.parser.sub_subject+p[2] + '"]' 
+        p.parser.sub_subject = ""
 
 def p_attribute_tag(p):
     '''attribute_tag : "." ID 
@@ -303,7 +328,10 @@ def p_attribute_tag(p):
     p[0] = "".join(p[1:])
 
 # A subscription becomes a key lookup if the primary is a 
-# pre-defined 'category variable'
+# pre-defined 'category variable'.  We use the GetKeyedPacket
+# method we have specially added to PyCIFRW to simplify the
+# code here
+#
 def p_subscription(p):
     '''subscription : primary "[" expression_list "]" '''
     # intercept special loop variables
@@ -313,12 +341,14 @@ def p_subscription(p):
         newid = idtable.get(p[1],0)
         if newid: break
     if newid: 
-        key_item = self[p[1]]["_"+newid+"."+p[3]]
-        get_loop = "newpack = ciffile.GetLoop('%s')\n" % key_item
-        p[0] = "ciffile["+'"_'+newid+"."+p[3]+'"]' 
+        # We first get the PyCIFRW Loop block...
+        key_item = 'self["'+newid[0]+'"]["_category_key.generic"]'
+        get_loop = "ciffile.GetLoop(%s).GetKeyedPacket(%s,%s)" % (key_item,key_item,p[3])
+        p[0] = get_loop
+        p.parser.sub_subject = "_"+newid[0]#in case of attribute reference following
+        print "Set sub_subject to %s" % p.parser.sub_subject 
     else:
         p[0] = " ".join(p[1:]) 
-    p[0] = " ".join(p[1:]) 
 
 def p_slicing(p):
     '''slicing : simple_slicing
@@ -375,9 +405,13 @@ def p_call(p):
     # try to catch a few straightforward trickier ones
     if funcname.lower() == "mod":
         p[0] = "divmod" + "".join(p[2:]) + "[1]"
+    elif funcname.lower() in ['sind','cosd','tand']:
+        p[0] = "math."+funcname[:3].lower()+"("+ "math.radians" + "".join(p[2:])+")"
+    elif funcname.lower() in ['array']:
+        p[0] = "numpy.array(" + "".join(p[2:]) + ")"
     else: 
         p[0] = funcname + " ".join(p[2:])
-    print "Function call: %s" % p[0]
+    #print "Function call: %s" % p[0]
 
 # It seems that in dREL the arguments are expressed differently
 # in the form arg [: specifier], arg ...
@@ -395,9 +429,11 @@ def p_func_arg(p):
                  
 def p_augmented_assignment_stmt(p):
     '''augmented_assignment_stmt : target AUGOP expression_list'''
-    if p[2] == "++=":          #append to list
+    augsym = "%s" % p[2]
+    if augsym == "++=":          #append to list
         p[0] = p[1] + "+= [" + p[3] + "]"
-    p[0] = " ".join(p[1:])
+    else:
+        p[0] = " ".join(p[1:])
 
 # We simultaneously create multiple results for a single category.  In 
 # this case __dreltarget is a dictionary with keys for each category
@@ -426,9 +462,9 @@ def p_dotlist(p):
     else:
         if p.parser.fancy_drel_id == p.parser.target_id:
             realid = p.parser.fancy_drel_id + "." + p[4]
-            p[0] = p[1] + p.parser.indent + "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (realid,realid,p[6])
+            p[0] = p[1] + "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (realid,realid,p[6])
         else:
-            p[0] =  p[1] + p.parser.indent + p.parser.fancy_drel_id + "".join(p[3:]) + "\n"
+            p[0] =  p[1] + p.parser.fancy_drel_id + "".join(p[3:]) + "\n"
 
 def p_assignment_stmt(p):
     '''assignment_stmt : target_list "=" expression_list'''
@@ -451,26 +487,29 @@ def p_compound_stmt(p):
                      | switch_stmt
                      | funcdef '''
     p[0] = p[1]
-    print "Compound statement: " + p[0]
+    print "Compound statement: \n" + p[0]
 
 def p_if_stmt(p):
     '''if_stmt : IF expression suite
                | if_stmt ELSE suite '''
-    if p[1].lower() == "if":    #to avoid capitalisation issues
+    if p[1].lower() == "if":    #first form of expression
         p[0] = "if "
-    else:
+        p[0] += p[2] + ":"
+        p[0] += add_indent(p[3])
+    else:                       #else statement
         p[0] = p[1]
-    p[0]  += p[2] + ":" + p[3]
-    print "If statement: " + p[0]
+        p[0] += p[2].lower() + ":" + add_indent(p[3])
+    print "If statement: \n" + p[0]
 
-# Note the divergence from Python here: we allow compound
+# Note the dREL divergence from Python here: we allow compound
 # statements to follow without a separate block (like C etc.)
+# For simplicity we indent consistently (further up)
 
 def p_suite(p):
     '''suite : simple_stmt
              | compound_stmt
              | open_brace statement_block close_brace '''
-    if len(p) == 2: p[0] =  p[1]
+    if len(p) == 2: p[0] =  "\n" + p[1]
     else:
         p[0] = p[2]  + "\n"
 
@@ -488,12 +527,12 @@ def p_close_brace(p):
 def p_statement_block(p):
     '''statement_block : statement
                       | statement_block statement'''
-    if len(p) == 2: p[0] = "\n" + p.parser.indent + p[1] 
-    else: p[0] = p[1] + "\n" + p.parser.indent + p[2]
+    if len(p) == 2: p[0] = "\n" + p[1] 
+    else: p[0] = p[1] + "\n" + p[2]
 
 def p_for_stmt(p):
     '''for_stmt : FOR target_list IN expression_list suite'''
-    p[0] = "for " + p[2] + "in" + p[4] + ":\n" + p[5]
+    p[0] = "for " + p[2] + "in" + p[4] + ":\n" + add_indent(p[5])
 
 # We split the loop statement into parts so that we can capture the
 # ID before the suite is processed.  Note that we should record that
@@ -502,13 +541,18 @@ def p_for_stmt(p):
 
 def p_loop_stmt(p):
     '''loop_stmt : loop_head suite'''
-    p[0] = p[1] + p[2]
+    p[0] = p[1] + add_indent(p[2])
 
+# We capture a list of all the actually present items in the current
+# datafile
 def p_loop_head(p):
     '''loop_head : LOOP ID AS ID 
                  | LOOP ID AS ID ":" ID
                  | LOOP ID AS ID ":" ID comp_operator ID'''
     p[0] = "__pycitems = self.names_in_cat('%s')" % p[4]
+    p[0] += "\nprint 'names in cat = %s' % `__pycitems`"
+    p[0] += "\n" + "__pycitems = filter(lambda a:ciffile.has_key(a),__pycitems)"
+    p[0] += "\nprint 'names in cat -> %s' % `__pycitems`\n"
     p.parser.special_id[-1].update({p[2]: [p[4],"",False]})
     print "%s means %s" % (p[2],p.parser.special_id[-1][p[2]][0])
     if p[4] in p.parser.loopable_cats:   #loop over another index
@@ -518,16 +562,16 @@ def p_loop_head(p):
             loop_index =  "__pi%d" % len(p.parser.special_id[-1])
         p.parser.special_id[-1][p[2]][1] = loop_index
         p.parser.special_id[-1][p[2]][2] = True 
-        p[0] += "\n" + p.parser.indent + "for %s in range(len(ciffile[__pycitems[0]])):" % loop_index
+        p[0] += "\n"+ "for %s in range(len(ciffile[__pycitems[0]])):" % loop_index
+    else:         #have to emit a block which runs once...
+        p[0] += "\n" + "for __noloop in [0]:"
     if len(p)==9:             # do an "if" test before proceeding
         iftest = "if " + "".join(p[6:9]) + ":"
-        # get indentation right
-        p.parser.indent += 4*" "
-        p[0] += "\n" + p.parser.indent + iftest
+        p[0] += "\n  " + iftest
 
 def p_do_stmt(p):
     '''do_stmt : do_stmt_head suite'''
-    p[0] = p[1] + p[2]
+    p[0] = p[1] + add_indent(p[2])
 
 # To translate the dREL do to a for statement, we need to make the
 # end of the range included in the range
@@ -592,7 +636,7 @@ def p_funcdef(p):
     ''' funcdef : FUNCTION ID "(" arglist ")" suite '''
     p[0] = "def " + "".join(p[2:6]) + ":"
     # add a return statement as the last statement of the suite
-    p[0] += "\n" + p[6] + " "*4 + 'return ' + p[2] + '\n'
+    p[0] += "\n" + add_indent(p[6] + 'return ' + p[2] + '\n')
 
 def p_arglist(p):
     ''' arglist : ID ":" list_display
@@ -604,6 +648,15 @@ def p_error(p):
     print 'Syntax error at token %s, value %s' % (p.type,p.value)
  
 ### Now some helper functions
+# do indentation: we substitute any "\n" characters in the
+# input with "\n+4 spaces"
+def add_indent(instring):
+    import re
+    indented = re.sub("(?m)^","    ",instring)
+    indented = indented.rstrip(" ")  #remove extras at end
+    print "Indenting: \n%s\n->\n%s" % (instring,indented)
+    return indented
+
 # The following function creates a function. The function
 # modifies the 'ciffile' argument in place.  The pi argument is a 
 # packet index for when we are accessing looped data using a
@@ -613,8 +666,12 @@ def p_error(p):
 #
 # The parser data is a two-element list with the first element the text of
 # the function, and the second element a table of looped values
+#
+# Normally this function is called in a context where 'self' is a CifDic
+# object; for the purposes of testing, we want to be able to remove any
+# references to dictionary methods and so include the have_sn flag.
 
-def make_func(parser_data,funcname,returnname,cat_meth = False):
+def make_func(parser_data,funcname,returnname,cat_meth = False,have_sn=True):
     import re
     if not returnname: returnname = "__dreltarget"
     func_text = parser_data[0]
@@ -629,10 +686,17 @@ def make_func(parser_data,funcname,returnname,cat_meth = False):
     w_i_list = ",".join(with_indices)
     preamble = "def %s(self,ciffile,%s):\n" % (funcname,w_i_list)
     preamble += min_spaces*" " + "import StarFile\n"
+    preamble += min_spaces*" " + "import math\n"
+    preamble += min_spaces*" " + "import numpy\n"
+    if have_sn:
+        preamble += min_spaces*" " + "self.switch_numpy(True)\n"
     if cat_meth:
         preamble += min_spaces*" " + "%s = {}\n" % returnname
     indented = map(lambda a:"    " + a+"\n",noindent)  
-    postamble = " "*min_spaces + "return %s" % returnname
+    postamble = ""
+    if have_sn:
+        postamble = " "*min_spaces + "self.switch_numpy(False)\n"
+    postamble += " "*min_spaces + "return %s" % returnname
     final = preamble + "".join(indented) + postamble
     return final
 
@@ -642,3 +706,4 @@ parser.special_id=[]
 parser.looped_value = False    #Determines with statement construction 
 parser.target_id = None
 parser.withtable = {}          #Table of 'with' packet access info
+parser.sub_subject=""

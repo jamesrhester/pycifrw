@@ -39,10 +39,11 @@ tokens = (
     'CASE',
     'DEFAULT',
     'AUGOP',
+    'PRINT',
     'FUNCTION'
      )
 
-literals = '+*-/;()[],:^<>{}=.'
+literals = '+*-/;()[],:^<>{}=.`'
 t_ignore = ' \t\n'
 
 def t_error(t):
@@ -141,21 +142,24 @@ reserved = {
     'Where': 'WHERE',
     'else': 'ELSE',
     'Else': 'ELSE',
-    'break': 'BREAK',
-    'next': 'NEXT',
     'Next': 'NEXT',
+    'next' : 'NEXT',
+    'break': 'BREAK',
     'if': 'IF',
     'If': 'IF',
     'switch': 'SWITCH',
     'case' : 'CASE',
     'Function' : 'FUNCTION',
     'function' : 'FUNCTION',
+    'Print' : 'PRINT',
+    'print' : 'PRINT',
     'default' : 'DEFAULT'
     }
 
 def t_ID(t):
     r'[a-zA-Z][a-zA-Z0-9_$]*'
     t.type = reserved.get(t.value,'ID')
+    if t.type == 'NEXT': t.value = 'continue'
     return t
 
 # Item tags can have periods and underscores inside, and must have
