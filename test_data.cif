@@ -1,0 +1,21 @@
+### A cif for testing dREL constructs
+# Based on example in dREL documentation 2008
+data_testdata
+loop_
+    _position.number
+    _position.object_id
+    _position.vector_xyz
+         1            origin   [0.0, 0.0, 0.0]
+         2     body-diagonal   [5.0, 5.0, 5.0]
+        32 diagonal-terminal   [10.0, 10.0, 10.0]
+
+loop_
+    _geom.type
+    _geom.vertex1_id
+    _geom.vertex2_id
+    _geom.vertex3_id
+        point      origin        .                 .
+        line       origin        body-diagonal     .
+        line       body-diagonal diagonal-terminal .
+        triangle   origin        body-diagonal     diagonal-terminal
+
