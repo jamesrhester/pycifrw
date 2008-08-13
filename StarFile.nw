@@ -180,7 +180,7 @@ def __getitem__(self,key):
         return self.dictionary[key]
     except KeyError:
         if key.lower() not in self.lower_keys:
-            raise KeyError
+            raise KeyError, "No such item: %s" % key
     curr_keys = self.dictionary.keys()
     lower_ordered = map(lambda a:a.lower(),curr_keys)
     keyindex = lower_ordered.index(key.lower())
@@ -990,9 +990,17 @@ to which data name is the key, so that is passed to us from the dictionary
 processing layer.  Note we assume a single key rather than multiple keys for
 this call, and let the calling layer handle multiple or missing packets.
 
+We guarantee to return a single packet, even if multiple packets match.
+Perhaps we should raise an error in this case.
+
 <<Get packet by key>>=
 def GetKeyedPacket(self,keyname,keyvalue):
-    return filter(lambda a:a[keyname]==keyvalue,self)
+    print "Looking for %s in %s" % (keyvalue, self[keyname])
+    one_pack= filter(lambda a:a[keyname]==keyvalue,self)
+    if len(one_pack)!=1:
+        raise KeyError, "Bad packet key %s = %s: returned %d packets" % (keyname,keyvalue,len(one_pack))
+    print "Keyed packet: %s" % one_pack[0]
+    return one_pack[0]
 
 @ Return order of items - this is just a copy of our item_order array.
 
