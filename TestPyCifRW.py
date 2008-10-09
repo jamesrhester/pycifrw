@@ -221,9 +221,21 @@ class BlockChangeTestCase(unittest.TestCase):
    def testKeyPacket(self):
        """Test that a packet can be returned by key value"""
        testloop = self.cf.GetLoop("_item_name_1")
-       testpack = testloop.GetKeyedPacket("_item_name_1",2)[0]
+       testpack = testloop.GetKeyedPacket("_item_name_1",2)
        self.assertEqual("good_bye",testpack["_item_name#2"])
 
+   def testAddPacket(self):
+       """Test that we can add a packet"""
+       import copy
+       testloop = self.cf.GetLoop("_item_name_1")
+       workingpacket = copy.copy(testloop.GetPacket(0))
+       workingpacket._item_name_1 = 5
+       workingpacket.__setattr__("_item_name#2", 'new' )
+       testloop.AddPacket(workingpacket)
+       # note we assume that this adds on to the end, which is not 
+       # a CIF requirement
+       self.assertEqual(testloop["_item_name_1"][4],5)
+       self.assertEqual(testloop["_item_name#2"][4],'new')
 
 #
 #  Test changing item order

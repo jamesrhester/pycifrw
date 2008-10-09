@@ -567,6 +567,7 @@ class LoopBlock:
     <<Regularise data values>>
     <<Get complete looped data>>
     <<Get nth loop packet>>
+    <<Add a packet>>
     <<Get packet by key>>
     <<Get item order>>
     <<Change data item order>>
@@ -981,6 +982,20 @@ def GetPacket(self,index):
             setattr(thispack,myitem,thispack[-1])
     return thispack 
 
+@ Adding a packet.  We are passed a StarPacket object, which is just a list which is accessible by attribute.
+As I have not yet produced a proper __init__ or __new__ method to allow creation of a new StarPacket, it is
+advisable to create a new packet by copying an old packet.  This has not been written for nested loops, but
+only for a single-level Cif-style loop. 
+
+<<Add a packet>>=
+def AddPacket(self,packet):
+    if self.dimension==0:
+        raise StarError,"Attempt to add packet to top level block"
+    for myitem in self.item_order:
+        self[myitem] = list(self[myitem])   #in case we have stored a tuple
+        self[myitem].append(packet.__getattribute__(myitem))
+        print "%s now %s" % (myitem,`self[myitem]`)
+    
 @ The draft DDLm specification uses square brackets next to a pre-specified
 identifier to mean "the packet containing this key item".  As the meaning in
 PyCIFRW is always that of a simple table, we instead implement a function which

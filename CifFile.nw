@@ -541,6 +541,7 @@ class CifDic(StarFile.BlockCollection):
     <<Extract number and esd>>
     <<Analyse range>>
     <<Transform drel to python>>
+    <<Store dREL functions>> 
     <<Switch on numpy arrays>>
     <<Derive item information>>
     <<Convert string to appropriate type>>
@@ -598,11 +599,12 @@ def __init__(self,dic,do_minimum=False):
         self.DDL2_normalise()   #iron out some DDL2 tricky bits
     elif self.diclang == "DDLm":
         self.ddlm_normalise()
-        self.ddlm_import()
+        self.ddlm_import()      #recursively calls this routine
         if not self.do_minimum:
             print "Doing full dictionary initialisation" 
             self.ddlm_parse_valid() #extract validity information from data block
             self.transform_drel()   #parse the drel functions
+            self.add_drel_funcs()   #put the drel functions into the namespace
     self.add_category_info()
     # initialise type information
     self.typedic={}
@@ -1977,7 +1979,7 @@ simply searches for an asterisk in the dimension method.
 
 The parser will return a 2-element list [function text, looped categories].
 We capture the last element in order to properly loop when the function is
-called later.
+called later.  Note that we generate the general-access functions separately.
 
 We cannot restrict ourselves to local values as the transformed functions
 are called elsewhere.  We could include assignments to these variable names
@@ -1999,7 +2001,7 @@ def transform_drel(self):
     parser.loopable_cats = filter(lambda a:self[a].get("_definition.class","Datum")=="List",self.keys())
     parser.loopable_cats = map(lambda a:self[a]["_definition.id"],parser.loopable_cats) 
     parser.listable_items = filter(lambda a:"*" in self[a].get("_type.dimension",""),self.keys()) 
-    derivable_list = filter(lambda a:self[a].has_key("_method.expression") and self[a].get("_definition.scope","")!='Category',self.keys())
+    derivable_list = filter(lambda a:self[a].has_key("_method.expression") and self[a].get("_definition.scope","")!='Category' and self[a].get("_name.category_id","")!= "function",self.keys())
     for derivable in derivable_list:
         parser.target_id = derivable
         # reset the list of visible names for parser
@@ -2016,6 +2018,29 @@ def transform_drel(self):
         self[derivable]["_loop_categories"] = pyth_meth[1].keys()
         self[derivable]["_method.expression"] = drel_yacc.make_func(pyth_meth,"pyfunc",None) 
         print "Final result:\n " + self[derivable]["_method.expression"]
+
+@ Drel functions are all stored in category 'functions' in our final dictionary.  We want to
+convert them to executable python code and store them in an appropriate namespace which we
+can then pass to our individual item methods.
+
+<<Store dREL functions>>=
+def add_drel_funcs(self):
+    import drel_yacc
+    funclist = filter(lambda a:self[a].get("_name.category_id","")=='function',self.keys())
+    funcnames = map(lambda a:self[a]["_name.object_id"],funclist)
+    funcbodys = map(lambda a:self[a]["_method.expression"],funclist)
+    # create executable python code...
+    parser = drel_yacc.parser
+    for funcname,funcbody in zip(funcnames,funcbodys):
+        parser.target_id = funcname
+        parser.special_id = [{}]   #first element is always global namespace of dictionary
+        parser.withtable = {}
+        res,ww = parser.parse(funcbody[0])
+        print 'dREL library function ->\n' + res
+        global_table = globals()
+        global_table.update(self.ddlm_functions)
+        exec res in global_table    #add to namespace
+    print "All functions -> " + `self.ddlm_functions`
 
 @ This is the corresponding method to call to find out the item information,
 assuming that the above method was called during initialisation.  For single-valued items, we
@@ -2053,10 +2078,13 @@ def derive_item(self,key,cifdata,store_value = False):
     # read it in
     the_category = self[key]["_name.category_id"]
     the_type = self[the_category]["_definition.class"]
-    exec the_func in locals()         #puts "pyfunc" in scope
+    global_table = globals()
+    global_table.update(self.ddlm_functions)
+    exec the_func in global_table,locals() #will access dREL functions, puts "pyfunc" in scope
     print 'Executing following function'
     print the_func
     print 'With following loop categories:' + `self[key].get("_loop_categories","")`
+    # print 'in following global environment: ' + `global_table` 
     if self[key].get("_loop_categories",""): 
        loop_category = self[key]["_loop_categories"][0]
        loop_names = self.names_in_cat(loop_category)
