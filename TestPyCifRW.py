@@ -209,8 +209,8 @@ class BlockChangeTestCase(unittest.TestCase):
        testloop = self.cf.GetLoop("_item_name_1")
        i = 0
        for test_pack in testloop:
-           self.assertEqual(test_pack["_item_name_1"],self.values[0][0][i]) 
-           self.assertEqual(test_pack["_item_name#2"],self.values[0][1][i]) 
+           self.assertEqual(test_pack._item_name_1,self.values[0][0][i]) 
+           self.assertEqual(getattr(test_pack,"_item_name#2"),self.values[0][1][i]) 
            i += 1
 
    def testPacketAttr(self):
@@ -222,7 +222,7 @@ class BlockChangeTestCase(unittest.TestCase):
        """Test that a packet can be returned by key value"""
        testloop = self.cf.GetLoop("_item_name_1")
        testpack = testloop.GetKeyedPacket("_item_name_1",2)
-       self.assertEqual("good_bye",testpack["_item_name#2"])
+       self.assertEqual("good_bye",getattr(testpack,"_item_name#2"))
 
    def testAddPacket(self):
        """Test that we can add a packet"""

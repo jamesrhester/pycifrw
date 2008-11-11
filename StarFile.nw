@@ -813,6 +813,9 @@ but if we simply use the dictionary update method, we will find that we
 have stale keys from previous inner loops.  Therefore, we keep our values as
 (key,value) tuples which we turn into a dictionary at the last moment.
 
+This is now updated to return StarPackets, which are like dictionaries
+except that they also have attributes set.
+ 
 <<A recursive iterator>>=
 def recursive_iter(self,dict_so_far={},coord=[]):
     # print "Recursive iter: coord %s, keys %s, dim %d" % (`coord`,`self.block.keys()`,self.dimension)
@@ -829,7 +832,10 @@ def recursive_iter(self,dict_so_far={},coord=[]):
         for aloop in self.loops:
             for apacket in aloop.recursive_iter():
                 # print "Recursive yielding %s" % `dict(top_items + apacket.items())`
-                yield dict(top_items + apacket.items())
+                prep_yield = StarPacket([])
+                for name,value in top_items + apacket.items():
+                    setattr(prep_yield,name,value)
+                yield prep_yield
     else:
         for i in range(my_length):
             kvpairs = map(lambda a:(a,self.coord_to_group(a,coord)[i]),self.block.keys())
@@ -838,10 +844,16 @@ def recursive_iter(self,dict_so_far={},coord=[]):
               for aloop in self.loops:
                 for apacket in aloop.recursive_iter(coord=coord+[i]):
                     # print "Recursive yielding %s" % `dict(kvpairs + apacket.items())`
-                    yield dict(kvpairs + apacket.items())
+                    prep_yield = StarPacket([])
+                    for name,value in kvpairs + apacket.items():
+                        setattr(prep_yield,name,value)
+                    yield prep_yield
             else:           # we're at the bottom of the tree
                 # print "Recursive yielding %s" % `dict(kvpairs)`
-                yield dict(kvpairs)
+                prep_yield = StarPacket([])
+                for name,value in kvpairs:
+                    setattr(prep_yield,name,value)
+                yield prep_yield
 
 # small function to use the coordinates. 
 def coord_to_group(self,dataname,coords):
@@ -1012,7 +1024,7 @@ Perhaps we should raise an error in this case.
 <<Get packet by key>>=
 def GetKeyedPacket(self,keyname,keyvalue):
     print "Looking for %s in %s" % (keyvalue, self[keyname])
-    one_pack= filter(lambda a:a[keyname]==keyvalue,self)
+    one_pack= filter(lambda a:getattr(a,keyname)==keyvalue,self)
     if len(one_pack)!=1:
         raise KeyError, "Bad packet key %s = %s: returned %d packets" % (keyname,keyvalue,len(one_pack))
     print "Keyed packet: %s" % one_pack[0]

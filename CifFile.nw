@@ -412,7 +412,9 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,nosaves=
                   key_matches = filter(lambda a:a in overlap_data[newkeypos],new_data[newkeypos])
                   # filter out any new data with these key values
                   new_p_data = filter(lambda a:a[newkeypos] not in key_matches,new_p_data)
-                  new_data = transpose(new_p_data)
+                  if new_p_data:
+                      new_data = transpose(new_p_data)
+                  else: new_data = []
               # wipe out the old data and enter the new stuff
               byebyeloop = self.GetLoop(overlaps[0])
               # print "Removing '%s' with overlaps '%s'" % (`byebyeloop`,`overlaps`)
@@ -421,9 +423,9 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,nosaves=
               # for this case...
               if byebyeloop != self:
                   self.remove_loop(byebyeloop)
-              self.AddCifItem(((overlaps,),(new_data,)))  #adding new packets
-              for pd in packet_data:                      #adding old packets
-                 if pd not in new_p_data:
+              self.AddCifItem(((overlaps,),(overlap_data,)))  #adding old packets
+              for pd in new_p_data:                             #adding new packets
+                 if pd not in packet_data:
                     for i in range(len(overlaps)):
                         #don't do this at home; we are appending
                         #to something in place
