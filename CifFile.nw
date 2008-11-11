@@ -342,8 +342,13 @@ need to have a record of it just in case.
 
 The nosaves keyword means that save frames are ignored when merging.
 
+The rel_keys keyword contains a list of datanames which act as unique keys (in a database
+sense) inside loop structures.  If any keys match in separate datablocks, the row will
+not be added, but simply replaced.
+
 <<Merge with another block>>=
-def merge(self,new_block,mode="strict",match_att=[],match_function=None,nosaves=False):
+def merge(self,new_block,mode="strict",match_att=[],match_function=None,nosaves=False,
+               rel_keys = []):
     # deal with save frames
     if not nosaves:
         self["saves"].merge(new_block["saves"],mode,match_att=match_att,
@@ -378,17 +383,36 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,nosaves=
               self[attribute] = new_value 
        these_atts = self.keys()
        for newloop in new_block.loops:              
-           overlaps = filter(lambda a: a in these_atts,newloop.keys())
+           newkeys = newloop.keys()
+           # note that the following line determines packet item order
+           overlaps = filter(lambda a: a in these_atts,newkeys)
            if len(overlaps)< len(newloop):#completely new loop
               self.insert_loop(newloop)
            elif len(overlaps)==len(newloop):
               # appending packets 
-              # print "In overlay merge mode, found extra loop items:"
+              # print "In overlay merge mode, found extra packet items:"
               # print `overlaps`
-              overlap_data = map(lambda a:listify(self[a]),overlaps)
-              new_data = map(lambda a:new_block[a],overlaps)
+              # get key position
+              loop_keys = filter(lambda a:a in rel_keys,overlaps)
+              try:
+                 newkeypos = map(lambda a:newkeys.index(a),loop_keys)
+                 newkeypos = newkeypos[0]      #one key per loop for now
+                 loop_keys = loop_keys[0] 
+              except (ValueError,IndexError):
+                 newkeypos = []
+              overlap_data = map(lambda a:listify(self[a]),overlaps) #old packet data
+              new_data = map(lambda a:new_block[a],overlaps) #new packet data
               packet_data = transpose(overlap_data)
               new_p_data = transpose(new_data)
+              # remove any packets for which the keys match between old and new; we
+              # make the arbitrary choice that the old data stays
+              if newkeypos:
+                  # get matching values in new list
+                  print "Old, new data:\n%s\n%s" % (`overlap_data[newkeypos]`,`new_data[newkeypos]`)
+                  key_matches = filter(lambda a:a in overlap_data[newkeypos],new_data[newkeypos])
+                  # filter out any new data with these key values
+                  new_p_data = filter(lambda a:a[newkeypos] not in key_matches,new_p_data)
+                  new_data = transpose(new_p_data)
               # wipe out the old data and enter the new stuff
               byebyeloop = self.GetLoop(overlaps[0])
               # print "Removing '%s' with overlaps '%s'" % (`byebyeloop`,`overlaps`)
@@ -397,8 +421,8 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,nosaves=
               # for this case...
               if byebyeloop != self:
                   self.remove_loop(byebyeloop)
-              self.AddCifItem(((overlaps,),(new_data,)))
-              for pd in packet_data:
+              self.AddCifItem(((overlaps,),(new_data,)))  #adding new packets
+              for pd in packet_data:                      #adding old packets
                  if pd not in new_p_data:
                     for i in range(len(overlaps)):
                         #don't do this at home; we are appending

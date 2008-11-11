@@ -655,6 +655,14 @@ class DicMergeTestCase(unittest.TestCase):
         newdic = CifFile.merge_dic([self.cvdica,self.cvdicb,self.cvdicc,self.cvdicd],mergemode='overlay')
         jj.write(newdic.__str__())
 
+    def testKeyOverlay(self):
+        """Test that duplicate key values are not overlayed in loops"""
+        ff = CifFile.CifFile("dictionaries/merge_test_2.cif")["block_a"]
+        gg = CifFile.CifFile("dictionaries/merge_test_2.cif")["block_b"]
+        ff.merge(gg,mode="overlay",rel_keys = ["_loop_key"])
+        target_loop = ff.GetLoop("_loop_key")
+        print ff.__str__()
+
     def tearDown(self):
         pass
 

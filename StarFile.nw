@@ -994,7 +994,8 @@ def AddPacket(self,packet):
     for myitem in self.item_order:
         self[myitem] = list(self[myitem])   #in case we have stored a tuple
         self[myitem].append(packet.__getattribute__(myitem))
-        print "%s now %s" % (myitem,`self[myitem]`)
+    self.no_packets +=1 
+        # print "%s now %s" % (myitem,`self[myitem]`)
     
 @ The draft DDLm specification uses square brackets next to a pre-specified
 identifier to mean "the packet containing this key item".  As the meaning in
