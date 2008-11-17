@@ -568,6 +568,7 @@ class LoopBlock:
     <<Get complete looped data>>
     <<Get nth loop packet>>
     <<Add a packet>>
+    <<Remove a packet>>
     <<Get packet by key>>
     <<Get item order>>
     <<Change data item order>>
@@ -1030,6 +1031,17 @@ def GetKeyedPacket(self,keyname,keyvalue):
     print "Keyed packet: %s" % one_pack[0]
     return one_pack[0]
 
+@ We might also want to remove a packet by key.  We operate on the data
+in place.
+
+<<Remove a packet>>=
+def RemoveKeyedPacket(self,keyname,keyvalue):
+    packet_coord = list(self[keyname]).index(keyvalue)
+    loophandle = self.GetLoop(keyname)
+    for packet_entry in loophandle.item_order:
+        loophandle[packet_entry] = list(loophandle[packet_entry])
+        del loophandle[packet_entry][packet_coord]
+    
 @ Return order of items - this is just a copy of our item_order array.
 
 <<Get item order>>=

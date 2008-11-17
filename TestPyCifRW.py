@@ -224,6 +224,20 @@ class BlockChangeTestCase(unittest.TestCase):
        testpack = testloop.GetKeyedPacket("_item_name_1",2)
        self.assertEqual("good_bye",getattr(testpack,"_item_name#2"))
 
+   def testRemovePacket(self):
+       """Test that removing a packet works properly"""
+       print 'Before packet removal'
+       print str(self.cf)
+       testloop = self.cf.GetLoop("_item_name_1")
+       testloop.RemoveKeyedPacket("_item_name_1",3)
+       jj = testloop.GetKeyedPacket("_item_name_1",2)
+       kk = testloop.GetKeyedPacket("_item_name_1",4)
+       self.assertEqual(getattr(jj,"_item_name#2"),"good_bye")
+       self.assertEqual(getattr(kk,"_item_name#2"),"# 4")
+       self.assertRaises(KeyError,testloop.GetKeyedPacket,"_item_name_1",3)
+       print 'After packet removal:'
+       print str(self.cf)
+
    def testAddPacket(self):
        """Test that we can add a packet"""
        import copy
