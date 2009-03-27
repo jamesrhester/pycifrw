@@ -1,11 +1,25 @@
-Release Notes for PyCIFRW-3.1.6
-===============================
+Release Notes for PyCIFRW-3.2  
+=============================
 
-PyCifRW-3.1.6 has an upgraded Yapps runtime file. 
+General
+=======
+
+A lot of work has been done under the covers in preparation for the
+appearance of DDLm-based dictionaries using dREL methods to derive
+data item values.  While this has not directly affected the way in
+which CifFile objects are used, it has led to the addition of a
+number of convenience methods (see improvements, below).
+
+An attempt was made to allow capturing comments from input CIF files.
+This turns out to be a complex task, and was abandoned, given that
+comments are not meant to convey any important information.  A
+couple of methods were instead added to allow addition of comments
+to generated CIF files.
  
 Bug fixes (since 3.0)
 =====================
 
+(3.0)
 * deepcopy failed when copying CifFile objects due to the
 way the __iter__ method was set.  This has been fixed.
 
@@ -43,9 +57,13 @@ block is performed sensibly.
 * A stray newline on stdout during flex-based parsing has been 
   fixed (Boris Dusek)
 
+(3.2)
+
+* 
 Improvements/Changes (since 3.0)
 ================================
 
+(3.0)
 * A compiled tokenizer is now available to increase speed of file
 input.  The option 'scantype="flex"' should be passed to the 
 ReadCif/ReadStar commands.  Error reporting is minimal.
@@ -85,6 +103,13 @@ output file
 
 * Runtime and parser generation is now provided by Yapps 2.1.1 (aka
   Yapps 3)
+
+(3.2)
+
+* Nested bracket expressions parsed (DDLm)
+* Retrieval/removal of specific loop packet using value of a key dataname
+* Packets returned by GetPacket can be accessed by attribute
+* Loops can be extended by adding packets 
 
 Incompatible changes (since 3.0)
 ================================

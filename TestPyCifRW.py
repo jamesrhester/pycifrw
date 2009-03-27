@@ -300,6 +300,9 @@ class BlockNameTestCase(unittest.TestCase):
        assert(len(cf) == 1)
        
 
+#
+#   Test reading cases
+#
 class FileWriteTestCase(unittest.TestCase):
    def setUp(self):
        """Write out a file, then read it in again. Non alphabetic ordering to
@@ -491,6 +494,40 @@ class FileWriteTestCase(unittest.TestCase):
        """Test that first_block returns a block"""
        jj = self.ef.first_block()
        self.failUnless(jj==self.df)
+
+##############################################################
+#
+#   Test alternative grammars (1.0, DDLm)
+#
+##############################################################
+class GrammarTestCase(unittest.TestCase):
+   def setUp(self):
+       """Write out a file, then read it in again."""
+       teststr1_0 = """
+       #A test CIF file, grammar version 1.0 conformant
+       data_test
+         _item_1 'A simple item'
+         _item_2 '(Bracket always ok in quotes)'
+         _item_3 (can_have_bracket_here_if_1.0)
+       """
+       f = open("test_1.0","w")
+       f.write(teststr1_0)
+       f.close()
+
+   def tearDown(self):
+	pass
+
+   def testold(self):
+       """Read in 1.0 conformant file; should not fail"""
+       f = StarFile.ReadStar("test_1.0",grammar="1.0")  
+       print f["test"]["_item_3"]
+      
+   def testnew(self):
+       """Read in a 1.0 conformant file with 1.1 grammar; should fail"""
+       try:
+           f = StarFile.ReadStar("test_1.0",grammar="1.1")  
+       except StarFile.StarError:
+           pass
 
 ##############################################################
 #

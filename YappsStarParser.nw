@@ -11,15 +11,41 @@ only worked for text strings less than about 9000 characters in length.
 For further information about Yapps2, see 
 http://theory.stanford.edu/~amitp/Yapps/
 
-<<*>>=
+Note there are three targets here: 1.0, 1.1 and DDLm syntax, which differ
+in their treatment of unquoted data values beginning with brackets.
+
+<<1.0_syntax>>=
 from StarFile import *
 from types import *
 import copy
 <<Helper functions>>
 %%
 parser StarParser:
-    <<Regular expressions>>
-    <<Grammar specification>>
+    <<Regular expressions 1.0>>
+    <<Grammar specification 1.1>>
+%%
+
+<<1.1_syntax>>=
+from StarFile import *
+from types import *
+import copy
+<<Helper functions>>
+%%
+parser StarParser:
+    <<Regular expressions 1.1>>
+    <<Grammar specification 1.1>>
+%%
+@ Note we can make subtle changes to produce different style syntax:
+the following two recipes produce pre 1.1 and DDLm style.
+<<DDLm_syntax>>=
+from StarFile import *
+from types import *
+import copy
+<<Helper functions>>
+%%
+parser StarParser:
+    <<Regular expressions DDLm>>
+    <<Grammar specification DDLm>>
 %%
 @   Helper functions.
 
@@ -148,14 +174,6 @@ def order_update(order_array,new_name):
     order_array.append(new_name) 
     return new_name
 
-#
-# This deals with adding a comment
-def addcomments(block,kvpairstruct):
-    comment = kvpairstruct[2]
-    if len(comment)>1:
-	if comment[-1]=='\n': comment = comment[:-1] 
-	if len(comment)>1:
-	    block.AddComment(kvpairstruct[0],comment[1:])
 @
 
 The regular expressions aren't quite as easy to deal with as in kjParsing;
@@ -176,7 +194,7 @@ found starting with our reserved words into a data value if it occurs in the
 expected position, so we explicity exclude stuff starting with our words
 in the definition of data_value_1.
 
-<<Regular expressions>>=
+<<Regular expressions DDLm>>=
 # first handle whitespace and comments, keeping whitespace
 # before a semicolon
 ignore: "([ \t\n\r](?!;))|[ \t]"
@@ -205,6 +223,49 @@ token dat_val_nocomma_nornd: "([^\s\"#$,'\(\{\[\]][^\s,)]*)|'(('(?![\s,]))|([^\n
 token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$'_\(\{\[\]][^\s]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
 token END: '$'
 
+@ CIF 1.1 does not allow unquoted data values to begin with a bracket character, but does not have bracket expressions
+as such. 
+
+<<Regular expressions 1.1>>=
+# first handle whitespace and comments, keeping whitespace
+# before a semicolon
+ignore: "([ \t\n\r](?!;))|[ \t]"
+ignore: "(#.*[\n\r](?!;))|(#.*)"
+# now the tokens
+token LBLOCK:  "(L|l)(O|o)(O|o)(P|p)_"        # loop_
+token GLOBAL: "(G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_"
+token STOP: "(S|s)(T|t)(O|o)(P|p)_"
+token save_heading: "(S|s)(A|a)(V|v)(E|e)_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+"
+token save_end: "(S|s)(A|a)(V|v)(E|e)_"
+token data_name: "_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+" #_followed by stuff
+token data_heading: "(D|d)(A|a)(T|t)(A|a)_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+"
+token start_sc_line: "(\n|\r\n);([^\n\r])*(\r\n|\r|\n)+"
+token sc_line_of_text: "[^;\r\n]([^\r\n])*(\r\n|\r|\n)+"
+token end_sc_line: ";"
+token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$'_\(\{\[\]][^\s]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
+token END: '$'
+
+@ The original CIF specification allowed brackets to begin data values, even if not quoted.  That is the only difference.
+
+<<Regular expressions 1.0>>=
+# first handle whitespace and comments, keeping whitespace
+# before a semicolon
+ignore: "([ \t\n\r](?!;))|[ \t]"
+ignore: "(#.*[\n\r](?!;))|(#.*)"
+# now the tokens
+token LBLOCK:  "(L|l)(O|o)(O|o)(P|p)_"        # loop_
+token GLOBAL: "(G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_"
+token STOP: "(S|s)(T|t)(O|o)(P|p)_"
+token save_heading: "(S|s)(A|a)(V|v)(E|e)_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+"
+token save_end: "(S|s)(A|a)(V|v)(E|e)_"
+token data_name: "_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+" #_followed by stuff
+token data_heading: "(D|d)(A|a)(T|t)(A|a)_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+"
+token start_sc_line: "(\n|\r\n);([^\n\r])*(\r\n|\r|\n)+"
+token sc_line_of_text: "[^;\r\n]([^\r\n])*(\r\n|\r|\n)+"
+token end_sc_line: ";"
+token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$'_][^\s]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
+token END: '$'
+
 @
 
 The final returned value is a StarFile, with each key a datablock name.  
@@ -228,7 +289,7 @@ form, and there can be no trailing characters.  This form can be allowed for oth
 elements by trivial expansion of the current description but, until further notice,
 I don't think it is useful to allow square brackets in list values.
 
-<<Grammar specification>>=
+<<Grammar specification DDLm>>=
 # now the rules
 
 rule input: ( (( 
@@ -382,6 +443,89 @@ rule input: ( ((
                               )
                             ) *
                               c_r_b     {{return tuple(this_tuple)}}
+
+# due to the inability of the parser to backtrack, we contruct our loops in helper functions,
+# and simply collect data during parsing proper.
+
+     rule top_loop: LBLOCK loopfield loopvalues {{return makeloop(loopfield,loopvalues)}}
+
+# OK: a loopfield is either a sequence of dataname*,loopfield with stop
+# or else dataname,loopfield without stop
+
+     rule loopfield: (            {{toploop=LoopBlock(dimension=1,overwrite=False);curloop=toploop;poploop=None;dim=1}}
+                     (
+                                  ( data_name  )  {{curloop[data_name]=[]}}
+                                  |
+                                  ( LBLOCK   )   {{dim=dim+1;newloop=LoopBlock(dimension=dim,overwrite=False);poploop=curloop;curloop.insert_loop(newloop,audit=False);curloop=newloop}}
+                                  |
+                                  ( STOP   )     {{curloop=poploop;dim=dim-1}}
+                      )*
+                      )                        {{return toploop}} # sequence of data names 
+                         
+
+     rule loopvalues: ( 
+                       (data_value   ) {{dataloop=[[data_value]]}}
+		       ( 
+                       (data_value  ) {{dataloop[-1].append(monitor('loopval',data_value))}}
+		       |
+		       (STOP        )  {{dataloop.append([])}} 
+                       )*             
+		       )	      {{return dataloop}}
+
+     rule save_frame: save_heading   {{savehead = save_heading[5:];savebody = StarBlock(overwrite=False) }} 
+                      (
+                      dataseq@<<savebody>> 
+                      )*
+                      save_end           {{return (savehead,monitor('save_frame',savebody))}}
+
+
+@ The CIF 1.1 grammar specification does not include bracket expressions, but does exclude brackets from
+beginning unquoted data values.
+
+<<Grammar specification 1.1>>=
+# now the rules
+
+rule input: ( (( 
+            dblock         {{allblocks = StarFile(); allblocks.NewBlock(dblock[0],blockcontents=dblock[1],fix=False,replace=False)}}
+            (
+            dblock         {{allblocks.NewBlock(dblock[0],blockcontents=monitor('input',dblock[1]),fix=False,replace=False)}} #
+            )*
+            END                
+            )
+            |
+            (
+            END                 {{allblocks = StarFile()}}
+            )))                   {{return allblocks}}
+
+     rule dblock: ( data_heading {{heading = data_heading[5:];thisblock=StarBlock(overwrite=False)}}# a data heading
+                  (
+                   dataseq@<<thisblock>>  
+                  |
+                  save_frame     {{thisblock["saves"].NewBlock(save_frame[0],save_frame[1],fix=False,replace=True)}}
+                  )*
+                   )                      {{return (heading,monitor('dblock',thisblock))}} # but may be empty
+
+     rule dataseq@<<starblock>>:  data@<<starblock>> 
+		       (
+                       data@<<starblock>>
+                       )*                         
+
+     rule data@<<currentblock>>:        top_loop      {{currentblock.insert_loop(top_loop,audit=False)}} 
+                                        | 
+		                        datakvpair    {{currentblock.AddLoopItem(datakvpair[:2],precheck=True)}} #kv pair
+
+     rule datakvpair: data_name data_value {{return [data_name,data_value]}} # name-value
+
+     rule data_value: (data_value_1          {{thisval = stripstring(data_value_1)}}
+                      |
+                      sc_lines_of_text      {{thisval = stripextras(sc_lines_of_text)}}
+                      )                     {{return monitor('data_value',thisval)}}
+
+     rule sc_lines_of_text: start_sc_line   {{lines = start_sc_line}}
+                            (
+                            sc_line_of_text {{lines = lines+sc_line_of_text}}
+                            )*
+                            end_sc_line     {{return monitor('sc_line_of_text',lines+end_sc_line)}}
 
 # due to the inability of the parser to backtrack, we contruct our loops in helper functions,
 # and simply collect data during parsing proper.

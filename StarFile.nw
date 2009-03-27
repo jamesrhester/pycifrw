@@ -471,14 +471,24 @@ possible grammar violations due to duplicate block or item names.
 We allow fast reads using the compiled StarScan module
 by passing the option 'flex' to this routine.  We also permit an
 already-opened stream to be passed to us (thanks to Boris Dusek for
-this contribution).
+this contribution).  There are 3 possible syntax variations: very old
+CIF files allowed unquoted data values to begin with open brackets,
+version 1.1 disallowed this, and DDLm-conformant files interpret these
+as actual bracket expressions.  The different grammars are
+selected by a command-line switch.
 
 We save our URL for possible later use in finding files relative to the location of
 this file e.g. with DDLm dictionary imports.
 
 <<Read in a STAR file>>=
-def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard'):
-    import YappsStarParser,string
+def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar='1.1'):
+    import string
+    if grammar=="1.1":
+        import YappsStarParser_1_1 as Y
+    elif grammar=="1.0":
+        import YappsStarParser_1_0 as Y
+    elif grammar=="DDLm":
+        import YappsStarParser_DDLm as Y
     if isinstance(filename,basestring):
         filestream = urlopen(filename)
     else:
@@ -504,12 +514,12 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard'):
             raise StarError( 'Line %d contains more than %d characters' % (pos+1,maxlength))
     try: 
 	if scantype == 'standard':
-            parser = YappsStarParser.StarParser(YappsStarParser.StarParserScanner(text))
+            parser = Y.StarParser(Y.StarParserScanner(text))
         else:
-	    parser = YappsStarParser.StarParser(YappsStarParser.yappsrt.Scanner(None,[],text,scantype='flex'))
+	    parser = Y.StarParser(Y.yappsrt.Scanner(None,[],text,scantype='flex'))
         proto_star = getattr(parser,"input")()
-    except YappsStarParser.yappsrt.SyntaxError:
-        errorstring = 'Syntax error in input file: last value parsed was %s' % YappsStarParser.lastval
+    except Y.yappsrt.SyntaxError:
+        errorstring = 'Syntax error in input file: last value parsed was %s' % Y.lastval
         errorstring = errorstring + '\nParser status: %s' % `parser._scanner`
         raise StarError( errorstring)
     # duplication check on all blocks
