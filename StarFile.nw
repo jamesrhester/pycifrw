@@ -1041,6 +1041,7 @@ def RemoveKeyedPacket(self,keyname,keyvalue):
     for packet_entry in loophandle.item_order:
         loophandle[packet_entry] = list(loophandle[packet_entry])
         del loophandle[packet_entry][packet_coord]
+    self.no_packets -= 1
     
 @ Return order of items - this is just a copy of our item_order array.
 

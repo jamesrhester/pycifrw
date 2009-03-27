@@ -1,2 +1,4 @@
 (^|/)CVS($|/)
 (^|/)\.hg($|/)
+(^|/)build($|/)
+(^|/)tests/IUCR-archive($|/)
