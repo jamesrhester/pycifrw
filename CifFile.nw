@@ -2501,9 +2501,55 @@ def NewBlock(self,blockname,blockcontents,**kwargs):
 example of the use of the CifDic class with the CifFile class.
 
 <<Top-level functions>>=
+<<ValidationResult class>>
 <<Validate against the given dictionaries>>
 <<Run dictionary validation checks>>
 
+@ A convenient wrapper class for dealing with the structure returned by
+validation.  Perhaps a more elegant approach would be to return one of
+these objects from validation rather than wrap the validation routines inside.
+
+<<ValidationResult class>>=
+class ValidationResult:
+    """Represents validation result"""
+    def __init__(self,results):
+        """results is return value of validate function"""
+        self.valid_result, self.no_matches = results
+
+    def report(self,use_html):
+        """Return string with human-readable description of validation result"""
+        return validate_report((self.valid_result, self.no_matches),use_html)
+
+    def is_valid(self,block_name=None):
+        """Return True for valid CIF file, otherwise False"""
+        if block_name is not None:
+            block_names = [block_name]
+        else:
+            block_names = self.valid_result.iterkeys()
+        for block_name in block_names:
+            if not self.valid_result[block_name] == (True,{}):
+                valid = False
+                break
+            else:
+                valid = True
+        return valid
+    
+    def has_no_match_items(self,block_name=None):
+        """Return true if some items are not found in dictionary"""
+        if block_name is not None:
+            block_names = [block_name]
+        else:
+            block_names = self.no_matches.iter_keys() 
+        for block_name in block_names:
+            if self.no_matches[block_name]:
+                has_no_match_items = True
+                break
+            else:
+                has_no_match_items = False
+        return has_no_match_items
+    
+
+        
 @ We provide a function to do straight validation, using the built-in
 methods of the dictionary type.  We need to create a single dictionary
 from the multiple dictionaries we are passed, before doing our check. Also,

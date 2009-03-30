@@ -5,10 +5,9 @@ General
 =======
 
 A lot of work has been done under the covers in preparation for the
-appearance of DDLm-based dictionaries using dREL methods to derive
-data item values.  While this has not directly affected the way in
-which CifFile objects are used, it has led to the addition of a
-number of convenience methods (see improvements, below).
+appearance of DDLm-based dictionaries, which use dREL methods to derive
+CIF data item values.  The most visible result of this work is 
+the addition of a number of convenience methods (see improvements, below).
 
 An attempt was made to allow capturing comments from input CIF files.
 This turns out to be a complex task, and was abandoned, given that
@@ -59,7 +58,8 @@ block is performed sensibly.
 
 (3.2)
 
-* 
+* Fixed overlay merging bug
+ 
 Improvements/Changes (since 3.0)
 ================================
 
@@ -106,6 +106,8 @@ output file
 
 (3.2)
 
+* Improved pure python parsing speed (Boris Ducek)
+* ValidationResult class for easier access to validation output (Boris Ducek)
 * Nested bracket expressions parsed (DDLm)
 * Retrieval/removal of specific loop packet using value of a key dataname
 * Packets returned by GetPacket can be accessed by attribute

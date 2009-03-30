@@ -186,16 +186,26 @@ class Scanner:
     def interp_scan(self, restrict):
         """Should scan another token and add it to the list, self.tokens,
         and add the restriction to self.restrictions"""
+        # Prepare accepted pattern list
+        if restrict:
+           # only patterns in the 'restrict' parameter or in self.ignore
+           # are accepted
+           accepted_patterns=[]
+           for p_name, p_regexp in self.patterns:
+               if p_name not in restrict and p_name not in self.ignore:
+                   pass
+               else:
+                   accepted_patterns.append((p_name,p_regexp))
+        else:
+           # every pattern is good
+           accepted_patterns=self.patterns
         # Keep looking for a token, ignoring any in self.ignore
         while 1:
             # Search the patterns for the longest match, with earlier
             # tokens in the list having preference
             best_match = -1
             best_pat = '(error)'
-            for p, regexp in self.patterns:
-                # First check to see if we're ignoring this token
-                if restrict and p not in restrict and p not in self.ignore:
-                    continue
+            for p,regexp in accepted_patterns:
                 m = regexp.match(self.input, self.pos)
                 if m and len(m.group(0)) > best_match:
                     # We got a match that's better than the previous one
