@@ -1034,11 +1034,11 @@ Perhaps we should raise an error in this case.
 
 <<Get packet by key>>=
 def GetKeyedPacket(self,keyname,keyvalue):
-    print "Looking for %s in %s" % (keyvalue, self[keyname])
+    #print "Looking for %s in %s" % (keyvalue, self[keyname])
     one_pack= filter(lambda a:getattr(a,keyname)==keyvalue,self)
     if len(one_pack)!=1:
         raise KeyError, "Bad packet key %s = %s: returned %d packets" % (keyname,keyvalue,len(one_pack))
-    print "Keyed packet: %s" % one_pack[0]
+    #print "Keyed packet: %s" % one_pack[0]
     return one_pack[0]
 
 @ We might also want to remove a packet by key.  We operate on the data

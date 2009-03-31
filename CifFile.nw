@@ -487,8 +487,8 @@ def checklengths(self):
 postcheck for nested loops and other disallowed STAR funkiness.
 
 <<Read in a CIF file>>=
-def ReadCif(filename,strict=1,maxlength=2048,scantype="standard"):
-    proto_cif = StarFile.ReadStar(filename,maxlength,scantype=scantype)
+def ReadCif(filename,strict=1,maxlength=2048,scantype="standard",grammar="1.1"):
+    proto_cif = StarFile.ReadStar(filename,maxlength,scantype=scantype,grammar=grammar)
     # convert to CifFile
     proto_cif = CifFile(proto_cif)
     # check for nested loops

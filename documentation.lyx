@@ -1,17 +1,25 @@
-#LyX 1.5.0rc2 created this file. For more info see http://www.lyx.org/
-\lyxformat 245
+#LyX 1.5.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 276
 \begin_document
 \begin_header
 \textclass article
 \language english
 \inputencoding auto
-\fontscheme helvet
+\font_roman default
+\font_sans helvet
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
 \graphics default
 \paperfontsize default
 \spacing single
 \papersize default
 \use_geometry false
 \use_amsmath 1
+\use_esint 0
 \cite_engine basic
 \use_bibtopic false
 \paperorientation portrait
@@ -25,7 +33,8 @@
 \paperpagestyle default
 \tracking_changes false
 \output_changes false
-\author "Anonymous"
+\author "" 
+\author "" 
 \end_header
 
 \begin_body
@@ -65,8 +74,8 @@ install
 \end_inset
 
  from within this temporary directory.
- Upon completion of this command, four files will have been placed into
- the python packages directory: 
+ Upon completion of this command, a number files will have been placed into
+ the system python packages directory: 
 \family typewriter
 CifFile.py
 \family default
@@ -76,14 +85,15 @@ StarFile.py, yapps_compiled_rt.py
 \family default
  and 
 \family typewriter
-YappsStarParser.py
+YappsStarParser_xx.py
 \family default
 .
  It is then sufficient to import 
 \family typewriter
 CifFile.py
 \family default
- into your python session or script to access all CIF features: 
+ into your python session or script to access all PyCIFRW functionality:
+ 
 \end_layout
 
 \begin_layout LyX-Code
@@ -106,7 +116,11 @@ CifFile
  objects.
  These objects behave identically to Python dictionaries, with some additional
  methods.
- CIF files can be created by calling the 
+ 
+\family typewriter
+CifFile
+\family default
+ objects can be created by calling the 
 \family typewriter
 ReadCif
 \family default
@@ -190,6 +204,48 @@ flex
 \end_inset
 
 )
+\end_layout
+
+\begin_layout Subsubsection
+Grammar options
+\end_layout
+
+\begin_layout Standard
+There are two slightly different variations in CIF file syntax.
+ An early version of the standard allowed non-quoted data strings to begin
+ with bracket characters (e.g.
+ '
+\family typewriter
+(
+\family default
+').
+ This was disallowed in version 1.1 in order to reserve such usage for the
+ upcoming DDLm changes.
+ A very few CIF files are produced according to the old standard.
+ Specification of the particular version to use is possible with the 
+\family typewriter
+grammar
+\family default
+ keyword:
+\end_layout
+
+\begin_layout LyX-Code
+cf = CifFile.ReadCif('oldcif.cif',grammar='1.0') #oldest CIF syntax 
+\end_layout
+
+\begin_layout LyX-Code
+cf = CifFile.ReadCif('normcif.cif',grammar='1.1') #current standard (default)
+\end_layout
+
+\begin_layout LyX-Code
+cf = CifFile.ReadCif('future.cif',grammar='DDLm') #proposed standard
+\end_layout
+
+\begin_layout Standard
+Note that the DDLm syntax has not been finalised and is subject to change.
+ The most important syntactical addition in DDLm is the use of nested, bracketed
+ tuple and list expressions, as in Python.
+ The implementation in PyCIFRW is one interpretation of the draft documentation.
 \end_layout
 
 \begin_layout Subsubsection
@@ -303,22 +359,88 @@ my_data = cf.first_block()
 
 \begin_layout Standard
 If a data name occurs in a loop, a list of string values is returned for
- the value of that dataname.
- However, in practice, looped data is usually only useful in combination
- with other values from the same loop.
- 
-\family typewriter
-CifBlock
-\family default
- method 
-\family typewriter
-GetLoop(dataname)
-\family default
- will return all data in the loop containing dataname as a 
+ the value of that dataname - the next section describes ways to access
+ looped data.
+\end_layout
+
+\begin_layout Subsubsection
+Tabular (
+\begin_inset Quotes eld
+\end_inset
+
+looped
+\begin_inset Quotes erd
+\end_inset
+
+) data
+\end_layout
+
+\begin_layout Standard
+For the purpose of the following examples, we use the following example
+ CIF file:
+\end_layout
+
+\begin_layout LyX-Code
+data_testblock
+\end_layout
+
+\begin_layout LyX-Code
+loop_
+\end_layout
+
+\begin_layout LyX-Code
+  _item_5   
+\end_layout
+
+\begin_layout LyX-Code
+  _item_7   
+\end_layout
+
+\begin_layout LyX-Code
+  _item_6    
+\end_layout
+
+\begin_layout LyX-Code
+  1  a  5    
+\end_layout
+
+\begin_layout LyX-Code
+  2  b  6    
+\end_layout
+
+\begin_layout LyX-Code
+  3  c  7    
+\end_layout
+
+\begin_layout LyX-Code
+  4  d  8 
+\end_layout
+
+\begin_layout Standard
+PyCIFRW provides a shortcut to return all values taken by a particular dataname
+ inside a CIF loop (by using the square bracket notation, identically to
+ non-looped data), but more flexibility is provided by accessing 
 \family typewriter
 CifLoopBlock
 \family default
- object, which provides the same methods as a 
+ objects.
+\end_layout
+
+\begin_layout Standard
+A 
+\family typewriter
+CifLoopBlock
+\family default
+ object can be obtained by callin
+\family typewriter
+g CifBlock
+\family default
+ method 
+\family typewriter
+GetLoop(dataname
+\family default
+).
+ This object provides the same methods as a 
 \family typewriter
 CifBlock
 \family default
@@ -333,7 +455,27 @@ keys()
 \family typewriter
 CifLoopBlock
 \family default
- object:
+ object
+\begin_inset Foot
+status open
+
+\begin_layout Standard
+
+\series bold
+Warning
+\series default
+: 
+\shape italic
+row order in a CIF loop is arbitrary; while PyCIFRW maintains the row order
+ in the input file, there is nothing in the CIF standards which mandates
+ this behaviour
+\shape default
+.
+\end_layout
+
+\end_inset
+
+, and values can be obtained from these packets as attributes:
 \end_layout
 
 \begin_layout LyX-Code
@@ -357,19 +499,11 @@ _item_5
 \end_layout
 
 \begin_layout LyX-Code
-
-\end_layout
-
-\begin_layout Standard
-The corresponding datanames are accessible through method GetItemOrder:
+>>> lb[0]._item_7
 \end_layout
 
 \begin_layout LyX-Code
->>> lb.GetItemOrder()
-\end_layout
-
-\begin_layout LyX-Code
-['_item_5', '_item_7', '_item_6']
+'a'
 \end_layout
 
 \begin_layout Standard
@@ -383,6 +517,56 @@ An alternative way of accessing loop data uses Python iterators, allowing
 
 \begin_layout LyX-Code
 'a' 'b' 'c' 'd' 
+\end_layout
+
+\begin_layout Standard
+Note that in both the above examples the row packet is a copy of the looped
+ data, and therefore changes to it will not alter the data read from the
+ CIF file, unlike the lists returned when column-based access is used.
+\end_layout
+
+\begin_layout Subsubsection
+Key-based table row access (new in 3.2)
+\end_layout
+
+\begin_layout Standard
+Rather than relying on a particular row ordering (remembering that row order
+ is not significant in CIF, unlike, for example, XML) or iterating through
+ all rows looking for a particular row, it is possible to refer to a particular
+ row based on the values taken by a given data item, using the 
+\family typewriter
+CifLoopBlock
+\family default
+ 
+\family typewriter
+'GetKeyedPacket'
+\family default
+ method:
+\end_layout
+
+\begin_layout LyX-Code
+>>> myrow = lb.GetKeyedPacket('_item_7','c') 
+\end_layout
+
+\begin_layout LyX-Code
+>>> myrow._item_5
+\end_layout
+
+\begin_layout LyX-Code
+'3'
+\end_layout
+
+\begin_layout Standard
+In this example, the first packet with a value of 'c' for _item_7 is returned,
+ and packet values can then be accessed using the dataname as an attribute
+ of the packet.
+ Note that a 
+\family typewriter
+KeyError
+\family default
+ is raised if more than one packet matches, or no packets match, and that
+ the packet returned is a copy of the data read in from the file, and therefore
+ can be changed without affecting the data that was read in.
 \end_layout
 
 \begin_layout Subsubsection
@@ -487,12 +671,13 @@ datavalue
 \end_layout
 
 \begin_layout Standard
-Note that lists (and objects) returned by PyCIFRW actually represent the
- list currently inside the CifBlock, and therefore any modification to them
- will modify the stored list.
- While this is often the desired behaviour, if you intend to alter any such
- lists in other parts of your program while maintaining CIF integrity, you
- should first copy them to avoid destroying the loop structure:
+Note that lists (and other listlike objects except packets) returned by
+ PyCIFRW actually represent the list currently inside the CifBlock, and
+ therefore any modification to them will modify the stored list.
+ While this is often the desired behaviour, if you intend to manipulate
+ such a list in other parts of your program while preserving the original
+ CIF information, you should first copy the list to avoid destroying the
+ loop structure:
 \end_layout
 
 \begin_layout LyX-Code
@@ -557,8 +742,88 @@ mycif['testblock'].ChangeItemOrder(aloop,0)
 will move the loop block to the beginning of the printed datablock.
 \end_layout
 
+\begin_layout Subsubsection
+Adding and removing table rows (new in 3.2)
+\end_layout
+
+\begin_layout Standard
+It is possible to add a new row into a loop using AddPacket(packet):
+\end_layout
+
+\begin_layout LyX-Code
+template = aloop.GetKeyedPacket('_item_7','d')
+\end_layout
+
+\begin_layout LyX-Code
+template._item_5 = '5'
+\end_layout
+
+\begin_layout LyX-Code
+template._item_7 = 'e'
+\end_layout
+
+\begin_layout LyX-Code
+template._item_6 = '9'
+\end_layout
+
+\begin_layout LyX-Code
+aloop.AddPacket(template)
+\end_layout
+
+\begin_layout Standard
+Note we use an existing packet as a template in this example.
+ If you wish to create a packet from scratch, you should instantiate a 
+\family typewriter
+StarPacket
+\family default
+:
+\end_layout
+
+\begin_layout LyX-Code
+import StarFile   #installed with PyCIFRW
+\end_layout
+
+\begin_layout LyX-Code
+newpack = StarFile.StarPacket()
+\end_layout
+
+\begin_layout LyX-Code
+newpack._item_5 = '5'  
+\end_layout
+
+\begin_layout LyX-Code
+...
+\end_layout
+
+\begin_layout LyX-Code
+aloop.AddPacket(newpack)
+\end_layout
+
+\begin_layout Standard
+Note that an error will be raised if the packet attributes do not exactly
+ match the item names in the loop.
+\end_layout
+
+\begin_layout Standard
+A packet may be removed using the 
+\family typewriter
+RemoveKeyedPacket
+\family default
+ method: 
+\end_layout
+
+\begin_layout LyX-Code
+aloop.RemoveKeyedPacket('_item_7','a')
+\end_layout
+
 \begin_layout Paragraph
 Examples using loops
+\end_layout
+
+\begin_layout Standard
+Note the above methods for adding, accessing and removing rows in pre-existing
+ loops.
+ The following examples show how to perform column-based access.
 \end_layout
 
 \begin_layout Subparagraph
@@ -731,55 +996,6 @@ loop_
 
 \begin_layout LyX-Code
    12004 'large cell' 'Big and beautiful'
-\end_layout
-
-\begin_layout Subparagraph
-Adding a new loop packet.
- 
-\end_layout
-
-\begin_layout Standard
-PyCifRW does not (yet) directly support this: the following code shows one
- way to accomplish this indirectly for the above example.
-\end_layout
-
-\begin_layout LyX-Code
-newdata= {'_example':['101.1','255'],
-\end_layout
-
-\begin_layout LyX-Code
- '_example_detail':['medium cell','also medium'],
-\end_layout
-
-\begin_layout LyX-Code
- '_comment':['manageable','still manageable']
-\end_layout
-
-\begin_layout LyX-Code
-         }
-\end_layout
-
-\begin_layout LyX-Code
-olddata = cb.GetLoop('_example') #(key,value) list
-\end_layout
-
-\begin_layout LyX-Code
-map(lambda a:newdata[a[0]].extend(a[1]),loopdata)
-\end_layout
-
-\begin_layout LyX-Code
-cb.AddCifItem((newdata.keys(),newdata.values()))
-\end_layout
-
-\begin_layout Standard
-Note that, as the lists returned by PyCIFRW are direct pointers to the original
- lists, it is possible to extend them directly (e.g.
- 
-\family typewriter
-cb['_example'].append('101.1')
-\family default
-), however, this bypasses all data value syntax checks and loop length checks
- and is not recommended.
 \end_layout
 
 \begin_layout Subsection
@@ -1025,11 +1241,11 @@ dicname The dictionary name + version as given in the dictionary
 \end_layout
 
 \begin_layout Description
-diclang 'DDL1' or 'DDL2'
+diclang 'DDL1','DDL2', or 'DDLm'
 \end_layout
 
 \begin_layout Description
-typedic Python dictionary matching typecode with compiled regular expression
+typedic A Python dictionary matching typecode to compiled regular expression
 \end_layout
 
 \begin_layout Standard
@@ -1182,6 +1398,41 @@ validate
 ' function.
 \end_layout
 
+\begin_layout Standard
+A somewhat nicer interface to validation is provided in the 
+\family typewriter
+ValidationResult
+\family default
+ class (thanks to Boris Ducek), which is initialised with the return value
+ from 
+\family typewriter
+validate
+\family default
+:
+\end_layout
+
+\begin_layout LyX-Code
+val_report = ValidationResult(validate("mycif.cif",dic="cif_core.dic"))
+\end_layout
+
+\begin_layout Standard
+This class provides the 
+\family typewriter
+report
+\family default
+ method, producing a human-readable report, as well as Boolean methods which
+ return whether or not the block is valid or if items appear in the block
+ that are not present in the dictionary - 
+\family typewriter
+is_valid
+\family default
+ and 
+\family typewriter
+has_no_match_items
+\family default
+ respectively.
+\end_layout
+
 \begin_layout Subsubsection
 Limitations on validation
 \end_layout
@@ -1193,8 +1444,12 @@ Limitations on validation
 \end_layout
 
 \begin_layout Enumerate
-(DDL1 only) Some _type_construct attributes in the DDL1 spec file are not
- machine-readable, so values cannot be checked for consistency
+(DDL1 only) Some 
+\family typewriter
+_type_construct
+\family default
+ attributes in the DDL1 spec file are not machine-readable, so values cannot
+ be checked for consistency
 \end_layout
 
 \begin_layout Subsection
@@ -1218,7 +1473,9 @@ CifFile
 ValidCifFile
 \family default
  error.
- 
+ This class is slow, experimental and it is relatively easy to get around
+ the validity checks; it is probably more efficient to construct a complete
+ file and then run a validity check.
 \end_layout
 
 \begin_layout Standard
@@ -1294,7 +1551,19 @@ new_block_set (first argument, no keyword) The new dictionary to be merged
 \end_layout
 
 \begin_layout Description
-mode merging mode to use ('strict', 'overlay' or 'replace')
+mode merging mode to use ('
+\family typewriter
+strict
+\family default
+', '
+\family typewriter
+overlay
+\family default
+' or '
+\family typewriter
+replace
+\family default
+')
 \end_layout
 
 \begin_layout Description
@@ -1316,7 +1585,11 @@ newblockname
 
 \begin_layout Description
 idblock This block is ignored when merging - useful when merging DDL1 dictionari
-es in strict mode, in which case the 
+es in 
+\family typewriter
+strict
+\family default
+ mode, in which case the 
 \family typewriter
 on_this_dictionary
 \family default
@@ -1471,7 +1744,16 @@ LoopBlock
 \end_layout
 
 \begin_layout Standard
-The default iterator for CifBlocks (as opposed to StarBlocks) is 
+The default iterator (that used in list comprehensions and for loops) for
+ 
+\family typewriter
+CifBlocks
+\family default
+ (as opposed to 
+\family typewriter
+StarBlocks
+\family default
+) is 
 \family typewriter
 recursive_iter
 \family default

@@ -519,13 +519,13 @@ class GrammarTestCase(unittest.TestCase):
 
    def testold(self):
        """Read in 1.0 conformant file; should not fail"""
-       f = StarFile.ReadStar("test_1.0",grammar="1.0")  
+       f = CifFile.ReadCif("test_1.0",grammar="1.0")  
        print f["test"]["_item_3"]
       
    def testnew(self):
        """Read in a 1.0 conformant file with 1.1 grammar; should fail"""
        try:
-           f = StarFile.ReadStar("test_1.0",grammar="1.1")  
+           f = CifFile.ReadCif("test_1.0",grammar="1.1")  
        except StarFile.StarError:
            pass
 
