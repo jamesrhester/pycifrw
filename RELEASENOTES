@@ -1,13 +1,14 @@
 Release Notes for PyCIFRW-3.2  
 =============================
 
-General
-=======
+New in this release
+===================
 
 A lot of work has been done under the covers in preparation for the
 appearance of DDLm-based dictionaries, which use dREL methods to derive
 CIF data item values.  The most visible result of this work is 
-the addition of a number of convenience methods (see improvements, below).
+the addition of a number of convenience methods for accessing rows in
+CIF loops (see improvements, below).
 
 An attempt was made to allow capturing comments from input CIF files.
 This turns out to be a complex task, and was abandoned, given that
@@ -106,12 +107,13 @@ output file
 
 (3.2)
 
-* Improved pure python parsing speed (Boris Ducek)
-* ValidationResult class for easier access to validation output (Boris Ducek)
-* Nested bracket expressions parsed (DDLm)
+* Improved pure python parsing speed (Boris Dusek)
+* ValidationResult class for easier access to validation output (Boris Dusek)
+* Nested bracket expressions parsed (for DDLm)
 * Retrieval/removal of specific loop packet using value of a key dataname
-* Packets returned by GetPacket can be accessed by attribute
-* Loops can be extended by adding packets 
+* Datanames in packets returned by GetPacket or iteration can be 
+  accessed by attribute
+* Packets can be added to loops.
 
 Incompatible changes (since 3.0)
 ================================

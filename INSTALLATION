@@ -14,12 +14,12 @@ Installation
 
 (Windows minimal)
 
-Download and execute the file PyCifRW-3.0.exe
+Download and execute the file PyCifRW-3.2.exe
 
 (All operating systems)
  
-1. Download and unpack the file PyCifRW-3.0.tar.gz
-2. In directory PyCifRW-3.0, execute the command
+1. Download and unpack the file PyCifRW-3.2.tar.gz
+2. In directory PyCifRW-3.2, execute the command
  
     'python setup.py install'
 

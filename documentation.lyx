@@ -5,9 +5,9 @@
 \textclass article
 \language english
 \inputencoding auto
-\font_roman default
+\font_roman palatino
 \font_sans helvet
-\font_typewriter default
+\font_typewriter courier
 \font_default_family default
 \font_sc false
 \font_osf false
@@ -128,27 +128,11 @@ ReadCif
 \end_layout
 
 \begin_layout LyX-Code
->>> cf = CifFile.ReadCif(
-\begin_inset Quotes eld
-\end_inset
-
-mycif.cif
-\begin_inset Quotes erd
-\end_inset
-
-)
+>>> cf = CifFile.ReadCif("mycif.cif")
 \end_layout
 
 \begin_layout LyX-Code
->>> df = CifFile.ReadCif(
-\begin_inset Quotes eld
-\end_inset
-
-ftp://ftp.iucr.org/pub/cifdics/cifdic.register
-\begin_inset Quotes erd
-\end_inset
-
-)
+>>> df = CifFile.ReadCif("ftp://ftp.iucr.org/pub/cifdics/cifdic.register")
 \end_layout
 
 \begin_layout Standard
@@ -165,16 +149,8 @@ StarScan.so
  or more.
  To use this facility, include the keyword argument 
 \family typewriter
-
-\begin_inset Quotes eld
-\end_inset
-
 scantype='flex'
 \family default
-
-\begin_inset Quotes erd
-\end_inset
-
  in 
 \family typewriter
 ReadCif
@@ -187,23 +163,7 @@ ReadStar
 \end_layout
 
 \begin_layout LyX-Code
-cf = CifFile.ReadCif(
-\begin_inset Quotes eld
-\end_inset
-
-mycif.cif
-\begin_inset Quotes erd
-\end_inset
-
-,scantype=
-\begin_inset Quotes erd
-\end_inset
-
-flex
-\begin_inset Quotes erd
-\end_inset
-
-)
+cf = CifFile.ReadCif("mycif.cif",scantype="flex")
 \end_layout
 
 \begin_layout Subsubsection
@@ -479,15 +439,7 @@ row order in a CIF loop is arbitrary; while PyCIFRW maintains the row order
 \end_layout
 
 \begin_layout LyX-Code
->>> lb = cb.GetLoop(
-\begin_inset Quotes eld
-\end_inset
-
-_item_5
-\begin_inset Quotes erd
-\end_inset
-
-)
+>>> lb = cb.GetLoop("_item_5")
 \end_layout
 
 \begin_layout LyX-Code
@@ -747,7 +699,11 @@ Adding and removing table rows (new in 3.2)
 \end_layout
 
 \begin_layout Standard
-It is possible to add a new row into a loop using AddPacket(packet):
+It is possible to add a new row into a loop using 
+\family typewriter
+AddPacket(packet)
+\family default
+:
 \end_layout
 
 \begin_layout LyX-Code
@@ -907,23 +863,7 @@ cb.AddToLoop(
 \end_layout
 
 \begin_layout LyX-Code
-      '_example',{'_comment':[
-\begin_inset Quotes erd
-\end_inset
-
-not that small
-\begin_inset Quotes erd
-\end_inset
-
-,
-\begin_inset Quotes erd
-\end_inset
-
-Big and beautiful
-\begin_inset Quotes erd
-\end_inset
-
-]}
+      '_example',{'_comment':["not that small","Big and beautiful"]}
 \end_layout
 
 \begin_layout LyX-Code
@@ -1015,15 +955,7 @@ WriteOut
 \end_layout
 
 \begin_layout LyX-Code
->>>outfile = open(
-\begin_inset Quotes eld
-\end_inset
-
-mycif.cif
-\begin_inset Quotes erd
-\end_inset
-
-)
+>>>outfile = open("mycif.cif")
 \end_layout
 
 \begin_layout LyX-Code
@@ -1058,15 +990,7 @@ comment
 \end_layout
 
 \begin_layout LyX-Code
->>>outfile.write(cf.WriteOut(
-\begin_inset Quotes eld
-\end_inset
-
-#This is a test file
-\begin_inset Quotes erd
-\end_inset
-
-))
+>>>outfile.write(cf.WriteOut("#This is a test file"))
 \end_layout
 
 \begin_layout Standard
@@ -1158,15 +1082,7 @@ CifBlock
  objects automatically support save frames (used in DDL2 dictionaries),
  which are accessed using the 
 \family typewriter
-
-\begin_inset Quotes eld
-\end_inset
-
 saves
-\begin_inset Quotes erd
-\end_inset
-
-
 \family default
  key.
  The value of this key is a collection of 
@@ -1205,15 +1121,7 @@ CifFile
 \end_layout
 
 \begin_layout LyX-Code
-cd = CifFile.CifDic(
-\begin_inset Quotes eld
-\end_inset
-
-cif_core.dic
-\begin_inset Quotes erd
-\end_inset
-
-)
+cd = CifFile.CifDic("cif_core.dic")
 \end_layout
 
 \begin_layout Standard
@@ -1256,28 +1164,12 @@ CifDic
  objects provide a large number of validation functions, which all return
  a Python dictionary which contains at least the key 
 \family typewriter
-
-\begin_inset Quotes eld
-\end_inset
-
 result
-\begin_inset Quotes erd
-\end_inset
-
-
 \family default
 .
  
 \family typewriter
-
-\begin_inset Quotes eld
-\end_inset
-
 result
-\begin_inset Quotes erd
-\end_inset
-
-
 \family default
  takes the values 
 \family typewriter
@@ -1305,23 +1197,7 @@ A top level function is provided for convenient validation of CIF files:
 \end_layout
 
 \begin_layout LyX-Code
-CifFile.validate(
-\begin_inset Quotes eld
-\end_inset
-
-mycif.cif
-\begin_inset Quotes erd
-\end_inset
-
-,dic = 
-\begin_inset Quotes erd
-\end_inset
-
-cif_core.dic
-\begin_inset Quotes erd
-\end_inset
-
-)
+CifFile.validate("mycif.cif",dic = "cif_core.dic")
 \end_layout
 
 \begin_layout Standard
@@ -1358,15 +1234,7 @@ check_result
 \family default
  a small dictionary containing at least the key 
 \family typewriter
-
-\begin_inset Quotes eld
-\end_inset
-
 result
-\begin_inset Quotes erd
-\end_inset
-
-
 \family default
 .
  All tests which passed or were not applicable are removed from this dictionary,
@@ -1403,7 +1271,7 @@ A somewhat nicer interface to validation is provided in the
 \family typewriter
 ValidationResult
 \family default
- class (thanks to Boris Ducek), which is initialised with the return value
+ class (thanks to Boris Dusek), which is initialised with the return value
  from 
 \family typewriter
 validate
