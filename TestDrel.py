@@ -253,8 +253,8 @@ class WithDictTestCase(unittest.TestCase):
        self.lexer = drel_lex.lexer
        self.parser = drel_yacc.parser
        #use a simple dictionary
-       self.testdic = CifFile.CifDic("testdic")
-       self.testblock = CifFile.CifFile("testdic")["DDL_DIC"]
+       self.testdic = CifFile.CifDic("testdic",grammar="DDLm")
+       self.testblock = CifFile.CifFile("testdic",grammar="DDLm")["DDL_DIC"]
        #create the global namespace
        self.namespace = self.testblock.keys()
        self.namespace = dict(map(None,self.namespace,self.namespace))
@@ -323,8 +323,8 @@ class WithDictTestCase(unittest.TestCase):
    def test_attributes(self):
        """Test that attributes of complex expressions come out OK"""
        # We need to do a scary funky attribute of a key lookup 
-       ourdic = CifFile.CifDic("testdic2")
-       testblock = CifFile.CifFile("test_data.cif")["testdata"]
+       ourdic = CifFile.CifDic("testdic2",grammar="DDLm")
+       testblock = CifFile.CifFile("test_data.cif",grammar="DDLm")["testdata"]
        self.parser.loopable_cats = ['geom','position'] #
        teststrg = """
        LineList = []
@@ -332,17 +332,18 @@ class WithDictTestCase(unittest.TestCase):
        With p as position
        Loop g as geom {
        If (g.type == "point") {
-             PointList += Tuple([g.vertex1_id,p[g.vertex1_id].vector_xyz])
+             PointList += Tuple(g.vertex1_id,p[g.vertex1_id].vector_xyz)
        }
-       Else if (g.type == "line") {
-             LineList ++= [[g.vertex1_id, g.vertex2_id],
-                                   [p[g.vertex1_id].vector_xyz,
-                                           p[g.vertex2_id].vector_xyz]]
-       }}
+       #Else if (g.type == "line") {
+       #      LineList ++= Tuple(Tuple(g.vertex1_id, g.vertex2_id),
+       #                            Tuple(p[g.vertex1_id].vector_xyz,
+       #                                    p[g.vertex2_id].vector_xyz))
+       #}
+       }
        """
-       self.parser.target_id = 'LineList'
+       self.parser.target_id = 'PointList'
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = drel_yacc.make_func(res,"myfunc","LineList")
+       realfunc = drel_yacc.make_func(res,"myfunc","PointList")
        print "Function -> \n" + realfunc
        exec realfunc
        retval = myfunc(ourdic,testblock,"LineList")

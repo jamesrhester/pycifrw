@@ -305,6 +305,7 @@ def p_attributeref(p):
     '''attributeref : primary attribute_tag '''
     # intercept special loop variables
     # print `p.parser.special_id`
+    newid = None
     for idtable in p.parser.special_id:
         newid = idtable.get(p[1],0)
         if newid: break
@@ -392,7 +393,11 @@ def p_long_slice(p):
     p[0] = " ".join(p[1:])
 
 # Last of the primary non-terminals...
-
+# We can catch quite a few of the functions simply by
+# rewriting the function name.  By default, the function
+# name is passed through unchanged; this makes sure that
+# the built-in functions are found OK 
+#
 def p_call(p):
     '''call : primary "(" ")"
             | primary "(" argument_list ")" '''
@@ -400,7 +405,8 @@ def p_call(p):
     builtins = {"list":"StarFile.StarList",
                 "tuple":"StarFile.StarTuple",
                 "table":"dict",
-                "int": "int"}
+                "int":"int",
+                "len":"len"}
     funcname = builtins.get(p[1].lower(),p[1])
     # try to catch a few straightforward trickier ones
     if funcname.lower() == "mod":
@@ -410,7 +416,7 @@ def p_call(p):
     elif funcname.lower() in ['array']:
         p[0] = "numpy.array(" + "".join(p[2:]) + ")"
     else: 
-        p[0] = funcname + " ".join(p[2:])
+        p[0] = funcname + "".join(p[2:])
     #print "Function call: %s" % p[0]
 
 # It seems that in dREL the arguments are expressed differently
@@ -497,7 +503,7 @@ def p_if_stmt(p):
         p[0] += p[2] + ":"
         p[0] += add_indent(p[3])
     else:                       #else statement
-        p[0] = p[1]
+        p[0] = p[1] + "\n"
         p[0] += p[2].lower() + ":" + add_indent(p[3])
     print "If statement: \n" + p[0]
 
@@ -635,6 +641,8 @@ def p_caselist(p):
 def p_funcdef(p):
     ''' funcdef : FUNCTION ID "(" arglist ")" suite '''
     p[0] = "def " + "".join(p[2:6]) + ":"
+    # add some import statements 
+    p[0] += "\n" + add_indent("import StarFile,math,numpy")
     # add a return statement as the last statement of the suite
     p[0] += "\n" + add_indent(p[6] + 'return ' + p[2] + '\n')
 
@@ -702,7 +710,7 @@ def make_func(parser_data,funcname,returnname,cat_meth = False,have_sn=True):
 
 parser = yacc.yacc()    
 parser.indent = ""
-parser.special_id=[]
+parser.special_id=[{}]
 parser.looped_value = False    #Determines with statement construction 
 parser.target_id = None
 parser.withtable = {}          #Table of 'with' packet access info
