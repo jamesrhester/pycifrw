@@ -213,6 +213,15 @@ class BlockChangeTestCase(unittest.TestCase):
            self.assertEqual(getattr(test_pack,"_item_name#2"),self.values[0][1][i]) 
            i += 1
 
+   def testPacketContents(self):
+       """Test that body of packet is filled in as well"""
+       testloop = self.cf.GetLoop("_item_name_1")
+       it_order = testloop.GetItemOrder()
+       itn_pos = it_order.index("_item_name_1")
+       for test_pack in testloop:
+           print 'Test pack: ' + `test_pack`
+           self.assertEqual(test_pack._item_name_1,test_pack[itn_pos])
+
    def testPacketAttr(self):
        """Test that packets have attributes"""
        testloop = self.cf.GetLoop("_item_name_1")
@@ -522,10 +531,17 @@ class GrammarTestCase(unittest.TestCase):
        f = CifFile.ReadCif("test_1.0",grammar="1.0")  
        print f["test"]["_item_3"]
       
-   def testnew(self):
+   def testNew(self):
        """Read in a 1.0 conformant file with 1.1 grammar; should fail"""
        try:
            f = CifFile.ReadCif("test_1.0",grammar="1.1")  
+       except StarFile.StarError:
+           pass
+
+   def testObject(self):
+       """Test use of grammar keyword when initialising object"""
+       try:
+           f = CifFile.CifFile("test_1.0",grammar="1.0")
        except StarFile.StarError:
            pass
 

@@ -605,14 +605,14 @@ It is intended that the dREL methods will turn this on only during
 execution, then turn it off afterwards. 
 
 <<Initialise Cif dictionary>>=
-def __init__(self,dic,do_minimum=False):
+def __init__(self,dic,do_minimum=False,grammar='1.1'):
     self.do_minimum = do_minimum
     self.dic_as_cif = dic
     self.template_cache = {}    #for DDLm imports
     self.ddlm_functions = {}    #for DDLm functions
     self.switch_numpy(False)    #no Numpy arrays returned 
     if isinstance(dic,StringType):
-        self.dic_as_cif = CifFile(dic)
+        self.dic_as_cif = CifFile(dic,grammar=grammar)
     (self.dicname,self.diclang,self.defdata) = self.dic_determine(self.dic_as_cif)
     StarFile.BlockCollection.__init__(self,element_class=CifBlock,datasource=self.defdata) 
     self.scopes_mandatory = {"dictionary":[],"category":[],"item":[]}
@@ -1128,7 +1128,7 @@ def ddlm_import(self):
                 continue 
             # resolve URI  
             full_uri = self.resolve_path(file_loc)
-            dic_as_cif = CifFile(urllib.urlopen(full_uri))
+            dic_as_cif = CifFile(urllib.urlopen(full_uri),grammar="DDLm")
             import_from = CifDic(dic_as_cif,do_minimum=True)  #this will recurse internal imports
             # and now merge these definitions
             if scope == "dic":

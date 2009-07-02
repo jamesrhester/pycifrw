@@ -444,7 +444,7 @@ our initialisation function, which may be a subclass which takes other arguments
         else:
             self.maxoutlength = maxoutlength
         if type(datasource) is StringType or hasattr(datasource,"read"):
-            newself = ReadStar(datasource,self.maxinlength)
+            newself = ReadStar(datasource,self.maxinlength,**kwargs)
             # print "Reinjecting by calling %s.__init__ with kwargs %s" % (`self.__init__.im_class`,kwargs)
 	    self.__init__.im_class.__init__(self,datasource=newself,maxoutlength=maxoutlength,**kwargs)
         self.header_comment = \
@@ -822,9 +822,9 @@ we drill down until we get a simple value to return, then start looping.
 We want to build up a return dictionary by adding keys from the deeper loops,
 but if we simply use the dictionary update method, we will find that we
 have stale keys from previous inner loops.  Therefore, we keep our values as
-(key,value) tuples which we turn into a dictionary at the last moment.
+(key,value) tuples which we turn into a Star packet at the last moment.
 
-This is now updated to return StarPackets, which are like dictionaries
+This is now updated to return StarPackets, which are like lists
 except that they also have attributes set.
  
 <<A recursive iterator>>=
@@ -832,36 +832,38 @@ def recursive_iter(self,dict_so_far={},coord=[]):
     # print "Recursive iter: coord %s, keys %s, dim %d" % (`coord`,`self.block.keys()`,self.dimension)
     my_length = 0
     top_items = self.block.items()
+    top_values = self.block.values()       #same order as items
     drill_values = self.block.values()
-    for dimup in range(0,self.dimension):
-        if len(drill_values)>0:
-            drill_values=drill_values[0]  #drill in
+    for dimup in range(0,self.dimension):  #look higher in the tree
+        if len(drill_values)>0:            #this block has values
+            drill_values=drill_values[0]   #drill in
         else:
             raise StarError("Malformed loop packet %s" % `top_items[0]`)
     my_length = len(drill_values)
-    if self.dimension == 0:
+    if self.dimension == 0:                #top level
         for aloop in self.loops:
             for apacket in aloop.recursive_iter():
                 # print "Recursive yielding %s" % `dict(top_items + apacket.items())`
-                prep_yield = StarPacket([])
+                prep_yield = StarPacket(top_values+apacket.values())  #straight list
                 for name,value in top_items + apacket.items():
                     setattr(prep_yield,name,value)
                 yield prep_yield
-    else:
+    else:                                  #in some loop
         for i in range(my_length):
             kvpairs = map(lambda a:(a,self.coord_to_group(a,coord)[i]),self.block.keys())
+            kvvals = map(lambda a:a[1],kvpairs)   #just values
             # print "Recursive kvpairs at %d: %s" % (i,`kvpairs`)
             if self.loops:
               for aloop in self.loops:
                 for apacket in aloop.recursive_iter(coord=coord+[i]):
                     # print "Recursive yielding %s" % `dict(kvpairs + apacket.items())`
-                    prep_yield = StarPacket([])
+                    prep_yield = StarPacket(kvvals+apacket.values())
                     for name,value in kvpairs + apacket.items():
                         setattr(prep_yield,name,value)
                     yield prep_yield
             else:           # we're at the bottom of the tree
                 # print "Recursive yielding %s" % `dict(kvpairs)`
-                prep_yield = StarPacket([])
+                prep_yield = StarPacket(kvvals)
                 for name,value in kvpairs:
                     setattr(prep_yield,name,value)
                 yield prep_yield
