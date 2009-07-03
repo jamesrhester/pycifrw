@@ -1021,8 +1021,8 @@ def ddlm_parse_valid(self):
     if not self.dic_as_cif[self.master_key].has_key("_dictionary_valid.scope"):
         return
     for scope_pack in self.dic_as_cif[self.master_key].GetLoop("_dictionary_valid.scope"):
-        scope = scope_pack["_dictionary_valid.scope"]
-        valid_info = scope_pack["_dictionary_valid.attributes"]
+        scope = getattr(scope_pack,"_dictionary_valid.scope")
+        valid_info = getattr(scope_pack,"_dictionary_valid.attributes")
         valid_info = valid_info.split()
         for i in range(0,len(valid_info),2): 
             if valid_info[i]=="+":
@@ -1164,7 +1164,7 @@ def ddlm_import(self):
                     continue 
                 full_uri = self.resolve_path(file_loc)
                 if full_uri not in self.template_cache:
-                    dic_as_cif = CifFile(urllib.urlopen(full_uri))
+                    dic_as_cif = CifFile(urllib.urlopen(full_uri),grammar="DDLm")
                     self.template_cache[full_uri] = CifDic(dic_as_cif,do_minimum=True)  #this will recurse internal imports
                     print 'Added %s to cached dictionaries' % full_uri
                 import_from = self.template_cache[full_uri]
