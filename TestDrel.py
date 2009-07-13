@@ -304,7 +304,7 @@ class WithDictTestCase(unittest.TestCase):
        
    def test_functions(self):
        """Test that functions are converted correctly"""
-       struct_testdic = CifFile.CifFile("../pycifrw-ddlm/DDLm_20071010/cif_core.dic")
+       struct_testdic = CifFile.CifFile("/home/jrh/COMCIFS/DDLm_20071010/cif_core.dic")
        struct_testblock = struct_testdic["CIF_CORE"]
        self.parser.loopable_cats = ["import"]   #category import is looped
        self.parser.target_id = "_import_list.id"

@@ -320,7 +320,7 @@ def p_attributeref(p):
         print "Using global dictionary variable "+p[1:]
         p[0] = 'ciffile['+"".join(p[1:])+']'
     else:   #could be a keyed index operation, add back category val
-        p[0] = p[1]+'["'+ p.parser.sub_subject+p[2] + '"]' 
+        p[0] = 'getattr('+ p[1]+ ',"'+p.parser.sub_subject+p[2] + '")' 
         p.parser.sub_subject = ""
 
 def p_attribute_tag(p):
