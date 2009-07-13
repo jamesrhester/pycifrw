@@ -94,9 +94,6 @@ from types import *
 import re
 import StarFile
 import sys
-#### Remove in final version!!
-sys.path.append('../drel-ply')
-####
 <<CifLoopBlock class>>
 <<CifBlock class>>
 <<CifFile class>>

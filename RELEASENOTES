@@ -1,21 +1,18 @@
-Release Notes for PyCIFRW-3.2  
+Release Notes for PyCIFRW-3.3  
 =============================
 
 New in this release
 ===================
 
-A lot of work has been done under the covers in preparation for the
-appearance of DDLm-based dictionaries, which use dREL methods to derive
-CIF data item values.  The most visible result of this work is 
-the addition of a number of convenience methods for accessing rows in
-CIF loops (see improvements, below).
+This release updates the installation system to the ez-install style
+using Python 'eggs' (analogous to Java 'jars').  The usual 
+'python setup.py install' command will continue to work.
 
-An attempt was made to allow capturing comments from input CIF files.
-This turns out to be a complex task, and was abandoned, given that
-comments are not meant to convey any important information.  A
-couple of methods were instead added to allow addition of comments
-to generated CIF files.
- 
+A small bugfix is also included to make the way contents of loop
+packets are addressed consistent.  The dot notation / getattr
+command should always be used, and dictionary style access is no
+longer possible.
+
 Bug fixes (since 3.0)
 =====================
 
@@ -61,6 +58,12 @@ block is performed sensibly.
 
 * Fixed overlay merging bug
  
+(3.3)
+
+* Loop packets were inconsistently returned as either dictionaries or lists,
+  depending on the method of access; this has been fixed so that now they
+  always look like lists with attributes corresponding to the data name
+
 Improvements/Changes (since 3.0)
 ================================
 
@@ -118,4 +121,7 @@ output file
 Incompatible changes (since 3.0)
 ================================
 
-None
+(3.3)
+* Any code using the dictionary style notation for packets will no longer work.
+  e.g. packet["_atom_position_id"] is no longer possible.
+
