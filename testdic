@@ -1,0 +1,2112 @@
+##############################################################################
+#                                                                            #
+#                       PROTOTYPE DDL DICTIONARY                             #
+#                                                                            #
+##############################################################################
+
+data_DDL_DIC
+ 
+    _dictionary.title            DDL_DIC
+    _dictionary.class            Attribute
+    _dictionary.version          3.7.06
+    _dictionary.date             2007-03-18
+    _dictionary.uri              www.iucr.org/cif/dic/ddl.dic 
+    _dictionary.ddl_conformance  3.7.06
+    _dictionary.namespace        DdlDic
+    _description.text
+;
+     This dictionary contains the definitions of attributes that
+     make up the DDLm dictionary definition language.  It provides 
+	 the meta meta data for all CIF dictionaries.
+;
+
+save_DDL_ATTR
+    _definition.id               ddl_attr
+    _definition.scope            Category
+    _definition.class            Head        
+    _definition.update           2006-12-05
+    _description.text
+;
+     This category is parent of all other categories in the DDLm
+     dictionary.
+;
+     save_
+
+#-------------------------------------------------------------------------------
+
+save_ALIAS
+ 
+    _definition.id               alias
+    _definition.scope            Category
+    _definition.class            List
+    _definition.update           2007-02-06
+    _description.text
+;
+     The attributes used to specify the aliased names of definitions.
+;
+    _category.parent_id          ddl_attr
+    _category_key.generic      '_alias.definition_id'
+     save_
+ 
+ 
+save_alias.definition_id  
+    _definition.id             '_alias.definition_id'
+    _definition.class            Attribute
+    _definition.update           2006-11-16
+    _description.text
+;
+     Identifier tag of an aliased definition.
+;
+    _name.category_id            alias
+    _name.object_id              definition_id
+    _type.purpose                Key     
+    _type.container              Single
+    _type.contents               Tag 
+     save_
+ 
+ 
+save_alias.dictionary_uri
+    _definition.id             '_alias.dictionary_uri'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Dictionary URI in which the aliased definition belongs.
+;
+    _name.category_id            alias
+    _name.object_id              dictionary_uri
+    _type.purpose                Identify     
+    _type.container              Single
+    _type.contents               Uri 
+     save_
+
+
+#----------------------------------------------------------------------------
+ 
+ 
+save_CATEGORY
+ 
+    _definition.id               category
+    _definition.scope            Category
+    _definition.class            Set
+    _definition.update           2006-11-16
+    _description.text
+;
+     The attributes used to specify the properties of a
+     "category" of data items.
+;
+    _category.parent_id          ddl_attr
+     save_
+ 
+ 
+save_category.parent_id  
+    _definition.id             '_category.parent_id'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The definition id of the category which is a higher member of the 
+     organisational hierarchy than the current category definition.       
+;
+    _name.category_id            category
+    _name.object_id              parent_id
+    _type.purpose                Identify     
+    _type.container              Single
+    _type.contents               Tag
+     save_
+ 
+ 
+save_category.parent_join
+    _definition.id             '_category.parent_join'
+    _definition.update           2006-12-21
+    _definition.class            Attribute
+    _description.text
+;
+     Yes or No flag indication if a category-list may be merged at 
+	 instantiation with its parent category.  Note that category-sets
+	 may always be merged with the parent category.
+;
+    _name.category_id            category
+    _name.object_id              parent_join
+    _type.purpose                Identify     
+    _type.container              Single
+    _type.contents               YesorNo
+	_enumeration.default         No
+     save_
+ 
+
+#----------------------------------------------------------------------------
+ 
+ 
+save_CATEGORY_KEY
+ 
+    _definition.id               category_key
+    _definition.scope            Category
+    _definition.class            Set 
+    _definition.update           2006-11-16
+    _description.text
+;
+    Attributes used to specify the access keys of List categories. 
+;
+    _category.parent_id          category
+     save_
+ 
+
+save_category_key.generic
+    _definition.id             '_category_key.generic'
+    _definition.update           2007-02-08
+    _definition.class            Attribute
+    _description.text
+;
+     Tag of a data item in a List category which is the generic key
+	 to access other items in the category. The value of this
+	 item must be unique in order to provide unambiguous access to
+	 a packet (row) in the table of values.
+;
+    _name.category_id            category_key
+    _name.object_id              generic
+    _type.purpose                Identify
+    _type.container              Single
+    _type.contents               Tag
+     save_
+ 
+
+save_category_key.primitive
+    _definition.id             '_category_key.primitive'
+    _definition.update           2007-02-08
+    _definition.class            Attribute
+    _description.text
+;
+     Tuple of the data item (or data items) in a List category which form
+     the primitive composite key to access other items in the category.
+     The value of this tuple must be unique to provide unambiguous access
+     to a packet (row) in the table of values.
+;
+    _name.category_id            category_key
+    _name.object_id              primitive
+    _type.purpose                Identify
+    _type.container              Tuple 
+    _type.contents               Tag
+    _type.dimension              [1:]
+     save_
+
+#-----------------------------------------------------------------------------
+
+ 
+save_CATEGORY_MANDATORY
+
+    _definition.id               category_mandatory
+    _definition.scope            Category
+    _definition.class            List
+    _definition.update           2007-02-06
+    _description.text
+;
+     The attributes used to specify the properties of a
+     "category_mandatory" of data items.
+;
+    _category.parent_id          category
+    _category_key.generic      '_category_mandatory.item_id'
+     save_
+
+
+save_category_mandatory.item_id
+    _definition.id             '_category_mandatory.item_id'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The data name of an item in this category which must exist 
+	 within a data file if any item within this category appears.
+;
+    _name.category_id            category_mandatory
+    _name.object_id              item_id
+    _type.purpose                Key     
+    _type.container              Single
+    _type.contents               Tag  
+     save_
+ 
+#----------------------------------------------------------------------------
+ 
+
+save_DEFINITION
+ 
+    _definition.id               definition
+    _definition.scope            Category
+    _definition.class            Set 
+    _definition.update           2006-11-16
+    _description.text
+;
+     The attributes for classifying dictionary definitions.
+;
+    _category.parent_id          ddl_attr
+     save_
+ 
+ 
+save_definition.class
+    _definition.id             '_definition.class'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The nature and the function of a definition or definitions.
+;
+    _name.category_id            definition
+    _name.object_id              class
+    _type.purpose                State     
+    _type.container              Single
+    _type.contents               Code  
+     loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+
+     Audit       
+;                 Item used to IDENTIFY and AUDIT dictionary properties 
+                  only.
+;
+     Attribute
+;                 Item used as an attribute in the definition
+                  of other data items. Applied in dictionaries only.
+;
+     Head
+;                 Category of items that is the parent of
+                  all other categories in the dictionary.
+;
+     List
+;                 Category of items that in a data file must
+                  reside in a looped list with a key item defined.
+;
+     Set
+;                 Category of items that form a set (but not a
+                  loopable list). These items may be referenced 
+				  as a class of items in a dREL methods expression.
+;
+     Datum
+;                 Item in a domain-specific dictionary.  These items 
+                  appear in data files.
+;
+     Transient
+;                 Definition saveframes specifying the attributes, 
+                  enumeration values and functions used in dictionary 
+				  definitions. These tags are ONLY used in dictionary 
+				  definitions.
+;
+    _enumeration.default         Datum
+     save_
+ 
+ 
+save_definition.id  
+    _definition.id             '_definition.id'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Identifier name of the definition contained within a save frame.
+;
+    _name.category_id            definition
+    _name.object_id              id
+    _type.purpose                Identify     
+    _type.container              Single
+    _type.contents               Tag 
+     save_
+ 
+ 
+save_definition.scope    
+    _definition.id             '_definition.scope'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The extent to which a definition affects other definitions.
+;
+    _name.category_id            definition
+    _name.object_id              scope    
+    _type.purpose                State     
+    _type.container              Single
+    _type.contents               Code 
+     loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+          Dictionary        "applies to all defined items in the dictionary"
+          Category          "applies to all defined items in the category"
+          Item              "applies to a single item definition"
+    _enumeration.default        Item     
+     save_
+ 
+ 
+save_definition.update
+    _definition.id             '_definition.update'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The date that a definition was last changed.
+;
+    _name.category_id            definition
+    _name.object_id              update
+    _type.purpose                Audit        
+    _type.container              Single
+    _type.contents               Date
+     save_
+ 
+ 
+save_definition.xref_code
+    _definition.id             '_definition.xref_code'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Code identifying the equivalent definition in the dictionary
+     referenced by the DICTIONARY_XREF attributes.
+;
+    _name.category_id            definition
+    _name.object_id              xref_code
+    _type.purpose                Identify     
+    _type.container              Single
+    _type.contents               Code
+     save_
+ 
+#----------------------------------------------------------------------------
+ 
+ 
+save_DESCRIPTION
+ 
+    _definition.id               description
+    _definition.scope            Category
+    _definition.class            Set
+    _definition.update           2006-11-16
+    _description.text
+;
+     The attributes of descriptive (non-machine parseable) parts of
+     definitions.
+;
+    _category.parent_id          ddl_attr
+     save_
+ 
+ 
+save_description.key_words
+    _definition.id             '_description.key_words'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     List of key-words categorising the item.
+;
+    _description.common         'key words'
+    _name.category_id            description
+    _name.object_id              key_words
+    _type.purpose                Describe
+    _type.container              List
+    _type.contents               Code
+     save_
+ 
+ 
+save_description.common
+    _definition.id             '_description.common'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Commonly-used identifying name for the item.
+; 
+    _description.common         'common name'
+    _name.category_id            description
+    _name.object_id              common      
+    _type.purpose                Describe
+    _type.container              Single
+    _type.contents               Text
+     save_
+ 
+ 
+save_description.text
+    _definition.id             '_description.text'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The text description of the defined item.
+;
+    _description.common         'description'
+    _name.category_id            description
+    _name.object_id              text
+    _type.purpose                Describe
+    _type.container              Single
+    _type.contents               Text
+     save_
+ 
+ 
+#----------------------------------------------------------------------------
+ 
+ 
+save_DESCRIPTION_EXAMPLE
+ 
+    _definition.id               description_example
+    _definition.scope            Category
+    _definition.class            List
+    _definition.update           2007-02-06
+    _description.text
+;
+     The attributes of descriptive (non-machine parseable) examples of
+     values of the defined items.
+;
+    _category.parent_id          description
+    _category_key.generic      '_description_example.case'
+     save_
+ 
+ 
+save_description_example.case
+    _definition.id             '_description_example.case'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     An example case of the defined item.
+;
+    _name.category_id            description_example
+    _name.object_id              case
+    _type.purpose                Key
+    _type.container              Single
+    _type.contents               Text
+     save_
+ 
+ 
+save_description_example.detail
+    _definition.id             '_description_example.detail'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     A description of an example case for the defined item.
+;
+    _name.category_id            description_example
+    _name.object_id              detail
+    _type.purpose                Describe
+    _type.container              Single
+    _type.contents               Text
+     save_
+ 
+ 
+#----------------------------------------------------------------------------
+ 
+ 
+save_DICTIONARY
+ 
+    _definition.id               dictionary
+    _definition.scope            Category
+    _definition.class            Set   
+    _definition.update           2006-11-16
+    _description.text
+;
+     Attributes for identifying and registering the dictionary. The items
+     in this category are NOT used as attributes of INDIVIDUAL data items.
+;
+    _category.parent_id          ddl_attr
+     save_
+ 
+ 
+save_dictionary.class
+    _definition.id             '_dictionary.class'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The nature, or field of interest, of data items defined in the dictionary.
+;
+    _name.category_id            dictionary
+    _name.object_id              class
+    _type.purpose                State     
+    _type.container              Single
+    _type.contents               Code  
+     loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+              Attribute     'dictionary containing DDL attribute definitions'   
+              Instance      'dictionary containing data definitions'
+              Import        'dictionary containing definitions for importation'
+              Function      'dictionary containing method function definitions'
+    _enumeration.default         Instance     
+     save_
+ 
+ 
+save_dictionary.date
+    _definition.id             '_dictionary.date'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The date that the last dictionary revision took place.
+;
+    _name.category_id            dictionary
+    _name.object_id              date
+    _type.purpose                Audit       
+    _type.container              Single
+    _type.contents               Date 
+     save_
+ 
+ 
+save_dictionary.ddl_conformance
+    _definition.id             '_dictionary.ddl_conformance'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The version number of the DDL dictionary that this dictionary
+	 conforms to.
+;
+    _name.category_id            dictionary
+    _name.object_id              ddl_conformance
+    _type.purpose                Audit         
+    _type.container              Single
+    _type.contents               Version
+     save_
+ 
+ 
+save_dictionary.namespace
+    _definition.id             '_dictionary.namespace'
+    _definition.update           2006-12-05
+    _definition.class            Attribute
+    _description.text
+;
+     The namespace code that may be prefixed (with a trailing colon
+	 ":") to an item tag defined in the defining dictionary when used 
+	 in particular applications. Because tags must be unique, namespace
+	 codes are unlikely to be used data files.
+;
+    _name.category_id            dictionary
+    _name.object_id              namespace
+    _type.purpose                Identify     
+    _type.container              Single
+    _type.contents               Code
+     save_
+ 
+ 
+save_dictionary.title
+    _definition.id             '_dictionary.title'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The common title of the dictionary. Will usually match the name
+     attached to the data_ statement of the dictionary file.
+;
+    _name.category_id            dictionary
+    _name.object_id              title
+    _type.purpose                Identify     
+    _type.container              Single
+    _type.contents               Code
+     save_
+ 
+ 
+save_dictionary.uri
+    _definition.id             '_dictionary.uri'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The universal resource indicator of this dictionary.
+;
+    _name.category_id            dictionary
+    _name.object_id              uri
+    _type.purpose                Identify     
+    _type.container              Single
+    _type.contents               Uri
+     save_
+ 
+ 
+save_dictionary.version
+    _definition.id             '_dictionary.version'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     A unique version identifier for the dictionary.
+;
+    _name.category_id            dictionary
+    _name.object_id              version
+    _type.purpose                Audit         
+    _type.container              Single
+    _type.contents               Version
+     save_
+ 
+ 
+#----------------------------------------------------------------------------
+ 
+ 
+save_DICTIONARY_AUDIT
+ 
+    _definition.id               dictionary_audit
+    _definition.scope            Category
+    _definition.class            List  
+    _definition.update           2007-02-06
+    _description.text
+;
+     Attributes for identifying and registering the dictionary. The items
+     in this category are NOT used as attributes of individual data items.
+;
+    _category.parent_id          dictionary
+    _category_key.generic       '_dictionary_audit.version'
+     save_
+ 
+ 
+save_dictionary_audit.date
+    _definition.id             '_dictionary_audit.date'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The date of each dictionary revision.
+;
+    _name.category_id            dictionary_audit
+    _name.object_id              date
+    _type.purpose                Audit         
+    _type.container              Single
+    _type.contents               Date 
+     save_
+
+
+save_dictionary_audit.revision
+    _definition.id             '_dictionary_audit.revision'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     A description of the revision applied for the _dictionary_audit.version.
+;
+    _name.category_id            dictionary_audit
+    _name.object_id              revision
+    _type.purpose                Describe  
+    _type.container              Single
+    _type.contents               Text
+     save_
+
+
+save_dictionary_audit.version
+    _definition.id             '_dictionary_audit.version'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     A unique version identifier for each revision of the dictionary.
+;
+    _name.category_id            dictionary_audit
+    _name.object_id              version
+    _type.purpose                Key         
+    _type.container              Single
+    _type.contents               Version
+     save_
+ 
+ 
+#-----------------------------------------------------------------------------
+ 
+ 
+save_DICTIONARY_VALID
+ 
+    _definition.id               dictionary_valid
+    _definition.scope            Category
+    _definition.class            List  
+    _definition.update           2007-02-06
+    _description.text
+;
+     Data items which are used to specify the contents of definitions in
+     the dictionary in terms of the _definition.scope     and the required
+     and prohibited attributes.
+;
+    _category.parent_id          dictionary  
+    _category_key.generic       '_dictionary_valid.scope'  
+     save_
+ 
+ 
+save_dictionary_valid.attributes 
+    _definition.id             '_dictionary_valid.attributes'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     A list of the attribute names and the attribute categories that are
+     either MANDATORY or PROHIBITED for the _definition.scope value
+     specified in the corresponding _dictionary_valid.scope. All 
+     unlisted attributes are considered optional.
+
+     MANDATORY   attributes are preceded by a "+" character.
+     PROHIBITED  attributes are preceded by a "!" character.
+     RECOMMENDED attributes are preceded by a "." character.
+;
+    _name.category_id            dictionary_valid
+    _name.object_id              attributes
+    _type.purpose                Audit         
+    _type.container              Single
+    _type.contents               Text
+     save_
+ 
+ 
+save_dictionary_valid.scope     
+    _definition.id             '_dictionary_valid.scope'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The _definition.scope code corresponding to the attribute list
+     given in _dictionary_valid.attributes.
+;
+    _name.category_id            dictionary_valid
+    _name.object_id              scope    
+    _name.linked_item_id       '_definition.scope'
+    _type.purpose                Key     
+    _type.container              Single
+    _type.contents               Code 
+     loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+          Dictionary        "applies to all defined items in the dictionary"
+          Category          "applies to all defined items in the category"
+          Item              "applies to a single definition"
+     save_
+ 
+
+#-----------------------------------------------------------------------------
+ 
+ 
+save_DICTIONARY_XREF
+ 
+    _definition.id               dictionary_xref
+    _definition.scope            Category
+    _definition.class            List  
+    _definition.update           2007-02-06
+    _description.text
+;
+     Data items which are used to cross reference other dictionaries that
+     have defined the same data items. Data items in this category are NOT 
+     used as attributes of individual data items.
+;
+    _category.parent_id          dictionary  
+    _category_key.generic      '_dictionary_xref.code'
+     save_
+ 
+ 
+save_dictionary_xref.code       
+    _definition.id             '_dictionary_xref.code'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     A code identifying the cross-referenced dictionary.
+;
+    _name.category_id            dictionary_xref
+    _name.object_id              code
+    _type.purpose                Key     
+    _type.container              Single
+    _type.contents               Code 
+     save_
+ 
+ 
+save_dictionary_xref.date       
+    _definition.id             '_dictionary_xref.date'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Date of the cross-referenced dictionary.
+;
+    _name.category_id            dictionary_xref
+    _name.object_id              date
+    _type.purpose                Audit       
+    _type.container              Single
+    _type.contents               Date 
+     save_
+ 
+ 
+save_dictionary_xref.format       
+    _definition.id             '_dictionary_xref.format'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Format of the cross referenced dictionary.
+;
+    _name.category_id            dictionary_xref
+    _name.object_id              format
+    _type.purpose                Audit
+    _type.container              Single
+    _type.contents               Text
+     save_
+ 
+ 
+save_dictionary_xref.name       
+    _definition.id             '_dictionary_xref.name'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The name and description of the cross-referenced dictionary.
+;
+    _name.category_id            dictionary_xref
+    _name.object_id              name
+    _type.purpose                Audit     
+    _type.container              Single
+    _type.contents               Text
+     save_
+ 
+ 
+save_dictionary_xref.uri       
+    _definition.id             '_dictionary_xref.uri'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The source URI of the cross referenced dictionary data.
+;
+    _name.category_id            dictionary_xref
+    _name.object_id              uri
+    _type.purpose                Audit
+    _type.container              Single
+    _type.contents               Uri
+     save_
+ 
+
+#----------------------------------------------------------------------------
+ 
+ 
+save_ENUMERATION
+ 
+    _definition.id               enumeration
+    _definition.scope            Category
+    _definition.class            Set
+    _definition.update           2006-11-16
+    _description.text
+;
+     The attributes for restricting the values of defined data items.
+;
+    _category.parent_id          ddl_attr
+     save_
+ 
+ 
+save_enumeration.default
+    _definition.id             '_enumeration.default'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The default value for the defined item if it is not specified explicitly.
+;
+    _name.category_id            enumeration
+    _name.object_id              default
+    _type.purpose                Limit      
+    _type.container              Single 
+    _type.contents               Implied 
+     save_
+ 
+ 
+save_enumeration.def_index_id
+    _definition.id             '_enumeration.def_index_id'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The data name of the value that is used as an index in the 
+     DEFAULTS enumeration list to select the default enumeration
+     value. The value must match one of the _enumeration_default.index
+     values.
+;
+    _name.category_id            enumeration
+    _name.object_id              def_index_id
+    _type.purpose                Identify     
+    _type.container              Single 
+    _type.contents               Tag
+     save_
+ 
+ 
+save_enumeration.range
+    _definition.id             '_enumeration.range'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The inclusive range of values "from:to" allowed for the defined item.
+;
+    _name.category_id            enumeration
+    _name.object_id              range
+    _type.purpose                Limit      
+    _type.container              Single
+    _type.contents               Range
+     save_
+ 
+    
+save_enumeration.mandatory
+    _definition.id             '_enumeration.mandatory'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;   
+     Yes or No flag on whether the enumerate states specified for an
+     item in the current definition (in which item appears) MUST be
+     used on instantiation.
+;
+    _name.category_id            enumeration
+    _name.object_id              mandatory
+    _type.purpose                Limit           
+    _type.container              Single
+    _type.contents               YesorNo 
+    _enumeration.default         Yes
+     save_
+
+
+#-----------------------------------------------------------------------------
+ 
+ 
+save_ENUMERATION_DEFAULT
+ 
+    _definition.id               enumeration_default
+    _definition.scope            Category
+    _definition.class            List
+    _definition.update           2007-02-06
+    _description.text
+;
+     List of pre-determined default enumeration values indexed to a 
+     data item by the item _enumeration.def_index_id.
+;
+    _category.parent_id          enumeration
+    _category_key.generic      '_enumeration_default.index'  
+     save_
+ 
+ 
+save_enumeration_default.index
+    _definition.id             '_enumeration_default.index'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     A list of possible values for the item _enumeration.def_index_id 
+     used to index (select) the enumeration default value from the 
+     _enumeration_default.value list.
+;
+    _name.category_id            enumeration_default
+    _name.object_id              index
+    _type.purpose                Key
+    _type.container              Single
+    _type.contents               Code 
+     save_
+ 
+ 
+save_enumeration_default.value
+    _definition.id             '_enumeration_default.value'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     A list of possible default enumeration values for the defined item. 
+     This is selected by the _enumeration_default.index value which
+     matches value of the item specified by _enumeration.def_index_id.
+;
+    _name.category_id            enumeration_default
+    _name.object_id              value
+    _type.purpose                Limit
+    _type.container              Single
+    _type.contents               Implied
+     save_
+ 
+
+#-----------------------------------------------------------------------------
+ 
+ 
+save_ENUMERATION_SET
+ 
+    _definition.id               enumeration_set
+    _definition.scope            Category
+    _definition.class            List
+    _definition.update           2007-02-06
+    _description.text
+;
+     Attributes of data items which are used to define a
+	 set of unique pre-determined values.
+;
+    _category.parent_id          enumeration
+    _category_key.generic      '_enumeration_set.state'  
+     save_
+ 
+ 
+save_enumeration_set.state
+    _definition.id             '_enumeration_set.state'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Permitted value state for the defined item.
+;
+    _name.category_id            enumeration_set
+    _name.object_id              state
+    _type.purpose                Key
+    _type.container              Single
+    _type.contents               Code 
+     save_
+ 
+ 
+save_enumeration_set.construct
+    _definition.id             '_enumeration_set.construct'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The construction rules of the value that the code describes.
+     The code conforms to regular expression (REGEX) specifications.
+;
+    _name.category_id            enumeration_set
+    _name.object_id              construct
+    _type.purpose                Limit
+    _type.container              Single
+    _type.contents               Regex
+     save_
+ 
+
+save_enumeration_set.detail
+    _definition.id             '_enumeration_set.detail'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The meaning of the code (identified by _enumeration_set.state)
+     in terms of the value of the quantity it describes.
+;
+    _name.category_id            enumeration_set
+    _name.object_id              detail
+    _type.purpose                Describe    
+    _type.container              Single
+    _type.contents               Text
+     save_
+ 
+ 
+save_enumeration_set.xref_code
+    _definition.id             '_enumeration_set.xref_code'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Identity of the equivalent item in the dictionary
+     referenced by the DICTIONARY_XREF attributes.
+;
+    _name.category_id            enumeration_set
+    _name.object_id              xref_code
+    _type.purpose                Identify 
+    _type.container              Single
+    _type.contents               Code
+     save_
+ 
+
+save_enumeration_set.xref_dictionary
+    _definition.id             '_enumeration_set.xref_dictionary'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Code identifying the dictionary in the DICTIONARY_XREF 
+	 list.
+;
+    _name.category_id            enumeration_set
+    _name.object_id              xref_dictionary
+    _type.purpose                Link     
+    _type.container              Single
+    _type.contents               Code
+     save_
+ 
+
+#----------------------------------------------------------------------------
+
+
+save_IMPORT
+    _definition.id               import
+    _definition.scope            Category
+    _definition.class            List
+    _definition.update           2007-02-06
+    _description.text
+;   
+     Used to import the values of specific attributes from other dictionary 
+     definitions within and without the current dictionary.
+;
+    _category.parent_id          ddl_attr
+    _category_key.generic      '_import.block'
+     save_
+ 
+ 
+save_import.block
+    _definition.id             '_import.block'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Tag of the definition block to be imported with the file specified
+	 by _import.file
+;
+    _name.category_id            import
+    _name.object_id              block
+    _type.purpose                Key     
+    _type.container              Single
+    _type.contents               Tag
+     loop_
+    _description_example.case  '_atom_site.xyz'
+                               'refln'
+     save_
+
+
+save_import.file
+    _definition.id             '_import.file'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The URI or filename of the file from which the definition block,
+	 designated by _import.block, is to be sourced.
+;
+    _name.category_id            import
+    _name.object_id              file
+    _type.purpose                Identify     
+    _type.container              Single
+    _type.contents               Uri
+     save_
+
+
+save_import.if_dupl
+    _definition.id             '_import.if_dupl'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Action taken if the definition block requested already exists
+	 in the importing dictionary.
+;
+    _name.category_id            import
+    _name.object_id              if_dupl
+    _type.purpose                State     
+    _type.container              Single
+    _type.contents               Code 
+     loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+                        Ignore  'ignore imported definitions if id conflict'
+                        Replace 'replace existing with imported definitions'
+                        Exit    'issue error exception and exit'
+    _enumeration.default         Exit 
+     save_
+
+
+save_import.if_miss
+    _definition.id             '_import.if_miss'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Action taken if the definition block requested is missing
+	 from the source dictionary.
+;  
+    _name.category_id            import
+    _name.object_id              if_miss
+    _type.purpose                State     
+    _type.container              Single
+    _type.contents               Code 
+     loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+                                 Ignore     'ignore import'
+                                 Exit       'issue error exception and exit'
+    _enumeration.default         Exit 
+     save_
+
+
+save_import.scope
+    _definition.id             '_import.scope'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Code signaling the scope of the definition block to be imported.
+;  
+    _name.category_id            import
+    _name.object_id              scope
+    _type.purpose                State     
+    _type.container              Single
+    _type.contents               Code 
+     loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+                         Dic  'all saveframes in the source file'
+                         Cat  'all saveframes in the specific category'
+                         Grp  'all saveframes in the category with children'
+                         Itm  'one saveframe containing an item definition'
+
+				         Att  'import attributes within a saveframe'
+				         Sta  'import enumeration state list only'
+				         Val  'import enumeration default value list only'
+     save_
+
+ 
+#----------------------------------------------------------------------------
+
+
+save_IMPORT_LIST
+    _definition.id               import_list
+    _definition.scope            Category
+    _definition.class            Set 
+    _definition.update           2006-11-16
+    _description.text
+;   
+     Used to import the values of specific attributes from other dictionary 
+     definitions within and without the current dictionary, as a LIST of
+	 attributes.
+;
+    _category.parent_id          ddl_attr
+     save_
+ 
+ 
+save_import_list.id 
+    _definition.id             '_import_list.id'
+    _definition.update           2006-11-16
+    _definition.class            AttributeSet
+    _description.text
+;
+     A list of the attributes, defined individually in the category IMPORT,  
+	 used to import definitions from other dictionaries. 
+;
+    _name.category_id            import_list
+    _name.object_id              id
+    _type.purpose                Import
+    _type.container              List
+    _type.contents              [Code,Tag,Uri,Code,Code]  
+    _type.dimension             [5 []*]
+     loop_
+    _method.purpose
+    _method.expression
+     Definition
+;
+     With  i  as  import
+
+     _import_list.id  = List([i.scope, i.block, i.file, i.if_dupl, i.if_miss]) 
+;
+     save_
+
+
+#----------------------------------------------------------------------------
+ 
+ 
+save_LOOP
+ 
+    _definition.id               loop
+    _definition.scope            Category
+    _definition.class            Set 
+    _definition.update           2006-11-16
+    _description.text
+;
+     Attributes for looped lists.
+;
+    _category.parent_id          ddl_attr
+     save_
+ 
+ 
+save_loop.level
+    _definition.id             '_loop.level'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Specifies the level of the loop structure in which a defined
+     item must reside if it used in a looped list.
+;
+    _name.category_id            loop
+    _name.object_id              level
+    _type.purpose                Limit
+    _type.container              Single
+    _type.contents               Index
+    _enumeration.range           1:
+    _enumeration.default         1
+     save_
+ 
+ 
+#----------------------------------------------------------------------------
+ 
+ 
+save_METHOD
+ 
+    _definition.id               method
+    _definition.scope            Category
+    _definition.class            List
+    _definition.update           2007-02-06
+    _description.text
+;
+     Methods used for evaluating, validating and defining items.
+;
+    _category.parent_id          ddl_attr
+    _category_key.generic      '_method.purpose'
+     save_
+ 
+ 
+save_method.purpose       
+    _definition.id             '_method.purpose'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The purpose and scope of the method expression.
+;
+    _name.category_id            method
+    _name.object_id              purpose
+    _type.purpose                State
+    _type.container              Single
+    _type.contents               Code
+     loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+     Evaluation    "method evaluates an item from related item values"
+     Definition    "method generates attribute value(s) in the definition"
+     Validation    "method compares an evaluation with existing item value"
+    _enumeration.default         Evaluation
+     save_
+ 
+ 
+save_method.expression
+    _definition.id             '_method.expression'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The method expression for the defined item.
+;
+    _name.category_id            method
+    _name.object_id              expression 
+    _type.purpose                Method
+    _type.container              Single
+    _type.contents               Text
+     save_
+ 
+ 
+#----------------------------------------------------------------------------
+ 
+ 
+save_NAME
+ 
+    _definition.id               name
+    _definition.scope            Category
+    _definition.class            Set
+    _definition.update           2006-11-16
+    _description.text
+;
+     Attributes for identifying items and item categories.
+;
+    _category.parent_id          ddl_attr
+     save_
+ 
+ 
+save_name.object_id   
+    _definition.id             '_name.object_id'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The object name part of a data tag that is unique within the 
+     category or mergable family of categories.
+;
+    _name.category_id            name
+    _name.object_id              object_id
+    _type.purpose                Identify     
+    _type.container              Single
+    _type.contents               Otag
+     save_
+ 
+ 
+save_name.category_id
+    _definition.id             '_name.category_id'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Name of the category of the defined data item.
+;
+    _name.category_id            name
+    _name.object_id              category_id
+    _type.purpose                Identify     
+    _type.container              Single
+    _type.contents               Ctag
+     save_
+ 
+ 
+save_name.linked_item_id
+    _definition.id             '_name.linked_item_id'
+    _definition.update           2007-03-18
+    _definition.class            Attribute
+    _description.text
+;
+     Name of an equivalent item in another category which has a 
+	 common set of values.
+;
+    _name.category_id            name
+    _name.object_id              linked_item_id
+    _type.purpose                Identify     
+    _type.container              Single
+    _type.contents               Tag
+     save_
+ 
+
+#----------------------------------------------------------------------------
+ 
+ 
+save_TYPE
+ 
+    _definition.id               type
+    _definition.scope            Category
+    _definition.class            Set
+    _definition.update           2006-11-16
+    _description.text
+;
+    Attributes which specify the 'typing' of data items.
+;
+    _category.parent_id          ddl_attr
+     save_
+ 
+ 
+save_type.container
+    _definition.id             '_type.container'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The CONTAINER type of the defined data item value. 
+;
+    _name.category_id            type
+    _name.object_id              container
+    _type.purpose                State     
+    _type.container              Single
+    _type.contents               Code    
+     loop_
+    _enumeration_set.state              
+    _enumeration_set.detail
+        Single    'a single value'
+        Multiple  'values related by boolean ',|&!*' or range ":" ops'
+        List      'list of values bounded by []; separated by commas'
+        Array     'List of fixed length and dimension'
+        Tuple     'immutable List bounded by (); nested tuples allowed'
+        Table     'key:value elements bounded by {}; separated by commas'
+        Implied   'implied by type.container of associated value'
+    _enumeration.default         Single                    
+     save_
+ 
+ 
+save_type.contents 
+    _definition.id             '_type.contents'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     Used to specify the syntax construction of value elements of the 
+	 defined object. The syntax is specified in terms of fixed regex
+	 constructs that have been enumerated as states. Values with more
+	 than one element may be specified as a list of multiple states.
+     Note that this list may contain states related by boolean or range
+     operators. The typing of elements is determined by the replication 
+	 of the minimum set of states declared.
+;
+    _name.category_id            type
+    _name.object_id              contents
+    _type.purpose                State     
+    _type.container              Multiple
+    _type.contents               Code    
+	_import_list.id             ['sta','type_contents','com_val.dic','exit','exit']
+     loop_
+    _description_example.case    
+    _description_example.detail  
+     'Integer'   'all elements are integer'
+     'Real,Code' 'elements are in muliples of real number and codes'
+     'Real|Code' 'elements are either a real number or a code'
+     save_
+ 
+ 
+save_type.purpose  
+    _definition.id             '_type.purpose'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     The primary purpose or origin of the defined data item.
+;
+    _name.category_id            type
+    _name.object_id              purpose
+    _type.purpose                State     
+    _type.container              Single
+    _type.contents               Code     
+     loop_
+    _enumeration_set.state  
+    _enumeration_set.detail
+    _enumeration_set.construct
+
+     Import
+;                  >>> For dictionaries only <<<
+                   Used within dictionaries to import definition lines 
+				   from other dictionaries.  In the expanded dictionary 
+				   the import item is replaced by the imported items.
+;
+     Method 
+;                  >>> For dictionaries only <<<
+                   A text method expression in a dictionary definition relating 
+                   the defined item to other defined items.
+;
+     Audit
+;                  An item used to contain audit information about the creation 
+                   or conformance of a file.
+;
+     Identify
+                   An item used to identify another item or file.
+;
+     Describe
+;                  A descriptive item intended only for human interpretation.
+;
+     Limit       
+;                  An item used to limit the values of other items.
+;
+     State
+;                  An item with one or more codified values that must exist
+                   within a discrete and countable list of enumerated states.
+;
+     Key 
+;                  An item with a codified value that is the key to identifying
+                   specific packets of items in the same category.
+;
+     Link 
+;                  An item with a value that is a foreign key linking packets 
+                   in this category list to packets in another category.
+;
+     Assigned
+                   An item whose value is assigned in the process of modelling 
+                   measured and observed data items.
+;
+     Observed
+;                  An item whose value is determined by observation or deduction. 
+                   Numerical observed values do NOT have a standard uncertainty. 
+;
+     Measured
+;                  A numerical item whose value is measured or derived from a
+                   measurement. It is expected to have a standard uncertainty 
+                   value which is either
+                       1) appended as integers in parentheses at the
+                          precision of the trailing digits, or
+                       2) as a separate item with the same name as
+                          defined item but with a trailing '_su'.
+;
+     save_
+ 
+ 
+save_type.dimension
+    _definition.id             '_type.dimension'
+    _definition.update           2006-12-05
+    _definition.class            Attribute
+    _description.text
+;
+     The dimensions of the list array bounded by square brackets.
+     Each dimension may be expressed simply as an integer giving
+     the maximum index permitted (the minimum is assumed to be 1).
+     * is used to signal unknown number of array elements.
+     Alternately, each dimension may be entered in the form:
+     <min_index>:<max_index>. 
+;
+    _name.category_id            type
+    _name.object_id              dimension
+    _type.purpose                Limit
+    _type.container              List
+    _type.contents               Index    
+    _type_array.dimension        [1: []*] 
+     loop_
+    _description_example.case    
+    _description_example.detail  "[3,3]"   'in Array definition: 3x3 elements'
+                                 "[6]"     'in List definition: 6 values'
+                                 "[4[2]]"  'in Tuple defn: 4 Tuples of 2 values'
+     save_
+ 
+#----------------------------------------------------------------------------
+ 
+ 
+save_UNITS
+ 
+    _definition.id               units
+    _definition.scope            Category
+    _definition.class            Set 
+    _definition.update           2006-11-16
+    _description.text
+;
+    The attributes for specifying units of measure.
+;
+    _category.parent_id          ddl_attr
+     save_
+ 
+ 
+save_units.code
+    _definition.id             '_units.code'
+    _definition.update           2006-11-16
+    _definition.class            Attribute
+    _description.text
+;
+     A code which identifies the units of measurement.
+;
+    _name.category_id            units
+    _name.object_id              code
+    _type.purpose                State     
+    _type.container              Single
+    _type.contents               Code 
+    _import_list.id             ['sta','units_code','com_val.dic','exit','exit']
+     save_
+ 
+
+#=============================================================================
+#  The dictionary's attribute validation criteria and the creation history.
+#============================================================================
+
+     loop_
+    _dictionary_valid.scope    
+    _dictionary_valid.attributes
+
+     Dictionary
+;               + _dictionary.title 
+                + _dictionary.class
+                + _dictionary.version
+                + _dictionary.date
+                + _dictionary.uri
+                + _dictionary.ddl_conformance
+                + _dictionary.namespace
+                + _dictionary_audit.version
+                + _dictionary_audit.date
+                + _dictionary_audit.revision
+                . _description.text
+                ! ALIAS 
+				! CATEGORY 
+				! DEFINITION
+				! ENUMERATION 
+				! LOOP 
+				! METHOD
+				! NAME 
+				! TYPE 
+				! UNITS
+;
+     Category
+;               + _definition.id  
+                + _definition.scope  
+				+ _definition.class
+                + _category.parent_id 
+                . _category_key.generic 
+                . _category_key.primitive 
+                . _category_mandatory.item_id 
+				. _description.text
+                ! ALIAS 
+				! DICTIONARY
+				! ENUMERATION
+                ! IMPORT
+				! LOOP 
+				! NAME 
+				! TYPE 
+				! UNITS
+;
+     Item     
+;               + _definition.id 
+                + _definition.scope
+                + _definition.class
+                + _definition.update
+                + _name.object_id    
+				+ _name.category_id
+				+ _type.purpose  
+				+ _type.container  
+				+ _type.contents  
+				. _description.text
+				. _description.common
+                ! CATEGORY 
+                ! DICTIONARY 
+;
+ 
+     loop_
+    _dictionary_audit.version
+    _dictionary_audit.date
+    _dictionary_audit.revision
+ 
+      3.0   1999-04-06
+;
+    Initial draft of DDL3 based on attributes from DDL1.4 and DDL2.1.1.
+;
+      3.0.1   1999-05-06
+;
+    Added new method attributes and enumeration LIST values
+;
+      3.0.2   1999-05-11
+;
+    Repacked and redefined some definition and dictionary attributes 
+;
+      3.0.3   1999-05-12
+;
+    Introduced category.level etc. attributes and rearranged categories 
+;
+      3.0.4   1999-05-18
+;
+    Removed category.level, linked.parent, linked.child, category.child_id
+    Changed related.function to include "Parent_Key", "Linked_Key",
+    "Linked_Values" and "Linked_Array" codes.
+;
+      3.0.5   1999-05-22
+;
+    Access keys in category families are inherited. Remove "Linked_Values"
+    for related.function.
+;
+      3.0.6   1999-05-24
+;
+    Add "Su_Implicit" code to related.function.
+;
+      3.0.7   1999-05-25
+;
+    Further simplifications to the syntax.
+;
+      3.0.8   1999-05-27
+;
+    Change _definition.class code DATA_ITEM to ITEM_DEFINITION
+;
+      3.0.9   1999-06-10
+;
+    Add "List" to _type_array.class enumerations.
+;
+      3.0.10  1999-06-11
+;
+    Add various codes to the enumeration lists.  
+;
+      3.0.11  1999-06-22
+;
+    Convert all enumeration list data names.
+;
+      3.0.12  1999-06-28
+;
+    Recaste the TYPE attributes and enumerations.     
+;
+      3.0.13  1999-07-05
+;
+    Change "pattern" to "function" for TYPE attributes.
+;
+      3.0.14  1999-07-09
+;
+    Change "string" to "container" for TYPE attributes.
+    Change codes for definition.scope and definition.class
+;
+      3.0.15  1999-11-26
+;
+    Add the _definition.update attribute.
+;
+      3.0.16  2000-02-15
+;
+    Change the names of the files to reflect prototype specifications.
+;
+      3.0.17  2000-04-17
+;
+    Add the attributes description.compact and description.abbreviated.
+;
+      3.0.18  2000-05-19
+;
+    Add the definition class TRANSIENT for FUNCTION definitions.       
+;
+      3.0.19  2000-06-06
+;
+    Change the definition scope GROUP to Category.
+    Change the definition scope ITEM to SINGLE.
+    Add the definition scope COSET for common definitions.       
+    Change type.function to type.purpose.
+;
+      3.0.20  2000-06-07
+;
+    Add the definition for category.coset_id
+    Add the definition for item.coset_id
+    Added the Equivalent code to related.function
+;
+      3.1.00  2000-06-12
+;
+    Reorganised families into category groupings ATTRIBUTES and ENUMERATION
+;
+      3.1.01  2000-06-20
+;
+    Inserted possible method validation scripts
+;
+      3.1.02  2000-06-24
+;
+    MAJOR modifications and additions following discussions with JW.
+;
+      3.1.03  2000-06-26
+;
+    Changes to MODEL attributes and many other changes.
+;
+      3.1.04  2000-06-28
+;
+    Version agreed upon up to JW's return to Rutgers.        
+;
+      3.1.05  2000-06-29
+;
+    In method.class change ENUMERATION to EVALUATION.
+;
+      3.1.06  2000-07-03
+;
+    Corrections from running dREL 1.0.3.
+;
+      3.1.07  2000-07-11
+;
+    Add the attribute enumeration.dot.   
+;
+      3.1.08  2000-09-13
+;
+    Remove the attribute enumeration.dot.   
+;
+      3.1.09  2000-10-09
+;
+    Add the XREF definitions. 
+    In type_purpose change 'From:To' to 'Range'; 'Code' to 'State'.
+    In type_container add the enumeration 'Multiple'
+;
+      3.2.00  2000-11-02
+;
+    MAJOR revision and simplification of ALL definitions. Blame PMR!
+;
+      3.2.01  2000-11-03
+;
+    Move the enumeration lists back into their respective definitions.
+;
+      3.2.02  2000-11-06
+;
+    Change "State" back to "Code".
+;
+      3.2.03  2000-11-07
+;
+    Add category_key.relational which gives the relational key used in DDL2
+;
+      3.2.04  2000-11-10
+;
+    MAJOR changes to a number of attributes and categories.
+;
+      3.2.05  2000-11-13
+;
+    Introduced definition.import_id.
+;
+      3.2.06  2000-11-24
+;
+    Change the _method.class enumeration state "Units" to "Definition".
+;
+      3.2.07  2001-08-30
+;
+    Change "category.parent_id" to "category.family_id".                  
+;
+      3.2.08  2001-09-03
+;
+    Change "alias.dictionary_class" to "alias.dictionary_uri".             
+    Change the "dictionary.class" states to "Attribute" and "Instance"
+;
+      3.2.09  2001-09-26
+;
+    Change "category.family_id" to "category.parent_id".                  
+;
+      3.2.10  2001-10-01
+;
+    Remove the definition of "alias.dictionary_version".                  
+;
+      3.2.11  2001-10-02
+;
+    Converted reference to "codes.unit_code" to "codes.units_code".       
+;
+      3.2.12  2001-11-13
+;
+    Corrected loop miscount in "type.purpose".
+;
+      3.2.13  2001-11-14
+;
+    Corrected name.category_id in category.parent_id.
+;
+      3.2.14  2002-02-02
+;
+    Remove key from category DEFINITION.
+;
+      3.2.15  2002-07-30
+;
+    Several small typos corrected.
+    Add "Tuple" to the list of type.container enumerations
+;
+      3.2.16  2004-10-12
+;  
+   Corrected mismatch in version numbering between v2.13a
+   and v2.13b and merged these changes into this version.
+;
+      3.2.17  2004-10-12
+;
+   In dictionary.class changed enumeration.default to "Instance"
+   In type.container append a ' to the enumeration detail of "Tuple"
+;
+      3.3.00  2004-11-09
+;
+   Change definition.import_id to definition_import.id in many defs.
+   Insert category DEFINITION_IMPORT and the items .id, .conflict,
+   .protocol and .source.
+;
+      3.3.01  2004-11-10
+;
+   Make further changes to the DEFINITION_IMPORT definitions and
+   introduce the DEFINITION_TEMPLATE category.
+;
+      3.3.02  2004-11-11
+;
+   Introduce an IMPORT category containing IMPORT_DICTIONARY, 
+   IMPORT_DEFINITION, IMPORT_CATEGORY, IMPORT_ATTRIBUTE.
+   Change DEFINITION_TEMPLATE to IMPORT_TEMPLATE.
+;
+      3.3.03  2004-11-12
+;
+   Major changes to all the new attributes. Introduce categories
+   DEFINITION_CONTEXT.
+;
+      3.3.04  2004-11-13
+;
+   Cleaned up the IMPORT changes and cases of enumerates.
+;
+      3.3.05  2004-11-16
+;
+   Further changes to IMPORT definitions.
+;
+     3.3.06  2004-11-18
+;
+  Some minor correction of typos
+;
+     3.3.07  2005-11-22
+;
+  Changed _dictionary.name to _dictionary.filename
+  Changed _dictionary_xref.name to _dictionary_xref.filename
+  Added _dictionary.title to describe the common name of the dictionary
+;
+     3.3.08  2005-12-12
+;
+  Changed ddl to ddl_attr
+  Added Template and Function to _dictionary.class
+;
+     3.3.09  2006-02-02
+;
+  Add the definition of _dictionary_xref.source.
+;
+     3.3.10  2006-02-07
+;
+  Add import attribute definitions
+;
+     3.4.01  2006-02-12
+;
+  Remove save frames from dictionary attributes.
+  Change the attribute _dictionary.parent_name to _dictionary.parent_id
+;
+     3.4.02  2006-02-16
+;
+  In the _import_*.conflict definitions change the enumeration state Unique 
+  to Ignore, and change the default state to Error.
+  In the _import_*.missing definitions change default enumeration state to
+  Error.
+;
+     3.5.01  2006-03-07
+;
+  Structural changes to the file to conform with the import model 3.
+  Move the template file for *.relational_id to com_att.dic
+  Change all references to *.relational_id into the tuple format.
+  Move the _codes_ddl.units_code to enum_set.dic and insert the
+  _import_enum_set.id tuples.
+;
+     3.5.02  2006-03-22
+;
+  Rename _enumeration.default_index_id to _enumeration.def_index_id.
+  Correct the attributes _enumeration_default.index and *.value.
+; 
+     3.5.03  2006-05-09
+;
+  Reword many of the import attributes.
+  Correct the tuple description for _import_dictionary.
+  Insert all of the definitions for _import_defaults attributes.
+  Update _dictionary.class definition - change "Template" to "Import".
+  Remove _enumeration.scope "open" from _definition_context.domain.
+;
+     3.6.01  2006-06-16
+;
+  Major revamp of TYPE attributes... changed:
+     _type.value to _type.contents and expand enumeration list.
+     _type.purpose has new role and different enumeration states.
+  _name.object_id changed to _name.object_id.
+  _enumeration_set.code becomes _enumeration_set.state.
+  Changed the _type.value (now .contents) states to match expanded list.
+  Added _dictionary.ddl_conformance attribute.
+  Changed _category.join_set_id to _category.join_cat_id.
+  Remove _enumeration.scope definition.
+;
+     3.6.02  2006-06-17
+;
+  Change the states of _type.purpose.        
+;
+     3.6.03  2006-06-18
+;
+  Correct _type.contents value in _import_dictionary.id.        
+;
+     3.6.04  2006-06-20
+;
+  Change state 'Point' to 'Link' in _type.contents definition.
+  Add Formula to _type.contents
+;
+     3.6.05  2006-06-27
+;
+  Change all IMPORT attributes and apply.
+  Add _dictionary.namespace attribute and apply.
+  Add states to _definition.class and apply.
+  Add _enumeration_set.scope.
+  Add .context to ENUMERATE_SET, ENUMERATE_DEFAULT, DESCRIPTION_EXAMPLE
+;
+     3.6.06  2006-07-18
+;
+  Change the descriptions of the _type.container states.
+  The _enueration_set.scope removed (enumeration.mandatory used).
+  In _type_array.dimension change _type.contents to List.
+;
+     3.6.07  2006-08-30
+;
+  Change 'att' to 'sta' in the imports of _type.contents and _units.code.
+  Replace states 'vector' and 'matrix' in _type.container with 'array'.
+  In _type.purpose change 'model' to 'assigned'; 'observe' to 'observed';
+  and 'measure' to 'measured'.
+;
+     3.6.08  2006-08-31
+;
+  Remove the category TYPE_ARRAY and insert _type.dimension
+  Replace _description.compact with _description.common
+  Replace _description.abbreviated with _description.key_words
+;
+     3.6.09  2006-10-31
+;
+  Remove all attributes and categories referring to 'context'.
+;
+     3.6.10  2006-11-09
+;
+  Replace _method.id with method.purpose.
+  Redefine the DICTIONARY_VALID values.
+;
+     3.7.01  2006-11-16
+;
+  Apply _definition.scope changes.
+  Add _category.parent_join.    
+  Add _dictionary.xref_code.            
+  Add _enumeration_set.xref_dictionary.
+  Remove all relational keys.
+;
+     3.7.02  2006-12-05
+;
+  Rewording of description.text in DDL_ATTR and definition.namespace
+  Rewording of category_mandatory.item_id
+  Reworded descriptions of definition.class descriptions.
+  Removed dictionary.filename.
+  Corrected examples in type.dimension.
+  Remove dictionary.parent_id and dictionary.parent_uri.
+;
+     3.7.03  2006-12-21
+;
+  Default for _category.parent_join is now "No"
+;
+     3.7.04  2007-02-06
+;
+  Change _category_key.item_id to _category_key.generic
+  Add _category_key.primitive
+;
+     3.7.05  2007-02-08
+;
+  Change the _type.purpose of _category_key.generic and .primitive
+  to Identify
+;
+     3.7.06  2007-03-18
+;
+  Change the description for _name.linked_item_id
+;
