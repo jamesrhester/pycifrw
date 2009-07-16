@@ -1,0 +1,5 @@
+This is a Python package for parsing and transforming dREL functions. dREL
+is a draft language for specification of relationships among items in a
+CIF (Crystallographic Information Framework) data file.
+
+You should have PLY (Python Lex/Yacc) installed as a prerequisite.
