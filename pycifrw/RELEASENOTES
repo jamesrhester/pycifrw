@@ -13,6 +13,8 @@ packets are addressed consistent.  The dot notation / getattr
 command should always be used, and dictionary style access is no
 longer possible.
 
+Work on DDLm support continues.  Details are not yet documented.
+
 Bug fixes (since 3.0)
 =====================
 

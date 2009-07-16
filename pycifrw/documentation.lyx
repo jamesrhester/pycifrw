@@ -1,8 +1,9 @@
-#LyX 1.5.3 created this file. For more info see http://www.lyx.org/
-\lyxformat 276
+#LyX 1.6.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
 \begin_document
 \begin_header
 \textclass article
+\use_default_options false
 \language english
 \inputencoding auto
 \font_roman palatino
@@ -13,16 +14,20 @@
 \font_osf false
 \font_sf_scale 100
 \font_tt_scale 100
+
 \graphics default
 \paperfontsize default
 \spacing single
+\use_hyperref false
 \papersize default
-\use_geometry false
+\use_geometry true
 \use_amsmath 1
 \use_esint 0
 \cite_engine basic
 \use_bibtopic false
 \paperorientation portrait
+\leftmargin 2cm
+\rightmargin 2cm
 \secnumdepth 3
 \tocdepth 3
 \paragraph_separation indent
@@ -56,8 +61,34 @@ Installing and Initialising PyCIFRW
 \end_layout
 
 \begin_layout Standard
-Assuming python is installed, you can unpack the distribution into a temporary
- directory, and then type 
+As of version 3.3, it is sufficient to install the PyCIFRW 
+\begin_inset Quotes eld
+\end_inset
+
+egg
+\begin_inset Quotes erd
+\end_inset
+
+ if you have the Python 
+\begin_inset Quotes eld
+\end_inset
+
+Easy Install
+\begin_inset Quotes erd
+\end_inset
+
+ system.
+ In this case, running the command '
+\family typewriter
+easy_install pycifrw-version.egg
+\family default
+' will be sufficient.
+ See the PyCIFRW web page for the most up-to-date instructions.
+\end_layout
+
+\begin_layout Standard
+The more traditional approach: assuming python is installed, you can unpack
+ the distribution into a temporary directory, and then type 
 \begin_inset Quotes eld
 \end_inset
 
@@ -74,8 +105,8 @@ install
 \end_inset
 
  from within this temporary directory.
- Upon completion of this command, a number files will have been placed into
- the system python packages directory: 
+ Upon completion of this command, a number of files will have been placed
+ into the system python packages directory: 
 \family typewriter
 CifFile.py
 \family default
@@ -205,7 +236,12 @@ cf = CifFile.ReadCif('future.cif',grammar='DDLm') #proposed standard
 Note that the DDLm syntax has not been finalised and is subject to change.
  The most important syntactical addition in DDLm is the use of nested, bracketed
  tuple and list expressions, as in Python.
- The implementation in PyCIFRW is one interpretation of the draft documentation.
+ The current implementation in PyCIFRW is one interpretation of the draft
+ documentation, and is 
+\shape italic
+likely to change
+\shape default
+ as the draft is finalised.
 \end_layout
 
 \begin_layout Subsubsection
@@ -281,8 +317,21 @@ my_data = cf['a_data_block']['_a_data_name']
 \end_layout
 
 \begin_layout Standard
-All values are strings with CIF syntactical elements stripped, that is,
- no enclosing quotation marks or semicolons are included in the values.
+All values are strings with CIF syntactical elements stripped
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+This deviates from the current CIF standard, which mandates interpreting
+ unquoted strings as numbers where possible and in the absence of dictionary
+ definitions to the contrary (International Tables, Vol.
+ G., p24).
+\end_layout
+
+\end_inset
+
+, that is, no enclosing quotation marks or semicolons are included in the
+ values.
  The value associated with a 
 \family typewriter
 CifFile
@@ -419,16 +468,16 @@ CifLoopBlock
 \begin_inset Foot
 status open
 
-\begin_layout Standard
+\begin_layout Plain Layout
 
 \series bold
 Warning
 \series default
 : 
 \shape italic
-row order in a CIF loop is arbitrary; while PyCIFRW maintains the row order
- in the input file, there is nothing in the CIF standards which mandates
- this behaviour
+row and column order in a CIF loop is arbitrary; while PyCIFRW maintains
+ the row order seen in the input file, there is nothing in the CIF standards
+ which mandates this behaviour
 \shape default
 .
 \end_layout
@@ -473,12 +522,16 @@ An alternative way of accessing loop data uses Python iterators, allowing
 
 \begin_layout Standard
 Note that in both the above examples the row packet is a copy of the looped
- data, and therefore changes to it will not alter the data read from the
- CIF file, unlike the lists returned when column-based access is used.
+ data, and therefore changes to it will not silently alter the contents
+ of the 
+\family typewriter
+CifFile
+\family default
+ object, unlike the lists returned when column-based access is used.
 \end_layout
 
 \begin_layout Subsubsection
-Key-based table row access (new in 3.2)
+Key-based table row access (from version 3.2)
 \end_layout
 
 \begin_layout Standard
@@ -509,16 +562,27 @@ CifLoopBlock
 \end_layout
 
 \begin_layout Standard
-In this example, the first packet with a value of 'c' for _item_7 is returned,
- and packet values can then be accessed using the dataname as an attribute
- of the packet.
+In this example, the first packet with a value of '
+\family typewriter
+c
+\family default
+' for 
+\family typewriter
+_item_7
+\family default
+ is returned, and packet values can then be accessed using the dataname
+ as an attribute of the packet.
  Note that a 
 \family typewriter
 KeyError
 \family default
  is raised if more than one packet matches, or no packets match, and that
  the packet returned is a copy of the data read in from the file, and therefore
- can be changed without affecting the data that was read in.
+ can be changed without affecting the 
+\family typewriter
+CifFile
+\family default
+ object.
 \end_layout
 
 \begin_layout Subsubsection
@@ -586,7 +650,7 @@ AddCifItem
  A nested tuple of datanames in the first element together with the correspondin
 g nested tuple of lists in the second element will become a loop block in
  the Cif file.
- In general, however, it will be less confusing to create a 
+ In general, however, it will be less confusing if you create a 
 \family typewriter
 CifLoopBlock
 \family default
@@ -615,17 +679,17 @@ dataname
 \family typewriter
 Newdata
 \family default
- should be a Python dictionary of dataname - datavalue pairs, with 
-\family typewriter
-datavalue
-\family default
- a list of new/replacement values.
+ should be a Python dictionary of dataname - datavalue pairs, where datavalue
+ is a list of new/replacement values.
 \end_layout
 
 \begin_layout Standard
 Note that lists (and other listlike objects except packets) returned by
- PyCIFRW actually represent the list currently inside the CifBlock, and
- therefore any modification to them will modify the stored list.
+ PyCIFRW actually point to the list currently inside the 
+\family typewriter
+CifBlock
+\family default
+ object, and therefore any modification to them will modify the stored list.
  While this is often the desired behaviour, if you intend to manipulate
  such a list in other parts of your program while preserving the original
  CIF information, you should first copy the list to avoid destroying the
@@ -756,8 +820,11 @@ aloop.AddPacket(newpack)
 \end_layout
 
 \begin_layout Standard
-Note that an error will be raised if the packet attributes do not exactly
- match the item names in the loop.
+Note that an error will be raised when calling 
+\family typewriter
+AddPacket
+\family default
+ if the packet attributes do not exactly match the item names in the loop.
 \end_layout
 
 \begin_layout Standard
@@ -765,7 +832,8 @@ A packet may be removed using the
 \family typewriter
 RemoveKeyedPacket
 \family default
- method: 
+ method, which chooses the packet to be removed based on the value of the
+ given dataname: 
 \end_layout
 
 \begin_layout LyX-Code
@@ -777,8 +845,16 @@ Examples using loops
 \end_layout
 
 \begin_layout Standard
-Note the above methods for adding, accessing and removing rows in pre-existing
- loops.
+Note that the above methods are used for adding, accessing and removing
+ rows (
+\begin_inset Quotes eld
+\end_inset
+
+packets
+\begin_inset Quotes erd
+\end_inset
+
+) in pre-existing loops.
  The following examples show how to perform column-based access.
 \end_layout
 
@@ -1117,11 +1193,15 @@ CifDic
 \family typewriter
 CifFile
 \family default
- object:
+ object, and will accept the 
+\family typewriter
+grammar
+\family default
+ keyword:
 \end_layout
 
 \begin_layout LyX-Code
-cd = CifFile.CifDic("cif_core.dic")
+cd = CifFile.CifDic("cif_core.dic",grammar='1.1')
 \end_layout
 
 \begin_layout Standard
@@ -1153,7 +1233,8 @@ diclang 'DDL1','DDL2', or 'DDLm'
 \end_layout
 
 \begin_layout Description
-typedic A Python dictionary matching typecode to compiled regular expression
+typedic A Python dictionary matching the typecode to a compiled regular
+ expression
 \end_layout
 
 \begin_layout Standard
@@ -1410,7 +1491,7 @@ For completeness we list the arguments of the
 \family typewriter
 CifFile merge
 \family default
- method:
+ method, which actually performs the merging operation:
 \end_layout
 
 \begin_layout Description
@@ -1470,8 +1551,9 @@ Limitations on merging
 
 \begin_layout Standard
 In overlay mode, the COMCIFS recommendations require that, when both definitions
- contain identical attributes which can be looped, the merging process should
- construct those loops and include both sets of data in the new loop.
+ contain identical unlooped attributes which can be looped, the merging
+ process should construct those loops and include both sets of data in the
+ new loop.
  
 \end_layout
 
@@ -1578,8 +1660,12 @@ flat_iterator
 \family typewriter
 recursive_iter
 \family default
- call, a Python dictionary is returned with single-valued keys corresponding
- to a single set of values.
+ call, a 
+\family typewriter
+StarList
+\family default
+ is returned with single-valued attributes corresponding to a single set
+ of values.
  If there are multiple trees of nested loops in a 
 \family typewriter
 LoopBlock
@@ -1666,22 +1752,34 @@ Options
 \end_layout
 
 \begin_layout Description
--d\InsetSpace ~
+-d
+\begin_inset space ~
+\end_inset
+
 dirname directory to find/store dictionary files
 \end_layout
 
 \begin_layout Description
--f\InsetSpace ~
+-f
+\begin_inset space ~
+\end_inset
+
 dictname filename of locally-stored dictionary
 \end_layout
 
 \begin_layout Description
--u\InsetSpace ~
+-u
+\begin_inset space ~
+\end_inset
+
 version dictionary version to resolve using registry
 \end_layout
 
 \begin_layout Description
--n\InsetSpace ~
+-n
+\begin_inset space ~
+\end_inset
+
 name dictionary name to resolve using registry
 \end_layout
 
@@ -1694,7 +1792,10 @@ name dictionary name to resolve using registry
 \end_layout
 
 \begin_layout Description
--r\InsetSpace ~
+-r
+\begin_inset space ~
+\end_inset
+
 registry location of registry as filename or URL
 \end_layout
 
