@@ -91,6 +91,13 @@ from types import *
 from urllib import *         # for arbitrary opening
 import re
 import copy
+# For Python 2.6 or higher compatibility
+try: 
+    set
+except NameError:
+    import sets
+    set = sets.Set
+
 <<Define a collection datatype>>
 <<LoopBlock class>>
 <<StarBlock class>>
@@ -1116,9 +1123,8 @@ as well).
 
 <<Audit for repeated names>>=
 def audit(self):
-    import sets
     allkeys = self.keys()
-    uniquenames = sets.Set(allkeys)
+    uniquenames = set(allkeys)
     if len(uniquenames) == len(allkeys): return []
     else:              
         keycount = map(lambda a:(a,allkeys.count(a)),uniquenames)
