@@ -482,13 +482,18 @@ this contribution).  There are 3 possible syntax variations: very old
 CIF files allowed unquoted data values to begin with open brackets,
 version 1.1 disallowed this, and DDLm-conformant files interpret these
 as actual bracket expressions.  The different grammars are
-selected by a command-line switch.
+selected by a command-line switch.  
+
+We allow reading CBF files, which can contain binary sections, by
+removing all characters found between the strings '-BINARY-FORMAT-SECTION'.
+This is not a robust approach as this string could theoretically be found
+in a comment or datavalue.
 
 We save our URL for possible later use in finding files relative to the location of
 this file e.g. with DDLm dictionary imports.
 
 <<Read in a STAR file>>=
-def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar='1.1'):
+def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar='1.1',CBF=False):
     import string
     if grammar=="1.1":
         import YappsStarParser_1_1 as Y
@@ -509,6 +514,14 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar
     if not text:      # empty file, return empty block
         dest.set_uri(my_uri)
         return dest
+    # filter out non-ASCII characters in CBF files if required.  We assume
+    # that the binary is enclosed in a fixed string that occurs
+    # nowhere else.
+    if CBF:
+       text_bits  = text.split("-BINARY-FORMAT-SECTION-") 
+       text = text_bits[0] 
+       for section in range(2,len(text_bits),2):
+           text = text+" (binary omitted)"+text_bits[section]
     # we recognise ctrl-Z as end of file
     endoffile = text.find('\x1a')
     if endoffile >= 0: 
@@ -519,13 +532,14 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar
         if toolong:
             pos = split.index(toolong[0])
             raise StarError( 'Line %d contains more than %d characters' % (pos+1,maxlength))
-    try: 
-	if scantype == 'standard':
+    if scantype == 'standard':
             parser = Y.StarParser(Y.StarParserScanner(text))
-        else:
+    else:
 	    parser = Y.StarParser(Y.yappsrt.Scanner(None,[],text,scantype='flex'))
-        proto_star = getattr(parser,"input")()
-    except Y.yappsrt.SyntaxError:
+    proto_star = Y.yappsrt.wrap_error_reporter(parser,"input")
+    # alternative to above line is getattr(parser,"input")()
+    # and handle the errors yourself
+    if proto_star == None:
         errorstring = 'Syntax error in input file: last value parsed was %s' % Y.lastval
         errorstring = errorstring + '\nParser status: %s' % `parser._scanner`
         raise StarError( errorstring)

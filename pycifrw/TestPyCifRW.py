@@ -545,6 +545,31 @@ class GrammarTestCase(unittest.TestCase):
        except StarFile.StarError:
            pass
 
+class DDLmTestCase(unittest.TestCase):
+   def setUp(self):
+       """Write out a file, then read it in again."""
+       teststr1_2 = """
+       #A test CIF file, grammar version 1.2 nonconformant
+       data_test
+         _item_1 'A simple item'
+         _item_2 '(Bracket always ok in quotes)'
+         _item_3 (can_have_bracket_here_if_1.2)
+         _item_4 This_is_so_wrong?*~
+       """
+       f = open("test_1.2","w")
+       f.write(teststr1_2)
+       f.close()
+
+   def tearDown(self):
+	pass
+
+   def testold(self):
+       """Read in 1.2 nonconformant file; should fail"""
+       try:
+           f = CifFile.ReadCif("test_1.2",grammar="DDLm")  
+       except StarFile.StarError:
+           pass
+      
 ##############################################################
 #
 # Test dictionary type

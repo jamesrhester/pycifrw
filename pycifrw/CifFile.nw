@@ -2028,7 +2028,7 @@ def transform_drel(self):
     for derivable in derivable_list:
         parser.target_id = derivable
         # reset the list of visible names for parser
-        parser.special_id = [my_namespace]
+        parser.special_id = [dict(map(None,self.keys(),self.keys()))]
         # reset list of looped with statements
         parser.withtable = {}
         print "Target id: %s" % derivable
