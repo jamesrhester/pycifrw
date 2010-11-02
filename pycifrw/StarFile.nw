@@ -139,12 +139,19 @@ cycle through all of the blocks, if necessary imposing the the proper
 [[element_class]].  This is in practice used to turn StarBlocks into
 CifBlocks.
 
+With the advent of CIF2, the allowed character set has expanded to
+encompass most of Unicode.  Our object needs to know about this
+different characterset in order to check incoming values and datanames for
+conformance.  This is done via the 'characterset' keyword.
+
 <<Initialise BC data structures>>=
-def __init__(self,datasource=None,element_class=StarBlock,type_tag=''):
+def __init__(self,datasource=None,element_class=StarBlock,type_tag='',
+             characterset='ascii'):
     self.dictionary = {}
     self.type_tag = type_tag
     self.lower_keys = []              # for efficiency
     self.element_class = element_class
+    self.characterset = characterset
     if isinstance(datasource,(DictType,BlockCollection)):
         for key,value in datasource.items():
             if value.__class__ == element_class:
@@ -181,7 +188,8 @@ def __setitem__(self,key,value):
     self.lower_keys.append(key.lower())
 
 # due to attempt to get upper/lower case treated as identical
-# we have a bit of cruft here
+# we have a bit of cruft here.  With unicode normalisation it
+# will only get worse...
 def __getitem__(self,key):
     try:
         return self.dictionary[key]
@@ -215,7 +223,7 @@ def keys(self):
 
 # changes to take case independence into account
 def has_key(self,key):
-    if not isinstance(key,StringType): return 0
+    if not isinstance(key,StringTypes): return 0
     if self.dictionary.has_key(key):
        return 1
     if key.lower() in self.lower_keys:
@@ -450,7 +458,7 @@ our initialisation function, which may be a subclass which takes other arguments
             self.maxoutlength = 2048 
         else:
             self.maxoutlength = maxoutlength
-        if type(datasource) is StringType or hasattr(datasource,"read"):
+        if type(datasource) in StringTypes or hasattr(datasource,"read"):
             newself = ReadStar(datasource,self.maxinlength,**kwargs)
             # print "Reinjecting by calling %s.__init__ with kwargs %s" % (`self.__init__.im_class`,kwargs)
 	    self.__init__.im_class.__init__(self,datasource=newself,maxoutlength=maxoutlength,**kwargs)
@@ -495,6 +503,7 @@ this file e.g. with DDLm dictionary imports.
 <<Read in a STAR file>>=
 def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar='1.1',CBF=False):
     import string
+    import codecs
     if grammar=="1.1":
         import YappsStarParser_1_1 as Y
     elif grammar=="1.0":
@@ -508,7 +517,7 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar
     my_uri = ""
     if hasattr(filestream,"geturl"): 
         my_uri = filestream.geturl()
-    text = filestream.read()
+    text = unicode(filestream.read(),"utf8")
     if isinstance(filename,basestring): #we opened it, we close it
         filestream.close()
     if not text:      # empty file, return empty block
@@ -629,10 +638,13 @@ items, nested loops are searched.
 
 The [[overwrite]] argument allows values to be silently replaced, as per a
 normal python dictionary.  However, when reading in from a file, we want to
-detect duplicated values, so we set this to false.  
+detect duplicated values, so we set this to false.  As DDLm introduces the 
+unicode character set, we need to indicate which character set we are
+prepared to accept.
 
 <<Initialise Loop Block>>=
-def __init__(self,data = (), dimension = 0, maxoutlength=2048, wraplength=80, overwrite=True):
+def __init__(self,data = (), dimension = 0, maxoutlength=2048, wraplength=80, overwrite=True,
+             characterset='ascii'):
     # print 'Creating new loop block, dimension %d' % dimension
     self.block = {}
     self.loops = []
@@ -646,9 +658,15 @@ def __init__(self,data = (), dimension = 0, maxoutlength=2048, wraplength=80, ov
     self.maxoutlength = maxoutlength
     self.wraplength = wraplength
     self.overwrite = overwrite
+    self.characterset = characterset
     if not hasattr(self,'loopclass'):  #in case are derived class
         self.loopclass = LoopBlock  #when making new loops
-    self.char_check = re.compile("[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+",re.M)
+    if self.characterset == 'ascii':
+        self.char_check = re.compile("[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+",re.M)
+    elif self.characterset == 'unicode':
+        self.char_check = re.compile(u"[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\u00A0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFFD\U00010000-\U0010FFFD-]+",re.M)
+    else:
+        raise StarError("No character set specified")
     if isinstance(data,(TupleType,ListType)):
         for item in data:
             self.AddLoopItem(item)
@@ -891,7 +909,7 @@ def recursive_iter(self,dict_so_far={},coord=[]):
 
 # small function to use the coordinates. 
 def coord_to_group(self,dataname,coords):
-      if not isinstance(dataname,StringType):
+      if not isinstance(dataname,StringTypes):
          return dataname     # flag inner loop processing
       newm = self[dataname]          # newm must be a list or tuple
       for c in coords:
@@ -1196,7 +1214,7 @@ def RemoveLoopItem(self,itemname):
           self.lower_keys.remove(testkey)
           # now remove the key in the order list
           for i in range(len(self.item_order)):
-            if isinstance(self.item_order[i],StringType): #may be loop
+            if isinstance(self.item_order[i],StringTypes): #may be loop
                 if self.item_order[i].lower()==testkey:
                     del self.item_order[i]
                     break
@@ -1241,12 +1259,12 @@ def AddLoopItem(self,data,precheck=False,maxlength=-1):
                    raise StarError( 'Attempt to insert duplicate item name %s' % data[0])
                else:
 		   del self[one_item]
-       newloop = self.loopclass(dimension = self.dimension+1)
+       newloop = self.loopclass(dimension = self.dimension+1,characterset=self.characterset)
        keyvals = zip(data[0],data[1])
        for key,val in keyvals:
            newloop.AddLoopItem((key,val))
        self.insert_loop(newloop)
-    elif not isinstance(data[0],StringType):
+    elif not isinstance(data[0],StringTypes):
               raise TypeError, 'Star datanames are strings only (got %s)' % `data[0]`
     else:
        if data[1] == [] or get_dim(data[1])[0] == self.dimension:
@@ -1259,10 +1277,7 @@ def AddLoopItem(self,data,precheck=False,maxlength=-1):
            # now make sure the data is OK type
            regval = self.regularise_data(data[1])
            if not precheck:
-               try:
-                   self.check_item_value(regval)
-               except StarError, errmes:
-                   raise StarError( "Item name " + data[0] + " " + `errmes`)
+               self.check_item_value(regval)
            if self.dimension > 0:
                if self.no_packets <= 0:
                    self.no_packets = len(data[1])  #first item in this loop
@@ -1288,6 +1303,9 @@ are allowed to have the blank characters as well, i.e. ascii 09,10,13 and 32.
 Data items may be lists, which we need to detect before checking.  We assume
 that the item has been regularised before this check is called.
 
+The CIF2 standard allows all of Unicode, with certain blocks disallowed. The
+removal of the disallowed characters takes place on file read. 
+
 <<Check data name for STAR conformance>>=
 def check_data_name(self,dataname,maxlength=-1): 
     if maxlength > 0:
@@ -1295,8 +1313,26 @@ def check_data_name(self,dataname,maxlength=-1):
             raise StarError( 'Dataname %s exceeds maximum length %d' % (dataname,maxlength))
     if dataname[0]!='_':
         raise StarError( 'Dataname ' + dataname + ' does not begin with _')
-    if len (filter (lambda a: ord(a) < 33 or ord(a) > 126, dataname)) > 0:
-        raise StarError( 'Dataname ' + dataname + ' contains forbidden characters')
+    if self.characterset=='ascii':
+        if len (filter (lambda a: ord(a) < 33 or ord(a) > 126, dataname)) > 0:
+            raise StarError( 'Dataname ' + dataname + ' contains forbidden characters')
+    else:
+        print 'Checking %s for unicode characterset conformance' % dataname
+        if len (filter (lambda a: ord(a) < 33, dataname)) > 0:
+            raise StarError( 'Dataname ' + dataname + ' contains forbidden characters (below code point 33)')
+        if len (filter (lambda a: ord(a) > 126 and ord(a) < 160, dataname)) > 0:
+            raise StarError( 'Dataname ' + dataname + ' contains forbidden characters (between code point 127-159)')
+        if len (filter (lambda a: ord(a) > 0xD7FF and ord(a) < 0xE000, dataname)) > 0:
+            raise StarError( 'Dataname ' + dataname + ' contains unsupported characters (between U+D800 and U+E000)')
+        if len (filter (lambda a: ord(a) > 0xFDCF and ord(a) < 0xFDF0, dataname)) > 0:
+            raise StarError( 'Dataname ' + dataname + ' contains unsupported characters (between U+FDD0 and U+FDEF)')
+        if len (filter (lambda a: ord(a) == 0xFFFE or ord(a) == 0xFFFF, dataname)) > 0:
+            raise StarError( 'Dataname ' + dataname + ' contains unsupported characters (U+FFFE and/or U+FFFF)')
+        if len (filter (lambda a: ord(a) > 0x10000 and (ord(a) & 0xE == 0xE) , dataname)) > 0:
+            print '%s fails' % dataname
+            for a in dataname: print '%x' % ord(a),
+            print
+            raise StarError( u'Dataname ' + dataname + u' contains unsupported characters (U+xFFFE and/or U+xFFFF)')
 
 <<Check data item for STAR conformance>>=
 def check_item_value(self,item):
@@ -1304,14 +1340,16 @@ def check_item_value(self,item):
     if type(item) != TupleType and type(item) != ListType:
        test_item = [item]         #single item list
     def check_one (it):
-        if type(it) == StringType:
+        if type(it) in StringTypes:
             if it=='': return
             me = self.char_check.match(it)            
             if not me:
-                raise StarError( 'Bad character in %s' % it)
+                print "Fail value check: %s" % it
+                raise StarError, u'Bad character in %s' % it
             else:
                 if me.span() != (0,len(it)):
-                    raise StarError('Data item "' + it + '"... contains forbidden characters')
+                    print "Fail value check, match only %d-%d in string %s" % (me.span()[0],me.span()[1],it)
+                    raise StarError,u'Data item "' + it + u'"... contains forbidden characters'
     map(check_one,test_item)
 
 @ Regularising data.  We want the copy.deepcopy operation to work, so
@@ -1321,7 +1359,7 @@ sure everything goes in either as a single item or as a list/tuple.
 <<Regularise data values>>=
 def regularise_data(self,dataitem):
     alrighttypes = [IntType, LongType, 
-                    FloatType, StringType]
+                    FloatType, StringType, UnicodeType]
     okmappingtypes = [TupleType, ListType]
     thistype = type(dataitem)
     if thistype in alrighttypes or thistype in okmappingtypes:
@@ -1356,7 +1394,7 @@ This is a method of the module, rather than belonging to any particular class.
 <<Get data dimension>>=
 def get_dim(dataitem,current=0,packlen=0):
     zerotypes = [IntType, LongType, 
-                    FloatType, StringType]
+                    FloatType, StringType, UnicodeType]
     if type(dataitem) in zerotypes:
         return current, packlen
     if not dataitem.__class__ == ().__class__ and \
@@ -1445,7 +1483,7 @@ def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
 	       # grab any comment
 	       thiscomment = self.comment_list.get(itemname.lower(),'') 
                itemvalue = self[itemname]
-               if isinstance(itemvalue,StringType):  #need to sanitize
+               if isinstance(itemvalue,StringTypes):  #need to sanitize
                      thisstring = self._formatstring(itemvalue)
                else: thisstring = str(itemvalue)
                # try for a tabstop at 40
@@ -1490,7 +1528,7 @@ def format_names(self,outstring,indent=0):
     temp_order = self.item_order[:]
     while len(temp_order)>0:
         itemname = temp_order.pop(0)
-        if isinstance(itemname,StringType):  #(not loop)
+        if isinstance(itemname,StringTypes):  #(not loop)
             outstring.write(' ' * indent) 
             outstring.write(itemname)
             outstring.write("\n")
@@ -1541,8 +1579,8 @@ We are therefore a bit sloppy with our checking against [[wraplength]] and
 def format_packet_item(self,pack_item,indent):
     # print 'Formatting %s' % `pack_item`
     curstring = ''
-    if isinstance(pack_item,(StringType,IntType,FloatType,LongType,StarTuple,StarList)):
-       if isinstance(pack_item,StringType):
+    if isinstance(pack_item,(StringType,UnicodeType,IntType,FloatType,LongType,StarTuple,StarList)):
+       if isinstance(pack_item,StringTypes):
            thisstring = self._formatstring(pack_item) #no spaces yet
            if '\n' in thisstring:    #must have semicolon digraph then 
                curstring = curstring + thisstring

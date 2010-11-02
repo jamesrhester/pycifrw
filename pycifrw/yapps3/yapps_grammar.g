@@ -50,8 +50,8 @@ parser ParserDescription:
     token EOF:   "$"
     token ATTR:  "<<.+?>>"
     token STMT:  "{{.+?}}"
+    token STR:   '[uUrR]?\'([^\\n\'\\\\]|\\\\.)*\'|[uUrR]?"([^\\n"\\\\]|\\\\.)*"'
     token ID:    '[a-zA-Z_][a-zA-Z_0-9]*'
-    token STR:   '[rR]?\'([^\\n\'\\\\]|\\\\.)*\'|[rR]?"([^\\n"\\\\]|\\\\.)*"'
     token LP:    '\\('
     token RP:    '\\)'
     token LB:    '\\['

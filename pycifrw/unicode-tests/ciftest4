@@ -1,0 +1,75 @@
+# Purpose: simple valid file with Unicode characters conforming to CIF syntax
+# Includes characters from all ranges in datanames, blocknames and data values
+
+# This first block is a bit simpler...
+#
+data_model
+
+_d1 char
+_d2 'model файл'
+_d3 "with 色々　な　 types of field"
+_d4              # Comment　日本語　
+; 月曜日　all conforming to valid STAR/CIF syntax
+  rules
+;
+
+loop_
+
+_ちいさいな_アイテム
+_d6
+_d7
+_d8
+
+A B C D
+E F G бред       # Comment within the body of a loop　あれ!
+I J K L
+
+
+# The second block is valid
+# and uses the full Unicode range.  Don't expect it to make
+# too much sense.
+
+data_𐌳𐌰𐍄𐌰_ＤＡＴＡ_ﬃﬄ_дата  # "data" written 4 ways and ffiffl!
+
+# data names from every range
+      _ᑐﬃＡ     char
+      _𐌳𐌰𐍄𐌰  ' ᑐﬃＡ '   #should display concave left,'ffi' ligature,A
+      _𐌽𐌰𐌼𐌴    """ 𐌱🁇 """  # A runic 'B', a 3/1 domino
+      _t3     "with various types of field"         # Comment
+      _t4
+; 
+  all conforming to valid STAR syntax rules
+;
+      _t5
+
+            'beware of intervening line endings and blank lines'
+
+      # Beware also of other non-white-space token separators (especially TAB)
+
+      _t6	'there was a TAB character just after the data name'
+
+
+      # Loops can be nicely laid out, but don't have to be!
+         loop_ _t7 _t8 _t9 _t10 A B C D E F G H I J K L
+         loop_ _t11
+            _t12 _t13	_t14 a      b c d  e f
+       g h i j
+           k     l
+
+      # Degenerate loop
+      loop_ _t15  0 1 2 3 4 5 6 7 8 9
+
+      # Loops can contain various data types and with intermingled comments
+      loop_
+          _t16
+          _t17
+          _t18
+          _t19
+
+             1 2 3 4
+             the quick brown fox         # four different values here!
+             'jumps over' the lazy style
+             5 6 7
+; and they all went home to tea
+;
+             9 10 11 12

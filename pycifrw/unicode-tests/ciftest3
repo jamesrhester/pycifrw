@@ -1,0 +1,6 @@
+# Purpose: a minimal CIF with unicode content
+data_null_block
+_item_cyrillic    "Москва"
+_item_japanese  "にほんご"
+_item_plain "old fashioned ascii text"
+
