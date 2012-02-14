@@ -587,6 +587,7 @@ class LoopBlock:
     <<Audit for repeated names>>
     <<Get co-looped names>>
     <<Add to looped data>>
+    <<Transform a group of tags to a subgroup>>
     <<Functions for printing out>>
 
 @ If given non-zero data to initialise the block with, we either
@@ -1152,6 +1153,20 @@ def AddToLoop(self,dataname,loopdata):
     for itemname,itemvalue in loopdata.items():
         thisloop[itemname] = itemvalue
 
+@ A single-valued set of tags at the top level is isomorphic to those tags
+placed in a loop with a single packet.  Likewise, looped data can be
+transferred to a star sub-loop.
+
+<<Transform a group of tags to a subgroup>>=
+def Loopify(self,datanamelist):
+    thisloop = self.GetLoop(datanamelist[0])
+    badmatch = filter(lambda a:a in datanamelist,thisloop.keys())
+    if len(badmatch==0):    #all at same level so is OK
+        newloop = LoopBlock(dimension=self.dimension+1)
+        for name in datanamelist: newloop[name]=self[name]
+        del self[name]
+        thisloop.AddLoop(newloop)
+        
 @ Removing a data item.  We delete the item, and if it is looped, and
 nothing is left in the loop, we remove that element of the list. 
 

@@ -850,6 +850,18 @@ parent item attributes in the child items, moving sub-children down to
 their level.  Sub children may not exist at all, so we create them if
 necessary.
 
+To make life more interesting, the PDBX have an entry_pc placeholder in
+which additional (and sometimes repeated) parent-child relationships
+can be expressed. We cannot assume that any given parent-child relationship 
+is stated at a single site in the file.  What is more, it appears that
+multiple parents for a single child are defined in the _entry.pdbx_pc entry.
+Our changes to the file pre-checking are therefore restricted to making
+sure that the child contains information about the parents; we do not
+interfere with the parent's information about the children, even if we
+consider that to be superfluous.  Note that we will have to add
+parent-child validity checks to check consistency among all these
+relationships.
+
 Update: in the DDL-2.1.6 file, only the parents/children are looped,
 rather than the item names, so we have to check looping separately.
 
@@ -871,6 +883,26 @@ def DDL2_normalise(self):
    # now filter out all the single element lists!
    dodgy_defs = filter(lambda a:len(self[a]['_item.name']) > 1, listed_defs)
    for item_def in dodgy_defs:
+      <<Repopulate child definitions>>
+   <<Populate parent and child links correctly>>
+   # now flatten any single element lists
+   single_defs = filter(lambda a:len(self[a]['_item.name'])==1,listed_defs)
+   for flat_def in single_defs:
+       flat_keys = self[flat_def].GetLoop('_item.name').keys()
+       for flat_key in flat_keys: self[flat_def][flat_key] = self[flat_def][flat_key][0]
+   # now deal with the multiple lists
+   # next we do aliases
+   all_aliases = filter(lambda a:self[a].has_key('_item_aliases.alias_name'),self.keys()) 
+   for aliased in all_aliases:
+      my_aliases = listify(self[aliased]['_item_aliases.alias_name'])
+      for alias in my_aliases:
+	  self[alias] = self[aliased].copy()   #we are going to delete stuff...
+          del self[alias]["_item_aliases.alias_name"]
+
+@ As some DDL2 dictionaries neglect children, we repopulate the skeleton or non-existent definitions that
+may be provided in the dictionary.
+
+<<Repopulate child definitions>>=
       # print "DDL2 norm: processing %s" % item_def
       thisdef = self[item_def]
       packet_no = thisdef['_item.name'].index(item_def)
@@ -892,48 +924,100 @@ def DDL2_normalise(self):
       self[item_def]['_item.name'] = item_def
       self[item_def]['_item.category_id'] = realcat
       self[item_def]['_item.mandatory_code'] = realmand
-   # go through any _item_linked tables
-   dodgy_defs = filter(lambda a:isinstance(self[a].get('_item_linked.child_name'),ListType),self.keys()) 
-   dodgy_defs = filter(lambda a:len(self[a]['_item_linked.child_name']) > 1, dodgy_defs)
-   for item_def in dodgy_defs:
+
+@ Populating parent and child links.  The DDL2 model uses parent-child relationships
+to create relational database behaviour.  This means that the emphasis is on simply
+linking two ids together directionally.  This link is not necessarily inside a definition that
+is being linked, but we require that any parents and children are identified within the 
+definition that they relate to.  This means we have to sometimes relocate links.
+
+<<Populate parent and child links correctly>>=
+dodgy_defs = filter(lambda a:isinstance(self[a].get('_item_linked.child_name'),ListType),self.keys()) 
+dodgy_defs = filter(lambda a:len(self[a]['_item_linked.child_name']) > 1, dodgy_defs)
+# now dodgy_defs contains all definition blocks with more than one child/parent link
+for item_def in dodgy_defs:
+      print 'Processing %s' % item_def
       thisdef = self[item_def]
       child_list = thisdef.get('_item_linked.child_name',[])
       parents = thisdef.get('_item_linked.parent_name',[])
-      # zap the parents, they will confuse us!!
-      del thisdef['_item_linked.parent_name']
+      # This will never be reached given the above definition of dodgy_defs
       if isinstance(child_list,StringType):
+          print 'Alert: this code should never be reached'
 	  self[child_list]['_item_linked.parent_name'] = parents
 	  self[parents]['_item_linked.child_name'] = child_list 
       else:
           # for each parent, find the list of children.
 	  family = map(None,parents,child_list)
-          notmychildren = family
+          notmychildren = family         #We aim to remove non-children
+          # Loop over the parents, relocating as necessary
 	  while len(notmychildren):
               # get all children of first entry
 	      mychildren = filter(lambda a:a[0]==notmychildren[0][0],family)
-              # print "Parent %s: %d children" % (notmychildren[0][0],len(mychildren))
+              print "Parent %s: %d children" % (notmychildren[0][0],len(mychildren))
 	      for parent,child in mychildren:   #parent is the same for all
-	          self[child]['_item_linked.parent_name'] = parent
-              # put all the children into the parent
+	          # Make sure that we simply add in the new entry for the child, not replace it,
+		  # otherwise we might spoil the child entry loop structure
+		  try:
+		      childloop = self[child].GetLoop('_item_linked.parent_name')
+		  except KeyError:
+                      print 'Creating new parent entry %s for definition %s' % (parent,child)
+	              self[child]['_item_linked.parent_name'] = [parent]
+                      continue
+		  else:
+		      # A parent loop already exists:
+                      # Two possibilities: that no child names are specified, in which case the
+                      # child is implicitly the currently defined item; or else a child is explicitly
+                      # specified, and so we must check each one.
+                      if childloop.has_key('_item_linked.child_name'):
+		          pars = [a for a in childloop if a['_item_linked.child_name']==child]
+		          goodpars = [a for a in pars if getattr(a,'_item_linked.parent_name','')==parent]
+                      else:
+		          goodpars = [a for a in childloop if getattr(a,'_item_linked.parent_name','')==parent]
+		      if len(goodpars)>0:   #no need to add it
+                          print 'Skipping duplicated parent - child entry in %s: %s - %s' % (child,parent,child)
+			     continue
+                      print 'Adding %s to %s entry' % (parent,child)
+		      newpacket = childloop.GetPacket(0)   #essentially a copy, I hope
+		      setattr(newpacket,'_item_linked.child_name',child)
+		      setattr(newpacket,'_item_linked.parent_name',parent)
+		      childloop.AddPacket(newpacket)
+              #
+              # Make sure the parent also points to the children
+              # first check that the dictionary entry for the child is really 
+              # only a single entry or missing; otherwise we assume that we
+              # will get to it later, and simply insert our new value
+              # 
+              parent_name = mychildren[0][0]
               try:
-                  del self[mychildren[0][0]]['_item_linked.child_name']
-              except ValueError: pass
-              self[mychildren[0][0]]['_item_linked.child_name'] = map(lambda a:a[1],mychildren)
+                  old_loop = self[parent_name].GetLoop('_item_linked.child_name')
+              except KeyError:
+                  old_loop = CifLoopBlock() 
+              if old_loop.has_key('_item_linked.parent_name'):
+                  alreadythere = [a for a in old_loop if getattr(a,'_item_linked.parent_name','')==parent_name]
+              else:
+                  alreadythere = old_loop    #make implicit parent explicit
+                  alreadythere['_item_linked.parent_name'] = [parent_name]*len(old_loop)
+              for childname in map(lambda a:a[1],mychildren):
+                  hits =  [a for a in alreadythere if getattr(a,'_item_linked.child_name','')==child_name]
+                  if len(hits)<1:    #not there
+                      newpacket = old_loop.
+              # get any already present parents
+              old_parents = old_loop.get('_item_linked.parent_name',[])
+              old_children = old_loop.get('_item_linked.child_name',[])
+              new_parent = [parent_name]*len(mychildren)
+                  # create a proper packet for each one so as not to remove any previous entries
+                  try:
+                       parent_loop = self[parent_name].GetLoop('_item_linked.child_name') 
+                  except KeyError:             #no such loop
+                       
+                  else:
+                       self[mychildren[0][0]]['_item_linked.child_name'] = map(lambda a:a[1],mychildren)
+                  print 'New value is %s' % (`self[mychildren[0][0]]['_item_linked.child_name']`)
+              else:    
+                  # check that this entry does not yet exist, and add it if it is missing
+                  pass
               # now make a new,smaller list
 	      notmychildren = filter(lambda a:a[0]!=mychildren[0][0],notmychildren)
-   # now flatten any single element lists
-   single_defs = filter(lambda a:len(self[a]['_item.name'])==1,listed_defs)
-   for flat_def in single_defs:
-       flat_keys = self[flat_def].GetLoop('_item.name').keys()
-       for flat_key in flat_keys: self[flat_def][flat_key] = self[flat_def][flat_key][0]
-   # now deal with the multiple lists
-   # next we do aliases
-   all_aliases = filter(lambda a:self[a].has_key('_item_aliases.alias_name'),self.keys()) 
-   for aliased in all_aliases:
-      my_aliases = listify(self[aliased]['_item_aliases.alias_name'])
-      for alias in my_aliases:
-	  self[alias] = self[aliased].copy()   #we are going to delete stuff...
-          del self[alias]["_item_aliases.alias_name"]
 
 @ Loading the DDL1 categories with DDL2-type information.  DDL2 people wisely
 put category-wide information in the category definition rather than
