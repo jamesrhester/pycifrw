@@ -185,6 +185,17 @@ class CifLoopBlock(StarFile.LoopBlock):
             raise  CifError( 'Attempt to insert inner loop, loop level %d' % dimension)
         StarFile.LoopBlock.insert_loop(self,newloop,**kwargs)
 
+    def Loopify(self,datanamelist):
+        if self.dimension > 0:
+            return
+        else: 
+            StarFile.LoopBlock.Loopify(self,datanamelist)
+            # convert new loop to CifLoopBlock
+            newloop = self.GetLoop(datanamelist[0])
+            cifloop = CifLoopBlock(newloop)
+            self.remove_loop(newloop)
+            self.insert_loop(cifloop)
+
 @ \section{Cif Block class}
 
 The basic building block of a Cif File is the CifBlock, which we
@@ -975,7 +986,7 @@ for item_def in dodgy_defs:
 		          goodpars = [a for a in childloop if getattr(a,'_item_linked.parent_name','')==parent]
 		      if len(goodpars)>0:   #no need to add it
                           print 'Skipping duplicated parent - child entry in %s: %s - %s' % (child,parent,child)
-			     continue
+			  continue
                       print 'Adding %s to %s entry' % (parent,child)
 		      newpacket = childloop.GetPacket(0)   #essentially a copy, I hope
 		      setattr(newpacket,'_item_linked.child_name',child)
@@ -1000,22 +1011,19 @@ for item_def in dodgy_defs:
               for childname in map(lambda a:a[1],mychildren):
                   hits =  [a for a in alreadythere if getattr(a,'_item_linked.child_name','')==child_name]
                   if len(hits)<1:    #not there
-                      newpacket = old_loop.
+                      pass           # <= up to here with writing this routine
               # get any already present parents
               old_parents = old_loop.get('_item_linked.parent_name',[])
               old_children = old_loop.get('_item_linked.child_name',[])
               new_parent = [parent_name]*len(mychildren)
-                  # create a proper packet for each one so as not to remove any previous entries
-                  try:
+              # create a proper packet for each one so as not to remove any previous entries
+              try:
                        parent_loop = self[parent_name].GetLoop('_item_linked.child_name') 
-                  except KeyError:             #no such loop
-                       
-                  else:
-                       self[mychildren[0][0]]['_item_linked.child_name'] = map(lambda a:a[1],mychildren)
-                  print 'New value is %s' % (`self[mychildren[0][0]]['_item_linked.child_name']`)
-              else:    
-                  # check that this entry does not yet exist, and add it if it is missing
+              except KeyError:             #no such loop
                   pass
+              else:
+                  self[mychildren[0][0]]['_item_linked.child_name'] = map(lambda a:a[1],mychildren)
+                  print 'New value is %s' % (`self[mychildren[0][0]]['_item_linked.child_name']`)
               # now make a new,smaller list
 	      notmychildren = filter(lambda a:a[0]!=mychildren[0][0],notmychildren)
 

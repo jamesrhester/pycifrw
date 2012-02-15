@@ -70,7 +70,7 @@ current block.  Same as typing [['del block[item]']]
 \item [[GetLoop(dataname)]]: for looped data item [[dataname]], get a list
 of all itemnames and values co-occurring in this loop.  Returns an error
 if [[dataname]] is not in a loop.
-\item [[AddLoop(dataname,data)]]: add [[data]] to the loop containing
+\item [[AddToLoop(dataname,data)]]: add [[data]] to the loop containing
 [[dataname]].  If dataname is not a looped item, an error is returned.
 If (data) has the wrong length, an error is returned. 
 \item [[loops()]]: return a list containing all looped names, grouped into
@@ -1161,12 +1161,13 @@ transferred to a star sub-loop.
 def Loopify(self,datanamelist):
     thisloop = self.GetLoop(datanamelist[0])
     badmatch = filter(lambda a:a in datanamelist,thisloop.keys())
-    if len(badmatch==0):    #all at same level so is OK
+    if len(badmatch)==len(datanamelist):    #all at same level so is OK
         newloop = LoopBlock(dimension=self.dimension+1)
-        for name in datanamelist: newloop[name]=self[name]
-        del self[name]
-        thisloop.AddLoop(newloop)
-        
+        for name in datanamelist: 
+            newloop[name]=[self[name]]
+            del self[name]
+        self.insert_loop(newloop) 
+ 
 @ Removing a data item.  We delete the item, and if it is looped, and
 nothing is left in the loop, we remove that element of the list. 
 
