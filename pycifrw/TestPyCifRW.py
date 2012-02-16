@@ -1,11 +1,5 @@
-# We attempt to implement testing of the PyCif module using
-# the PyUnit framework
-#
+# Testing of the PyCif module using the PyUnit framework
 # 
-# note that some tests rely on the presence of the StarScan
-# dynamic library under Linux, so will be redundant on other
-# platforms
-#
 import unittest, CifFile
 import StarFile
 import re
@@ -111,6 +105,9 @@ class BlockChangeTestCase(unittest.TestCase):
         self.cf.AddCifItem((self.names,self.values))
 	self.cf['_non_loop_item'] = 'Non loop string item'
 	self.cf['_number_item'] = 15.65
+        self.cf['_planet'] = 'Saturn'
+        self.cf['_satellite'] = 'Titan'
+        self.cf['_rings']  = 'True'
        
    def tearDown(self):
        del self.cf
@@ -185,6 +182,23 @@ class BlockChangeTestCase(unittest.TestCase):
        # deleted from that loop first
        self.cf["_item_name_1"] = (5,6,7,8)
 
+   def testLoopify(self):
+       """Test changing unlooped data to looped data"""
+       self.cf.Loopify(["_planet","_satellite","_rings"])
+       newloop = self.cf.GetLoop("_rings")
+       self.assertFalse(newloop.has_key("_number_item"))
+       
+   def testLoopifyCif(self):
+       """Test changing unlooped data to looped data does 
+          not touch already looped data for a CIF file"""
+       from IPython.Debugger import Tracer; debug_here = Tracer()
+       debug_here()
+       self.cf.Loopify(["_planet","_satellite","_rings"])
+       newloop = self.cf.GetLoop("_rings")
+       newloop.Loopify(["_planet","_rings"])
+       innerloop = newloop.GetLoop("_planet")
+       self.assertTrue(innerloop.has_key("_satellite"))
+       
 #
 #  Test the mapping type implementation
 #

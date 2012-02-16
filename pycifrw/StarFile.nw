@@ -70,7 +70,7 @@ current block.  Same as typing [['del block[item]']]
 \item [[GetLoop(dataname)]]: for looped data item [[dataname]], get a list
 of all itemnames and values co-occurring in this loop.  Returns an error
 if [[dataname]] is not in a loop.
-\item [[AddLoop(dataname,data)]]: add [[data]] to the loop containing
+\item [[AddToLoop(dataname,data)]]: add [[data]] to the loop containing
 [[dataname]].  If dataname is not a looped item, an error is returned.
 If (data) has the wrong length, an error is returned. 
 \item [[loops()]]: return a list containing all looped names, grouped into
@@ -617,6 +617,7 @@ class LoopBlock:
     <<Audit for repeated names>>
     <<Get co-looped names>>
     <<Add to looped data>>
+    <<Transform a group of tags to a subgroup>>
     <<Functions for printing out>>
 
 @ If given non-zero data to initialise the block with, we either
@@ -1190,6 +1191,21 @@ def AddToLoop(self,dataname,loopdata):
     for itemname,itemvalue in loopdata.items():
         thisloop[itemname] = itemvalue
 
+@ A single-valued set of tags at the top level is isomorphic to those tags
+placed in a loop with a single packet.  Likewise, looped data can be
+transferred to a star sub-loop.
+
+<<Transform a group of tags to a subgroup>>=
+def Loopify(self,datanamelist):
+    thisloop = self.GetLoop(datanamelist[0])
+    badmatch = filter(lambda a:a in datanamelist,thisloop.keys())
+    if len(badmatch)==len(datanamelist):    #all at same level so is OK
+        newloop = LoopBlock(dimension=self.dimension+1)
+        for name in datanamelist: 
+            newloop[name]=[self[name]]
+            del self[name]
+        self.insert_loop(newloop) 
+ 
 @ Removing a data item.  We delete the item, and if it is looped, and
 nothing is left in the loop, we remove that element of the list. 
 
