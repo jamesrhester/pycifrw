@@ -1027,9 +1027,9 @@ currently-defined item.  If the child is missing, likewise.
 def create_pcloop(self,definition):
     old_children = self[definition].get('_item_linked.child_name',[])
     old_parents = self[definition].get('_item_linked.parent_name',[])
-    if isinstance(old_children,StringType): 
+    if isinstance(old_children,StringTypes): 
          old_children = [old_children]
-    if isinstance(old_parents,StringType): 
+    if isinstance(old_parents,StringTypes): 
          old_parents = [old_parents]
     if (len(old_children)==0 and len(old_parents)==0) or \
        (len(old_children) > 1 and len(old_parents)>1):
