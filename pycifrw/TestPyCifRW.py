@@ -191,8 +191,6 @@ class BlockChangeTestCase(unittest.TestCase):
    def testLoopifyCif(self):
        """Test changing unlooped data to looped data does 
           not touch already looped data for a CIF file"""
-       from IPython.Debugger import Tracer; debug_here = Tracer()
-       debug_here()
        self.cf.Loopify(["_planet","_satellite","_rings"])
        newloop = self.cf.GetLoop("_rings")
        newloop.Loopify(["_planet","_rings"])
@@ -527,30 +525,70 @@ class GrammarTestCase(unittest.TestCase):
    def setUp(self):
        """Write out a file, then read it in again."""
        teststr1_0 = """
-       #A test CIF file, grammar version 1.0 conformant
+       #A test CIF file, grammar version 1.1 conformant
        data_test
          _item_1 'A simple item'
          _item_2 '(Bracket always ok in quotes)'
-         _item_3 (can_have_bracket_here_if_1.0)
+         _item_3 (can_have_bracket_here_if_1.1)
+         _item_3b {can_have_bracket_here_if_1.1}
+       """
+       teststr1_1 = """
+       #A test CIF file, not grammar version 1.1 conformant
+       data_test
+         _item_1 'A simple item'
+         _item_2 '(Bracket always ok in quotes)'
+         _item_3 (can_have_bracket_here_if_1.1)
+         _item_3b {can_have_bracket_here_if_1.1}
+         _item_4 [cant_have_bracket_here_if_1.1]
        """
        f = open("test_1.0","w")
        f.write(teststr1_0)
        f.close()
+       f = open("test_1.1","w")
+       f.write(teststr1_1)
+       f.close()
 
    def tearDown(self):
-	pass
+       import os
+       #os.remove('test_1.0')
+       #os.remove('test_1.1')
 
    def testold(self):
-       """Read in 1.0 conformant file; should not fail"""
+       """Read in 1.0 conformant files; should not fail"""
        f = CifFile.ReadCif("test_1.0",grammar="1.0")  
+       print f["test"]["_item_3"]
+       f = CifFile.ReadCif("test_1.1",grammar="1.0")  
        print f["test"]["_item_3"]
       
    def testNew(self):
-       """Read in a 1.0 conformant file with 1.1 grammar; should fail"""
+       """Read in a 1.0/1.1 conformant file with 1.1 grammar; should pass"""
+       f = CifFile.ReadCif("test_1.0",grammar="1.1")  
        try:
-           f = CifFile.ReadCif("test_1.0",grammar="1.1")  
+           f = CifFile.ReadCif("test_1.1",grammar="1.1")  
        except StarFile.StarError:
            pass
+
+   def testOldflex(self):
+       """Read in 1.0 conformant files using flex scanner; should not fail"""
+       f = CifFile.ReadCif("test_1.0",grammar="1.0",scantype="flex")  
+       print f["test"]["_item_3"]
+       f = CifFile.ReadCif("test_1.1",grammar="1.0",scantype="flex")  
+       print f["test"]["_item_3"]
+      
+   def testNewflex(self):
+       """Read in a 1.0/1.1 conformant file with 1.1 grammar; should pass,then fail"""
+       f = CifFile.ReadCif("test_1.0",grammar="1.1")  
+       try:
+           print 'Reading test 1.1, should fail'
+           f = CifFile.ReadCif("test_1.1",grammar="1.1")  
+       except StarFile.StarError:
+           pass
+
+   def testFallbackflex(self):
+       """Read in a 1.0 conformant file and check that it is correctly parsed as 1.0"""
+       f = CifFile.ReadCif("test_1.0")  
+       print 'Reading test 1.1, should succeed eventually'
+       f = CifFile.ReadCif("test_1.1")  
 
    def testObject(self):
        """Test use of grammar keyword when initialising object"""

@@ -1,15 +1,17 @@
-Release Notes for PyCIFRW-3.4  
+Release Notes for PyCIFRW-3.5  
 =============================
 
 New in this release
 ===================
 
-This release contains an extensive bugfix for incorrect handling of
-parent-child entries in DDL2 dictionaries, leading to a failure to
-validate DDL2 dictionaries.
+An overzealous rejection of leading brackets in CIF 1.1 undelimited data values
+has caused grief for countless PyCIFRW users.  The grammar has now been corrected
+to the published specifications, and the compiled scanner fixed to recognise the
+older grammar as well.  The parser will automatically try to find the correct
+grammar if the grammar is not specified (starting from 1.1 and then trying 1.0)
 
-Bug fixes (since 3.0)
-=====================
+Changes since 3.0
+=================
 
 (3.0)
 * deepcopy failed when copying CifFile objects due to the
