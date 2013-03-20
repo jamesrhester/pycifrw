@@ -1,5 +1,8 @@
 # Testing of the PyCif module using the PyUnit framework
 # 
+import sys
+sys.path[0] = '.'
+
 import unittest, CifFile
 import StarFile
 import re

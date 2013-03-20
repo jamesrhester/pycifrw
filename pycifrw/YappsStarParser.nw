@@ -1,15 +1,14 @@
 @
 Noweb literate programming file for Star grammar and parser specification.
 We are using Amit Patel's excellent context-sensitive Yapps2 parser.  
-This was chosen
-because it enables us to process long semicolon delimited strings without
+This was chosen because it enables us to process long semicolon delimited strings without
 running into Python recursion limits.  In the original kjParsing implementation,
 it was impossible to get the lexer to return a single line of text within
 the semicolon-delimited string as that re would have matched a single line
 of text anywhere in the file.  The resulting very long match expression
 only worked for text strings less than about 9000 characters in length.
-For further information about Yapps2, see 
-http://theory.stanford.edu/~amitp/Yapps/
+For further information about Yapps2, see http://theory.stanford.edu/~amitp/Yapps/
+
 
 Note there are only two targets here: 1.1 and DDLm syntax.  We also handle
 1.0 values as a subset of 1.1 which accepts square brackets as the first
@@ -207,10 +206,10 @@ ignore: "(#.*[\n\r](?!;))|(#.*)"
 token LBLOCK:  "(L|l)(O|o)(O|o)(P|p)_"        # loop_
 token GLOBAL: "(G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_"
 token STOP: "(S|s)(T|t)(O|o)(P|p)_"
-token save_heading: "(S|s)(A|a)(V|v)(E|e)_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+"
+token save_heading: "(S|s)(A|a)(V|v)(E|e)_[\]\[!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\-]+"
 token save_end: "(S|s)(A|a)(V|v)(E|e)_"
 token data_name: "_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+" #_followed by stuff
-token data_heading: "(D|d)(A|a)(T|t)(A|a)_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+"
+token data_heading: "(D|d)(A|a)(T|t)(A|a)_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\-]+"
 token start_sc_line: "(\n|\r\n);([^\n\r])*(\r\n|\r|\n)+"
 token sc_line_of_text: "[^;\r\n]([^\r\n])*(\r\n|\r|\n)+"
 token end_sc_line: ";"
@@ -239,10 +238,10 @@ ignore: "(#.*[\n\r](?!;))|(#.*)"
 token LBLOCK:  "(L|l)(O|o)(O|o)(P|p)_"        # loop_
 token GLOBAL: "(G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_"
 token STOP: "(S|s)(T|t)(O|o)(P|p)_"
-token save_heading: "(S|s)(A|a)(V|v)(E|e)_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+"
+token save_heading: "(S|s)(A|a)(V|v)(E|e)_[\]\[!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\-]+"
 token save_end: "(S|s)(A|a)(V|v)(E|e)_"
-token data_name: "_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+" #_followed by stuff
-token data_heading: "(D|d)(A|a)(T|t)(A|a)_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+"
+token data_name: "_[\]\[!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\-]+" #_followed by stuff
+token data_heading: "(D|d)(A|a)(T|t)(A|a)_[\]\[!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\-]+"
 token start_sc_line: "(\n|\r\n);([^\n\r])*(\r\n|\r|\n)+"
 token sc_line_of_text: "[^;\r\n]([^\r\n])*(\r\n|\r|\n)+"
 token end_sc_line: ";"
