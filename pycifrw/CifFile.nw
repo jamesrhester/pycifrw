@@ -172,7 +172,6 @@ class CifLoopBlock(StarFile.LoopBlock):
         if dimension > 1: 
             raise CifError( 'Attempt to nest loops, loop level %d' % dimension)
         StarFile.LoopBlock.__init__(self,data,dimension=dimension,**kwargs)
-        # self.__iter__ = self.recursive_iter
 
     def __iter__(self):
         return self.recursive_iter()
@@ -963,14 +962,14 @@ for item_def in dodgy_defs:
       while len(notmychildren):
          # get all children of first entry
          mychildren = filter(lambda a:a[0]==notmychildren[0][0],family)
-         print "Parent %s: %d children" % (notmychildren[0][0],len(mychildren))
+         # print "Parent %s: %d children" % (notmychildren[0][0],len(mychildren))
          for parent,child in mychildren:   #parent is the same for all
 	          # Make sure that we simply add in the new entry for the child, not replace it,
 		  # otherwise we might spoil the child entry loop structure
 		  try:
 		      childloop = self[child].GetLoop('_item_linked.parent_name')
 		  except KeyError:
-                      print 'Creating new parent entry %s for definition %s' % (parent,child)
+                      # print 'Creating new parent entry %s for definition %s' % (parent,child)
 	              self[child]['_item_linked.parent_name'] = [parent]
                       childloop = self[child].GetLoop('_item_linked.parent_name')
                       childloop.AddLoopItem(('_item_linked.child_name',[child]))
@@ -981,9 +980,9 @@ for item_def in dodgy_defs:
 		      pars = [a for a in childloop if getattr(a,'_item_linked.child_name','')==child]
 		      goodpars = [a for a in pars if getattr(a,'_item_linked.parent_name','')==parent]
 		      if len(goodpars)>0:   #no need to add it
-                          print 'Skipping duplicated parent - child entry in %s: %s - %s' % (child,parent,child)
+                          #print 'Skipping duplicated parent - child entry in %s: %s - %s' % (child,parent,child)
 			  continue
-                      print 'Adding %s to %s entry' % (parent,child)
+                      # print 'Adding %s to %s entry' % (parent,child)
 		      newpacket = childloop.GetPacket(0)   #essentially a copy, I hope
 		      setattr(newpacket,'_item_linked.child_name',child)
 		      setattr(newpacket,'_item_linked.parent_name',parent)
@@ -998,11 +997,11 @@ for item_def in dodgy_defs:
          old_parents = self[parent_name].get('_item_linked.parent_name',[])
          oldfamily = zip(old_parents,old_children)
          newfamily = []
-         print 'Old parents -> %s' % `old_parents`
+         # print 'Old parents -> %s' % `old_parents`
          for jj, childname in mychildren:
              alreadythere = filter(lambda a:a[0]==parent_name and a[1] ==childname,oldfamily)
              if len(alreadythere)>0: continue
-             'Adding new child %s to parent definition at %s' % (childname,parent_name)
+             # 'Adding new child %s to parent definition at %s' % (childname,parent_name)
              old_children.append(childname)
              old_parents.append(parent_name)
          # Now output the loop, blowing away previous definitions.  If there is something
@@ -1013,7 +1012,7 @@ for item_def in dodgy_defs:
          del self[parent_name]['_item_linked.parent_name']
          del self[parent_name]['_item_linked.child_name']
          self[parent_name].insert_loop(newloop)
-         print 'New parents -> %s' % `self[parent_name]['_item_linked.parent_name']`
+         # print 'New parents -> %s' % `self[parent_name]['_item_linked.parent_name']`
          # now make a new,smaller list
 	 notmychildren = filter(lambda a:a[0]!=mychildren[0][0],notmychildren)
 

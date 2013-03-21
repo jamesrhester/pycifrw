@@ -1,6 +1,6 @@
 @
 Noweb literate programming file for Star grammar and parser specification.
-We are using Amit Patel's excellent context-sensitive Yapps2 parser.  
+We  are using Amit Patel's excellent context-sensitive Yapps2 parser.  
 This was chosen because it enables us to process long semicolon delimited strings without
 running into Python recursion limits.  In the original kjParsing implementation,
 it was impossible to get the lexer to return a single line of text within

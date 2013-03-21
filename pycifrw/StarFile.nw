@@ -520,10 +520,8 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar
     grammar_found = False
     for Y in target_grammars:
       try:
-	if scantype == 'standard':
-            parser = Y.StarParser(Y.StarParserScanner(text))
-        else:
-	    parser = Y.StarParser(Y.yappsrt.Scanner(None,[],text,scantype='flex'))
+        parser = Y.StarParser(Y.StarParserScanner(text,scantype='flex'))
+#       parser = Y.StarParser(Y.yappsrt.Scanner(None,[],text,scantype='flex'))
         proto_star = getattr(parser,"input")()
       except Y.yappsrt.SyntaxError:
         errorstring = 'Syntax error in input file: last value parsed was %s' % Y.lastval
@@ -863,7 +861,7 @@ def recursive_iter(self,dict_so_far={},coord=[]):
                 yield prep_yield
     else:                                  #in some loop
         for i in range(my_length):
-            kvpairs = map(lambda a:(a,self.coord_to_group(a,coord)[i]),self.block.keys())
+            kvpairs = map(lambda a:(a,self.coord_to_group(a,coord)[i]),self.item_order)
             kvvals = map(lambda a:a[1],kvpairs)   #just values
             # print "Recursive kvpairs at %d: %s" % (i,`kvpairs`)
             if self.loops:
