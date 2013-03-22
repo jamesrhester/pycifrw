@@ -1,5 +1,6 @@
 #  Run files in the list, and catch any expected exceptions
 import sys
+sys.path[0] = '..'
 from CifFile import *
 from StarFile import *
 

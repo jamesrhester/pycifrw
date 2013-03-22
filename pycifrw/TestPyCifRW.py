@@ -1,5 +1,8 @@
 # Testing of the PyCif module using the PyUnit framework
 # 
+import sys
+sys.path[0] = '.'
+
 import unittest, CifFile
 import StarFile
 import re
@@ -230,9 +233,12 @@ class BlockChangeTestCase(unittest.TestCase):
        testloop = self.cf.GetLoop("_item_name_1")
        it_order = testloop.GetItemOrder()
        itn_pos = it_order.index("_item_name_1")
+       itn_pos2 = it_order.index("_item_name#2")
+       print 'Order: ' + `it_order` + ' Pos: %d' % itn_pos
        for test_pack in testloop:
            print 'Test pack: ' + `test_pack`
            self.assertEqual(test_pack._item_name_1,test_pack[itn_pos])
+           self.assertEqual(getattr(test_pack,"_item_name#2"),test_pack[itn_pos2])
 
    def testPacketAttr(self):
        """Test that packets have attributes"""

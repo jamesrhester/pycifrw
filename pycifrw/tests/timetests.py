@@ -1,4 +1,6 @@
 # this simply reports time taken to parse a file
+import sys
+sys.path[0] = '..'
 import time
 import CifFile
 import profile
