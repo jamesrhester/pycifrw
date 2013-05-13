@@ -135,8 +135,8 @@ noweb file, so that our comment characters output at the beginning of the
 line.   We restrict our blocks to be of type CifBlock.
 
 <<Initialise data structures>>=
-    def __init__(self,datasource=None,strict=1,maxinlength=2048,maxoutlength=0,**kwargs):
-        StarFile.StarFile.__init__(self,datasource=datasource,maxinlength=maxinlength,maxoutlength=maxoutlength,blocktype=CifBlock,**kwargs)
+    def __init__(self,datasource=None,strict=1,**kwargs):
+        super(CifFile,self).__init__(datasource=datasource, blocktype=CifBlock,**kwargs)
         self.strict = strict
         self.header_comment = \
 """#\\#CIF1.1
@@ -171,7 +171,7 @@ class CifLoopBlock(StarFile.LoopBlock):
         self.loopclass = CifLoopBlock
         if dimension > 1: 
             raise CifError( 'Attempt to nest loops, loop level %d' % dimension)
-        StarFile.LoopBlock.__init__(self,data,dimension=dimension,**kwargs)
+        super(CifLoopBlock,self).__init__(data,dimension=dimension,**kwargs)
 
     def __iter__(self):
         return self.recursive_iter()
@@ -220,7 +220,7 @@ object, passing the [[dimension]] argument.  This method ignores this.
 <<Initialise Cif Block>>=
 def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80,overwrite=True,dimension=0):
     self.strict = strict
-    CifLoopBlock.__init__(self,data=data,dimension=0,maxoutlength=maxoutlength,wraplength=wraplength,overwrite=overwrite)
+    super(CifBlock,self).__init__(data=data,dimension=0,maxoutlength=maxoutlength,wraplength=wraplength,overwrite=overwrite)
     if isinstance(data,(StarFile.StarBlock,CifBlock)):
         self.saves = StarFile.BlockCollection(datasource=data["saves"],element_class=CifBlock,type_tag="save")
     else:
@@ -621,7 +621,7 @@ def __init__(self,dic,do_minimum=False,grammar='1.1'):
     if isinstance(dic,StringType):
         self.dic_as_cif = CifFile(dic,grammar=grammar)
     (self.dicname,self.diclang,self.defdata) = self.dic_determine(self.dic_as_cif)
-    StarFile.BlockCollection.__init__(self,element_class=CifBlock,datasource=self.defdata) 
+    super(CifDic,self).__init__(element_class=CifBlock,datasource=self.defdata) 
     self.scopes_mandatory = {"dictionary":[],"category":[],"item":[]}
     self.scopes_naughty = {"dictionary":[],"category":[],"item":[]}
     # rename and expand out definitions using "_name" in DDL dictionaries

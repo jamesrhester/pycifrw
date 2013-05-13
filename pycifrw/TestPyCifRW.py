@@ -611,6 +611,7 @@ class GrammarTestCase(unittest.TestCase):
 ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
 class DictTestCase(unittest.TestCase):
     def setUp(self):
+        # self.ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
 	pass
     
     def tearDown(self):
@@ -642,7 +643,7 @@ class DictTestCase(unittest.TestCase):
 class DDL1TestCase(unittest.TestCase):
 
     def setUp(self):
-	#self.ddl1dic = CifFile.CifFile("dictionaries/cif_core.dic")
+	# self.ddl1dic = CifFile.CifFile("dictionaries/cif_core.dic")
 	#items = (("_atom_site_label","S1"),
 	#	 ("_atom_site_fract_x","0.74799(9)"),
         #         ("_atom_site_adp_type","Umpe"),
