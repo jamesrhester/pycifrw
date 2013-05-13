@@ -120,7 +120,7 @@ the BlockCollection at initialisation time.  This allows us to restrict the
 components of a CIF file, for example, to be CifBlocks.
 
 <<BlockCollection class>>=
-class BlockCollection:
+class BlockCollection(object):
     <<Initialise BC data structures>>
     <<BC emulation of mapping type>>
     <<Add a new data section>>
@@ -450,7 +450,7 @@ our initialisation function, which may be a subclass which takes other arguments
 
 <<Initialise data structures>>=
     def __init__(self,datasource=None,maxinlength=-1,maxoutlength=0,blocktype=StarBlock,**kwargs):
-        BlockCollection.__init__(self,datasource=datasource,element_class=blocktype,type_tag='data_')
+        super(StarFile,self).__init__(datasource=datasource,element_class=blocktype,type_tag='data_')
         if isinstance(datasource, StarFile):
             self.my_uri = datasource.my_uri
         self.maxinlength = maxinlength      #no restriction
@@ -591,7 +591,7 @@ We store the dimension in the class for convenience.
 A Star Block is then also a Loop block with dimension zero.
 
 <<LoopBlock class>>=
-class LoopBlock:
+class LoopBlock(object):
     <<Initialise Loop Block>>
     <<Add emulation of a mapping type>>
     <<Selection of iterators>>
@@ -1691,7 +1691,7 @@ frames.
 
 <<Initialise Star Block>>=
 def __init__(self,*pos_args,**keyword_args):
-    LoopBlock.__init__(self,*pos_args,**keyword_args)
+    super(StarBlock,self).__init__(*pos_args,**keyword_args)
     self.saves = BlockCollection(element_class=LoopBlock,type_tag="save")
 
 @ Emulation of a mapping type.  We catch the saves key and

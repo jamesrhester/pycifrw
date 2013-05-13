@@ -1,5 +1,8 @@
 # Testing of the PyCif module using the PyUnit framework
 # 
+import sys
+sys.path[0] = '.'
+print sys.path
 import unittest, CifFile
 import StarFile
 import re
@@ -191,8 +194,8 @@ class BlockChangeTestCase(unittest.TestCase):
    def testLoopifyCif(self):
        """Test changing unlooped data to looped data does 
           not touch already looped data for a CIF file"""
-       from IPython.Debugger import Tracer; debug_here = Tracer()
-       debug_here()
+#      from IPython.Debugger import Tracer; debug_here = Tracer()
+#      debug_here()
        self.cf.Loopify(["_planet","_satellite","_rings"])
        newloop = self.cf.GetLoop("_rings")
        newloop.Loopify(["_planet","_rings"])
@@ -592,6 +595,7 @@ class DDLmTestCase(unittest.TestCase):
 ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
 class DictTestCase(unittest.TestCase):
     def setUp(self):
+        # self.ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
 	pass
     
     def tearDown(self):
@@ -623,7 +627,7 @@ class DictTestCase(unittest.TestCase):
 class DDL1TestCase(unittest.TestCase):
 
     def setUp(self):
-	#self.ddl1dic = CifFile.CifFile("dictionaries/cif_core.dic")
+	# self.ddl1dic = CifFile.CifFile("dictionaries/cif_core.dic")
 	#items = (("_atom_site_label","S1"),
 	#	 ("_atom_site_fract_x","0.74799(9)"),
         #         ("_atom_site_adp_type","Umpe"),
