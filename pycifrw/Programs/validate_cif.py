@@ -11,14 +11,14 @@ import urllib
 #
 # return a CifFile object from an FTP location
 def cif_by_ftp(ftp_ptr,store=True,directory="."):
-    # print "Opening %s" % ftp_ptr
+    print "Opening %s" % ftp_ptr
     if store:
 	new_fn = os.path.split(urllib.url2pathname(ftp_ptr))[1]
 	target = os.path.join(directory,new_fn)
 	if target != ftp_ptr:
             urllib.urlretrieve(ftp_ptr,target)
-	    # print "Stored %s as %s" % (ftp_ptr,target)
-	ret_cif = CifFile.CifFile(target)
+	    print "Stored %s as %s" % (ftp_ptr,target)
+	ret_cif = CifFile.CifFile("file:" + target)
     else:
         ret_cif = CifFile.ReadCif(ftp_ptr)
     return ret_cif
@@ -84,7 +84,7 @@ def execute_with_options(options,args):
 	for dic in diclist: print "%s" % dic
 	fulldic = CifFile.merge_dic(diclist,mergemode='overlay')
     else:
-	# print "Locating dictionaries using registry at %s" % options.registry
+	print "Locating dictionaries using registry at %s" % options.registry
 	dics = map(None,options.iucr_names,options.versions)
         dicurls = map(lambda a:locate_dic(a[0],a[1],regloc=options.registry,store_dir=options.dirname),dics) 
 	diccifs = map(lambda a:cif_by_ftp(a,options.store_flag,options.dirname),dicurls)

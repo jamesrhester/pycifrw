@@ -1,14 +1,15 @@
-Release Notes for PyCIFRW-3.5  
+Release Notes for PyCIFRW-3.6  
 =============================
 
 New in this release
 ===================
+Unicode strings on input are accepted if they contain only
+ASCII values.  Previous versions converted them to lists,
+leading to strange errors (spotted by Brian Toby). 
 
-An overzealous rejection of leading brackets in CIF 1.1 undelimited data values
-has caused grief for countless PyCIFRW users.  The grammar has now been corrected
-to the published specifications, and the compiled scanner fixed to recognise the
-older grammar as well.  The parser will automatically try to find the correct
-grammar if the grammar is not specified (starting from 1.1 and then trying 1.0)
+Note that the development branch should handle Unicode as per the
+CIF 2.0 draft spec.  Unicode support in the stable branch is
+limited to accepting ASCII-equivalent strings.
 
 Changes since 3.0
 =================
@@ -65,6 +66,14 @@ block is performed sensibly.
 * This release contains an extensive bugfix for incorrect handling of
 parent-child entries in DDL2 dictionaries, leading to a failure to
 validate DDL2 dictionaries.
+
+(3.5)
+* An overzealous rejection of leading brackets in CIF 1.1 undelimited data values
+has caused grief for countless PyCIFRW users.  The grammar has now been corrected
+to the published specifications, and the compiled scanner fixed to recognise the
+older grammar as well.  The parser will automatically try to find the correct
+grammar if the grammar is not specified (starting from 1.1 and then trying 1.0)
+
 
 Improvements/Changes (since 3.0)
 ================================

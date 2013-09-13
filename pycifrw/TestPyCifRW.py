@@ -1,4 +1,5 @@
 # Testing of the PyCif module using the PyUnit framework
+# -*- coding: utf-8
 # 
 import sys
 sys.path[0] = '.'
@@ -39,6 +40,18 @@ class BlockRWTestCase(unittest.TestCase):
         """test string setting"""
         self.cf['_test_string_'] = 'A short string'
 	self.failUnless(self.cf['_test_string_'] == 'A short string')
+
+    def testUnicodeStringSet(self):
+	"""Test that we correctly handle a unicode string"""
+	self.cf['_test_string_'] = u'A short string'
+        self.failUnless(self.cf['_test_string_'] == 'A short string')
+
+    def testBadUnicodeStringSet(self):
+	"""Test that we reject a unicode string with non-ASCII characters"""
+        try:
+	    self.cf['_test_string_'] = u'A короткий string'
+        except (StarFile.StarError,CifFile.CifError): pass
+        else: self.fail()
 
     def testTooLongSet(self):
         """test setting overlong data names"""
