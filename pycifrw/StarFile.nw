@@ -482,10 +482,15 @@ this file e.g. with DDLm dictionary imports.
 
 <<Read in a STAR file>>=
 def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar=None):
-    import string
+    import string,sys
     import YappsStarParser_1_1 as Y1
     import YappsStarParser_1_0 as Y0
     if isinstance(filename,basestring):
+        # Some logic to deal with windows filenames
+	if filename[1]==":" and sys.platform=="win32":
+	    realurl = "file:" + filename
+        else:
+	    realurl = filename
         filestream = urlopen(filename)
     else:
 	filestream = filename   #already opened for us

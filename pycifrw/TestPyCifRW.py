@@ -535,6 +535,12 @@ class FileWriteTestCase(unittest.TestCase):
        jj = self.ef.first_block()
        self.failUnless(jj==self.df)
 
+   def testWindowsPath(self):
+	"""Test that windows path names starting with a letter are properly handled"""
+	import sys
+        pass
+	
+
 ##############################################################
 #
 #   Test alternative grammars (1.0, DDLm)
