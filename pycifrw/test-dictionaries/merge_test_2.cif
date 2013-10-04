@@ -1,0 +1,29 @@
+###
+# A cif file for testing that merging works; the attributes of _dummy
+# vary with merge mode and the dictionary used
+###
+data_testblock
+_dummy 1234.5
+
+#### Some blocks for testing that mergin with keys works
+data_block_a
+  _unused 1
+  loop_
+      _loop_key 
+      _data1
+      _data2
+      _data3
+      a 1 2 3
+      b 11 12 13
+      c 21 22 23
+
+data_block_b
+  _unused 2
+  loop_
+      _data1
+      _data2
+      _data3
+      _loop_key 
+      100 200 300 a         #should not be replaced
+      31 32 33    d
+      41 42 43    e

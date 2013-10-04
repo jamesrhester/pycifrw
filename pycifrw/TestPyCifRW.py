@@ -627,10 +627,10 @@ class GrammarTestCase(unittest.TestCase):
 # Test dictionary type
 #
 ##############################################################
-ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
+ddl1dic = CifFile.CifDic("test-dictionaries/cif_core.dic")
 class DictTestCase(unittest.TestCase):
     def setUp(self):
-        # self.ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
+        # self.ddl1dic = CifFile.CifDic("test-dictionaries/cif_core.dic")
 	pass
     
     def tearDown(self):
@@ -662,7 +662,7 @@ class DictTestCase(unittest.TestCase):
 class DDL1TestCase(unittest.TestCase):
 
     def setUp(self):
-	# self.ddl1dic = CifFile.CifFile("dictionaries/cif_core.dic")
+	# self.ddl1dic = CifFile.CifFile("test-dictionaries/cif_core.dic")
 	#items = (("_atom_site_label","S1"),
 	#	 ("_atom_site_fract_x","0.74799(9)"),
         #         ("_atom_site_adp_type","Umpe"),
@@ -752,23 +752,23 @@ class DDL1TestCase(unittest.TestCase):
 class FakeDicTestCase(unittest.TestCase):
 # we test stuff that hasn't been used in official dictionaries to date.
     def setUp(self):
-        self.testcif = CifFile.CifFile("dictionaries/novel_test.cif")
+        self.testcif = CifFile.CifFile("test-dictionaries/novel_test.cif")
 
     def testTypeConstruct(self):
         self.assertRaises(CifFile.ValidCifError,CifFile.ValidCifFile,
-                           diclist=["dictionaries/novel.dic"],datasource=self.testcif)
+                           diclist=["test-dictionaries/novel.dic"],datasource=self.testcif)
           
 class DicMergeTestCase(unittest.TestCase):
     def setUp(self):
-        self.offdic = CifFile.CifFile("dictionaries/dict_official")
-        self.adic = CifFile.CifFile("dictionaries/dict_A")
-        self.bdic = CifFile.CifFile("dictionaries/dict_B")
-        self.cdic = CifFile.CifFile("dictionaries/dict_C")
-        self.cvdica = CifFile.CifFile("dictionaries/cvdica.dic")
-        self.cvdicb = CifFile.CifFile("dictionaries/cvdicb.dic")
-        self.cvdicc = CifFile.CifFile("dictionaries/cvdicc.dic")
-        self.cvdicd = CifFile.CifFile("dictionaries/cvdicd.dic")
-        self.testcif = CifFile.CifFile("dictionaries/merge_test.cif")
+        self.offdic = CifFile.CifFile("test-dictionaries/dict_official")
+        self.adic = CifFile.CifFile("test-dictionaries/dict_A")
+        self.bdic = CifFile.CifFile("test-dictionaries/dict_B")
+        self.cdic = CifFile.CifFile("test-dictionaries/dict_C")
+        self.cvdica = CifFile.CifFile("test-dictionaries/cvdica.dic")
+        self.cvdicb = CifFile.CifFile("test-dictionaries/cvdicb.dic")
+        self.cvdicc = CifFile.CifFile("test-dictionaries/cvdicc.dic")
+        self.cvdicd = CifFile.CifFile("test-dictionaries/cvdicd.dic")
+        self.testcif = CifFile.CifFile("test-dictionaries/merge_test.cif")
        
     def testAStrict(self):
         self.assertRaises(StarFile.StarError,CifFile.merge_dic,[self.offdic,self.adic],mergemode="strict")
@@ -777,13 +777,13 @@ class DicMergeTestCase(unittest.TestCase):
         newdic = CifFile.merge_dic([self.offdic,self.adic],mergemode='overlay')
         # print newdic.__str__()
         self.assertRaises(CifFile.ValidCifError,CifFile.ValidCifFile,
-                                  datasource="dictionaries/merge_test.cif",
+                                  datasource="test-dictionaries/merge_test.cif",
                                   dic=newdic)
         
     def testAReverseO(self):
         # the reverse should be OK!
         newdic = CifFile.merge_dic([self.adic,self.offdic],mergemode='overlay')
-        jj = CifFile.ValidCifFile(datasource="dictionaries/merge_test.cif",
+        jj = CifFile.ValidCifFile(datasource="test-dictionaries/merge_test.cif",
                                   dic = newdic)
 
 #    def testCOverlay(self):
@@ -791,7 +791,7 @@ class DicMergeTestCase(unittest.TestCase):
 #        print "New dic..."
 #        print self.offdic.__str__()
 #        self.assertRaises(CifFile.ValidCifError,CifFile.ValidCifFile,
-#                          datasource="dictionaries/merge_test.cif",
+#                          datasource="test-dictionaries/merge_test.cif",
 #                          dic = self.offdic)
 
     # now for the final example in "maintenance.html"
@@ -802,8 +802,8 @@ class DicMergeTestCase(unittest.TestCase):
 
     def testKeyOverlay(self):
         """Test that duplicate key values are not overlayed in loops"""
-        ff = CifFile.CifFile("dictionaries/merge_test_2.cif")["block_a"]
-        gg = CifFile.CifFile("dictionaries/merge_test_2.cif")["block_b"]
+        ff = CifFile.CifFile("test-dictionaries/merge_test_2.cif")["block_a"]
+        gg = CifFile.CifFile("test-dictionaries/merge_test_2.cif")["block_b"]
         ff.merge(gg,mode="overlay",rel_keys = ["_loop_key"])
         target_loop = ff.GetLoop("_loop_key")
         print ff.__str__()

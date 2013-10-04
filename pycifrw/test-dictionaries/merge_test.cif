@@ -1,0 +1,6 @@
+###
+# A cif file for testing that merging works; the attributes of _dummy
+# vary with merge mode and the dictionary used
+###
+data_testblock
+_dummy 1234.5

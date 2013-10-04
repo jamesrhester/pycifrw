@@ -1,0 +1,13 @@
+    data_on_this_dictionary
+    _dictionary_name      dict_A
+    _dictionary_version   1.0
+    data_dummy_modified
+    _name               '_dummy'
+    _enumeration_range   0:1000
+    _category            test
+
+    data_cell_length_new
+    _name '_cell_length_b'
+    _enumeration_range 0:1000
+    _type numb
+    _category            test

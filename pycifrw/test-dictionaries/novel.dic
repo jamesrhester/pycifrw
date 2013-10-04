@@ -1,0 +1,24 @@
+#############################################################
+#
+#  novel.dic: a DDL1 dictionary which uses DDL1 stuff which
+#  is not yet found in real dictionaries
+#
+#############################################################
+
+data_on_this_dictionary
+_dictionary_name   anbf_novel
+_dictionary_version    1.0
+
+# this tests the usage of _type_construct
+# we define two so that we  can test simultaneously
+data_marriage_date
+_category secular
+_name '_marriage_date'
+_type  char
+_type_construct '[0-9]?[0-9]?[0-9][0-9]-[0-9]?[0-9]-[0-9][0-9]'
+
+data_divorce_date
+_category secular
+_name '_divorce_date'
+_type  char
+_type_construct '[0-9]?[0-9]?[0-9][0-9]-[0-9]?[0-9]-[0-9][0-9]'
