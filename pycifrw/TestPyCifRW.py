@@ -537,8 +537,10 @@ class FileWriteTestCase(unittest.TestCase):
 
    def testWindowsPath(self):
 	"""Test that windows path names starting with a letter are properly handled"""
-	import sys
-        pass
+	import os
+        fullpath = os.path.abspath("test.cif")
+	CifFile.ReadCif(fullpath)
+	
 	
 
 ##############################################################

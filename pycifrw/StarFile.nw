@@ -491,7 +491,7 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar
 	    realurl = "file:" + filename
         else:
 	    realurl = filename
-        filestream = urlopen(filename)
+        filestream = urlopen(realurl)
     else:
 	filestream = filename   #already opened for us
     my_uri = ""
