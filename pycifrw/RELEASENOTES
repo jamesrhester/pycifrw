@@ -1,15 +1,13 @@
-Release Notes for PyCIFRW-3.6  
-=============================
+Release Notes for PyCIFRW-3.6.1  
+===============================
 
-New in this release
-===================
-Unicode strings on input are accepted if they contain only
-ASCII values.  Previous versions converted them to lists,
-leading to strange errors (spotted by Brian Toby). 
+New in this bugfix release
+==========================
 
-Note that the development branch should handle Unicode as per the
-CIF 2.0 draft spec.  Unicode support in the stable branch is
-limited to accepting ASCII-equivalent strings.
+Full Windows path names containing drive letters are
+now properly understood.  A fully-functional Windows
+installer is now provided, including the compiled
+file reading functionality for maximum speed.
 
 Changes since 3.0
 =================
@@ -73,6 +71,15 @@ has caused grief for countless PyCIFRW users.  The grammar has now been correcte
 to the published specifications, and the compiled scanner fixed to recognise the
 older grammar as well.  The parser will automatically try to find the correct
 grammar if the grammar is not specified (starting from 1.1 and then trying 1.0)
+
+(3.6) 
+Unicode strings on input are accepted if they contain only
+ASCII values.  Previous versions converted them to lists,
+leading to strange errors (spotted by Brian Toby). 
+
+Note that the development branch should handle Unicode as per the
+CIF 2.0 draft spec.  Unicode support in the stable branch is
+limited to accepting ASCII-equivalent strings.
 
 
 Improvements/Changes (since 3.0)

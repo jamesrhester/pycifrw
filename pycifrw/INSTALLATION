@@ -12,14 +12,14 @@ distributions bundle python as standard.
 Installation
 ------------
 
-(Windows minimal)
+(Windows minimal - Python 2.7)
 
-Download and execute the file PyCifRW-3.6.exe
+Download and execute the file PyCifRW-3.6.11.win32-py2.7.exe
 
 (All operating systems)
  
-1. Download and unpack the file PyCifRW-3.6.tar.gz
-2. In directory PyCifRW-3.6, execute the command
+1. Download and unpack the file PyCifRW-3.6.1.tar.gz
+2. In directory PyCifRW-3.6.1, execute the command
  
     'python setup.py install'
 
@@ -30,6 +30,10 @@ Note that documentation and commented source code
 (.nw files) are available only in the .tar.gz file.
 The validate.py program is also not provided in 
 the windows installer.
+
+Note that the Windows executable installer contains a sped-up
+file reading module, which requires additional tools
+to create from the 'dumb' .tar.gz distribution.
 
 Checking the installation
 -------------------------

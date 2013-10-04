@@ -1,14 +1,13 @@
 # Setup file for automatic installation of the PyCIFRW
 # distribution
-from setuptools import setup, Extension
+from distutils.core import setup, Extension
 
 # The compiled scanner for speed
 
-c_scanner = Extension("StarScan",
-                      sources = ["lib/lex.yy.c","lib/py_star_scan.c"])
+c_scanner = Extension("StarScan",["lib/lex.yy.c","lib/py_star_scan.c"])
 
 setup(name="PyCifRW",
-      version = "3.6",
+      version = "3.6.1",
       description = "CIF/STAR file support for Python",
       author = "James Hester",
       author_email = "jamesrhester at gmail.com",
