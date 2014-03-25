@@ -7,7 +7,7 @@ from distutils.core import setup, Extension
 c_scanner = Extension("StarScan",["lib/lex.yy.c","lib/py_star_scan.c"])
 
 setup(name="PyCifRW",
-      version = "3.6.1",
+      version = "3.6.2",
       description = "CIF/STAR file support for Python",
       author = "James Hester",
       author_email = "jamesrhester at gmail.com",

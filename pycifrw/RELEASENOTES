@@ -1,13 +1,10 @@
-Release Notes for PyCIFRW-3.6.1  
+Release Notes for PyCIFRW-3.6.2  
 ===============================
 
 New in this bugfix release
 ==========================
 
-Full Windows path names containing drive letters are
-now properly understood.  A fully-functional Windows
-installer is now provided, including the compiled
-file reading functionality for maximum speed.
+Remove Set deprecation warnings.
 
 Changes since 3.0
 =================
@@ -81,6 +78,9 @@ Note that the development branch should handle Unicode as per the
 CIF 2.0 draft spec.  Unicode support in the stable branch is
 limited to accepting ASCII-equivalent strings.
 
+(3.6.1)
+Full Windows path names containing drive letters are
+now properly understood.  
 
 Improvements/Changes (since 3.0)
 ================================
@@ -135,6 +135,10 @@ output file
 * Datanames in packets returned by GetPacket or iteration can be 
   accessed by attribute
 * Packets can be added to loops.
+
+(3.6)
+* PyCIFRW can be installed as a pure python package in Jython running almost
+as fast as CPython.
 
 Incompatible changes (since 3.0)
 ================================
