@@ -239,7 +239,7 @@ token dat_val_internal_sq: "\[([^\s\[\]]*)\]"
 # For tests of new DDLm syntax - no quotes or apostrophes in strings, no commas, braces or square brackets in undelimited data values
 # This token for triple-quote delimited strings must come before single-quote delimited strings to avoid the opening quotes being
 # interpreted as a single-quote delimited string
-token triple_quote_data_value: "'''.*'''|\"\"\".*\"\"\""
+token triple_quote_data_value: "(?s)'''.*?'''|\"\"\".*\"\"\""
 token single_quote_data_value: "'([^\n\r\f'])*'+|\"([^\n\r\"])*\"+"
 token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$'_,\{\}\[\]][^\s,\{\}\[\]]*)"
 
@@ -354,9 +354,9 @@ rule input: ( ((
                       bracket_expression    {{thisval = bracket_expression}}
                       )                     {{return monitor('data_value',thisval)}}
 
-     rule delimited_data_value: (single_quote_data_value      {{thisval = stripstring(single_quote_data_value)}} 
+     rule delimited_data_value: (triple_quote_data_value      {{thisval = striptriple(triple_quote_data_value)}} 
                                 |
-                                triple_quote_data_value       {{thisval = striptriple(triple_quote_data_value)}}
+                                single_quote_data_value       {{thisval = stripstring(single_quote_data_value)}}
                                 )                             {{return thisval}}
 
      rule sc_lines_of_text: start_sc_line   {{lines = start_sc_line}}
@@ -373,10 +373,11 @@ rule input: ( ((
                             |
                               nest_curly_bracket_expr    {{print `nest_curly_bracket_expr`;return nest_curly_bracket_expr}}
 
-     rule square_bracket_expr: o_s_b 
-                              data_value       {{this_list = [data_value]}}
-                            ( ","  
-                              data_value       {{this_list.append(data_value)}}
+     rule square_bracket_expr: o_s_b            {{this_list = []}} 
+                            (  data_value       {{this_list.append(data_value)}}
+                              ( ","  
+                                data_value       {{this_list.append(data_value)}}
+                              ) *
                             ) *
                                c_s_b                     {{return StarList(this_list)}}
 
@@ -457,6 +458,8 @@ rule input: ( ((
      rule save_frame: save_heading   {{savehead = save_heading[5:];savebody = StarBlock(overwrite=False) }} 
                       (
                       dataseq@<<savebody>> 
+                      |
+                      save_frame     {{savebody["saves"].NewBlock(save_frame[0],save_frame[1],fix=False,replace=True)}}
                       )*
                       save_end           {{return (savehead,monitor('save_frame',savebody))}}
 

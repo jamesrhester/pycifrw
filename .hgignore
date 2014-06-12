@@ -1,4 +1,14 @@
 (^|/)CVS($|/)
 (^|/)\.hg($|/)
 (^|/)build($|/)
+(^|/)dist($|/)
 (^|/)tests/IUCR-archive($|/)
+(^|/)tests/IUCR-archive($|/)
+(^|/)documentation.html.LyXconv($|/)
+(^|/)ply-3.4/example($|/)
+(^|/)ply-3.4/test($|/)
+(^|/)*egg-info($|/)
+glob:**.pyc
+glob:**.class
+glob:**.g
+pycifrw/*.html

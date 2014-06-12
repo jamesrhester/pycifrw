@@ -568,7 +568,7 @@ class DDLmTestCase(unittest.TestCase):
          _item_4 This_is_so_wrong?*~
        """
        goodstr1_2 = """
-       #A test CIF file, grammar version 1.2 conformant
+       #A test CIF file, grammar version 1.2 conformant with nested save frames
        data_test
           _name.category_id           CIF_DIC
           _name.object_id             CIF_CORE
@@ -579,9 +579,17 @@ class DDLmTestCase(unittest.TestCase):
          {"save":'MODEL',        "file":'core_model.dic', "mode":'full' },
          {"save":'PUBLICATION',  "file":'core_publn.dic', "mode":'full' },
          {"save":'FUNCTION',     "file":'core_funct.dic', "mode":'full' }]
+        save_savelevel1
+         _item_in_save [1,2,3,4]
+         save_savelevel2
+            _item_in_inside_save {"hello":"goodbye","e":"mc2"}
+         save_
+        save_
          _test.1 {"piffle":poffle,"wiffle":3,'''woffle''':9.2}
          _test_2 {"ping":[1,2,3,4],"pong":[a,b,c,d]}
          _test_3 {"ppp":{'qqq':2,'poke':{'joke':[5,6,7],'jike':[{'aa':bb,'cc':dd},{'ee':ff,"gg":100}]}},"rrr":[11,12,13]}
+         _triple_quote_test '''The comma is ok if, the quotes
+                                are ok'''
        """
        f = open("test_1.2","w")
        f.write(teststr1_2)
@@ -617,8 +625,13 @@ class DDLmTestCase(unittest.TestCase):
    def testTables3(self):
        """Test that a nested structure is properly parsed"""
        f = CifFile.ReadCif("goodtest_1.2",grammar="DDLm")
-       print f["test"]["_test_3"]
        self.failUnless(f["test"]["_test_3"]["ppp"]["poke"]["jike"][1]["gg"]=='100')
+
+   def testTripleQuote(self):
+       """Test that triple quoted values are treated correctly"""
+       f = CifFile.ReadCif("goodtest_1.2",grammar="DDLm")
+       print f["test"]["_triple_quote_test"]
+       self.failUnless(f["test"]["_triple_quote_test"][:9] == 'The comma')
 
 ##############################################################
 #
