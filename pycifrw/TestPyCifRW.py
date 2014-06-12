@@ -74,7 +74,7 @@ class BlockRWTestCase(unittest.TestCase):
 
     def testMoreBadStrings(self):
         dataname = "_name_is_ok"
-        val = "so far, ok, but now we have a " + chr(128)
+        val = u"so far, ok, but now we have a " + unichr(128)
         try:
             self.cf[dataname] = val
         except StarFile.StarError: pass
@@ -88,12 +88,6 @@ class BlockRWTestCase(unittest.TestCase):
         """Test that a StarList is treated as a primitive item"""
         self.cf['_a_star_list'] = StarFile.StarList([1,2,3,4])
         jj = self.cf.GetLoop('_a_star_list')
-        self.failUnless(jj.dimension==0)
- 
-    def testStarTuple(self):
-        """Test that a StarTuple is treated as a primitive item"""
-        self.cf['_a_star_tuple'] = StarFile.StarTuple(1,2,3,4)
-        jj = self.cf.GetLoop('_a_star_tuple')
         self.failUnless(jj.dimension==0)
        
 # Now test operations which require a preexisting block
@@ -573,8 +567,27 @@ class DDLmTestCase(unittest.TestCase):
          _item_3 (can_have_bracket_here_if_1.2)
          _item_4 This_is_so_wrong?*~
        """
+       goodstr1_2 = """
+       #A test CIF file, grammar version 1.2 conformant
+       data_test
+          _name.category_id           CIF_DIC
+          _name.object_id             CIF_CORE
+          _import.get       
+        [{"save":'EXPERIMENTAL', "file":'core_exptl.dic', "mode":'full' },
+         {"save":'DIFFRACTION',  "file":'core_diffr.dic', "mode":'full' },
+         {"save":'STRUCTURE',    "file":'core_struc.dic', "mode":'full' },
+         {"save":'MODEL',        "file":'core_model.dic', "mode":'full' },
+         {"save":'PUBLICATION',  "file":'core_publn.dic', "mode":'full' },
+         {"save":'FUNCTION',     "file":'core_funct.dic', "mode":'full' }]
+         _test.1 {"piffle":poffle,"wiffle":3,'''woffle''':9.2}
+         _test_2 {"ping":[1,2,3,4],"pong":[a,b,c,d]}
+         _test_3 {"ppp":{'qqq':2,'poke':{'joke':[5,6,7],'jike':[{'aa':bb,'cc':dd},{'ee':ff,"gg":100}]}},"rrr":[11,12,13]}
+       """
        f = open("test_1.2","w")
        f.write(teststr1_2)
+       f.close()
+       f = open("goodtest_1.2","w")
+       f.write(goodstr1_2)
        f.close()
 
    def tearDown(self):
@@ -587,6 +600,26 @@ class DDLmTestCase(unittest.TestCase):
        except StarFile.StarError:
            pass
       
+   def testgood(self):
+       """Read in 1.2 conformant file: should succeed"""
+       f = CifFile.ReadCif("goodtest_1.2",grammar="DDLm")
+       
+   def testTables(self):
+       """Test that DDLm tables are properly parsed"""
+       f = CifFile.ReadCif("goodtest_1.2",grammar="DDLm")
+       self.failUnless(f["test"]["_test.1"]["wiffle"] == '3')
+
+   def testTables2(self):
+       """Test that a plain table is properly parsed"""
+       f = CifFile.ReadCif("goodtest_1.2",grammar="DDLm")
+       self.failUnless(f["test"]["_import.get"][0]["file"] == 'core_exptl.dic')
+
+   def testTables3(self):
+       """Test that a nested structure is properly parsed"""
+       f = CifFile.ReadCif("goodtest_1.2",grammar="DDLm")
+       print f["test"]["_test_3"]
+       self.failUnless(f["test"]["_test_3"]["ppp"]["poke"]["jike"][1]["gg"]=='100')
+
 ##############################################################
 #
 # Test dictionary type
@@ -765,13 +798,13 @@ class DicMergeTestCase(unittest.TestCase):
         newdic = CifFile.merge_dic([self.cvdica,self.cvdicb,self.cvdicc,self.cvdicd],mergemode='overlay')
         jj.write(newdic.__str__())
 
-    def testKeyOverlay(self):
-        """Test that duplicate key values are not overlayed in loops"""
-        ff = CifFile.CifFile("dictionaries/merge_test_2.cif")["block_a"]
-        gg = CifFile.CifFile("dictionaries/merge_test_2.cif")["block_b"]
-        ff.merge(gg,mode="overlay",rel_keys = ["_loop_key"])
-        target_loop = ff.GetLoop("_loop_key")
-        print ff.__str__()
+#    def testKeyOverlay(self):
+#        """Test that duplicate key values are not overlayed in loops"""
+#        ff = CifFile.CifFile("dictionaries/merge_test_2.cif")["block_a"]
+#        gg = CifFile.CifFile("dictionaries/merge_test_2.cif")["block_b"]
+#        ff.merge(gg,mode="overlay",rel_keys = ["_loop_key"])
+#        target_loop = ff.GetLoop("_loop_key")
+#        print ff.__str__()
 
     def tearDown(self):
         pass

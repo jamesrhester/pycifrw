@@ -23,16 +23,17 @@ Parsers: YappsStarParser_DDLm.py YappsStarParser_1_1.py YappsStarParser_1_0.py
 clean: 
 	rm -f *.pyc *.g
 #
+# Note the pythonpath variable as yapps requires its runtime to run
 YappsStarParser_1_0.py: YappsStarParser.nw
 	notangle -R1.0_syntax YappsStarParser.nw > YappsStarParser_1_0.g
-	python ./yapps3/yapps2.py YappsStarParser_1_0.g
+	export PYTHONPATH=.;python ./yapps3/yapps2.py YappsStarParser_1_0.g
 #
 YappsStarParser_1_1.py: YappsStarParser.nw
 	notangle -R1.1_syntax YappsStarParser.nw > YappsStarParser_1_1.g
-	python ./yapps3/yapps2.py YappsStarParser_1_1.g
+	export PYTHONPATH=.;python ./yapps3/yapps2.py YappsStarParser_1_1.g
 #
 YappsStarParser_DDLm.py: YappsStarParser.nw
 	notangle -RDDLm_syntax YappsStarParser.nw > YappsStarParser_DDLm.g
-	python ./yapps3/yapps2.py YappsStarParser_DDLm.g
+	export PYTHONPATH=.; python ./yapps3/yapps2.py YappsStarParser_DDLm.g
 #
 

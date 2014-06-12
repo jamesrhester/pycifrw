@@ -14,7 +14,7 @@ setup(name="PyCifRW",
       author_email = "jamesrhester at gmail.com",
       url="https://bitbucket.org/jamesrhester/pycifrw/overview",
       py_modules = ['CifFile.CifFile','CifFile.yapps3_compiled_rt','CifFile.YappsStarParser_1_1','CifFile.YappsStarParser_1_0',
-                    'CifFile.YappsStarParser_DDLm','CifFile.StarFile'],
+                    'CifFile.YappsStarParser_DDLm','CifFile.StarFile','CifFile.drel.drel_yacc','CifFile.drel.drel_lex'],
       ext_modules = [c_scanner],
       package_dir = {'CifFile':'pycifrw'},
       packages = ['CifFile'] 

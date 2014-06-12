@@ -469,7 +469,7 @@ def AddCifItem(self,data):
     # single items passed straight through to underlying routine
     # we catch single item loops as well...
     if isinstance(data[0],StringTypes):
-        if isinstance(data[1],(TupleType,ListType)) and not isinstance(data[1],(StarFile.StarList,StarFile.StarTuple)):
+        if isinstance(data[1],(TupleType,ListType)) and not isinstance(data[1],StarFile.StarList):
             CifLoopBlock.AddLoopItem(self,((data[0],),((data[1],))))
         else:
             CifLoopBlock.AddLoopItem(self,data)
@@ -2131,7 +2131,7 @@ statement is the _enumeration.default specified in ddl.dic...
 
 <<Transform drel to python>>=
 def transform_drel(self):
-    import drel_yacc
+    from drel import drel_yacc
     parser = drel_yacc.parser
     my_namespace = self.keys()
     my_namespace = dict(map(None,my_namespace,my_namespace)) 
@@ -2162,7 +2162,7 @@ can then pass to our individual item methods.
 
 <<Store dREL functions>>=
 def add_drel_funcs(self):
-    import drel_yacc
+    from drel import drel_yacc
     funclist = filter(lambda a:self[a].get("_name.category_id","")=='function',self.keys())
     funcnames = map(lambda a:self[a]["_name.object_id"],funclist)
     funcbodys = map(lambda a:self[a]["_method.expression"],funclist)
@@ -2290,11 +2290,9 @@ def change_type(self,itemname,inval):
         if item_container == 'Array': return map(self.recursive_numerify,inval)
  
 # A utility function to recursively make all atomic values numeric
-# All embedded values will be either StarTuples or StarLists
+# All embedded values will be StarLists
 def normal_numerify(self,valarray): 
     # print 'Recursive evaluation of %s' % `valarray`
-    if isinstance(valarray,StarFile.StarTuple):
-        return StarFile.StarTuple(map(self.recursive_numerify,valarray))
     if isinstance(valarray,StarFile.StarList):
         return StarFile.StarList(map(self.recursive_numerify,valarray))
     if isinstance(valarray,(StringType,UnicodeType,IntType,LongType)):

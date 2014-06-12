@@ -183,6 +183,12 @@ def order_update(order_array,new_name):
     order_array.append(new_name) 
     return new_name
 
+# and finally...turn a sequence into a python dict (thanks to Stackoverflow)
+def pairwise(iterable):
+    itnext = iter(iterable).next
+    while 1:
+        yield itnext(), itnext()
+
 @
 
 The regular expressions aren't quite as easy to deal with as in kjParsing;
@@ -195,13 +201,17 @@ front or not.  We take care of this by treating as whitespace all terminators
 except for those with a following semicolon, so that a carriage-return-semicolon
 sequence matches the start_sc_line uniquely.
 
-We include reserved words and save frames, although we semantically utterly
-ignore any save frames that we see - but no syntax error is flagged. The other
+We include reserved words and save frames. The other
 reserved words have no rules defined, so will flag a syntax error.  However,
 as yapps is a context-sensitive parser, it will by default make any word
 found starting with our reserved words into a data value if it occurs in the
 expected position, so we explicity exclude stuff starting with our words
 in the definition of data_value_1.
+
+The syntax rules below correspond to the current CIF2 draft (20110810) with
+the addition of allowing commas between list and table elements, and
+consequently excluding commas from data values.  The inclusion of commas is
+for compatibility with the published STAR and DDLm standards.
 
 <<Regular expressions DDLm>>=
 # first handle whitespace and comments, keeping whitespace
@@ -219,23 +229,20 @@ token data_heading: u"(D|d)(A|a)(T|t)(A|a)_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{
 token start_sc_line: "(\n|\r\n);([^\n\r])*(\r\n|\r|\n)+"
 token sc_line_of_text: "[^;\r\n]([^\r\n])*(\r\n|\r|\n)+"
 token end_sc_line: ";"
-token c_r_b: "\)"
-token o_r_b: "\("
 token c_c_b: "\}"
 token o_c_b: "\{"
 token c_s_b: "\]"
 token o_s_b: "\["
-token dat_val_nocomma_nosq: "([^\s\"#$,'_\(\{\[\]][^\s,\[\]]*)|'(('(?![\s,]))|([^\n\r\f']))*'+|\"((\"(?![\s,]))|([^\n\r\"]))*\"+"
+#token dat_val_nocomma_nosq: "([^\s\"#$,'_\(\{\[\]][^\s,\[\]]*)|'(('(?![\s,]))|([^\n\r\f']))*'+|\"((\"(?![\s,]))|([^\n\r\"]))*\"+"
 token dat_val_internal_sq: "\[([^\s\[\]]*)\]"
-token dat_val_nocomma_nocurl: "([^\s\"#$,'_\(\{\[\]][^\s,}]*)|'(('(?![\s,]))|([^\n\r\f']))*'+|\"((\"(?![\s,]))|([^\n\r\"]))*\"+"
-token dat_val_nocomma_nornd: "([^\s\"#$,'\(\{\[\]][^\s,)]*)|'(('(?![\s,]))|([^\n\r\f']))*'+|\"((\"(?![\s,]))|([^\n\r\"]))*\"+"
-#token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$'_\(\{\[\]][^\s]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
-# For tests of new DDLm syntax - no quotes or apostrophes in strings
-token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$'_\(\{\[\]][^\s]*)|'([^\n\r\f'])*'+|\"([^\n\r\"])*\"+"
-# This token for triple-quote delimited strings
-token data_value_2: "'''.*'''|\"\"\".*\"\"\""
-# For tests of new DDLm syntax - restricted non-delimited strings
-#token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[A-Za-z0-9_./()?+-]+)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
+# token dat_val_nocomma_nocurl: "([^\s\"#$,'_\(\{\[\]][^\s,}]*)|'(('(?![\s,]))|([^\n\r\f']))*'+|\"([^\n\r\"])*\"+"
+# For tests of new DDLm syntax - no quotes or apostrophes in strings, no commas, braces or square brackets in undelimited data values
+# This token for triple-quote delimited strings must come before single-quote delimited strings to avoid the opening quotes being
+# interpreted as a single-quote delimited string
+token triple_quote_data_value: "'''.*'''|\"\"\".*\"\"\""
+token single_quote_data_value: "'([^\n\r\f'])*'+|\"([^\n\r\"])*\"+"
+token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$'_,\{\}\[\]][^\s,\{\}\[\]]*)"
+
 token END: '$'
 
 @ CIF 1.1 does not allow unquoted data values to begin with a bracket character, but does not have bracket expressions
@@ -338,14 +345,19 @@ rule input: ( ((
 
      rule datakvpair: data_name data_value {{return [data_name,data_value]}} # name-value
 
-     rule data_value: (data_value_1          {{thisval = stripstring(data_value_1)}}
+     rule data_value: (data_value_1          {{thisval = data_value_1}}
+                      |
+                      delimited_data_value  {{thisval = stripstring(delimited_data_value)}}
                       |
                       sc_lines_of_text      {{thisval = stripextras(sc_lines_of_text)}}
                       |
                       bracket_expression    {{thisval = bracket_expression}}
-                      |
-                      data_value_2          {{thisval = striptriple(data_value_2)}}
                       )                     {{return monitor('data_value',thisval)}}
+
+     rule delimited_data_value: (single_quote_data_value      {{thisval = stripstring(single_quote_data_value)}} 
+                                |
+                                triple_quote_data_value       {{thisval = striptriple(triple_quote_data_value)}}
+                                )                             {{return thisval}}
 
      rule sc_lines_of_text: start_sc_line   {{lines = start_sc_line}}
                             (
@@ -355,34 +367,16 @@ rule input: ( ((
 
      rule bracket_expression:  square_bracket_expr   {{return square_bracket_expr}}
                             |
-                              curly_bracket_expr    {{return 'curly brackets'}}
-                            |
-                              round_bracket_expr    {{return round_bracket_expr}}
+                              curly_bracket_expr    {{return curly_bracket_expr}}
 
      rule nested_bracket_expression:  nest_square_bracket_expr   {{return nest_square_bracket_expr}}
                             |
-                              nest_curly_bracket_expr    {{return 'curly brackets'}}
-                            |
-                              nest_round_bracket_expr    {{return nest_round_bracket_expr}}
+                              nest_curly_bracket_expr    {{print `nest_curly_bracket_expr`;return nest_curly_bracket_expr}}
 
      rule square_bracket_expr: o_s_b 
-                            (
-                              dat_val_nocomma_nosq       {{this_list = [stripstring(dat_val_nocomma_nosq)]}}
-                              (
-                                dat_val_internal_sq      {{this_list[0]+=dat_val_internal_sq}}
-                                (
-                                "\*"                      {{this_list[0]+="*"}}
-                                )?
-                              )?
-                              |
-                              nested_bracket_expression  {{this_list = [nested_bracket_expression]}}
-                            )
+                              data_value       {{this_list = [data_value]}}
                             ( ","  
-                              (
-                              dat_val_nocomma_nosq       {{this_list.append(stripstring(dat_val_nocomma_nosq))}}
-                              |
-                              nested_bracket_expression  {{this_list.append(nested_bracket_expression)}}
-                              )
+                              data_value       {{this_list.append(data_value)}}
                             ) *
                                c_s_b                     {{return StarList(this_list)}}
 
@@ -401,66 +395,37 @@ rule input: ( ((
                             ) *
                                c_s_b                     {{return StarList(this_list)}}
 
-     rule curly_bracket_expr: o_c_b 
-                            (
-                              dat_val_nocomma_nocurl
-                              |
-                              nested_bracket_expression 
-                            )
+     rule curly_bracket_expr: ( o_c_b 
+                              delimited_data_value       {{table_as_list = [delimited_data_value]}}
+                              ":"
+                              data_value                 {{table_as_list.append(data_value)}}
                             ( ","  
-                              (
-                              dat_val_nocomma_nocurl
-                              |
-                              nested_bracket_expression
-                              )
+                              delimited_data_value       {{table_as_list.append(delimited_data_value)}}
+                              ":"
+                              data_value                 {{table_as_list.append(data_value)}}
                             ) *
-                              c_c_b 
+                              c_c_b )                    {{return StarDict(pairwise(table_as_list))}}
 
      rule nest_curly_bracket_expr: o_c_b 
+                            dat_val_nocomma_nocurl  {{table_as_list = [stripstring(dat_val_nocomma_nocurl)]}}
+                              ":"
                             (
-                              dat_val_nocomma_nocurl
+                              dat_val_nocomma_nocurl       {{table_as_list.append(stripstring(dat_val_nocomma_nocurl))}}
                               |
-                              nested_bracket_expression 
+                              nested_bracket_expression    {{table_as_list.append(nested_bracket_expression)}}
                             )
-                            ( ","  
+                            ( ","                       
+                              dat_val_nocomma_nocurl       {{table_as_list.append(stripstring(dat_val_nocomma_nocurl))}}
+                              ":"
                               (
-                              dat_val_nocomma_nocurl
+                              dat_val_nocomma_nocurl       {{table_as_list.append(stripstring(dat_val_nocomma_nocurl))}}
                               |
-                              nested_bracket_expression
-                              )
+                              nested_bracket_expression    {{table_as_list.append(nested_bracket_expression)}}
+                              )                          
                             ) *
-                              c_c_b 
+                              c_c_b                        {{return dict(pairwise(table_as_list))}}
 
-     rule round_bracket_expr: o_r_b 
-                            (
-                              dat_val_nocomma_nornd     {{this_tuple = [stripstring(dat_val_nocomma_nornd)]}}
-                              |
-                              nested_bracket_expression {{this_tuple = [nested_bracket_expression]}}
-                            )
-                            ( ","  
-                              (
-                              dat_val_nocomma_nornd     {{this_tuple.append(stripstring(dat_val_nocomma_nornd))}}
-                              |
-                              nested_bracket_expression {{this_tuple.append(nested_bracket_expression)}}
-                              )
-                            ) *
-                              c_r_b                      {{return StarTuple(this_tuple)}}
-
-     rule nest_round_bracket_expr: o_r_b     
-                            (
-                              dat_val_nocomma_nornd  {{this_tuple = [stripstring(dat_val_nocomma_nornd)]}}
-                              |
-                              nested_bracket_expression {{this_tuple = [nested_bracket_expression]}}
-                            )
-                            ( ","  
-                              (
-                              dat_val_nocomma_nornd   {{this_tuple.append(stripstring(dat_val_nocomma_nornd))}}
-                              |
-                              nested_bracket_expression {{this_tuple.append(nested_bracket_expression)}}
-                              )
-                            ) *
-                              c_r_b     {{return tuple(this_tuple)}}
-
+     
 # due to the inability of the parser to backtrack, we contruct our loops in helper functions,
 # and simply collect data during parsing proper.
 
