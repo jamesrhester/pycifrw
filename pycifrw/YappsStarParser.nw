@@ -369,30 +369,11 @@ rule input: ( ((
                             |
                               curly_bracket_expr    {{return curly_bracket_expr}}
 
-     rule nested_bracket_expression:  nest_square_bracket_expr   {{return nest_square_bracket_expr}}
-                            |
-                              nest_curly_bracket_expr    {{print `nest_curly_bracket_expr`;return nest_curly_bracket_expr}}
-
      rule square_bracket_expr: o_s_b            {{this_list = []}} 
                             (  data_value       {{this_list.append(data_value)}}
                               ( ","  
                                 data_value       {{this_list.append(data_value)}}
                               ) *
-                            ) *
-                               c_s_b                     {{return StarList(this_list)}}
-
-     rule nest_square_bracket_expr: o_s_b 
-                            (
-                              dat_val_nocomma_nosq     {{this_list = [stripstring(dat_val_nocomma_nosq)]}}
-                              |
-                              nested_bracket_expression  {{this_list = [nested_bracket_expression]}}
-                            )
-                            ( ","  
-                              (
-                              dat_val_nocomma_nosq       {{this_list.append(stripstring(dat_val_nocomma_nosq))}}
-                              |
-                              nested_bracket_expression  {{this_list.append(nested_bracket_expression)}}
-                              )
                             ) *
                                c_s_b                     {{return StarList(this_list)}}
 
@@ -406,25 +387,6 @@ rule input: ( ((
                               data_value                 {{table_as_list.append(data_value)}}
                             ) *
                               c_c_b )                    {{return StarDict(pairwise(table_as_list))}}
-
-     rule nest_curly_bracket_expr: o_c_b 
-                            dat_val_nocomma_nocurl  {{table_as_list = [stripstring(dat_val_nocomma_nocurl)]}}
-                              ":"
-                            (
-                              dat_val_nocomma_nocurl       {{table_as_list.append(stripstring(dat_val_nocomma_nocurl))}}
-                              |
-                              nested_bracket_expression    {{table_as_list.append(nested_bracket_expression)}}
-                            )
-                            ( ","                       
-                              dat_val_nocomma_nocurl       {{table_as_list.append(stripstring(dat_val_nocomma_nocurl))}}
-                              ":"
-                              (
-                              dat_val_nocomma_nocurl       {{table_as_list.append(stripstring(dat_val_nocomma_nocurl))}}
-                              |
-                              nested_bracket_expression    {{table_as_list.append(nested_bracket_expression)}}
-                              )                          
-                            ) *
-                              c_c_b                        {{return dict(pairwise(table_as_list))}}
 
      
 # due to the inability of the parser to backtrack, we contruct our loops in helper functions,
