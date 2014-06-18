@@ -126,6 +126,8 @@ class BlockCollection(object):
     <<Add a new data section>>
     <<Merge with another block collection>>
     <<Collect all values of a single key in all blocks>>
+    <<Switch save frame scoping rules>>
+    <<Parent child utilities>>
 <<Write out to string representation>>
 
 @ When initialising, we take an optional type tag, which will
@@ -144,15 +146,32 @@ encompass most of Unicode.  Our object needs to know about this
 different characterset in order to check incoming values and datanames for
 conformance.  This is done via the 'characterset' keyword.
 
+DDLm dictionaries assume that all definitions in nested save frames are
+equally accessible from other nested save frames, whereas in instance
+files save frames are logically insulated from other save frames at
+the same or lower levels.  Rather than duplicate this structure, we
+record these relationships in the [[child_table]] field.
+
+If scoping is 'instance', nested datablocks are invisible and only accessible
+through the 'saves' attribute, which produces a view onto the same block 
+collection.
+
 <<Initialise BC data structures>>=
 def __init__(self,datasource=None,element_class=StarBlock,type_tag='',
-             characterset='ascii'):
+             characterset='ascii',scoping='instance',parent_id=None,**kwargs):
+    import collections
     self.dictionary = {}
     self.type_tag = type_tag
     self.lower_keys = []              # for efficiency
     self.element_class = element_class
     self.characterset = characterset
-    if isinstance(datasource,(DictType,BlockCollection)):
+    self.PC = collections.namedtuple('PC',['block_id','parent','visible'])
+    self.child_table = []
+    self.parent_id = parent_id
+    self.scoping = scoping  #will trigger setting of child table
+    if isinstance(datasource,BlockCollection):
+        self.merge(datasource)
+    elif isinstance(datasource,DictType):
         for key,value in datasource.items():
             if value.__class__ == element_class:
                 self[key]=value
@@ -171,11 +190,30 @@ def checklengths(self,maxlength):
         for bn in toolong:
             errorstring += "\n" + bn
         raise StarError( 'Following block name(s) too long: \n' + errorstring)
- 
-@ Emulation of a mapping type.  When called via __setitem__, we do not
-check that a new blockname replaces an old block name.  If you need this,
-you should call [[NewBlock]] directly.  We also put odd little useful
-utilities in this section.
+
+@ Switch scoping.  In some cases we want to hide save frames from our accesses,
+in other cases we wish to make all frames visible.  Setting the scoping attribute
+allows this to be swapped around.  As we could be a 'view' onto a subset of save
+frames, we use the parent_id to choose the appropriate selection of datablocks.
+
+We do not assume that no change means we don't have to do anything.
+
+<<Switch save frame scoping rules>>=
+def __setattr__(self,attr_name,newval):
+    if attr_name == 'scoping':
+        if newval not in ('dictionary','instance'):
+            raise StarError("Star file may only have 'dictionary' or 'instance' scoping, not %s" % newval)
+        if newval == 'dictionary':
+            self.child_table = map(lambda a:self.PC(a[0],a[1],True),self.child_table)
+        else:
+            #only top-level datablocks visible
+            self.child_table = map(lambda a:self.PC(a[0],a[1],a.parent == None),self.child_table)
+    object.__setattr__(self,attr_name,newval)
+
+@ Emulation of a mapping type.  When called via __setitem__, we do not check that a new
+blockname replaces an old block name.  If you need this, you should
+call [[NewBlock]] directly.  We also put odd little useful utilities
+in this section.
 
 <<BC emulation of mapping type>>=
 def __str__(self):
@@ -183,61 +221,62 @@ def __str__(self):
 
 def __setitem__(self,key,value):
     if isinstance(value,(self.element_class,DictType)):
-        self.NewBlock(key,value,replace=True)
+        self.NewBlock(key,value,replace=True,parent=None)
     else: raise TypeError
-    self.lower_keys.append(key.lower())
 
 # due to attempt to get upper/lower case treated as identical
 # we have a bit of cruft here.  With unicode normalisation it
 # will only get worse...
 def __getitem__(self,key):
-    try:
-        return self.dictionary[key]
-    except KeyError:
-        if key.lower() not in self.lower_keys:
-            raise KeyError, "No such item: %s" % key
-    curr_keys = self.dictionary.keys()
-    lower_ordered = map(lambda a:a.lower(),curr_keys)
-    keyindex = lower_ordered.index(key.lower())
-    return self.dictionary[curr_keys[keyindex]]
+    target_keys = filter(lambda a:a.visible==True,self.child_table)
+    target_keys = map(lambda a:[a.block_id,a.block_id.lower()],target_keys)
+    real_id,lc_ordered = zip(*target_keys)
+    if key.lower() not in lc_ordered:
+         raise KeyError, "No such item: %s" % key
+    keyindex = lc_ordered.index(key.lower())
+    return self.dictionary[real_id[keyindex]]
 
 # we have to get an ordered list of the current keys,
 # as we'll have to delete one of them anyway
 def __delitem__(self,key):
-    try:
-        del self.dictionary[key]
-        self.lower_keys.remove(key.lower())
-    except KeyError:
-        if not self.has_key(key):
-            raise KeyError
-        curr_keys = self.dictionary.keys()
-        lower_ordered = map(lambda a:a.lower(),curr_keys)
-        keyindex = lower_ordered.index(key.lower())
-        del self.dictionary[curr_keys[keyindex]]
-    
-def __len__(self):
-    return len(self.dictionary)
+    target_keys = filter(lambda a:a.visible==True,self.child_table)
+    target_keys = map(lambda a:[a.block_id,a.block_id.lower()],target_keys)
+    real_id,lc_ordered = zip(*target_keys)
+    if key.lower() not in lc_ordered:
+         raise KeyError, "No such item: %s" % key
+    keyindex = lc_ordered.index(key.lower())
+    # get rid of all children recursively as well
+    children = filter(lambda a:a.parent == key.lower(),self.child_table)
+    for child in children:
+        del self[child.block_id]
+    del self.dictionary[real_id[keyindex]]
 
+def __len__(self):
+    if scoping == 'dictionary':
+        return len(self.dictionary) 
+    else:
+        return len(filter(lambda a:a.visible==True,self.child_table))
+
+# We iterate over all visible
 def __iter__(self):
     for one_block in self.keys():
         yield self[one_block]
 
 def keys(self):
-    return self.dictionary.keys()
+    visible= filter(lambda a:a.visible==True,self.child_table)
+    return map(lambda a:a.block_id,visible)
 
 # changes to take case independence into account
 def has_key(self,key):
     if not isinstance(key,StringTypes): return 0
-    if self.dictionary.has_key(key):
-       return 1
-    if key.lower() in self.lower_keys:
-       return 1
+    visible = filter(lambda a:a.visible==True,self.child_table)
+    visible_keys = map(lambda a:a.block_id.lower(),visible)
+    if key.lower() in visible_keys:
+        return 1
     return 0
 
 def get(self,key,default=None):
-    if self.dictionary.has_key(key):
-        return self.dictionary[key]
-    elif self.has_key(key):     # take account of case
+    if self.has_key(key):     # take account of case
         return self.__getitem__(key)
     else:
         return default
@@ -245,23 +284,74 @@ def get(self,key,default=None):
 def clear(self):
     self.dictionary.clear()
     self.lower_keys = []
+    self.child_table = []
 
 def copy(self):   
-    newcopy = self.dictionary.copy()
-    return BlockCollection('',newcopy)
- 
+    newcopy = self.dictionary.copy()  #all blocks
+    newcopy = BlockCollection('',newcopy,parent_id=self.parent_id)
+    newcopy.child_table = self.child_table.copy()
+    newcopy.characterset = self.characterset
+    newcopy.scoping = self.scoping
+    return newcopy
+
 def update(self,adict):
     for key in adict.keys():
         self.dictionary[key] = adict[key]
     self.lower_keys.extend(map(lambda a:a.lower(),adict.keys()))
+    self.child_table.extend(map(lambda a:self.PC(a,None,True),adict.keys()))
 
 def items(self):
-    return self.dictionary.items()
+    return map(lambda a:(a,self[a]),self.keys())
 
 def first_block(self):
     if self.keys():
         return self[self.keys()[0]]
 
+@ Parent-child utilities.  As we are now emulating parent-child relationships
+using self.child_table, we provide some useful methods.
+
+<<Parent child utilities>>=
+def get_parent(self,blockname):
+    """Get the enclosing block"""
+    possibles = filter(lambda a:a.block_id == blockname,self.child_table)
+    if len(possibles)>1 or len(possibles)==0:
+        raise StarError('0 or more than 1 parent for %s' % blockname)
+    return possibles[0].parent
+
+def get_children(self,blockname):
+    """Get all children as a block collection"""
+    new_bc = self.copy()
+    new_bc.child_table = filter(lambda a:self.is_child_of_parent(blockname,a),self.child_table)
+    new_bc.scoping = self.scoping
+    return new_bc
+
+def is_child_of_parent(self,parentname,blockname):
+    """Recursively search for children of blockname, case is important for now"""
+    more_children = filter(lambda a:a.parent == parentname,self.child_table)
+    child_names = map(lambda a:a.block_id,more_children)
+    if len(child_names) == 0: return False
+    if blockname in child_names:
+       return True
+    else:
+       for one_child in child_names:
+           if self.is_child_of_parent(one_child,blockname): return True
+    return False
+       
+def set_parent(self,parentname,childname):
+    """Set the parent block"""
+    # first check that both blocks exist
+    realparent = filter(lambda a:a.block_id == parentname,self.child_table)
+    if len(realparent) == 0:
+        raise KeyError('Parent block %s does not exist' % parentname)
+    realchild = filter(lambda a:a.block_id == childname,self.child_table)
+    if len(realchild) == 0:
+        raise KeyError('Child block %s does not exist' % childname)
+    # remove any previous settings
+    self.child_table = filter(lambda a:a.block_id == childname and \
+                                       a.parent_name == parentname,self.child_table)
+    self.child_table.append(self.PC(childname,parentname,False))
+    self.scoping = self.scoping #reset visibility
+        
 @ Adding a new block.  A new block is just a new item in our
 dictionary, so we add a new entry to the current list of dictionaries, and set
 the count of the number of loops to zero.  We return the new block name
@@ -275,14 +365,21 @@ is already in the CifFile.
 Note that we must take account of upper/lower case differences being irrelevant
 for CIFs, but that we want to preserve the original case.
 
+To allow for nested blocks, we can specify a parent block.  When the
+file is printed, the new block will appear inside the parent block.
+In order to make nested save frames visible to the whole collection,
+we find all nested save frames and register them in the toplevel
+table.  We then need to replace the access to the 'save' key with
+access to a virtual view of the block collection.
+
 <<Add a new data section>>=
-def NewBlock(self,blockname,blockcontents=(),replace=False,fix=True):
+def NewBlock(self,blockname,blockcontents=(),replace=False,fix=True,parent=None):
     if not blockcontents:
         blockcontents = self.element_class()
     elif isinstance(blockcontents,DictType):
         blockcontents = self.element_class(blockcontents)
     if not isinstance(blockcontents,self.element_class):
-        raise StarError( 'Block is not of required type %s, is %s' % self.element_class.__name__,blockcontents.__class__.__name__)
+        raise StarError( 'Block is not of required type %s, is %s' % (self.element_class.__name__,blockcontents.__class__.__name__))
     if fix:
         newblockname = re.sub('[  \t]','_',blockname)
     else: newblockname = blockname
@@ -290,16 +387,26 @@ def NewBlock(self,blockname,blockcontents=(),replace=False,fix=True):
     if self.lower_keys.count(new_lowerbn):    #already in CIF
         if not replace:
             raise StarError( "Attempt to replace existing block" + blockname)
-        # generate a list of lower-case keys in correct order
-        current_keys = self.dictionary.keys()
-        blocknames = map(lambda a:a.lower(),current_keys)
-        location = blocknames.index(new_lowerbn)
-        del self.dictionary[current_keys[location]]
-        self.lower_keys.remove(new_lowerbn)
-    self.dictionary.update({blockname:blockcontents})
+        del self[new_lowerbn]
+    self.dictionary.update({newblockname:blockcontents})
     self.lower_keys.append(new_lowerbn)
+    if parent is None:
+       self.child_table.append(self.PC(newblockname,None,True))
+    else:
+       blocknames = map(lambda a:a.lower(),self.dictionary.keys())
+       if parent.lower() in blocknames:
+           self.child_table.append(self.PC(newblockname,parent,False))
+       else:
+           print 'Warning:Parent block %s does not exist for child %s' % (parent,newblockname)  
+    self.__setattr__('scoping',self.scoping)  #re-hide stuff as necessary
 
-@ Merging.  We implement this for dictionary merging support.  We can't
+@ Merging.  With the removal of explicitly nested save frames in version
+4.0, this operation becomes routine in that, as we build up a CIF/STAR
+file during reading, we are continually merging in small block collections
+consisting of bunches of save frames.
+
+This was originally implemented for dictionary merging support, which is
+now deprecated with the new DDLm way of combining dictionaries.  We can't
 merge [[CifDic]] objects, because the internal data structures for DDL2 and
 DDL1 are different (parent-child in particular), so any merge operation
 would have to first recreate the original Cif structure before proceeding.
@@ -326,7 +433,7 @@ The suggested overlay method involves adding to loops, rather than
 replacing them completely.  Identical rows must be removed, and
 any key values with identical values remaining after this have to
 flag an error.  We don't read in the ddl specifications themselves,
-to avoid messing with hard-coded filenames, so we require the calling
+to avoid messing around with hard-coded filenames, so we require the calling
 function to provide us with this file (not yet implemented).  
  
 The [[match_att]] keyword allows us to match blocks/save frames on a
@@ -342,17 +449,27 @@ item names in overlay mode.  So we have to deduce the 'main' item name
 from any parent-child information that we have using a helper function which
 is passed to us.
 
+Nested save frames are emulated through child table lookups, so we should
+merge this table when merging block collections.  Unless [[parent]] is
+not empty, we put all new blocks on the same level.  Otherwise, any top-level
+blocks in the incoming block collection (parent is None) are given the parent
+specified in [[parent]].
+
 <<Merge with another block collection>>=
-def merge(self,new_bc,mode="strict",single_block=[],
+def merge(self,new_bc,mode="strict",parent=None,single_block=[],
                idblock="",match_att=[],match_function=None):
     if single_block:
         self.dictionary[single_block[0]].merge(new_bc[single_block[1]],mode,
 					       match_att=match_att,
                                                match_function=match_function)
         return None
+    # make all keys visible
+    old_scoping = self.scoping
+    self.scoping = 'dictionary'
+    new_bc.scoping = 'dictionary'
     base_keys = self.keys()
     block_to_item = base_keys   #default
-    new_keys = new_bc.keys()
+    new_keys = new_bc.keys()    #get list of incoming blocks
     if match_att:
         #make a blockname -> item name map
         if match_function:
@@ -360,12 +477,15 @@ def merge(self,new_bc,mode="strict",single_block=[],
 	else:
             block_to_item = map(lambda a:self[a].get(match_att[0],None),self.keys())
 	#print `block_to_item`
-    for key in new_keys:
-        if key == idblock: continue
-	basekey = key        #default value
-	attval = new_bc[key].get(match_att[0],0)
-	for ii in range(len(block_to_item)):  #do this way to get looped names
-	    thisatt = block_to_item[ii]
+    for key in new_keys:        #run over incoming blocknames
+        if key == idblock: continue    #skip dictionary id
+	basekey = key           #default value
+        if len(match_att)>0:
+	   attval = new_bc[key].get(match_att[0],0)  #0 if ignoring matching
+	else:
+           attval = 0
+        for ii in range(len(block_to_item)):  #do this way to get looped names
+	    thisatt = block_to_item[ii]       #keyname in old block
 	    #print "Looking for %s in %s" % (attval,thisatt)
             if attval == thisatt or \
 	       (isinstance(thisatt,ListType) and attval in thisatt):
@@ -373,7 +493,12 @@ def merge(self,new_bc,mode="strict",single_block=[],
                   block_to_item.remove(thisatt)
                   break
         if not self.dictionary.has_key(basekey) or mode=="replace":
-            self.dictionary[basekey] = new_bc[key]
+            print 'Merging in %s' % basekey
+            new_parent = new_bc.get_parent(key)
+            if parent is not None and new_parent is None:
+               new_parent = parent
+            self.NewBlock(basekey,new_bc[key],parent=new_parent)   #add the block
+            print 'Finished merge, child table ' + `self.child_table`
         else:
             if mode=="strict":
                 raise StarError( "In strict merge mode: block %s in old and block %s in new files" % (basekey,key))
@@ -382,7 +507,8 @@ def merge(self,new_bc,mode="strict",single_block=[],
                 self.dictionary[basekey].merge(new_bc[key],mode,match_att=match_att)
             else:  
                 raise StarError( "Merge called with unknown mode %s" % mode)
-
+    self.scoping = old_scoping #re-hide if necessary
+     
 @ When validating DDL2-type dictionaries against the DDL spec file, we have
 to be able to see all values of parent data items across all save frames
 in order to validate parent-child relations (I've inferred this, but
@@ -397,7 +523,7 @@ it occurs or what it occurs with.  We also remove duplicate values.
 
 <<Collect all values of a single key in all blocks>>=
 def get_all(self,item_name):
-    raw_values = map(lambda a:self[a].get(item_name),self.dictionary.keys())
+    raw_values = map(lambda a:self[a].get(item_name),self.keys())
     raw_values = filter(lambda a:a != None, raw_values)
     ret_vals = []
     for rv in raw_values:
@@ -413,6 +539,8 @@ individual sections, getting their string representation.  We
 implement this using the cStringIO module for faster work.  Note that
 the default output comment specifies a CIF 1.1 standard file.
 
+Note that child blocks must be save frames, so we hard-code 'save'.
+
 <<Write out to string representation>>=
     def WriteOut(self,comment='',wraplength=80,maxoutlength=2048):
         import cStringIO
@@ -420,14 +548,34 @@ the default output comment specifies a CIF 1.1 standard file.
             comment = self.header_comment
         outstring = cStringIO.StringIO()
         outstring.write(comment)
-        for datablock in self.dictionary.keys():
-            outstring.write('\n' + self.type_tag +datablock+'\n')
-            self.dictionary[datablock].SetOutputLength(wraplength,maxoutlength)
-            outstring.write(str(self.dictionary[datablock]))
+        # loop over top-level
+        top_level_blocks = filter(lambda a:a.parent is None, self.child_table)
+        top_block_names = map(lambda a:a.block_id,top_level_blocks)
+        for blockname in top_block_names:
+            outstring.write('\n' + self.type_tag +blockname+'\n')
+            children = filter(lambda a:a.parent == blockname,self.child_table)
+            child_names = map(lambda a:a.block_id,children)
+            for child_name in child_names:
+                outstring.write('\n' + 'save_' + child_name + '\n')
+                self.block_to_string(child_name,outstring)    
+                outstring.write('\n' + 'save_'+ '\n')   
+            self.dictionary[blockname].SetOutputLength(wraplength,maxoutlength)
+            outstring.write(str(self.dictionary[blockname]))
         returnstring =  outstring.getvalue()
         outstring.close()
         return returnstring
 
+    def block_to_string(self,block_id,outstring):
+        """Output a complete datablock, including children"""
+        children = filter(lambda a:a.parent == block_id,self.child_table)
+        child_names = map(lambda a:a.block_id,children)
+        for child_name in child_names:
+            outstring.write('\n' + 'save_' + child_name + '\n')
+            self.block_to_string(child_name,outstring)
+            outstring.write('\n' + 'save_' + '\n')
+        outstring.write(str(self.dictionary[block_id]))
+        
+        
 @ \section{StarFile}
 
 If we are passed a filename, we open it and read it in, assuming that
@@ -454,7 +602,7 @@ our initialisation function, which may be a subclass which takes other arguments
 
 <<Initialise data structures>>=
     def __init__(self,datasource=None,maxinlength=-1,maxoutlength=0,blocktype=StarBlock,**kwargs):
-        super(StarFile,self).__init__(datasource=datasource,element_class=blocktype,type_tag='data_')
+        super(StarFile,self).__init__(datasource=datasource,element_class=blocktype,type_tag='data_',**kwargs)
         if isinstance(datasource, StarFile):
             self.my_uri = datasource.my_uri
         self.maxinlength = maxinlength      #no restriction
@@ -505,7 +653,7 @@ We save our URL for possible later use in finding files relative to the location
 this file e.g. with DDLm dictionary imports.
 
 <<Read in a STAR file>>=
-def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar='1.1',CBF=False):
+def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar='1.1',CBF=False,**kwargs):
     import string
     import codecs
     if grammar=="1.1":
@@ -1680,56 +1828,33 @@ the fact that the topmost level can hold save frames.
 
 <<StarBlock class>>=
 class StarBlock(LoopBlock):
-    <<Initialise Star Block>>
     <<Adjust emulation of mapping type>>
 
 @ A Star Block is a Loop Block which can hold save frames in the outermost
-loop.   So essentially the extra value we are adding here is to handle save
-frames.
-
-<<Initialise Star Block>>=
-def __init__(self,*pos_args,**keyword_args):
-    super(StarBlock,self).__init__(*pos_args,**keyword_args)
-    self.saves = BlockCollection(element_class=LoopBlock,type_tag="save")
-
-@ Emulation of a mapping type.  We catch the saves key and
-redirect it to our saves attribute, and add printing of the
-saves block.
+loop.   From version 4.0 we do not allow save frames to be set from within
+the block; rather, an enclosing block collection should be created (e.g. a
+Star File) and the save frame added to that block collection with the
+StarBlock set as its child, so we catch the saves key and
+print an error message to show deprecation.
 
 <<Adjust emulation of mapping type>>=
 def __getitem__(self,key):
     if key == "saves":
-        return self.saves
+        raise StarError("""The saves key is deprecated. Access the save block from
+the enclosing block collection (e.g. CIF or STAR file)""")
     else:
         return LoopBlock.__getitem__(self,key)
 
 def __setitem__(self,key,value):
     if key == "saves":
-        self.saves[key] = value
+        raise StarError("""Setting the saves key is deprecated. Add the save block to
+an enclosing block collection (e.g. CIF or STAR file) with this block as child""")
     else:
         LoopBlock.__setitem__(self,key,value)
 
-def clear(self):
-    LoopBlock.clear(self)
-    self.saves = BlockCollection(element_class=LoopBlock,type_tag="save_")
-
 def copy(self):
     newblock = LoopBlock.copy(self)
-    newblock.saves = self.saves.copy()
     return self.copy.im_class(newblock)   #catch inheritance
-
-def has_key(self,key):
-    if key == "saves": return 1
-    else: return LoopBlock.has_key(self,key)
-    
-def __str__(self):
-    retstr = ''
-    for sb in self.saves.keys(): 
-        retstr = retstr + '\nsave_%s\n\n' % sb
-        self.saves[sb].SetOutputLength(self.wraplength,self.maxoutlength)
-        retstr = retstr + str(self.saves[sb])
-        retstr = retstr + '\nsave_\n\n'
-    return retstr + LoopBlock.__str__(self)
 
 <<Define an error class>>=
 class StarError(Exception):

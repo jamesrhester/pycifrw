@@ -223,10 +223,6 @@ object, passing the [[dimension]] argument.  This method ignores this.
 def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80,overwrite=True,dimension=0):
     self.strict = strict
     super(CifBlock,self).__init__(data=data,dimension=0,maxoutlength=maxoutlength,wraplength=wraplength,overwrite=overwrite)
-    if isinstance(data,(StarFile.StarBlock,CifBlock)):
-        self.saves = StarFile.BlockCollection(datasource=data["saves"],element_class=CifBlock,type_tag="save")
-    else:
-        self.saves = StarFile.BlockCollection(element_class=CifLoopBlock,type_tag="save")
     if self.strict:
 	self.checklengths()
     self.dictionary = None
@@ -243,7 +239,7 @@ object, and make the appropriate changes.
 <<Adjust emulation of a mapping type>>=
 def __getitem__(self,key):
     if key == "saves":
-        return self.saves
+        raise CifError('access via "saves" key is deprecated. Use the enclosing CIF file instead')
     try:     
        rawitem = CifLoopBlock.__getitem__(self,key)
     except KeyError:
@@ -258,31 +254,16 @@ def __getitem__(self,key):
 
 def __setitem__(self,key,value):
     if key == "saves":
-        self.saves[key] = value
+        raise CifError('Access to save frames via "save" key has been removed. Use enclosing CIF/STAR file instead')
     else:
         self.AddCifItem((key,value))
 
 def clear(self):
     CifLoopBlock.clear(self)
-    self.saves = StarFile.BlockCollection(element_class=CifLoopBlock,type_tag="save_")
 
 def copy(self):
     newblock = CifLoopBlock.copy(self)
-    newblock.saves = self.saves.copy()
     return self.copy.im_class(newblock)   #catch inheritance
-
-def has_key(self,key):
-    if key == "saves": return 1
-    else: return CifLoopBlock.has_key(self,key)
-
-def __str__(self):
-    retstr = ''
-    for sb in self.saves.keys():
-        retstr = retstr + '\nsave_%s\n\n' % sb
-        self.saves[sb].SetOutputLength(self.wraplength,self.maxoutlength)
-        retstr = retstr + str(self.saves[sb])
-        retstr = retstr + '\nsave_\n\n'
-    return retstr + CifLoopBlock.__str__(self)
 
 # this is not appropriate for save blocks.  Instead, the save block
 # should be accessed directly for update
@@ -496,8 +477,8 @@ def checklengths(self):
 postcheck for nested loops and other disallowed STAR funkiness.
 
 <<Read in a CIF file>>=
-def ReadCif(filename,strict=1,maxlength=2048,scantype="standard",grammar="1.1"):
-    proto_cif = StarFile.ReadStar(filename,maxlength,scantype=scantype,grammar=grammar)
+def ReadCif(filename,strict=1,maxlength=2048,scantype="standard",grammar="1.1",**kwargs):
+    proto_cif = StarFile.ReadStar(filename,maxlength,scantype=scantype,grammar=grammar,**kwargs)
     # convert to CifFile
     proto_cif = CifFile(proto_cif)
     # check for nested loops

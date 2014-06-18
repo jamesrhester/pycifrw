@@ -364,26 +364,32 @@ class FileWriteTestCase(unittest.TestCase):
                'a string with a " and a safe\';',
                'a string with a final \''])))
        self.cf = CifFile.CifBlock(items)
+       cif = CifFile.CifFile(scoping='dictionary')
+       print 'Scoping' + `cif.scoping`
+       cif['testblock'] = self.cf
        # Add some comments
        self.cf.AddComment('_item_empty',"Test of an empty string")
        self.cf.AddComment('_item_apost',"Test of a trailing apostrophe")
        self.save_block = CifFile.CifBlock(s_items)
-       self.cf["saves"]["test_save_frame"] = self.save_block
-       self.cfs = self.cf["saves"]["test_save_frame"]
-       cif = CifFile.CifFile()
-       cif['testblock'] = self.cf
+       print 'Scoping' + `cif.scoping`
+       cif.NewBlock("test_save_frame",self.save_block,parent='testblock')
+       print 'Scoping' + `cif.scoping`
+       print `cif.child_table`
+       self.cfs = cif["test_save_frame"]
        outfile = open('test.cif','w')
        outfile.write(str(cif))
        outfile.close()
-       self.ef = CifFile.CifFile('test.cif')
+       print 'Reading in test.cif now...'
+       self.ef = CifFile.CifFile('test.cif',scoping='dictionary')
+       print 'ef child table: ' + `self.ef.child_table`
        self.df = self.ef['testblock']
-       self.dfs = self.df["saves"]["test_save_frame"]
+       self.dfs = self.ef["test_save_frame"]
        flfile = CifFile.ReadCif('test.cif',scantype="flex")
        # test passing a stream directly
        tstream = open('test.cif')
        CifFile.CifFile(tstream,scantype="flex")
        self.flf = flfile['testblock']
-       self.flfs = self.flf["saves"]["test_save_frame"]
+       self.flfs = flfile["test_save_frame"]
 
    def tearDown(self):
        import os
@@ -638,7 +644,7 @@ class DDLmTestCase(unittest.TestCase):
 # Test dictionary type
 #
 ##############################################################
-ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
+# ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
 class DictTestCase(unittest.TestCase):
     def setUp(self):
         # self.ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
