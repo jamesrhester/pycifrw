@@ -64,7 +64,7 @@ getting rid of the inverted commas.
 lastval = ''
 def monitor(location,value):
     global lastval
-    print 'At %s: %s' % (location,`value`)
+    #print 'At %s: %s' % (location,`value`)
     lastval = `value`
     return value
 
@@ -433,7 +433,7 @@ beginning unquoted data values.
 # now the rules
 
 rule input: ( (( 
-            dblock         {{allblocks = StarFile(); allblocks.merge(dblock); print 'finished: ' + `allblocks.child_table`}}
+            dblock         {{allblocks = StarFile(); allblocks.merge(dblock)}}
             (
             dblock         {{allblocks.merge(dblock)}} #
             )*

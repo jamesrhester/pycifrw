@@ -212,7 +212,6 @@ class CifBlock(CifLoopBlock):
     <<Check data name lengths>>
     <<Return all looped names>>
     <<Assign a Cif Dictionary>>
-    <<Merge with another block>>
 
 @ We include the dimension argument in initialisation, as the initialisation
 method could be
@@ -302,124 +301,6 @@ def assign_dictionary(self,dic):
         return
     self.dictionary = dic
 
-@ Merging.  Normally merging of dictionaries is done at the data file 
-level, i.e. a whole block is replaced or added.  However, in 'overlay'
-mode, individual keys are added/replaced, which is a block level
-operation.  Furthermore, this routine is called when operating on
-DDL2 dictionaries as they use save frames, which are
-block internal, so all modes have to be supported.
-
-Looped item overlaps are tricky.  We distinguish two cases: at least
-one key in common, and all keys in common.  The latter implies 
-addition of rows only.  The former implies deletion of all co-occuring
-looped items (as they will otherwise have data of different lengths) and
-therefore either completely replacing the previous item, or adding
-the new data to the end, and including the other co-looped items.  But
-this would mean that we were passed a loop block with different data
-lengths in the new object, which is illegal, so we can only add to the
-end if the new dictionary contains a subset of the attributes in the
-current dictionary.  Therefore we have the following rules
-
-(1) Identical attributes in new and old -> append
-(2) New contains subset of old -> append values for common items and 
-    delete extra looped items
-(3) Old contains subset of new -> new completely replaces old
-
-The [[match_att]] keyword is used when old and new blocks have been matched
-based on an internal attribute (usually _name or _item.name).  This
-attribute should not become looped in overlay mode, obviously, so we
-need to have a record of it just in case.
-
-The nosaves keyword means that save frames are ignored when merging.
-
-The rel_keys keyword contains a list of datanames which act as unique keys (in a database
-sense) inside loop structures.  If any keys match in separate datablocks, the row will
-not be added, but simply replaced.
-
-<<Merge with another block>>=
-def merge(self,new_block,mode="strict",match_att=[],match_function=None,nosaves=False,
-               rel_keys = []):
-    # deal with save frames
-    if not nosaves:
-        self["saves"].merge(new_block["saves"],mode,match_att=match_att,
-                                                    match_function=match_function)
-    if mode == 'strict':
-       for key in new_block.item_order: 
-           if self.has_key(key) and key not in match_att:
-              raise CifError( "Identical keys %s in strict merge mode" % key)
-           elif key not in match_att:           #no change otherwise
-              if isinstance(key,StringTypes):
-                  self[key] = new_block[key] 
-              else:
-                  self.insert_loop(key)
-    elif mode == 'replace':
-       newkeys = new_block.keys()
-       for ma in match_att:
-          try:
-               newkeys.remove(ma)        #don't touch the special ones
-          except ValueError:
-               pass
-       for key in new_block.item_order: 
-              if isinstance(key,StringTypes):
-                  self[key] = new_block[key] 
-              else:
-                  self.insert_loop(key)   #assume is a loop
-    elif mode == 'overlay': 
-       for attribute in new_block.keys():
-           if attribute in match_att: continue      #ignore this one
-           new_value = new_block[attribute]
-           #non-looped items
-           if isinstance(new_value,StringTypes):
-              self[attribute] = new_value 
-       these_atts = self.keys()
-       for newloop in new_block.loops:              
-           newkeys = newloop.keys()
-           # note that the following line determines packet item order
-           overlaps = filter(lambda a: a in these_atts,newkeys)
-           if len(overlaps)< len(newloop):#completely new loop
-              self.insert_loop(newloop)
-           elif len(overlaps)==len(newloop):
-              # appending packets 
-              # print "In overlay merge mode, found extra packet items:"
-              # print `overlaps`
-              # get key position
-              loop_keys = filter(lambda a:a in rel_keys,overlaps)
-              try:
-                 newkeypos = map(lambda a:newkeys.index(a),loop_keys)
-                 newkeypos = newkeypos[0]      #one key per loop for now
-                 loop_keys = loop_keys[0] 
-              except (ValueError,IndexError):
-                 newkeypos = []
-              overlap_data = map(lambda a:listify(self[a]),overlaps) #old packet data
-              new_data = map(lambda a:new_block[a],overlaps) #new packet data
-              packet_data = transpose(overlap_data)
-              new_p_data = transpose(new_data)
-              # remove any packets for which the keys match between old and new; we
-              # make the arbitrary choice that the old data stays
-              if newkeypos:
-                  # get matching values in new list
-                  print "Old, new data:\n%s\n%s" % (`overlap_data[newkeypos]`,`new_data[newkeypos]`)
-                  key_matches = filter(lambda a:a in overlap_data[newkeypos],new_data[newkeypos])
-                  # filter out any new data with these key values
-                  new_p_data = filter(lambda a:a[newkeypos] not in key_matches,new_p_data)
-                  if new_p_data:
-                      new_data = transpose(new_p_data)
-                  else: new_data = []
-              # wipe out the old data and enter the new stuff
-              byebyeloop = self.GetLoop(overlaps[0])
-              # print "Removing '%s' with overlaps '%s'" % (`byebyeloop`,`overlaps`)
-              # Note that if, in the original dictionary, overlaps are not
-              # looped, GetLoop will return the block itself.  So we check
-              # for this case...
-              if byebyeloop != self:
-                  self.remove_loop(byebyeloop)
-              self.AddCifItem(((overlaps,),(overlap_data,)))  #adding old packets
-              for pd in new_p_data:                             #adding new packets
-                 if pd not in packet_data:
-                    for i in range(len(overlaps)):
-                        #don't do this at home; we are appending
-                        #to something in place
-                        self[overlaps[i]].append(pd[i]) 
                           
 @ Adding a data item.  We are passed a tuple with the (set) of data
 names at the beginning, and a (set) of values for them following. 
@@ -480,7 +361,7 @@ postcheck for nested loops and other disallowed STAR funkiness.
 def ReadCif(filename,strict=1,maxlength=2048,scantype="standard",grammar="1.1",**kwargs):
     proto_cif = StarFile.ReadStar(filename,maxlength,scantype=scantype,grammar=grammar,**kwargs)
     # convert to CifFile
-    proto_cif = CifFile(proto_cif)
+    proto_cif = CifFile(proto_cif,**kwargs)
     # check for nested loops
     for bname,bvalue in proto_cif.items():
         nests = filter(lambda a:len(a.loops)>0,bvalue.loops)
@@ -757,19 +638,24 @@ def DDL1_normalise(self):
     base_constructs = [".*",
 	'(-?(([0-9]*[.][0-9]+)|([0-9]+)[.]?)([(][0-9]+[)])?([eEdD][+-]?[0-9]+)?)|\?|\.',
         "\"\" "]
-    for key,value in self.dictionary.items():
+    for key,value in self.items():
+       newnames = [key]  #keep by default
        if value.has_key("_name"):
            real_name = value["_name"]
            if type(real_name) is ListType:        #looped values
                for looped_name in real_name:
-                   new_value = value.copy()
-                   new_value["_name"] = looped_name  #only looped name
-                   self.dictionary[looped_name] = new_value
-           else: self.dictionary[real_name] = value
+                  new_value = value.copy()
+                  new_value["_name"] = looped_name  #only looped name
+                  self[looped_name] = new_value
+                  newnames = real_name
+           else: 
+                  self[real_name] = value
+                  newnames = [real_name]
        # delete the old one
-       del self.dictionary[key]
+       if key not in newnames:
+          del self[key]
     # loop again to normalise the contents of each definition
-    for key,value in self.dictionary.items():
+    for key,value in self.items():
        # deal with a missing _list, _type_conditions
        if not value.has_key("_list"): value["_list"] = 'no'
        if not value.has_key("_type_conditions"): value["_type_conditions"] = 'none'
@@ -777,11 +663,11 @@ def DDL1_normalise(self):
        if value.has_key("_enumeration_range"):
            max,min = self.getmaxmin(value["_enumeration_range"])
            if min == ".":
-               self.dictionary[key].AddLoopItem((("_item_range.maximum","_item_range.minimum"),((max,max),(max,min))))
+               self[key].AddLoopItem((("_item_range.maximum","_item_range.minimum"),((max,max),(max,min))))
            elif max == ".":
-               self.dictionary[key].AddLoopItem((("_item_range.maximum","_item_range.minimum"),((max,min),(min,min))))
+               self[key].AddLoopItem((("_item_range.maximum","_item_range.minimum"),((max,min),(min,min))))
            else:
-               self.dictionary[key].AddLoopItem((("_item_range.maximum","_item_range.minimum"),((max,max,min),(max,min,min))))
+               self[key].AddLoopItem((("_item_range.maximum","_item_range.minimum"),((max,max,min),(max,min,min))))
        #add any type construct information
        if value.has_key("_type_construct"):
            base_types.append(value["_name"]+"_type")   #ie dataname_type
@@ -789,17 +675,17 @@ def DDL1_normalise(self):
            prim_types.append(value["_type"])     #keep a record
            value["_type"] = base_types[-1]   #the new type name
            
-    
     #make categories conform with ddl2
     #note that we must remove everything from the last underscore
-       if value["_category"] == "category_overview":
+       if value.get("_category",None) == "category_overview":
 	    last_under = value["_name"].rindex("_")
             catid = value["_name"][1:last_under]
             value["_category.id"] = catid  #remove square bracks
             if catid not in self.cat_list: self.cat_list.append(catid) 
     # we now add any missing categories before filling in the rest of the
     # information
-    for key,value in self.dictionary.items():
+    for key,value in self.items():
+        print 'processing ddl1 definition %s' % key
         if self[key].has_key("_category"):
             if self[key]["_category"] not in self.cat_list:
                 # rogue category, add it in

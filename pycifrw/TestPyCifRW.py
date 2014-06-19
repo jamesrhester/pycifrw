@@ -371,20 +371,15 @@ class FileWriteTestCase(unittest.TestCase):
        self.cf.AddComment('_item_empty',"Test of an empty string")
        self.cf.AddComment('_item_apost',"Test of a trailing apostrophe")
        self.save_block = CifFile.CifBlock(s_items)
-       print 'Scoping' + `cif.scoping`
        cif.NewBlock("test_save_frame",self.save_block,parent='testblock')
-       print 'Scoping' + `cif.scoping`
-       print `cif.child_table`
        self.cfs = cif["test_save_frame"]
        outfile = open('test.cif','w')
        outfile.write(str(cif))
        outfile.close()
-       print 'Reading in test.cif now...'
        self.ef = CifFile.CifFile('test.cif',scoping='dictionary')
-       print 'ef child table: ' + `self.ef.child_table`
        self.df = self.ef['testblock']
        self.dfs = self.ef["test_save_frame"]
-       flfile = CifFile.ReadCif('test.cif',scantype="flex")
+       flfile = CifFile.ReadCif('test.cif',scantype="flex",scoping='dictionary')
        # test passing a stream directly
        tstream = open('test.cif')
        CifFile.CifFile(tstream,scantype="flex")
@@ -477,44 +472,10 @@ class FileWriteTestCase(unittest.TestCase):
        newvals = self.df.get('_string_1')
        self.failUnless(len(newvals)==3)
 
-   def testAddSaveFrame(self):
-       """Test adding a save frame"""
-       s_items = (('_sitem_1','Some save data'),
-             ('_sitem_2','Some_underline_data'),
-             ('_sitem_3','34.2332'),
-             ('_sitem_4','Some very long data which we hope will overflow the single line and force printing of another line aaaaa bbbbbb cccccc dddddddd eeeeeeeee fffffffff hhhhhhhhh iiiiiiii jjjjjj'),
-             (('_sitem_5','_sitem_6','_sitem_7'),
-             ([1,2,3,4],
-              [5,6,7,8],
-              ['a','b','c','d'])))
-       bb = CifFile.CifBlock(s_items)
-       self.cf["saves"]["some_name"]=bb
-
    def testCopySaveFrame(self):
        """Early implementations didn't copy the save frame properly"""
-       jj = CifFile.CifFile(self.ef)  #this will trigger a copy
-       self.failUnless(len(jj["testblock"]["saves"])>0)
-
-   def testProperCifFile(self):
-       """We test that all objects have been converted from Star objects"""
-       print "Classnames:\n  CifFile is %s" % `self.ef.__class__`
-       self.failUnless(self.ef.__class__==CifFile.CifFile)
-       print "  CifBlock is %s" % `self.df.__class__`
-       self.failUnless(self.df.__class__==CifFile.CifBlock)
-       jj = self.df.GetLoop('_item_5')
-       print "  CifLoop is %s" % `jj.__class__`
-       self.failUnless(jj.__class__==CifFile.CifLoopBlock)
-       print "Save frame block is %s" % `self.dfs.__class__`
-       self.failUnless(self.dfs.__class__==CifFile.CifBlock)
-       jj = self.dfs.GetLoop('_sitem_5')
-       print "  Save frame loop is %s" % `jj.__class__` 
-       self.failUnless(jj.__class__==CifFile.CifLoopBlock)
-
-   def testUpdateItemOrder(self):
-       """Tests that when the StarBlock is remade into a CifBlock
-          the loops are properly adjusted in the item order"""
-       jj = self.df.GetLoop('_item_5')
-       self.failUnless(jj in self.df.item_order, "Wanted %s, got %s" % (`jj`,`self.df.item_order`))
+       jj = CifFile.CifFile(self.ef,scoping='dictionary')  #this will trigger a copy
+       self.failUnless(len(jj["test_save_frame"])>0)
 
    def testFirstBlock(self):
        """Test that first_block returns a block"""
@@ -644,7 +605,7 @@ class DDLmTestCase(unittest.TestCase):
 # Test dictionary type
 #
 ##############################################################
-# ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
+ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
 class DictTestCase(unittest.TestCase):
     def setUp(self):
         # self.ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")

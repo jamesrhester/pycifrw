@@ -107,6 +107,7 @@ except NameError:
 <<Define an error class>>
 <<Read in a STAR file>>
 <<Get data dimension>>
+<<Utility functions>>
 
 @ \section{BlockCollection}
 
@@ -220,9 +221,7 @@ def __str__(self):
     return self.WriteOut()
 
 def __setitem__(self,key,value):
-    if isinstance(value,(self.element_class,DictType)):
-        self.NewBlock(key,value,replace=True,parent=None)
-    else: raise TypeError
+    self.NewBlock(key,value,replace=True,parent=None)
 
 # due to attempt to get upper/lower case treated as identical
 # we have a bit of cruft here.  With unicode normalisation it
@@ -250,9 +249,10 @@ def __delitem__(self,key):
     for child in children:
         del self[child.block_id]
     del self.dictionary[real_id[keyindex]]
+    self.child_table = filter(lambda a:a.block_id.lower()!=key.lower(),self.child_table)
 
 def __len__(self):
-    if scoping == 'dictionary':
+    if self.scoping == 'dictionary':
         return len(self.dictionary) 
     else:
         return len(filter(lambda a:a.visible==True,self.child_table))
@@ -378,8 +378,8 @@ def NewBlock(self,blockname,blockcontents=(),replace=False,fix=True,parent=None)
         blockcontents = self.element_class()
     elif isinstance(blockcontents,DictType):
         blockcontents = self.element_class(blockcontents)
-    if not isinstance(blockcontents,self.element_class):
-        raise StarError( 'Block is not of required type %s, is %s' % (self.element_class.__name__,blockcontents.__class__.__name__))
+    #if not isinstance(blockcontents,self.element_class):
+    #    raise StarError( 'Block is not of required type %s, is %s' % (self.element_class.__name__,blockcontents.__class__.__name__))
     if fix:
         newblockname = re.sub('[  \t]','_',blockname)
     else: newblockname = blockname
@@ -493,12 +493,10 @@ def merge(self,new_bc,mode="strict",parent=None,single_block=[],
                   block_to_item.remove(thisatt)
                   break
         if not self.dictionary.has_key(basekey) or mode=="replace":
-            print 'Merging in %s' % basekey
             new_parent = new_bc.get_parent(key)
             if parent is not None and new_parent is None:
                new_parent = parent
             self.NewBlock(basekey,new_bc[key],parent=new_parent)   #add the block
-            print 'Finished merge, child table ' + `self.child_table`
         else:
             if mode=="strict":
                 raise StarError( "In strict merge mode: block %s in old and block %s in new files" % (basekey,key))
@@ -846,8 +844,6 @@ def __str__(self):
     return self.printsection()
 
 def __setitem__(self,key,value):
-    # catch a one member loop, for convenience
-    # we assume the key is a string value only
     self.AddLoopItem((key,value))
 
 def __getitem__(self,key):
@@ -1391,13 +1387,12 @@ sure they match already-existing items.  We make a special exception
 for an empty list on the assumption that it is going to be filled
 manually (in particular, using load_iter during file reading).
 
-If an item is already stored, it will be silently replaced.  Note
-that we can only guarantee this behaviour, and that duplicate items
-are not present, if this is called in the top loop.  If it is called
-as a method of an inner loop, only subloops are visible for checking/
-replacing.  We could
-get around this restriction by being passed a function which would
-fix things up for us.
+If an item is already stored, it will be silently replaced.  Note that
+we can only guarantee this behaviour, and that duplicate items are not
+present, if this is called in the top loop.  If it is called as a
+method of an inner loop, only subloops are visible for checking/
+replacing.  We could get around this restriction by being passed a
+function which would fix things up for us.
 
 We also check for consistency, by making sure the new item is
 not in the block already.  If it is, we replace it (consistent with
@@ -1408,28 +1403,39 @@ We skip checking of data values if the [[precheck]] value is true- this
 is typically set if the item is being read from a file, and so is already
 checked.
 
+Note the confusing behaviour to allow recursive calls at any depth of loop (STAR
+has arbitrary depth).  If called with (string-valued key, value) then the
+structure is ultimately updated with key:value, where value must be of the
+appropriate dimension (0 for top-level).  If called with a compound
+key and compound value, then this routine is recursively called with
+zip(key,value).  As an exception, if called with a bare string key but a
+compound datavalue of length 1
+
 <<Add a data item>>=
-def AddLoopItem(self,data,precheck=False,maxlength=-1):
-    # print "Received data %s" % `data`
+def AddLoopItem(self,incomingdata,precheck=False,maxlength=-1):
+    # print "Received data %s" % `incomingdata`
     # we accept tuples, strings, lists and dicts!!
-    if isinstance(data[0],(TupleType,ListType)):
+    # Direct insertion: we have a string-valued key, with an array
+    # of values -> single-item into our loop
+    if isinstance(incomingdata[0],(TupleType,ListType)):
        # internal loop
        # first we remove any occurences of these datanames in
        # other loops
-       for one_item in data[0]:
+       for one_item in incomingdata[0]:
 	   if self.has_key(one_item):
 	       if not self.overwrite:
-                   raise StarError( 'Attempt to insert duplicate item name %s' % data[0])
+                   raise StarError( 'Attempt to insert duplicate item name %s' % incomingdata[0])
                else:
 		   del self[one_item]
        newloop = self.loopclass(dimension = self.dimension+1,characterset=self.characterset)
-       keyvals = zip(data[0],data[1])
+       keyvals = zip(incomingdata[0],incomingdata[1])
        for key,val in keyvals:
            newloop.AddLoopItem((key,val))
        self.insert_loop(newloop)
-    elif not isinstance(data[0],StringTypes):
-              raise TypeError, 'Star datanames are strings only (got %s)' % `data[0]`
+    elif not isinstance(incomingdata[0],StringTypes):
+         raise TypeError, 'Star datanames are strings only (got %s)' % `incomingdata[0]`
     else:
+       data = list(incomingdata)  #copy
        if data[1] == [] or get_dim(data[1])[0] == self.dimension:
            if not precheck:
                self.check_data_name(data[0],maxlength)    # make sure no nasty characters   
@@ -1458,7 +1464,13 @@ def AddLoopItem(self,data,precheck=False,maxlength=-1):
            #    self.item_order.append(data[0])
             
        else:            #dimension mismatch
-           raise StarLengthError, "input data dim %d != required dim %d: %s %s" % (get_dim(data[1])[0],self.dimension,data[0],`data[1]`)
+           # single-member lists could be seen as bare lists...
+           if isinstance(data[1],(TupleType,ListType)) and len(data[1])==1:
+               self.AddLoopItem(data[0],data[1][0])
+           # if that doesn't work, make the dataname list a compound item for inserting a loop
+           else:
+               self.AddLoopItem(((data[0],),(data[1],)))
+           # raise StarLengthError, "input data dim %d != required dim %d: %s %s" % (get_dim(data[1])[0],self.dimension,data[0],`data[1]`)
 
 @ Checking the data names.  The CIF 1.1 standard restricts characters in
 a data name to ASCII 33-126 and there should be a leading underscore.  Items
@@ -1823,12 +1835,13 @@ def _formatstring(self,instring):
 
 @ \section{Star Block class}
 
-A Star Block is simply a LoopBlock with a couple of extras to take care of
-the fact that the topmost level can hold save frames.
+A Star Block is simply a LoopBlock. Historically it was distinguished by
+holding save frames, but this has been removed.
 
 <<StarBlock class>>=
 class StarBlock(LoopBlock):
     <<Adjust emulation of mapping type>>
+    <<Merge with another block>>
 
 @ A Star Block is a Loop Block which can hold save frames in the outermost
 loop.   From version 4.0 we do not allow save frames to be set from within
@@ -1856,6 +1869,119 @@ def copy(self):
     newblock = LoopBlock.copy(self)
     return self.copy.im_class(newblock)   #catch inheritance
 
+@ Merging.  Normally merging of dictionaries is done at the data file 
+level, i.e. a whole block is replaced or added.  However, in 'overlay'
+mode, individual keys are added/replaced, which is a block level
+operation.  Furthermore, this routine is called when operating on
+DDL2 dictionaries as they use save frames, which are
+block internal, so all modes have to be supported.
+
+Looped item overlaps are tricky.  We distinguish two cases: at least
+one key in common, and all keys in common.  The latter implies 
+addition of rows only.  The former implies deletion of all co-occuring
+looped items (as they will otherwise have data of different lengths) and
+therefore either completely replacing the previous item, or adding
+the new data to the end, and including the other co-looped items.  But
+this would mean that we were passed a loop block with different data
+lengths in the new object, which is illegal, so we can only add to the
+end if the new dictionary contains a subset of the attributes in the
+current dictionary.  Therefore we have the following rules
+
+(1) Identical attributes in new and old -> append
+(2) New contains subset of old -> append values for common items and 
+    delete extra looped items
+(3) Old contains subset of new -> new completely replaces old
+
+The [[match_att]] keyword is used when old and new blocks have been matched
+based on an internal attribute (usually _name or _item.name).  This
+attribute should not become looped in overlay mode, obviously, so we
+need to have a record of it just in case.
+
+The rel_keys keyword contains a list of datanames which act as unique keys (in a database
+sense) inside loop structures.  If any keys match in separate datablocks, the row will
+not be added, but simply replaced.
+
+<<Merge with another block>>=
+def merge(self,new_block,mode="strict",match_att=[],match_function=None,
+               rel_keys = []):
+    if mode == 'strict':
+       for key in new_block.item_order: 
+           if self.has_key(key) and key not in match_att:
+              raise CifError( "Identical keys %s in strict merge mode" % key)
+           elif key not in match_att:           #no change otherwise
+              if isinstance(key,StringTypes):
+                  self[key] = new_block[key] 
+              else:
+                  self.insert_loop(key)
+    elif mode == 'replace':
+       newkeys = new_block.keys()
+       for ma in match_att:
+          try:
+               newkeys.remove(ma)        #don't touch the special ones
+          except ValueError:
+               pass
+       for key in new_block.item_order: 
+              if isinstance(key,StringTypes):
+                  self[key] = new_block[key] 
+              else:
+                  self.insert_loop(key)   #assume is a loop
+    elif mode == 'overlay': 
+       for attribute in new_block.keys():
+           if attribute in match_att: continue      #ignore this one
+           new_value = new_block[attribute]
+           #non-looped items
+           if isinstance(new_value,StringTypes):
+              self[attribute] = new_value 
+       these_atts = self.keys()
+       for newloop in new_block.loops:              
+           newkeys = newloop.keys()
+           # note that the following line determines packet item order
+           overlaps = filter(lambda a: a in these_atts,newkeys)
+           if len(overlaps)< len(newloop):#completely new loop
+              self.insert_loop(newloop)
+           elif len(overlaps)==len(newloop):
+              # appending packets 
+              # print "In overlay merge mode, found extra packet items:"
+              # print `overlaps`
+              # get key position
+              loop_keys = filter(lambda a:a in rel_keys,overlaps)
+              try:
+                 newkeypos = map(lambda a:newkeys.index(a),loop_keys)
+                 newkeypos = newkeypos[0]      #one key per loop for now
+                 loop_keys = loop_keys[0] 
+              except (ValueError,IndexError):
+                 newkeypos = []
+              overlap_data = map(lambda a:listify(self[a]),overlaps) #old packet data
+              new_data = map(lambda a:new_block[a],overlaps) #new packet data
+              packet_data = transpose(overlap_data)
+              new_p_data = transpose(new_data)
+              # remove any packets for which the keys match between old and new; we
+              # make the arbitrary choice that the old data stays
+              if newkeypos:
+                  # get matching values in new list
+                  print "Old, new data:\n%s\n%s" % (`overlap_data[newkeypos]`,`new_data[newkeypos]`)
+                  key_matches = filter(lambda a:a in overlap_data[newkeypos],new_data[newkeypos])
+                  # filter out any new data with these key values
+                  new_p_data = filter(lambda a:a[newkeypos] not in key_matches,new_p_data)
+                  if new_p_data:
+                      new_data = transpose(new_p_data)
+                  else: new_data = []
+              # wipe out the old data and enter the new stuff
+              byebyeloop = self.GetLoop(overlaps[0])
+              # print "Removing '%s' with overlaps '%s'" % (`byebyeloop`,`overlaps`)
+              # Note that if, in the original dictionary, overlaps are not
+              # looped, GetLoop will return the block itself.  So we check
+              # for this case...
+              if byebyeloop != self:
+                  self.remove_loop(byebyeloop)
+              self.AddLoopItem((overlaps,overlap_data))  #adding old packets
+              for pd in new_p_data:                             #adding new packets
+                 if pd not in packet_data:
+                    for i in range(len(overlaps)):
+                        #don't do this at home; we are appending
+                        #to something in place
+                        self[overlaps[i]].append(pd[i]) 
+
 <<Define an error class>>=
 class StarError(Exception):
     def __init__(self,value):
@@ -1868,3 +1994,24 @@ class StarLengthError(Exception):
         self.value = value
     def __str__(self):
         return '\nStar length error: ' + self.value
+
+@ Listify - used to allow uniform treatment of datanames - otherwise sequence functions might
+operate on a string instead of a list.
+
+<<Utility functions>>=
+def listify(item):
+    if isinstance(item,StringTypes): return [item]
+    else: return item
+
+#Transpose the list of lists passed to us
+def transpose(base_list):
+    new_lofl = []
+    full_length = len(base_list)
+    opt_range = range(full_length)
+    for i in range(len(base_list[0])):
+       new_packet = [] 
+       for j in opt_range:
+          new_packet.append(base_list[j][i])
+       new_lofl.append(new_packet)
+    return new_lofl
+
