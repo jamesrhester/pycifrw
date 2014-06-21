@@ -1,7 +1,6 @@
 #  Run files in the list, and catch any expected exceptions
 import sys
 from CifFile import *
-from StarFile import *
 
 def runtests(scantype):
     test_table = [

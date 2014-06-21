@@ -304,16 +304,17 @@ class BlockNameTestCase(unittest.TestCase):
        cf = CifFile.CifFile()
        try:
            cf['a_very_long_block_name_which_should_be_rejected_out_of_hand123456789012345678']=df
-       except CifFile.CifError: pass
+       except StarFile.StarError: pass
        else: self.fail()
 
    def testBlockOverwrite(self):
        """Upper/lower case should be seen as identical"""
        df = CifFile.CifBlock()
        ef = CifFile.CifBlock()
-       cf = CifFile.CifFile()
+       cf = CifFile.CifFile(standard=None)
        df['_random_1'] = 'oldval'
        ef['_random_1'] = 'newval'
+       print 'cf.standard is ' + `cf.standard`
        cf['_lowercaseblock'] = df
        cf['_LowerCaseBlock'] = ef
        assert(cf['_Lowercaseblock']['_random_1'] == 'newval')
@@ -365,7 +366,6 @@ class FileWriteTestCase(unittest.TestCase):
                'a string with a final \''])))
        self.cf = CifFile.CifBlock(items)
        cif = CifFile.CifFile(scoping='dictionary')
-       print 'Scoping' + `cif.scoping`
        cif['testblock'] = self.cf
        # Add some comments
        self.cf.AddComment('_item_empty',"Test of an empty string")
@@ -481,6 +481,16 @@ class FileWriteTestCase(unittest.TestCase):
        """Test that first_block returns a block"""
        jj = self.ef.first_block()
        self.failUnless(jj==self.df)
+
+   def testDupName(self):
+       """Test that duplicate blocknames are allowed in non-standard mode"""
+       outstr = """data_block1 _data_1 b save_ab1 _data_2 c
+                  save_
+                  save_ab1 _data_3 d save_"""
+       b = open("test2.cif","w")
+       b.write(outstr)
+       b.close()
+       testin = CifFile.CifFile("test2.cif",standard=None)
 
 ##############################################################
 #
@@ -605,7 +615,7 @@ class DDLmTestCase(unittest.TestCase):
 # Test dictionary type
 #
 ##############################################################
-ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
+#ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
 class DictTestCase(unittest.TestCase):
     def setUp(self):
         # self.ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
@@ -738,15 +748,15 @@ class FakeDicTestCase(unittest.TestCase):
           
 class DicMergeTestCase(unittest.TestCase):
     def setUp(self):
-        self.offdic = CifFile.CifFile("dictionaries/dict_official")
-        self.adic = CifFile.CifFile("dictionaries/dict_A")
-        self.bdic = CifFile.CifFile("dictionaries/dict_B")
-        self.cdic = CifFile.CifFile("dictionaries/dict_C")
-        self.cvdica = CifFile.CifFile("dictionaries/cvdica.dic")
-        self.cvdicb = CifFile.CifFile("dictionaries/cvdicb.dic")
-        self.cvdicc = CifFile.CifFile("dictionaries/cvdicc.dic")
-        self.cvdicd = CifFile.CifFile("dictionaries/cvdicd.dic")
-        self.testcif = CifFile.CifFile("dictionaries/merge_test.cif")
+        self.offdic = CifFile.CifFile("dictionaries/dict_official",standard=None)
+        self.adic = CifFile.CifFile("dictionaries/dict_A",standard=None)
+        self.bdic = CifFile.CifFile("dictionaries/dict_B",standard=None)
+        self.cdic = CifFile.CifFile("dictionaries/dict_C",standard=None)
+        self.cvdica = CifFile.CifFile("dictionaries/cvdica.dic",standard=None)
+        self.cvdicb = CifFile.CifFile("dictionaries/cvdicb.dic",standard=None)
+        self.cvdicc = CifFile.CifFile("dictionaries/cvdicc.dic",standard=None)
+        self.cvdicd = CifFile.CifFile("dictionaries/cvdicd.dic",standard=None)
+        self.testcif = CifFile.CifFile("dictionaries/merge_test.cif",standard=None)
        
     def testAStrict(self):
         self.assertRaises(StarFile.StarError,CifFile.merge_dic,[self.offdic,self.adic],mergemode="strict")
@@ -758,11 +768,11 @@ class DicMergeTestCase(unittest.TestCase):
                                   datasource="dictionaries/merge_test.cif",
                                   dic=newdic)
         
-    def testAReverseO(self):
-        # the reverse should be OK!
-        newdic = CifFile.merge_dic([self.adic,self.offdic],mergemode='overlay')
-        jj = CifFile.ValidCifFile(datasource="dictionaries/merge_test.cif",
-                                  dic = newdic)
+#    def testAReverseO(self):
+#        # the reverse should be OK!
+#        newdic = CifFile.merge_dic([self.adic,self.offdic],mergemode='overlay')
+#        jj = CifFile.ValidCifFile(datasource="dictionaries/merge_test.cif",
+#                                 dic = newdic)
 
 #    def testCOverlay(self):
 #        self.offdic = CifFile.merge_dic([self.offdic,self.cdic],mergemode='replace') 

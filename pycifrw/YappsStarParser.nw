@@ -314,19 +314,19 @@ I don't think it is useful to allow square brackets in list values.
 <<Grammar specification DDLm>>=
 # now the rules
 
-rule input: ( (( 
-            dblock         {{allblocks = StarFile(); allblocks.merge(dblock)}}
+rule input@<<prepared>>: ( (( 
+            dblock@<<prepared>>         {{allblocks = prepared; allblocks.merge(dblock)}}
             (
-            dblock         {{allblocks.merge(dblock)}} #
+            dblock@<<prepared>>         {{allblocks.merge(dblock)}} #
             )*
             END                
             )
             |
             (
-            END                 {{allblocks = StarFile()}}
+            END                 {{allblocks = prepared}}
             )))                   {{return allblocks}}
 
-     rule dblock: ( data_heading {{heading = data_heading[5:];thisbc=StarFile(characterset='unicode');thisbc.NewBlock(heading,StarBlock(overwrite=False))}}# a data heading
+     rule dblock@<<prepared>>: ( data_heading {{heading = data_heading[5:];thisbc=StarFile(characterset='unicode',standard=prepared.standard);thisbc.NewBlock(heading,StarBlock(overwrite=False))}}# a data heading
                   (
                    dataseq@<<thisbc[heading]>>  
                   |
@@ -417,7 +417,7 @@ rule input: ( ((
                        )*             
 		       )	      {{return dataloop}}
 
-     rule save_frame: save_heading   {{savehead = save_heading[5:];savebc = StarFile(overwrite=False);savebc.NewBlock(savehead) }} 
+     rule save_frame: save_heading   {{savehead = save_heading[5:];savebc = StarFile();savebc.NewBlock(savehead,StarBlock(overwrite=False)) }} 
                       (
                       dataseq@<<savebc[savehead]>> 
                       |
@@ -427,24 +427,25 @@ rule input: ( ((
 
 
 @ The CIF 1.1 grammar specification does not include bracket expressions, but does exclude brackets from
-beginning unquoted data values.
+beginning unquoted data values.  We pass through the argument [[prepared]] so we can deal with non-standard
+dictionary files that contain duplicate datablocks.
 
 <<Grammar specification 1.1>>=
 # now the rules
 
-rule input: ( (( 
-            dblock         {{allblocks = StarFile(); allblocks.merge(dblock)}}
+rule input@<<prepared>>: ( (( 
+            dblock@<<prepared>>         {{allblocks = prepared; allblocks.merge(dblock)}}
             (
-            dblock         {{allblocks.merge(dblock)}} #
+            dblock@<<prepared>>         {{allblocks.merge(dblock)}} #
             )*
             END                
             )
             |
             (
-            END                 {{allblocks = StarFile()}}
+            END                 {{allblocks = prepared}}
             )))                   {{return allblocks}}
 
-    rule dblock: ( data_heading {{heading = data_heading[5:];thisbc=StarFile(characterset='unicode');thisbc.NewBlock(heading,StarBlock(overwrite=False))}}# a data heading
+    rule dblock@<<prepared>>: ( data_heading {{heading = data_heading[5:];thisbc=StarFile(characterset='unicode',standard=prepared.standard);thisbc.NewBlock(heading,StarBlock(overwrite=False))}}# a data heading
                   (
                    dataseq@<<thisbc[heading]>>  
                   |
@@ -502,7 +503,7 @@ rule input: ( ((
                        )*             
 		       )	      {{return dataloop}}
 
-     rule save_frame: save_heading   {{savehead = save_heading[5:];savebc = StarFile(overwrite=False);savebc.NewBlock(savehead) }} 
+     rule save_frame: save_heading   {{savehead = save_heading[5:];savebc = StarFile();savebc.NewBlock(savehead,StarBlock(overwrite=False)) }} 
                       (
                       dataseq@<<savebc[savehead]>> 
                       |

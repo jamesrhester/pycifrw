@@ -111,14 +111,11 @@ except NameError:
 
 @ \section{BlockCollection}
 
-STAR files and a collection of save frames look very similar, so we
-abstract the common behaviour into the [[BlockCollection]] class, and then
-inherit from it to make a [[StarFile]] object.  Save frames require
-no further special behaviour, and so are instances of a [[BlockCollection]].
-
-This is a parameterised class, in that we specify the class of the items in
-the BlockCollection at initialisation time.  This allows us to restrict the
-components of a CIF file, for example, to be CifBlocks.
+Starfiles and Ciffiles are both collections of blocks. We abstract
+this into the [[BlockCollection]] class, and then inherit from it to
+make a [[StarFile]] object.  The philosophy is that the treatment of
+the constituent blocks is managed by the enclosing block collection
+based on how the block collection was initialised.
 
 <<BlockCollection class>>=
 class BlockCollection(object):
@@ -126,23 +123,13 @@ class BlockCollection(object):
     <<BC emulation of mapping type>>
     <<Add a new data section>>
     <<Merge with another block collection>>
+    <<Conformance checks>>
     <<Collect all values of a single key in all blocks>>
     <<Switch save frame scoping rules>>
     <<Parent child utilities>>
 <<Write out to string representation>>
 
-@ When initialising, we take an optional type tag, which will
-be used when printing out as a prefix before each block name.
-Usually this will be either "data_" for a data block in a
-STAR file, or "save_" for a save frame in a data block.
-
-We also require a class name that we use to restrict the components
-of the block.   If we are passed another BlockCollection object, we
-cycle through all of the blocks, if necessary imposing the the proper
-[[element_class]].  This is in practice used to turn StarBlocks into
-CifBlocks.
-
-With the advent of CIF2, the allowed character set has expanded to
+@ With the advent of CIF2, the allowed character set has expanded to
 encompass most of Unicode.  Our object needs to know about this
 different characterset in order to check incoming values and datanames for
 conformance.  This is done via the 'characterset' keyword.
@@ -158,13 +145,12 @@ through the 'saves' attribute, which produces a view onto the same block
 collection.
 
 <<Initialise BC data structures>>=
-def __init__(self,datasource=None,element_class=StarBlock,type_tag='',
+def __init__(self,datasource=None,standard='CIF',
              characterset='ascii',scoping='instance',parent_id=None,**kwargs):
     import collections
     self.dictionary = {}
-    self.type_tag = type_tag
+    self.standard = standard
     self.lower_keys = []              # for efficiency
-    self.element_class = element_class
     self.characterset = characterset
     self.PC = collections.namedtuple('PC',['block_id','parent','visible'])
     self.child_table = []
@@ -174,10 +160,7 @@ def __init__(self,datasource=None,element_class=StarBlock,type_tag='',
         self.merge(datasource)
     elif isinstance(datasource,DictType):
         for key,value in datasource.items():
-            if value.__class__ == element_class:
-                self[key]=value
-            else:
-                self[key]= element_class(value)
+             self[key]= value
     self.header_comment = ''
  
 @ Checking block name lengths.  This is not needed for a STAR block, but
@@ -211,9 +194,7 @@ def __setattr__(self,attr_name,newval):
             self.child_table = map(lambda a:self.PC(a[0],a[1],a.parent == None),self.child_table)
     object.__setattr__(self,attr_name,newval)
 
-@ Emulation of a mapping type.  When called via __setitem__, we do not check that a new
-blockname replaces an old block name.  If you need this, you should
-call [[NewBlock]] directly.  We also put odd little useful utilities
+@ Emulation of a mapping type.  We also put odd little useful utilities
 in this section.
 
 <<BC emulation of mapping type>>=
@@ -221,7 +202,7 @@ def __str__(self):
     return self.WriteOut()
 
 def __setitem__(self,key,value):
-    self.NewBlock(key,value,replace=True,parent=None)
+    self.NewBlock(key,value,parent=None)
 
 # due to attempt to get upper/lower case treated as identical
 # we have a bit of cruft here.  With unicode normalisation it
@@ -296,9 +277,7 @@ def copy(self):
 
 def update(self,adict):
     for key in adict.keys():
-        self.dictionary[key] = adict[key]
-    self.lower_keys.extend(map(lambda a:a.lower(),adict.keys()))
-    self.child_table.extend(map(lambda a:self.PC(a,None,True),adict.keys()))
+        self[key] = adict[key]
 
 def items(self):
     return map(lambda a:(a,self[a]),self.keys())
@@ -353,41 +332,42 @@ def set_parent(self,parentname,childname):
     self.scoping = self.scoping #reset visibility
         
 @ Adding a new block.  A new block is just a new item in our
-dictionary, so we add a new entry to the current list of dictionaries, and set
-the count of the number of loops to zero.  We return the new block name
+dictionary, so we add a new entry.  We return the new block name
 in case we have changed it, so the calling routine can refer to it
 later.  Also, there is a limit of 75 characters for the block name length,
-which we enforce here.
+which we enforce here. By setting [[fix]] to true, blocknames will have
+illegal whitespace changed to underscore.
 
-The [[no_replace]] option will signal an error if the requested blockname
-is already in the CifFile.
+As all blocks going into the block collection come through this
+routine, enforcement the different standards is performed here.
+[[self.standard]] is used to enforce differences. If [[self.standard]]
+is set at all, blocks will not replace a previous block with the same
+name.
 
 Note that we must take account of upper/lower case differences being irrelevant
-for CIFs, but that we want to preserve the original case.
+for STAR/CIF, but that we want to preserve the original case.
 
 To allow for nested blocks, we can specify a parent block.  When the
-file is printed, the new block will appear inside the parent block.
-In order to make nested save frames visible to the whole collection,
-we find all nested save frames and register them in the toplevel
-table.  We then need to replace the access to the 'save' key with
-access to a virtual view of the block collection.
+file is printed, the new block will appear inside the parent block. This is
+how save frames are produced.
 
 <<Add a new data section>>=
-def NewBlock(self,blockname,blockcontents=(),replace=False,fix=True,parent=None):
-    if not blockcontents:
-        blockcontents = self.element_class()
-    elif isinstance(blockcontents,DictType):
-        blockcontents = self.element_class(blockcontents)
-    #if not isinstance(blockcontents,self.element_class):
-    #    raise StarError( 'Block is not of required type %s, is %s' % (self.element_class.__name__,blockcontents.__class__.__name__))
+def NewBlock(self,blockname,blockcontents=StarBlock(),fix=True,parent=None):
+    if self.standard is not None:
+       if self.standard == 'CIF':
+          self.checknamelengths(blockcontents,maxlength=75)  #
+          self.checkloopnesting(blockcontents)
+    if len(blockname)>75:
+             raise StarError , 'Blockname %s is longer than 75 characters' % blockname
     if fix:
         newblockname = re.sub('[  \t]','_',blockname)
     else: newblockname = blockname
     new_lowerbn = newblockname.lower()
-    if self.lower_keys.count(new_lowerbn):    #already in CIF
-        if not replace:
-            raise StarError( "Attempt to replace existing block" + blockname)
-        del self[new_lowerbn]
+    if self.lower_keys.count(new_lowerbn):
+        if self.standard is not None:    #already in CIF
+           raise StarError( "Attempt to replace existing block " + blockname)
+        else:
+           del self[new_lowerbn]
     self.dictionary.update({newblockname:blockcontents})
     self.lower_keys.append(new_lowerbn)
     if parent is None:
@@ -399,11 +379,13 @@ def NewBlock(self,blockname,blockcontents=(),replace=False,fix=True,parent=None)
        else:
            print 'Warning:Parent block %s does not exist for child %s' % (parent,newblockname)  
     self.__setattr__('scoping',self.scoping)  #re-hide stuff as necessary
+    return newblockname  #in case calling routine wants to know
 
-@ Merging.  With the removal of explicitly nested save frames in version
-4.0, this operation becomes routine in that, as we build up a CIF/STAR
-file during reading, we are continually merging in small block collections
-consisting of bunches of save frames.
+@ Merging.  Originally, this package envisaged Cif and STAR files as collections
+of either Starblocks or Cifblocks, which differed only in their capacity to
+hold save frames and nested loops.  From version 4.05, we envisage Cif and Star
+files as collections of StarBlocks, neither of which hold any nested save
+frames. 
 
 This was originally implemented for dictionary merging support, which is
 now deprecated with the new DDLm way of combining dictionaries.  We can't
@@ -414,7 +396,10 @@ would have to first recreate the original Cif structure before proceeding.
 Merging can be strict, overlay or replace.  In all cases, if the block
 name is different, we simply add it in.  If it is the same, in strict
 mode we flag an error, in replace mode we replace it, and in overlay
-mode we actually add/replace individual data items.
+mode we actually add/replace individual data items.  The default mode
+will be determined from the setting of 'standard': if no standard
+has been specified, the mode is 'replace', otherwise the mode is
+'strict'.
 
 If the single_block list is non-empty, we assume that we should merge
 on the block level, using the given block names as the particular
@@ -456,14 +441,19 @@ blocks in the incoming block collection (parent is None) are given the parent
 specified in [[parent]].
 
 <<Merge with another block collection>>=
-def merge(self,new_bc,mode="strict",parent=None,single_block=[],
+def merge(self,new_bc,mode=None,parent=None,single_block=[],
                idblock="",match_att=[],match_function=None):
+    if mode is None:
+        if self.standard is None:
+           mode = 'replace'
+        else:
+           mode = 'strict'
     if single_block:
         self.dictionary[single_block[0]].merge(new_bc[single_block[1]],mode,
 					       match_att=match_att,
                                                match_function=match_function)
         return None
-    # make all keys visible
+    # make all keys visible   
     old_scoping = self.scoping
     self.scoping = 'dictionary'
     new_bc.scoping = 'dictionary'
@@ -507,6 +497,29 @@ def merge(self,new_bc,mode="strict",parent=None,single_block=[],
                 raise StarError( "Merge called with unknown mode %s" % mode)
     self.scoping = old_scoping #re-hide if necessary
      
+@ Checking conformance. CIF and STAR standards differ in allowing
+nested loops and maximum data name lengths.  Although the CIF 1.1
+standard allows very long lines (2048 characters), data names are
+still restricted to be no more than 75 characters in length in the CIF
+standard.
+
+<<Conformance checks>>=
+def checknamelengths(self,target_block,maxlength=-1):
+    if maxlength < 0:
+        return
+    else:
+        toolong = filter(lambda a:len(a)>maxlength, target_block.keys())
+    outstring = ""
+    for it in toolong: outstring += "\n" + it
+    if toolong:
+       raise StarError( 'Following data names too long:' + outstring)
+
+def checkloopnesting(self,target_block):
+    """Check that block doesn't contain nested loops"""
+    for one_loop in target_block.loops:
+        if len(one_loop.loops) > 0:
+           raise StarError('Block contains nested loops')
+
 @ When validating DDL2-type dictionaries against the DDL spec file, we have
 to be able to see all values of parent data items across all save frames
 in order to validate parent-child relations (I've inferred this, but
@@ -550,7 +563,7 @@ Note that child blocks must be save frames, so we hard-code 'save'.
         top_level_blocks = filter(lambda a:a.parent is None, self.child_table)
         top_block_names = map(lambda a:a.block_id,top_level_blocks)
         for blockname in top_block_names:
-            outstring.write('\n' + self.type_tag +blockname+'\n')
+            outstring.write('\n' + 'data_' +blockname+'\n')
             children = filter(lambda a:a.parent == blockname,self.child_table)
             child_names = map(lambda a:a.block_id,children)
             for child_name in child_names:
@@ -592,26 +605,22 @@ class StarFile(BlockCollection):
 opposed to a simple collection of blocks - i.e. reading in from a file,
 and some line length restrictions.  We don't indent this section in the
 noweb file, so that our comment characters output at the beginning of the
-line.   We allow a [[blocktype]] argument so that we can restrict blocks to
-be less than a StarBlock - generally, a CifBlock.
-
-We catch any extra arguments and keyword arguments, as we could re-call
-our initialisation function, which may be a subclass which takes other arguments.
+line.  
 
 <<Initialise data structures>>=
-    def __init__(self,datasource=None,maxinlength=-1,maxoutlength=0,blocktype=StarBlock,**kwargs):
-        super(StarFile,self).__init__(datasource=datasource,element_class=blocktype,type_tag='data_',**kwargs)
-        if isinstance(datasource, StarFile):
-            self.my_uri = datasource.my_uri
+    def __init__(self,datasource=None,maxinlength=-1,maxoutlength=0,
+                scoping='instance',grammar='1.1',scantype='standard',**kwargs):
+        super(StarFile,self).__init__(datasource=datasource,**kwargs)
+        self.my_uri = getattr(datasource,'my_uri','')
         self.maxinlength = maxinlength      #no restriction
         if maxoutlength == 0:
             self.maxoutlength = 2048 
         else:
             self.maxoutlength = maxoutlength
+        self.scoping = scoping
         if type(datasource) in StringTypes or hasattr(datasource,"read"):
-            newself = ReadStar(datasource,self.maxinlength,**kwargs)
-            # print "Reinjecting by calling %s.__init__ with kwargs %s" % (`self.__init__.im_class`,kwargs)
-	    self.__init__.im_class.__init__(self,datasource=newself,maxoutlength=maxoutlength,**kwargs)
+            ReadStar(datasource,prepared=self,maxlength=self.maxinlength,
+                        grammar=grammar,scantype=scantype)
         self.header_comment = \
 """#\\#STAR
 ##########################################################################
@@ -651,7 +660,7 @@ We save our URL for possible later use in finding files relative to the location
 this file e.g. with DDLm dictionary imports.
 
 <<Read in a STAR file>>=
-def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar='1.1',CBF=False,**kwargs):
+def ReadStar(filename,prepared = StarFile(),maxlength=2048,scantype='standard',grammar='1.1',CBF=False):
     import string
     import codecs
     if grammar=="1.1":
@@ -671,8 +680,7 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar
     if isinstance(filename,basestring): #we opened it, we close it
         filestream.close()
     if not text:      # empty file, return empty block
-        dest.set_uri(my_uri)
-        return dest
+        return StarFile().set_uri(my_uri)
     # filter out non-ASCII characters in CBF files if required.  We assume
     # that the binary is enclosed in a fixed string that occurs
     # nowhere else.
@@ -695,9 +703,15 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar
             parser = Y.StarParser(Y.StarParserScanner(text))
     else:
 	    parser = Y.StarParser(Y.yappsrt.Scanner(None,[],text,scantype='flex'))
-    proto_star = Y.yappsrt.wrap_error_reporter(parser,"input")
-    # alternative to above line is getattr(parser,"input")()
-    # and handle the errors yourself
+    proto_star = None
+    try:
+        proto_star = getattr(parser,"input")(prepared)
+    except Y.yappsrt.SyntaxError,e:
+           input = parser._scanner.input
+           Y.yappsrt.print_error(input, e, parser._scanner)
+    except Y.yappsrt.NoMoreTokens:
+           print >>sys.stderr, 'Could not complete parsing; stopped around here:'
+           print >>sys.stderr, parser._scanner
     if proto_star == None:
         errorstring = 'Syntax error in input file: last value parsed was %s' % Y.lastval
         errorstring = errorstring + '\nParser status: %s' % `parser._scanner`
@@ -729,11 +743,17 @@ class StarDict(dict):
 This is the fundamental building block of a StarFile.  We abstract a
 loop to mean a collection of tag value pairs and a collection of 
 zero or more loop blocks (recursive definition).  The values have a
-dimension one less than the values in the loop blocks. 
+dimension that increases by one with each embedding. In practice we
+expect only a single level of embedding, i.e. dimension 1 or 0, but
+due to the historical STAR standard allowing multiple levels of loop
+block nesting we can handle more.
 
+A CifBlock inherits from a CifLoopBlock which inherits from a Star
+Block which inherits from this LoopBlock class.
+ 
 We store the dimension in the class for convenience.
 
-A Star Block is then also a Loop block with dimension zero.
+A Star Block is simply a Loop block with dimension zero.
 
 <<LoopBlock class>>=
 class LoopBlock(object):
@@ -822,7 +842,7 @@ def __init__(self,data = (), dimension = 0, maxoutlength=2048, wraplength=80, ov
         self.lower_keys = data.lower_keys[:]
 	self.comment_list = data.comment_list.copy()
         self.dimension = data.dimension
-        # loops as well; change loop class 
+        # loops as well
         for loopno in range(len(data.loops)):
             try:
                 placeholder = self.item_order.index(data.loops[loopno])
@@ -830,9 +850,9 @@ def __init__(self,data = (), dimension = 0, maxoutlength=2048, wraplength=80, ov
                 print "Warning: loop %s (%s) in loops, but not in item_order (%s)" % (`data.loops[loopno]`,str(data.loops[loopno]),`self.item_order`)
                 placeholder = -1
             self.item_order.remove(data.loops[loopno])   #gone
-            newobject = self.loopclass(data.loops[loopno])
+            # newobject = self.loopclass(data.loops[loopno])
             # print "Recasting and adding loop %s -> %s" % (`data.loops[loopno]`,`newobject`)
-            self.insert_loop(newobject,position=placeholder)
+            self.insert_loop(data.loops[loopno],position=placeholder)
 
 @ Adding emulation of a mapping type.  We add any of the other
 functions we'd like to emulate.   [[__len__]] returns the number
@@ -903,7 +923,7 @@ def clear(self):
 
 # doesn't appear to work
 def copy(self):
-    newcopy = self.copy.im_class(dimension = self.dimension)
+    newcopy = LoopBlock(dimension = self.dimension)
     newcopy.block = self.block.copy()
     newcopy.loops = []
     newcopy.no_packets = self.no_packets
@@ -1844,10 +1864,10 @@ class StarBlock(LoopBlock):
     <<Merge with another block>>
 
 @ A Star Block is a Loop Block which can hold save frames in the outermost
-loop.   From version 4.0 we do not allow save frames to be set from within
+loop.   From version 4.05 we do not allow save frames to be set from within
 the block; rather, an enclosing block collection should be created (e.g. a
 Star File) and the save frame added to that block collection with the
-StarBlock set as its child, so we catch the saves key and
+'enclosing' StarBlock set as its parent. We catch the saves key and
 print an error message to show deprecation.
 
 <<Adjust emulation of mapping type>>=
@@ -1925,7 +1945,10 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
                   self[key] = new_block[key] 
               else:
                   self.insert_loop(key)   #assume is a loop
-    elif mode == 'overlay': 
+    elif mode == 'overlay':
+       print 'Overlay mode, current overwrite is %s' % self.overwrite
+       save_overwrite = self.overwrite
+       self.overwrite = True
        for attribute in new_block.keys():
            if attribute in match_att: continue      #ignore this one
            new_value = new_block[attribute]
@@ -1981,6 +2004,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
                         #don't do this at home; we are appending
                         #to something in place
                         self[overlaps[i]].append(pd[i]) 
+       self.overwrite = save_overwrite
 
 <<Define an error class>>=
 class StarError(Exception):

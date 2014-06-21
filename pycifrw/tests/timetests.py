@@ -6,7 +6,8 @@ import pstats
 testfiles = ['1YGG.cif','C13H22O3.cif','../dictionaries/cif_core.dic',
               '../dictionaries/mmcif_pdbx.dic']
 #testfiles = []
-cached_mmdic = CifFile.CifDic('../dictionaries/mmcif_pdbx.dic')
+cached_mmdic = CifFile.CifDic('../dictionaries/mmcif_pdbx.dic',standard=None)
+# cached_mmdic = CifFile.CifDic('../dictionaries/mmcif_std_2.0.09.dic',standard=None)
 cached_core = CifFile.CifDic('../dictionaries/cif_core.dic')
 valfiles = [ ('1YGG.cif',cached_mmdic), 
              ('C13H22O3.cif',cached_core)
@@ -14,10 +15,10 @@ valfiles = [ ('1YGG.cif',cached_mmdic),
 
 for file in testfiles:
     start_time = time.time()
-    jj = CifFile.ReadCif(file,scantype='flex')      # no profiling, approx usage
+    jj = CifFile.ReadCif(file,scantype='flex',standard=None)      # no profiling, approx usage
     finish_time = time.time()
     print "File %s: wallclock time %8.1f\n" % (file,finish_time - start_time)
-    profile.run("jj = CifFile.ReadCif(file,scantype='flex') ","profout")
+    profile.run("jj = CifFile.ReadCif(file,scantype='flex',standard=None) ","profout")
     p = pstats.Stats( "profout")
     p.strip_dirs().sort_stats("cumulative").print_stats()
     # try to validate  

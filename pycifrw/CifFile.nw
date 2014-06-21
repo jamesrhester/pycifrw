@@ -132,11 +132,11 @@ class CifFile(StarFile.StarFile):
 opposed to a simple collection of blocks - i.e. reading in from a file,
 and some line length restrictions.  We don't indent this section in this
 noweb file, so that our comment characters output at the beginning of the
-line.   We restrict our blocks to be of type CifBlock.
+line.  
 
 <<Initialise data structures>>=
-    def __init__(self,datasource=None,strict=1,**kwargs):
-        super(CifFile,self).__init__(datasource=datasource, blocktype=CifBlock,**kwargs)
+    def __init__(self,datasource=None,strict=1,standard='CIF',**kwargs):
+        super(CifFile,self).__init__(datasource=datasource,standard=standard,**kwargs)
         self.strict = strict
         self.header_comment = \
 """#\\#CIF1.1
@@ -152,11 +152,6 @@ line.   We restrict our blocks to be of type CifBlock.
 #  http://www.iucr.org
 ##########################################################################
 """
-    def NewBlock(self,blockname,*nkwargs,**kwargs):
-       if len(blockname)>75:
-           raise CifError , 'Blockname %s is longer than 75 characters' % blockname
-       else:
-           StarFile.StarFile.NewBlock(self,blockname,*nkwargs,**kwargs)
 
 @ \section{Cif Loop block class}
 
@@ -172,7 +167,6 @@ class CifLoopBlock(StarFile.LoopBlock):
         if dimension > 1: 
             raise CifError( 'Attempt to nest loops, loop level %d' % dimension)
         super(CifLoopBlock,self).__init__(data,dimension=dimension,**kwargs)
-        # self.__iter__ = self.recursive_iter
 
     def __iter__(self):
         return self.recursive_iter()
@@ -209,7 +203,6 @@ class CifBlock(CifLoopBlock):
     <<Initialise Cif Block>>
     <<Adjust emulation of a mapping type>>
     <<Add a data item>>
-    <<Check data name lengths>>
     <<Return all looped names>>
     <<Assign a Cif Dictionary>>
 
@@ -220,11 +213,13 @@ object, passing the [[dimension]] argument.  This method ignores this.
 
 <<Initialise Cif Block>>=
 def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80,overwrite=True,dimension=0):
-    self.strict = strict
-    super(CifBlock,self).__init__(data=data,dimension=0,maxoutlength=maxoutlength,wraplength=wraplength,overwrite=overwrite)
-    if self.strict:
-	self.checklengths()
-    self.dictionary = None
+    if strict: maxnamelength=75
+    else:
+       maxnamelength=-1
+    super(CifBlock,self).__init__(data=data,dimension=0,maxoutlength=maxoutlength,wraplength=wraplength,
+                                        overwrite=overwrite)
+
+    self.dictionary = None   #DDL dictionary referring to this block
 
 def RemoveCifItem(self,itemname): 
     CifLoopBlock.RemoveLoopItem(self,itemname)
@@ -342,34 +337,13 @@ def AddCifItem(self,data):
     keyvals = zip(data[0],data[1])
     map(lambda a:CifLoopBlock.AddLoopItem(self,a),keyvals)
 
-@ Checking data name lengths.  Although the new 1.1 standard allows
-very long lines (2048 characters), data names are still restricted
-to be no more than 75 characters in length.  We hard code this in.
-
-<<Check data name lengths>>=
-def checklengths(self):
-    toolong = filter(lambda a:len(a)>75, self.keys())
-    outstring = ""
-    for it in toolong: outstring += "\n" + it
-    if toolong:
-       raise CifError( 'Following data names too long:' + outstring)
-
-@ Reading in a file.  We now use the STAR grammar parser, and
-postcheck for nested loops and other disallowed STAR funkiness.
+@ Reading in a file.  We use the STAR grammar parser. 
 
 <<Read in a CIF file>>=
-def ReadCif(filename,strict=1,maxlength=2048,scantype="standard",grammar="1.1",**kwargs):
-    proto_cif = StarFile.ReadStar(filename,maxlength,scantype=scantype,grammar=grammar,**kwargs)
-    # convert to CifFile
-    proto_cif = CifFile(proto_cif,**kwargs)
-    # check for nested loops
-    for bname,bvalue in proto_cif.items():
-        nests = filter(lambda a:len(a.loops)>0,bvalue.loops)
-        if len(nests) > 0:
-            raise CifError( "Block %s contains nested loops")
-        # check for save frame references (not yet implemented in PySTARRW)
-        # check for global blocks (not yet implemented in PySTARRW)
-    return proto_cif
+def ReadCif(filename,grammar='1.1',scantype='standard',scoping='instance',standard='CIF'):
+    finalcif = CifFile(scoping=scoping,standard=standard)
+    return StarFile.ReadStar(filename,prepared=finalcif,grammar=grammar,scantype=scantype)
+    #return StarFile.StarFile(filename,maxlength,scantype=scantype,grammar=grammar,**kwargs)
 
 @ Defining an error class: we simply derive a 'nothing' class from the root
 Python class
@@ -476,16 +450,16 @@ It is intended that the dREL methods will turn this on only during
 execution, then turn it off afterwards. 
 
 <<Initialise Cif dictionary>>=
-def __init__(self,dic,do_minimum=False,grammar='1.1'):
+def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
     self.do_minimum = do_minimum
     self.dic_as_cif = dic
     self.template_cache = {}    #for DDLm imports
     self.ddlm_functions = {}    #for DDLm functions
     self.switch_numpy(False)    #no Numpy arrays returned 
     if isinstance(dic,StringTypes):
-        self.dic_as_cif = CifFile(dic,grammar=grammar)
+        self.dic_as_cif = CifFile(dic,grammar=grammar,**kwargs)
     (self.dicname,self.diclang,self.defdata) = self.dic_determine(self.dic_as_cif)
-    super(CifDic,self).__init__(element_class=CifBlock,datasource=self.defdata) 
+    super(CifDic,self).__init__(element_class=CifBlock,datasource=self.defdata,**kwargs) 
     self.scopes_mandatory = {"dictionary":[],"category":[],"item":[]}
     self.scopes_naughty = {"dictionary":[],"category":[],"item":[]}
     # rename and expand out definitions using "_name" in DDL dictionaries
@@ -566,13 +540,15 @@ def dic_determine(self,cifdic):
 	return (name+version,"DDL1",cifdic)
     elif len(cifdic.keys()) == 1:              # DDL2/DDLm
         self.master_key = cifdic.keys()[0]	
+        # now change to dictionary scoping
+        cifdic.scoping = 'dictionary'
 	name = cifdic[self.master_key]["_dictionary.title"]
 	version = cifdic[self.master_key]["_dictionary.version"]
 	if name != self.master_key:
 	    print "Warning: DDL2 blockname %s not equal to dictionary name %s" % (self.master_key,name)
         if cifdic[self.master_key].has_key("_dictionary.class"):   #DDLm
             self.unique_spec = "_category_key.generic"
-            return(name+version,"DDLm",cifdic[self.master_key]["saves"]) 
+            return(name+version,"DDLm",cifdic) 
         #otherwise DDL2
 	self.type_spec = "_item_type.code" 
 	self.enum_spec = "_item_enumeration.value"
@@ -589,7 +565,7 @@ def dic_determine(self,cifdic):
         self.list_ref_spec = "xxx"
         self.primitive_type = "_type"
         self.dep_spec = "_item_dependent.dependent_name"
-	return (name+version,"DDL2",cifdic[self.master_key]["saves"])
+	return (name+version,"DDL2",cifdic)
     else:
 	raise CifError, "Unable to determine dictionary DDL version"
     
@@ -656,6 +632,9 @@ def DDL1_normalise(self):
           del self[key]
     # loop again to normalise the contents of each definition
     for key,value in self.items():
+       #unlock the block
+       save_overwrite = value.overwrite
+       value.overwrite = True
        # deal with a missing _list, _type_conditions
        if not value.has_key("_list"): value["_list"] = 'no'
        if not value.has_key("_type_conditions"): value["_type_conditions"] = 'none'
@@ -681,11 +660,12 @@ def DDL1_normalise(self):
 	    last_under = value["_name"].rindex("_")
             catid = value["_name"][1:last_under]
             value["_category.id"] = catid  #remove square bracks
-            if catid not in self.cat_list: self.cat_list.append(catid) 
+            if catid not in self.cat_list: self.cat_list.append(catid)
+       value.overwrite = save_overwrite 
     # we now add any missing categories before filling in the rest of the
     # information
     for key,value in self.items():
-        print 'processing ddl1 definition %s' % key
+        #print 'processing ddl1 definition %s' % key
         if self[key].has_key("_category"):
             if self[key]["_category"] not in self.cat_list:
                 # rogue category, add it in
