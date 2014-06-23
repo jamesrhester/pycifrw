@@ -315,9 +315,9 @@ I don't think it is useful to allow square brackets in list values.
 # now the rules
 
 rule input@<<prepared>>: ( (( 
-            dblock@<<prepared>>         {{allblocks = prepared; allblocks.merge(dblock)}}
+            dblock@<<prepared>>         {{allblocks = prepared; allblocks.merge_fast(dblock)}}
             (
-            dblock@<<prepared>>         {{allblocks.merge(dblock)}} #
+            dblock@<<prepared>>         {{allblocks.merge_fast(dblock)}} #
             )*
             END                
             )
@@ -330,7 +330,7 @@ rule input@<<prepared>>: ( ((
                   (
                    dataseq@<<thisbc[heading]>>  
                   |
-                  save_frame     {{thisbc.merge(save_frame,parent=heading)}}
+                  save_frame     {{thisbc.merge_fast(save_frame,parent=heading)}}
                   )*
                    )                      {{return (monitor('dblock',thisbc))}} # but may be empty
 
@@ -421,7 +421,7 @@ rule input@<<prepared>>: ( ((
                       (
                       dataseq@<<savebc[savehead]>> 
                       |
-                      save_frame     {{savebc.merge(save_frame,parent=savehead)}}
+                      save_frame     {{savebc.merge_fast(save_frame,parent=savehead)}}
                       )*
                       save_end           {{return monitor('save_frame',savebc)}}
 
@@ -434,9 +434,9 @@ dictionary files that contain duplicate datablocks.
 # now the rules
 
 rule input@<<prepared>>: ( (( 
-            dblock@<<prepared>>         {{allblocks = prepared; allblocks.merge(dblock)}}
+            dblock@<<prepared>>         {{allblocks = prepared; allblocks.merge_fast(dblock)}}
             (
-            dblock@<<prepared>>         {{allblocks.merge(dblock)}} #
+            dblock@<<prepared>>         {{allblocks.merge_fast(dblock)}} #
             )*
             END                
             )
@@ -449,7 +449,7 @@ rule input@<<prepared>>: ( ((
                   (
                    dataseq@<<thisbc[heading]>>  
                   |
-                  save_frame     {{thisbc.merge(save_frame,parent=heading)}}
+                  save_frame     {{thisbc.merge_fast(save_frame,parent=heading)}}
                   )*
                    )                      {{return (monitor('dblock',thisbc))}} # but may be empty
 
@@ -507,7 +507,7 @@ rule input@<<prepared>>: ( ((
                       (
                       dataseq@<<savebc[savehead]>> 
                       |
-                      save_frame     {{savebc.merge(save_frame,parent=savehead)}}
+                      save_frame     {{savebc.merge_fast(save_frame,parent=savehead)}}
                       )*
                       save_end           {{return monitor('save_frame',savebc)}}
 

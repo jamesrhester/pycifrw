@@ -1,7 +1,7 @@
 # this simply reports time taken to parse a file
 import time
 import CifFile
-import profile
+import cProfile
 import pstats
 testfiles = ['1YGG.cif','C13H22O3.cif','../dictionaries/cif_core.dic',
               '../dictionaries/mmcif_pdbx.dic']
@@ -18,7 +18,7 @@ for file in testfiles:
     jj = CifFile.ReadCif(file,scantype='flex',standard=None)      # no profiling, approx usage
     finish_time = time.time()
     print "File %s: wallclock time %8.1f\n" % (file,finish_time - start_time)
-    profile.run("jj = CifFile.ReadCif(file,scantype='flex',standard=None) ","profout")
+    cProfile.run("jj = CifFile.ReadCif(file,scantype='flex',standard=None) ","profout")
     p = pstats.Stats( "profout")
     p.strip_dirs().sort_stats("cumulative").print_stats()
     # try to validate  

@@ -366,12 +366,12 @@ class FileWriteTestCase(unittest.TestCase):
                'a string with a final \''])))
        self.cf = CifFile.CifBlock(items)
        cif = CifFile.CifFile(scoping='dictionary')
-       cif['testblock'] = self.cf
+       cif['Testblock'] = self.cf
        # Add some comments
        self.cf.AddComment('_item_empty',"Test of an empty string")
        self.cf.AddComment('_item_apost',"Test of a trailing apostrophe")
        self.save_block = CifFile.CifBlock(s_items)
-       cif.NewBlock("test_save_frame",self.save_block,parent='testblock')
+       cif.NewBlock("test_Save_frame",self.save_block,parent='testblock')
        self.cfs = cif["test_save_frame"]
        outfile = open('test.cif','w')
        outfile.write(str(cif))
@@ -384,7 +384,7 @@ class FileWriteTestCase(unittest.TestCase):
        tstream = open('test.cif')
        CifFile.CifFile(tstream,scantype="flex")
        self.flf = flfile['testblock']
-       self.flfs = flfile["test_save_frame"]
+       self.flfs = flfile["Test_save_frame"]
 
    def tearDown(self):
        import os
@@ -479,6 +479,7 @@ class FileWriteTestCase(unittest.TestCase):
 
    def testFirstBlock(self):
        """Test that first_block returns a block"""
+       self.ef.scoping = 'instance'  #otherwise all blocks are available
        jj = self.ef.first_block()
        self.failUnless(jj==self.df)
 
@@ -615,7 +616,7 @@ class DDLmTestCase(unittest.TestCase):
 # Test dictionary type
 #
 ##############################################################
-#ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
+ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
 class DictTestCase(unittest.TestCase):
     def setUp(self):
         # self.ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")

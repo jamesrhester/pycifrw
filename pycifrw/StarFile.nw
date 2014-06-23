@@ -144,20 +144,29 @@ If scoping is 'instance', nested datablocks are invisible and only accessible
 through the 'saves' attribute, which produces a view onto the same block 
 collection.
 
+To take account of dictionaries with 10s of thousands of entries (e.g. the
+PDB) we optimise block merging for speed.  The canonical reference to a block
+is its lower case (in the unicode future, its normalised) representation,
+so rather than constantly call the lower() function we track all the lower
+case block names and use them to index into a table that contains the actual
+block name and the lowercase parent blockname.
+
 <<Initialise BC data structures>>=
 def __init__(self,datasource=None,standard='CIF',
              characterset='ascii',scoping='instance',parent_id=None,**kwargs):
     import collections
     self.dictionary = {}
     self.standard = standard
-    self.lower_keys = []              # for efficiency
+    self.lower_keys = set()              # for efficiency
     self.characterset = characterset
-    self.PC = collections.namedtuple('PC',['block_id','parent','visible'])
-    self.child_table = []
+    self.PC = collections.namedtuple('PC',['block_id','parent'])
+    self.child_table = {}
+    self.visible_keys = []            # for efficiency
     self.parent_id = parent_id
     self.scoping = scoping  #will trigger setting of child table
     if isinstance(datasource,BlockCollection):
-        self.merge(datasource)
+        self.merge_fast(datasource)
+        self.scoping = scoping   #reset visibility
     elif isinstance(datasource,DictType):
         for key,value in datasource.items():
              self[key]= value
@@ -188,10 +197,10 @@ def __setattr__(self,attr_name,newval):
         if newval not in ('dictionary','instance'):
             raise StarError("Star file may only have 'dictionary' or 'instance' scoping, not %s" % newval)
         if newval == 'dictionary':
-            self.child_table = map(lambda a:self.PC(a[0],a[1],True),self.child_table)
+            self.visible_keys = [a for a in self.lower_keys]
         else:
             #only top-level datablocks visible
-            self.child_table = map(lambda a:self.PC(a[0],a[1],a.parent == None),self.child_table)
+            self.visible_keys = [a[1].block_id.lower() for a in self.child_table.items() if a[1].parent==None]
     object.__setattr__(self,attr_name,newval)
 
 @ Emulation of a mapping type.  We also put odd little useful utilities
@@ -204,55 +213,48 @@ def __str__(self):
 def __setitem__(self,key,value):
     self.NewBlock(key,value,parent=None)
 
-# due to attempt to get upper/lower case treated as identical
-# we have a bit of cruft here.  With unicode normalisation it
-# will only get worse...
 def __getitem__(self,key):
-    target_keys = filter(lambda a:a.visible==True,self.child_table)
-    target_keys = map(lambda a:[a.block_id,a.block_id.lower()],target_keys)
-    real_id,lc_ordered = zip(*target_keys)
-    if key.lower() not in lc_ordered:
-         raise KeyError, "No such item: %s" % key
-    keyindex = lc_ordered.index(key.lower())
-    return self.dictionary[real_id[keyindex]]
+    if key.lower() in self.visible_keys:
+        block_id = self.child_table[key.lower()].block_id
+        return self.dictionary[block_id]
+    raise KeyError,'No such item %s' % key
 
 # we have to get an ordered list of the current keys,
-# as we'll have to delete one of them anyway
+# as we'll have to delete one of them anyway.
+# Deletion will delete any key regardless of visibility
+
 def __delitem__(self,key):
-    target_keys = filter(lambda a:a.visible==True,self.child_table)
-    target_keys = map(lambda a:[a.block_id,a.block_id.lower()],target_keys)
-    real_id,lc_ordered = zip(*target_keys)
-    if key.lower() not in lc_ordered:
+    lowerkey = key.lower()
+    if lowerkey not in self.lower_keys:
          raise KeyError, "No such item: %s" % key
-    keyindex = lc_ordered.index(key.lower())
     # get rid of all children recursively as well
-    children = filter(lambda a:a.parent == key.lower(),self.child_table)
+    children = [a[1] for a in self.child_table.items() if a[1].parent == lowerkey]
     for child in children:
-        del self[child.block_id]
-    del self.dictionary[real_id[keyindex]]
-    self.child_table = filter(lambda a:a.block_id.lower()!=key.lower(),self.child_table)
+        del self[child.block_id]   #recursive call
+    del self.dictionary[self.child_table[lowerkey].block_id]
+    del self.child_table[lowerkey]
+    try:
+        self.visible_keys.remove(lowerkey)
+    except KeyError:
+        pass
+    self.lower_keys.remove(lowerkey)
 
 def __len__(self):
-    if self.scoping == 'dictionary':
-        return len(self.dictionary) 
-    else:
-        return len(filter(lambda a:a.visible==True,self.child_table))
+    return len(self.visible_keys)
 
 # We iterate over all visible
 def __iter__(self):
     for one_block in self.keys():
         yield self[one_block]
 
+# TODO: handle different case
 def keys(self):
-    visible= filter(lambda a:a.visible==True,self.child_table)
-    return map(lambda a:a.block_id,visible)
+    return self.visible_keys
 
 # changes to take case independence into account
 def has_key(self,key):
     if not isinstance(key,StringTypes): return 0
-    visible = filter(lambda a:a.visible==True,self.child_table)
-    visible_keys = map(lambda a:a.block_id.lower(),visible)
-    if key.lower() in visible_keys:
+    if key.lower() in self.visible_keys:
         return 1
     return 0
 
@@ -264,15 +266,17 @@ def get(self,key,default=None):
 
 def clear(self):
     self.dictionary.clear()
-    self.lower_keys = []
-    self.child_table = []
+    self.lower_keys = set()
+    self.child_table = {}
+    self.visible_keys = []
 
 def copy(self):   
     newcopy = self.dictionary.copy()  #all blocks
     newcopy = BlockCollection('',newcopy,parent_id=self.parent_id)
     newcopy.child_table = self.child_table.copy()
+    newcopy.lower_keys = self.lower_keys
     newcopy.characterset = self.characterset
-    newcopy.scoping = self.scoping
+    newcopy.scoping = self.scoping  #this sets visible keys
     return newcopy
 
 def update(self,adict):
@@ -280,7 +284,7 @@ def update(self,adict):
         self[key] = adict[key]
 
 def items(self):
-    return map(lambda a:(a,self[a]),self.keys())
+    return [(a,self[a]) for a in self.keys()]
 
 def first_block(self):
     if self.keys():
@@ -292,22 +296,29 @@ using self.child_table, we provide some useful methods.
 <<Parent child utilities>>=
 def get_parent(self,blockname):
     """Get the enclosing block"""
-    possibles = filter(lambda a:a.block_id == blockname,self.child_table)
-    if len(possibles)>1 or len(possibles)==0:
-        raise StarError('0 or more than 1 parent for %s' % blockname)
-    return possibles[0].parent
+    possibles = (a for a in self.child_table.items() if a[1].block_id == blockname)
+    try:
+        first = possibles.next()   #get first one
+    except:
+        raise StarError('no parent for %s' % blockname)
+    try:
+       second = possibles.next()
+    except StopIteration:
+       return first[1].parent
+    raise StarError('More than one parent for %s' % blockname)
 
+## This probably doesn't work as the new parent is not set anywhere
 def get_children(self,blockname):
     """Get all children as a block collection"""
     new_bc = self.copy()
-    new_bc.child_table = filter(lambda a:self.is_child_of_parent(blockname,a),self.child_table)
+    new_bc.child_table = dict(a for a in self.child_table.items() if self.is_child_of_parent(blockname,a))
     new_bc.scoping = self.scoping
     return new_bc
 
 def is_child_of_parent(self,parentname,blockname):
     """Recursively search for children of blockname, case is important for now"""
-    more_children = filter(lambda a:a.parent == parentname,self.child_table)
-    child_names = map(lambda a:a.block_id,more_children)
+    more_children = (a for a in self.child_table if a.parent == parentname)
+    child_names = (a.block_id for a in more_children)
     if len(child_names) == 0: return False
     if blockname in child_names:
        return True
@@ -319,16 +330,13 @@ def is_child_of_parent(self,parentname,blockname):
 def set_parent(self,parentname,childname):
     """Set the parent block"""
     # first check that both blocks exist
-    realparent = filter(lambda a:a.block_id == parentname,self.child_table)
-    if len(realparent) == 0:
+    if parentname.lower() not in self.lower_keys:
         raise KeyError('Parent block %s does not exist' % parentname)
-    realchild = filter(lambda a:a.block_id == childname,self.child_table)
-    if len(realchild) == 0:
+    if childname.lower() not in self.lower_keys:
         raise KeyError('Child block %s does not exist' % childname)
-    # remove any previous settings
-    self.child_table = filter(lambda a:a.block_id == childname and \
-                                       a.parent_name == parentname,self.child_table)
-    self.child_table.append(self.PC(childname,parentname,False))
+    old_entry = self.child_table[childname.lower()]
+    self.child_table[childname.lower()]=self.PC(old_entry.block_id,
+           parentname.lower())
     self.scoping = self.scoping #reset visibility
         
 @ Adding a new block.  A new block is just a new item in our
@@ -363,22 +371,25 @@ def NewBlock(self,blockname,blockcontents=StarBlock(),fix=True,parent=None):
         newblockname = re.sub('[  \t]','_',blockname)
     else: newblockname = blockname
     new_lowerbn = newblockname.lower()
-    if self.lower_keys.count(new_lowerbn):
+    if new_lowerbn in self.lower_keys:
         if self.standard is not None:    #already in CIF
            raise StarError( "Attempt to replace existing block " + blockname)
         else:
            del self[new_lowerbn]
     self.dictionary.update({newblockname:blockcontents})
-    self.lower_keys.append(new_lowerbn)
+    self.lower_keys.add(new_lowerbn)
     if parent is None:
-       self.child_table.append(self.PC(newblockname,None,True))
+       self.child_table[new_lowerbn]=self.PC(newblockname,None)
+       self.visible_keys.append(new_lowerbn)
     else:
-       blocknames = map(lambda a:a.lower(),self.dictionary.keys())
-       if parent.lower() in blocknames:
-           self.child_table.append(self.PC(newblockname,parent,False))
+       if parent.lower() in self.lower_keys:
+          if self.scoping == 'instance':
+             self.child_table[new_lowerbn]=self.PC(newblockname,parent)
+          else:
+             self.child_table[new_lowerbn]=self.PC(newblockname,parent)
+             self.visible_keys.append(new_lowerbn)
        else:
            print 'Warning:Parent block %s does not exist for child %s' % (parent,newblockname)  
-    self.__setattr__('scoping',self.scoping)  #re-hide stuff as necessary
     return newblockname  #in case calling routine wants to know
 
 @ Merging.  Originally, this package envisaged Cif and STAR files as collections
@@ -441,6 +452,24 @@ blocks in the incoming block collection (parent is None) are given the parent
 specified in [[parent]].
 
 <<Merge with another block collection>>=
+def merge_fast(self,new_bc,parent=None):
+    """Do a fast merge"""
+    if self.standard is None:
+        mode = 'replace' 
+    else:
+        mode = 'strict'
+    overlap_flag = not self.lower_keys.isdisjoint(new_bc.lower_keys)
+    if overlap_flag and mode != 'replace':
+        raise StarError("In strict merge mode:duplicate keys")
+    self.dictionary.update(new_bc.dictionary) 
+    self.lower_keys.update(new_bc.lower_keys)
+    self.visible_keys += (list(new_bc.lower_keys))
+    self.child_table.update(new_bc.child_table)
+    if parent is not None:     #redo the child_table entries
+          reparent_list = [(a[0],a[1].block_id) for a in new_bc.child_table.items() if a[1].parent==None]
+          reparent_dict = [(a[0],self.PC(a[1],parent)) for a in reparent_list]
+          self.child_table.update(dict(reparent_dict))
+
 def merge(self,new_bc,mode=None,parent=None,single_block=[],
                idblock="",match_att=[],match_function=None):
     if mode is None:
@@ -453,13 +482,9 @@ def merge(self,new_bc,mode=None,parent=None,single_block=[],
 					       match_att=match_att,
                                                match_function=match_function)
         return None
-    # make all keys visible   
-    old_scoping = self.scoping
-    self.scoping = 'dictionary'
-    new_bc.scoping = 'dictionary'
-    base_keys = self.keys()
+    base_keys = [a[1].block_id for a in self.child_table.items()]
     block_to_item = base_keys   #default
-    new_keys = new_bc.keys()    #get list of incoming blocks
+    new_keys = [a[1].block_id for a in new_bc.child_table.items()]    #get list of incoming blocks
     if match_att:
         #make a blockname -> item name map
         if match_function:
@@ -486,7 +511,7 @@ def merge(self,new_bc,mode=None,parent=None,single_block=[],
             new_parent = new_bc.get_parent(key)
             if parent is not None and new_parent is None:
                new_parent = parent
-            self.NewBlock(basekey,new_bc[key],parent=new_parent)   #add the block
+            self.NewBlock(basekey,new_bc.dictionary[key],parent=new_parent)   #add the block
         else:
             if mode=="strict":
                 raise StarError( "In strict merge mode: block %s in old and block %s in new files" % (basekey,key))
@@ -495,7 +520,6 @@ def merge(self,new_bc,mode=None,parent=None,single_block=[],
                 self.dictionary[basekey].merge(new_bc[key],mode,match_att=match_att)
             else:  
                 raise StarError( "Merge called with unknown mode %s" % mode)
-    self.scoping = old_scoping #re-hide if necessary
      
 @ Checking conformance. CIF and STAR standards differ in allowing
 nested loops and maximum data name lengths.  Although the CIF 1.1
@@ -560,12 +584,10 @@ Note that child blocks must be save frames, so we hard-code 'save'.
         outstring = cStringIO.StringIO()
         outstring.write(comment)
         # loop over top-level
-        top_level_blocks = filter(lambda a:a.parent is None, self.child_table)
-        top_block_names = map(lambda a:a.block_id,top_level_blocks)
+        top_block_names = [a[1].block_id for a in self.child_table.items() if a[1].parent is None]
         for blockname in top_block_names:
             outstring.write('\n' + 'data_' +blockname+'\n')
-            children = filter(lambda a:a.parent == blockname,self.child_table)
-            child_names = map(lambda a:a.block_id,children)
+            child_names = [a[1].block_id for a in self.child_table.items() if a[1].parent==blockname]
             for child_name in child_names:
                 outstring.write('\n' + 'save_' + child_name + '\n')
                 self.block_to_string(child_name,outstring)    
@@ -578,14 +600,12 @@ Note that child blocks must be save frames, so we hard-code 'save'.
 
     def block_to_string(self,block_id,outstring):
         """Output a complete datablock, including children"""
-        children = filter(lambda a:a.parent == block_id,self.child_table)
-        child_names = map(lambda a:a.block_id,children)
+        child_names = [a[1].block_id for a in self.child_table.items() if a[1].parent==block_id]
         for child_name in child_names:
             outstring.write('\n' + 'save_' + child_name + '\n')
             self.block_to_string(child_name,outstring)
             outstring.write('\n' + 'save_' + '\n')
         outstring.write(str(self.dictionary[block_id]))
-        
         
 @ \section{StarFile}
 
@@ -663,6 +683,8 @@ this file e.g. with DDLm dictionary imports.
 def ReadStar(filename,prepared = StarFile(),maxlength=2048,scantype='standard',grammar='1.1',CBF=False):
     import string
     import codecs
+    # save desired scoping
+    save_scoping = prepared.scoping
     if grammar=="1.1":
         import YappsStarParser_1_1 as Y
     elif grammar=="1.0":
@@ -716,12 +738,15 @@ def ReadStar(filename,prepared = StarFile(),maxlength=2048,scantype='standard',g
         errorstring = 'Syntax error in input file: last value parsed was %s' % Y.lastval
         errorstring = errorstring + '\nParser status: %s' % `parser._scanner`
         raise StarError( errorstring)
+    # set visibility correctly
+    proto_star.scoping = 'dictionary'
     # duplication check on all blocks
     audit_result = map(lambda a:(a,proto_star[a].audit()),proto_star.keys())
     audit_result = filter(lambda a:len(a[1])>0,audit_result)
     if audit_result:
         raise StarError( 'Duplicate keys as follows: %s' % `audit_result`)
     proto_star.set_uri(my_uri)
+    proto_star.scoping = save_scoping
     return proto_star
 
 @ \section{Collection datatype}

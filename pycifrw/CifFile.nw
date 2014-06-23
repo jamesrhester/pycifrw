@@ -607,6 +607,8 @@ dictionary construction process to find.
 
 <<Deal with DDL1 differences>>=
 def DDL1_normalise(self):
+    # switch off block name collision checks
+    self.standard = None
     # add default type information in DDL2 style
     # initial types and constructs
     base_types = ["char","numb","null"]
@@ -623,7 +625,7 @@ def DDL1_normalise(self):
                   new_value = value.copy()
                   new_value["_name"] = looped_name  #only looped name
                   self[looped_name] = new_value
-                  newnames = real_name
+               newnames = real_name
            else: 
                   self[real_name] = value
                   newnames = [real_name]
@@ -2438,8 +2440,8 @@ def __init__(self,dic=None,diclist=[],mergemode="replace",*args,**kwargs):
     elif dic and not diclist:
         self.bigdic = dic
     CifFile.__init__(self,*args,**kwargs)
-    #for blockname in self.keys():
-#	self.dictionary[blockname]=ValidCifBlock(data=self.dictionary[blockname],dic=self.bigdic)
+    for blockname in self.keys():
+	self.dictionary[blockname]=ValidCifBlock(data=self.dictionary[blockname],dic=self.bigdic)
 
 @ Whenever a new block is added, we have to additionally update our
 match array and perform a validation run.  This definition shadows
@@ -2835,6 +2837,7 @@ def merge_dic(diclist,mergemode="replace",ddlspec=None):
            basedic.merge(dic,mode=mergemode,
 			 single_block=[basedic.keys()[0],dic.keys()[0]],
 			 match_att=["_item.name"],match_function=find_parent)
+    print str(basedic)
     return CifDic(basedic)
 
 @ Find the main item from a parent-child list.  We are asked to find the
