@@ -459,7 +459,7 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
     if isinstance(dic,StringTypes):
         self.dic_as_cif = CifFile(dic,grammar=grammar,**kwargs)
     (self.dicname,self.diclang,self.defdata) = self.dic_determine(self.dic_as_cif)
-    super(CifDic,self).__init__(element_class=CifBlock,datasource=self.defdata,**kwargs) 
+    super(CifDic,self).__init__(datasource=self.defdata,**kwargs) 
     self.scopes_mandatory = {"dictionary":[],"category":[],"item":[]}
     self.scopes_naughty = {"dictionary":[],"category":[],"item":[]}
     # rename and expand out definitions using "_name" in DDL dictionaries
@@ -469,6 +469,7 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
     elif self.diclang == "DDL2":
         self.DDL2_normalise()   #iron out some DDL2 tricky bits
     elif self.diclang == "DDLm":
+        self.scoping = 'dictionary'   #expose all save frames
         self.ddlm_normalise()
         self.ddlm_import()      #recursively calls this routine
         if not self.do_minimum:
@@ -957,18 +958,17 @@ corresponds to the name of the data item defined therein, we make it equivalent 
 all of our access methods work nicely.  Pending a detailed description of how variable
 names used in dREL methods are derived, we go the harder route and concatenate the category
 name with the object id (although it may be possible to use the _definition.id).  Note
-that we do not alter category definitions., and we operate through the standard __setitem__
+that we do not alter category definitions, and we operate through the standard __setitem__
 method of the block collection class in order to properly manage the upper/lower case
-housekeeping.
+and parent-child housekeeping.
 
 <<Normalise DDLm save frame names>>=
 def ddlm_normalise(self):
-    for key,value in self.dictionary.items():
-       if value.has_key("_name.category_id"):
-           real_name = "_" + value["_name.category_id"] + "." + value["_name.object_id"]
-           self[real_name] = value
-           # delete the old one
-           del self[key]
+    for key,value in self.items():
+       if value.has_key("_definition.id"):
+           real_name = value["_definition.id"]
+           if real_name.lower() != key.lower():
+              self.rename(key,real_name)
     
 @ DDLm introduces validity information in the enclosing datablock.  It is a loop of scope,
 attribute values where the scope is one of dictionary (everywhere), category (whole
@@ -1050,101 +1050,59 @@ minimal set of save frame definitions.  We start at this top level and work down
 resolving import references recursively.  This will satisfy the requirement that
 conflicts are resolved from the most nested level upwards.
 
-We use the built-in PyCIFRW merging methods.  Note that this merging is done on
-the CIFDIC object, and so the dic_as_cif object remains untouched.  Therefore, in future,
-audit and tracking information could be stored here.
-
-We originally used the _import_list.id list as the guide for how to import, however, the
-draft dictionaries left off items that have a default value, and rather than edit them
-all in we defined how to extract the individual items instead.
+We use the built-in PyCIFRW merging methods. 
 
 <<Perform DDLm imports>>=
 <<Master import routine>>
-<<Add another DDLM dictionary>>
-<<Add an external DDLM category>>
-<<Add an external DDLM category with children>>
-<<Add attributes to definitions>>
 
 <<Master import routine>>=
 def ddlm_import(self):
     import urllib
-    #first check the outermost datablocks.  Note we expect our dREL
-    #machinery to create _import_list.id only if the individual values are available
-    #For this to happen, we need the ddl.dic to have been assigned
-    try:
-        to_be_imported = self.dic_as_cif[self.master_key]["_import_list.id"]
-    except KeyError:
-        pass
-    else:
-        # deal with foreshortened import blocks
-        for import_target in to_be_imported:
-            if len(import_target)==3:                     #default values have been left off
-                import_target.append('Exit')
-                import_target.append('Exit')
-        for scope,dict_block,file_loc,on_dupl,on_miss in to_be_imported: 
-            scope = scope.lower()                         #work around capitalisation in draft dics
-            if scope == 'att' or scope == 'sta' or scope == 'val':
-                print 'Improper import directive at top level in %s: ignored' % self.master.key
-                continue 
-            # resolve URI  
-            full_uri = self.resolve_path(file_loc)
+    import_frames = [(a,self[a]['_import.get']) for a in self.keys() if self[a].has_key('_import.get')]
+    #resolve all references
+    for parent_block,import_list in import_frames:
+      for import_ref in import_list:
+        file_loc = import_ref["file"]
+        full_uri = self.resolve_path(file_loc)
+        if full_uri not in self.template_cache:
             dic_as_cif = CifFile(urllib.urlopen(full_uri),grammar="DDLm")
-            import_from = CifDic(dic_as_cif,do_minimum=True)  #this will recurse internal imports
-            # and now merge these definitions
-            if scope == "dic":
-                self.get_whole_dict(import_from,on_dupl,on_miss)
-            elif scope=="cat":
-                self.get_one_cat(import_from,dict_block,on_dupl,on_miss)
-            elif scope=="grp":
-                self.get_one_cat_with_children(import_from,dict_block,on_dupl,on_miss)
-            elif scope=="itm":  #not clear what to do if category is missing
-                self.add_one_defn(import_from,dict_block,on_dupl,on_miss)
-        # it will never happen again...
-        del self.dic_as_cif[self.master_key]["_import_list.id"]
-    # next we resolve per-definition imports
-    for one_def in self.keys():
-        try: 
-            to_be_imported = self[one_def]["_import_list.id"]
+            self.template_cache[full_uri] = CifDic(dic_as_cif,do_minimum=True)  #this will recurse internal imports
+            print 'Added %s to cached dictionaries' % full_uri
+        import_from = self.template_cache[full_uri]
+        dupl = import_ref.get('dupl','Exit') 
+        miss = import_ref.get('miss','Exit')
+        target_key = import_ref["save"]
+        try:
+            import_target = import_from[target_key]
         except KeyError:
-            pass
-        else:
-            if len(to_be_imported) == 5 and len(to_be_imported[0])!=5:
-                #catch an error in earlier versions of the dictionaries where
-                #the outer brackets were missing
-                to_be_imported = [to_be_imported]
-            # deal with foreshortened import blocks
-            for import_target in to_be_imported:
-                if len(import_target)==3:                     #default values have been left off
-                    import_target.append('Exit')
-                    import_target.append('Exit')
-            for scope,block,file_loc,on_dupl,on_miss in to_be_imported: 
-                scope = scope.lower()                         #work around capitalisation in draft dics
-                if scope == 'dic' or scope == 'cat' or scope == 'grp' or scope == "itm":
-                    print 'Improper import directive at definition level in %s: ignored' % self.master.key
-                    continue 
-                full_uri = self.resolve_path(file_loc)
-                if full_uri not in self.template_cache:
-                    dic_as_cif = CifFile(urllib.urlopen(full_uri),grammar="DDLm")
-                    self.template_cache[full_uri] = CifDic(dic_as_cif,do_minimum=True)  #this will recurse internal imports
-                    print 'Added %s to cached dictionaries' % full_uri
-                import_from = self.template_cache[full_uri]
-                if scope == 'att': 
-                    self.import_attributes(one_def,import_from,block,on_dupl,on_miss) 
-                elif scope == 'sta': 
-                    self.import_loop(one_def,import_from,block,'_enumeration_set.state',on_miss)
-                elif scope == 'val': 
-                    self.import_loop(one_def,import_from,block,'_enumeration_default.value',on_miss)
-                else:
-                    raise CifError, "Unrecognised import scope %s" % scope
-            # remove the import attribute 
-            del self[one_def]["_import_list.id"]   
+            if miss == 'Exit':
+               raise CifError,'Import frame %s not found in %s' % (target_key,full_uri)
+            else: continue
+        # now import appropriately
+        mode = import_ref.get("mode",'Contents').lower()
+        if self.has_key(target_key) and mode=='Full':  #so blockname will be duplicated
+            if dupl == 'Exit':
+                raise CifError, 'Import frame %s already in dictionary' % target_key
+            elif dupl == 'Ignore':
+                continue
+        child_frames = import_from.get_children(target_key,include_parent=(mode=='full'))
+        if mode == 'contents':   #merge self and children only
+            # merge block contents
+            self[parent_block].merge(import_target)
+            self.merge_fast(child_frames,parent=parent_block)
+        elif mode =="full":
+            self.merge_fast(child_frames,parent=parent_block)      #
+            print 'Merged %s (%d defs) in %s mode, now have %d defs' % (target_key,len(child_frames),
+               mode,len(self))
+        # it will never happen again... 
+        del self[self.master_key]["_import.get"]
                 
 def resolve_path(self,file_loc):
     import urlparse
     url_comps = urlparse.urlparse(file_loc)
     if url_comps[0]: return file_loc    #already full URI
     new_url = urlparse.urljoin(self.dic_as_cif.my_uri,file_loc)
-    print "Transformed %s to %s for import " % (file_loc,new_url)
+    #print "Transformed %s to %s for import " % (file_loc,new_url)
     return new_url
     
 @ Merging a whole dictionary.  A dictionary is a collection of categories for
@@ -1984,10 +1942,9 @@ def transform_drel(self):
     parser = drel_yacc.parser
     my_namespace = self.keys()
     my_namespace = dict(map(None,my_namespace,my_namespace)) 
-    parser.loopable_cats = filter(lambda a:self[a].get("_definition.class","Datum")=="List",self.keys())
-    parser.loopable_cats = map(lambda a:self[a]["_definition.id"],parser.loopable_cats) 
-    parser.listable_items = filter(lambda a:"*" in self[a].get("_type.dimension",""),self.keys()) 
-    derivable_list = filter(lambda a:self[a].has_key("_method.expression") and self[a].get("_definition.scope","")!='Category' and self[a].get("_name.category_id","")!= "function",self.keys())
+    parser.loopable_cats = [self[a]["_definition.id"] for a in self.keys() if self[a].get("_definition.class","Datum")=="Loop"]
+    parser.listable_items = [a for a in self.keys() if "*" in self[a].get("_type.dimension","")] 
+    derivable_list = [a for a in self.keys() if self[a].has_key("_method.expression") and self[a].get("_definition.scope","")!='Category' and self[a].get("_name.category_id","")!= "function"]
     for derivable in derivable_list:
         parser.target_id = derivable
         # reset the list of visible names for parser
@@ -1997,13 +1954,24 @@ def transform_drel(self):
         print "Target id: %s" % derivable
         drel_expr = self[derivable]["_method.expression"]
         if isinstance(drel_expr,ListType):
-           drel_expr = drel_expr[0] 
+           try:
+                drel_expr = self[derivable].GetKeyedPacket("_method.purpose","Evaluation")
+                drel_expr = getattr(drel_expr,'_method.expression')
+           except KeyError:
+                print 'No evaluation method found, skipping' 
+                continue
         print "Transforming %s" % drel_expr
         # List categories are treated differently...
-        pyth_meth = parser.parse(drel_expr,debug=True)
-        self[derivable]["_loop_categories"] = pyth_meth[1].keys()
-        self[derivable]["_method.expression"] = drel_yacc.make_func(pyth_meth,"pyfunc",None) 
-        print "Final result:\n " + self[derivable]["_method.expression"]
+        try:
+            pyth_meth = parser.parse(drel_expr,debug=True)
+        except:
+            print 'Failed to construct method for %s; leaving as is' % derivable
+        else:
+                self[derivable].overwrite = True
+                self[derivable]["_loop_categories"] = pyth_meth[1].keys()
+                self[derivable]["_method.expression"] = drel_yacc.make_func(pyth_meth,"pyfunc",None) 
+                self[derivable].overwrite = False
+                print "Final result:\n " + self[derivable]["_method.expression"]
 
 @ Drel functions are all stored in category 'functions' in our final dictionary.  We want to
 convert them to executable python code and store them in an appropriate namespace which we
@@ -2012,16 +1980,16 @@ can then pass to our individual item methods.
 <<Store dREL functions>>=
 def add_drel_funcs(self):
     from drel import drel_yacc
-    funclist = filter(lambda a:self[a].get("_name.category_id","")=='function',self.keys())
-    funcnames = map(lambda a:self[a]["_name.object_id"],funclist)
-    funcbodys = map(lambda a:self[a]["_method.expression"],funclist)
+    funclist = [a for a in self.keys() if self[a].get("_name.category_id","")=='function']
+    funcnames = [(self[a]["_name.object_id"],
+                  getattr(self[a].GetKeyedPacket("_method.purpose","Evaluation"),"_method.expression")) for a in funclist]
     # create executable python code...
     parser = drel_yacc.parser
-    for funcname,funcbody in zip(funcnames,funcbodys):
+    for funcname,funcbody in funcnames:
         parser.target_id = funcname
         parser.special_id = [{}]   #first element is always global namespace of dictionary
         parser.withtable = {}
-        res,ww = parser.parse(funcbody[0])
+        res,ww = parser.parse(funcbody)
         print 'dREL library function ->\n' + res
         global_table = globals()
         global_table.update(self.ddlm_functions)
@@ -2837,7 +2805,6 @@ def merge_dic(diclist,mergemode="replace",ddlspec=None):
            basedic.merge(dic,mode=mergemode,
 			 single_block=[basedic.keys()[0],dic.keys()[0]],
 			 match_att=["_item.name"],match_function=find_parent)
-    print str(basedic)
     return CifDic(basedic)
 
 @ Find the main item from a parent-child list.  We are asked to find the

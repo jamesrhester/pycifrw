@@ -122,6 +122,7 @@ class BlockCollection(object):
     <<Initialise BC data structures>>
     <<BC emulation of mapping type>>
     <<Add a new data section>>
+    <<Re-identify a data block>>
     <<Merge with another block collection>>
     <<Conformance checks>>
     <<Collect all values of a single key in all blocks>>
@@ -134,22 +135,29 @@ encompass most of Unicode.  Our object needs to know about this
 different characterset in order to check incoming values and datanames for
 conformance.  This is done via the 'characterset' keyword.
 
-DDLm dictionaries assume that all definitions in nested save frames are
-equally accessible from other nested save frames, whereas in instance
-files save frames are logically insulated from other save frames at
-the same or lower levels.  Rather than duplicate this structure, we
-record these relationships in the [[child_table]] field.
+DDLm dictionaries assume that all definitions in nested save frames
+are equally accessible from other nested save frames, whereas in
+instance files save frames are logically insulated from other save
+frames at the same or lower levels.  Block names may be duplicated if
+they are in different enclosing frames, although all save frame names
+have to be unique within a DDLm dictionary (as importation is allowed
+to refer to the save frame names with no qualifications).  We deal
+with potential duplication by appending a '+' to the access key of
+legitimate save frames with duplicate names.  Our [[child_table]]
+dictionary links the internal block key to its parent and mixed-case
+name used when outputting the block.
 
 If scoping is 'instance', nested datablocks are invisible and only accessible
 through the 'saves' attribute, which produces a view onto the same block 
 collection.
 
-To take account of dictionaries with 10s of thousands of entries (e.g. the
-PDB) we optimise block merging for speed.  The canonical reference to a block
-is its lower case (in the unicode future, its normalised) representation,
-so rather than constantly call the lower() function we track all the lower
-case block names and use them to index into a table that contains the actual
-block name and the lowercase parent blockname.
+To take account of dictionaries with 10s of thousands of entries
+(e.g. the PDB) we optimise block merging for speed.  Most of the
+information in separate structures below could be derived from
+[[child_table]], but we take the space hit for speed. The canonical
+reference to a block is the lowercase version of the name. We use
+these addresses to index into a table that contains the actual block
+name and the parent blockname. 
 
 <<Initialise BC data structures>>=
 def __init__(self,datasource=None,standard='CIF',
@@ -157,7 +165,8 @@ def __init__(self,datasource=None,standard='CIF',
     import collections
     self.dictionary = {}
     self.standard = standard
-    self.lower_keys = set()              # for efficiency
+    self.lower_keys = set()           # short_cuts
+    self.renamed = {}
     self.characterset = characterset
     self.PC = collections.namedtuple('PC',['block_id','parent'])
     self.child_table = {}
@@ -177,7 +186,7 @@ is useful for CIF.
 
 <<Check block name lengths>>=
 def checklengths(self,maxlength):
-    toolong = filter(lambda a:len(a)>maxlength, self.dictionary.keys())
+    toolong = [a.block_id for a in self.child_table.values() if len(a.block_id)>maxlength]
     if toolong:
         errorstring = ""
         for bn in toolong:
@@ -197,10 +206,10 @@ def __setattr__(self,attr_name,newval):
         if newval not in ('dictionary','instance'):
             raise StarError("Star file may only have 'dictionary' or 'instance' scoping, not %s" % newval)
         if newval == 'dictionary':
-            self.visible_keys = [a for a in self.lower_keys]
+            self.visible_keys = [a for a in self.lower_keys] 
         else:
             #only top-level datablocks visible
-            self.visible_keys = [a[1].block_id.lower() for a in self.child_table.items() if a[1].parent==None]
+            self.visible_keys = [a[0] for a in self.child_table.items() if a[1].parent==None]
     object.__setattr__(self,attr_name,newval)
 
 @ Emulation of a mapping type.  We also put odd little useful utilities
@@ -214,24 +223,27 @@ def __setitem__(self,key,value):
     self.NewBlock(key,value,parent=None)
 
 def __getitem__(self,key):
-    if key.lower() in self.visible_keys:
-        block_id = self.child_table[key.lower()].block_id
-        return self.dictionary[block_id]
-    raise KeyError,'No such item %s' % key
+    if isinstance(key,StringTypes):
+       lowerkey = key.lower()
+       if lowerkey in self.lower_keys:
+           return self.dictionary[lowerkey]
+       print 'Visible keys:' + `self.visible_keys`
+       print 'All keys' + `self.lower_keys`
+       print 'Child table' + `self.child_table`
+       raise KeyError,'No such item %s' % key
 
 # we have to get an ordered list of the current keys,
 # as we'll have to delete one of them anyway.
 # Deletion will delete any key regardless of visibility
 
 def __delitem__(self,key):
+    dummy = self[key]   #raise error if not present
     lowerkey = key.lower()
-    if lowerkey not in self.lower_keys:
-         raise KeyError, "No such item: %s" % key
     # get rid of all children recursively as well
-    children = [a[1] for a in self.child_table.items() if a[1].parent == lowerkey]
+    children = [a[0] for a in self.child_table.items() if a[1].parent == lowerkey]
     for child in children:
-        del self[child.block_id]   #recursive call
-    del self.dictionary[self.child_table[lowerkey].block_id]
+        del self[child]   #recursive call
+    del self.dictionary[lowerkey]
     del self.child_table[lowerkey]
     try:
         self.visible_keys.remove(lowerkey)
@@ -287,6 +299,7 @@ def items(self):
     return [(a,self[a]) for a in self.keys()]
 
 def first_block(self):
+    """Return the 'first' block.  This is not necessarily the first block in the file."""
     if self.keys():
         return self[self.keys()[0]]
 
@@ -295,8 +308,8 @@ using self.child_table, we provide some useful methods.
 
 <<Parent child utilities>>=
 def get_parent(self,blockname):
-    """Get the enclosing block"""
-    possibles = (a for a in self.child_table.items() if a[1].block_id == blockname)
+    """Return the name of the block enclosing [[blockname]] in canonical form (lower case)"""
+    possibles = (a for a in self.child_table.items() if a[0] == blockname.lower())
     try:
         first = possibles.next()   #get first one
     except:
@@ -307,23 +320,32 @@ def get_parent(self,blockname):
        return first[1].parent
     raise StarError('More than one parent for %s' % blockname)
 
-## This probably doesn't work as the new parent is not set anywhere
-def get_children(self,blockname):
-    """Get all children as a block collection"""
-    new_bc = self.copy()
-    new_bc.child_table = dict(a for a in self.child_table.items() if self.is_child_of_parent(blockname,a))
-    new_bc.scoping = self.scoping
-    return new_bc
+def get_children(self,blockname,include_parent=False,scoping='dictionary'):
+    """Get all children of [[blockname]] as a block collection. If [[include_parent]] is
+    True, the parent block will also be included in the block collection as the root."""
+    newbc = BlockCollection()
+    block_lower = blockname.lower()
+    proto_child_table = [a for a in self.child_table.items() if self.is_child_of_parent(block_lower,a[1].block_id)]
+    newbc.child_table = dict(proto_child_table)
+    if not include_parent:
+       newbc.child_table.update(dict([(a[0],self.PC(a[1].block_id,None)) for a in proto_child_table if a[1].parent == block_lower]))
+    newbc.lower_keys = set([a[0] for a in proto_child_table])
+    newbc.dictionary = dict((a[0],self.dictionary[a[0]]) for a in proto_child_table)
+    if include_parent:
+        newbc.child_table.update({block_lower:self.PC(self.child_table[block_lower].block_id,None)})
+        newbc.lower_keys.add(block_lower)
+        newbc.dictionary.update({block_lower:self.dictionary[block_lower]})
+    newbc.scoping = scoping
+    return newbc
 
 def is_child_of_parent(self,parentname,blockname):
     """Recursively search for children of blockname, case is important for now"""
-    more_children = (a for a in self.child_table if a.parent == parentname)
-    child_names = (a.block_id for a in more_children)
-    if len(child_names) == 0: return False
-    if blockname in child_names:
+    checkname = parentname.lower()
+    more_children = [a[0] for a in self.child_table.items() if a[1].parent == checkname]
+    if blockname.lower() in more_children:
        return True
     else:
-       for one_child in child_names:
+       for one_child in more_children:
            if self.is_child_of_parent(one_child,blockname): return True
     return False
        
@@ -346,11 +368,15 @@ later.  Also, there is a limit of 75 characters for the block name length,
 which we enforce here. By setting [[fix]] to true, blocknames will have
 illegal whitespace changed to underscore.
 
-As all blocks going into the block collection come through this
-routine, enforcement the different standards is performed here.
-[[self.standard]] is used to enforce differences. If [[self.standard]]
-is set at all, blocks will not replace a previous block with the same
-name.
+[[self.standard]] is used to enforce differences in treatments of
+block names. If [[self.standard]] is set at all, blocks will not
+replace a previous block with the same name.  DDLm dictionaries
+are not permitted identical save frame names, but those save frame
+names may be identical to the enclosing datablock.  We rename the 
+access key if an identically-named save frame is introduced
+anywhere in the file by appending a '+'.  These renames are stored
+in the rename dictionary.  The name appearing in the output file
+is not changed, only the access key.
 
 Note that we must take account of upper/lower case differences being irrelevant
 for STAR/CIF, but that we want to preserve the original case.
@@ -372,11 +398,22 @@ def NewBlock(self,blockname,blockcontents=StarBlock(),fix=True,parent=None):
     else: newblockname = blockname
     new_lowerbn = newblockname.lower()
     if new_lowerbn in self.lower_keys:
-        if self.standard is not None:    #already in CIF
-           raise StarError( "Attempt to replace existing block " + blockname)
+        if self.standard is not None:    #already there
+           toplevelnames = [a[0] for a in self.child_table.items() if a[1].parent==None]
+           if parent is None and new_lowerbn not in toplevelnames:  #can give a new key to this one
+              while new_lowerbn in self.lower_keys: new_lowerbn = new_lowerbn + '+'
+           elif parent is not None and new_lowerbn in toplevelnames: #can fix a different one
+              replace_name = new_lowerbn            
+              while replace_name in self.lower_keys: replace_name = replace_name + '+'
+              self._rekey(new_lowerbn,replace_name)
+              # now continue on to add in the new block
+              if parent.lower() == new_lowerbn:        #the new block's requested parent just got renamed!!
+                  parent = replace_name
+           else:
+              raise StarError( "Attempt to replace existing block " + blockname)
         else:
            del self[new_lowerbn]
-    self.dictionary.update({newblockname:blockcontents})
+    self.dictionary.update({new_lowerbn:blockcontents})
     self.lower_keys.add(new_lowerbn)
     if parent is None:
        self.child_table[new_lowerbn]=self.PC(newblockname,None)
@@ -384,14 +421,51 @@ def NewBlock(self,blockname,blockcontents=StarBlock(),fix=True,parent=None):
     else:
        if parent.lower() in self.lower_keys:
           if self.scoping == 'instance':
-             self.child_table[new_lowerbn]=self.PC(newblockname,parent)
+             self.child_table[new_lowerbn]=self.PC(newblockname,parent.lower())
           else:
-             self.child_table[new_lowerbn]=self.PC(newblockname,parent)
+             self.child_table[new_lowerbn]=self.PC(newblockname,parent.lower())
              self.visible_keys.append(new_lowerbn)
        else:
            print 'Warning:Parent block %s does not exist for child %s' % (parent,newblockname)  
-    return newblockname  #in case calling routine wants to know
+    return new_lowerbn  #in case calling routine wants to know
 
+@ Renaming a block.  This is a slightly intricate operation as we have to
+also make sure the original children are pointed to the new blockname.  We assume
+that both oldname and newname are already lower case.  We can simply change the
+key used to identify the block using [[_rekey]], or we cna change the block name
+that is printed using [[rename]].  In the latter case, there must be no name collisions or the
+operation will fail.
+
+<<Re-identify a data block>>=
+def _rekey(self,oldname,newname,block_id=''):
+    """The block with key [[oldname]] gets [[newname]] as a new key, but the printed name
+       does not change unless [[block_id]] is given.  Prefer [[rename]] for a safe version."""
+    move_block = self[oldname]    #old block
+    is_visible = oldname in self.visible_keys
+    move_block_info = self.child_table[oldname]    #old info
+    move_block_children = [a for a in self.child_table.items() if a[1].parent==oldname]
+    # now rewrite the necessary bits
+    self.child_table.update(dict([(a[0],self.PC(a[1].block_id,newname)) for a in move_block_children]))
+    del self[oldname]   #do this after updating child table so we don't delete children
+    self.dictionary.update({newname:move_block})
+    self.lower_keys.add(newname)
+    if block_id == '':
+       self.child_table.update({newname:move_block_info})
+    else:
+       self.child_table.update({newname:self.PC(block_id,move_block_info.parent)})
+    if is_visible: self.visible_keys += [newname]
+
+def rename(self,oldname,newname):
+    """Rename datablock from [[oldname]] to [[newname]]. Both key and printed name are changed.  No
+       conformance checks are conducted."""
+    realoldname = oldname.lower()
+    realnewname = newname.lower()
+    if realnewname in self.lower_keys:
+        raise StarError,'Cannot change blockname %s to %s as %s already present' % (oldname,newname,newname)
+    if realoldname not in self.lower_keys:
+        raise KeyError,'Cannot find old block %s' % realoldname
+    self._rekey(realoldname,realnewname,block_id=newname)
+    
 @ Merging.  Originally, this package envisaged Cif and STAR files as collections
 of either Starblocks or Cifblocks, which differed only in their capacity to
 hold save frames and nested loops.  From version 4.05, we envisage Cif and Star
@@ -422,8 +496,7 @@ Note also the related situation where we are in 'strict' mode, and
 the DDL1 dictionaries both have an "on_this_dictionary" block.  So we
 have an extra keyword argument "idblock" which contains a blockname
 to ignore during merging, i.e. it will remain the same
-as before merging.  In the future we may implement some sort of
-version tracking mechanism using this block.
+as before merging. 
 
 The suggested overlay method involves adding to loops, rather than
 replacing them completely.  Identical rows must be removed, and
@@ -451,6 +524,9 @@ not empty, we put all new blocks on the same level.  Otherwise, any top-level
 blocks in the incoming block collection (parent is None) are given the parent
 specified in [[parent]].
 
+As for [[NewBlock]], we allow duplicate save frame names in the precise situation
+where one of the blocks is a top-level block.
+
 <<Merge with another block collection>>=
 def merge_fast(self,new_bc,parent=None):
     """Do a fast merge"""
@@ -460,14 +536,30 @@ def merge_fast(self,new_bc,parent=None):
         mode = 'strict'
     overlap_flag = not self.lower_keys.isdisjoint(new_bc.lower_keys)
     if overlap_flag and mode != 'replace':
-        raise StarError("In strict merge mode:duplicate keys")
+        double_keys = self.lower_keys.intersection(new_bc.lower_keys)
+        for dup_key in double_keys:
+              our_parent = self.child_table[dup_key].parent
+              their_parent = new_bc.child_table[dup_key].parent
+              if (our_parent is None and their_parent is not None and parent is None) or\
+                  parent is not None:  #rename our block
+                start_key = dup_key
+                while start_key in self.lower_keys: start_key = start_key+'+'
+                self._rekey(dup_key,start_key)
+                if parent.lower() == dup_key:  #we just renamed the prospective parent!
+                    parent = start_key
+              elif our_parent is not None and their_parent is None and parent is None:
+                start_key = dup_key
+                while start_key in new_bc.lower_keys: start_key = start_key+'+'
+                new_bc._rekey(dup_key,start_key)
+              else: 
+                raise StarError("In strict merge mode:duplicate keys %s" % dup_key)
     self.dictionary.update(new_bc.dictionary) 
     self.lower_keys.update(new_bc.lower_keys)
     self.visible_keys += (list(new_bc.lower_keys))
     self.child_table.update(new_bc.child_table)
     if parent is not None:     #redo the child_table entries
           reparent_list = [(a[0],a[1].block_id) for a in new_bc.child_table.items() if a[1].parent==None]
-          reparent_dict = [(a[0],self.PC(a[1],parent)) for a in reparent_list]
+          reparent_dict = [(a[0],self.PC(a[1],parent.lower())) for a in reparent_list]
           self.child_table.update(dict(reparent_dict))
 
 def merge(self,new_bc,mode=None,parent=None,single_block=[],
@@ -478,7 +570,7 @@ def merge(self,new_bc,mode=None,parent=None,single_block=[],
         else:
            mode = 'strict'
     if single_block:
-        self.dictionary[single_block[0]].merge(new_bc[single_block[1]],mode,
+        self[single_block[0]].merge(new_bc[single_block[1]],mode,
 					       match_att=match_att,
                                                match_function=match_function)
         return None
@@ -507,17 +599,17 @@ def merge(self,new_bc,mode=None,parent=None,single_block=[],
 	          basekey = base_keys.pop(ii)
                   block_to_item.remove(thisatt)
                   break
-        if not self.dictionary.has_key(basekey) or mode=="replace":
+        if not self.has_key(basekey) or mode=="replace":
             new_parent = new_bc.get_parent(key)
             if parent is not None and new_parent is None:
                new_parent = parent
-            self.NewBlock(basekey,new_bc.dictionary[key],parent=new_parent)   #add the block
+            self.NewBlock(basekey,new_bc[key],parent=new_parent)   #add the block
         else:
             if mode=="strict":
                 raise StarError( "In strict merge mode: block %s in old and block %s in new files" % (basekey,key))
             elif mode=="overlay":
                 # print "Merging block %s with %s" % (basekey,key)
-                self.dictionary[basekey].merge(new_bc[key],mode,match_att=match_att)
+                self[basekey].merge(new_bc[key],mode,match_att=match_att)
             else:  
                 raise StarError( "Merge called with unknown mode %s" % mode)
      
@@ -584,28 +676,28 @@ Note that child blocks must be save frames, so we hard-code 'save'.
         outstring = cStringIO.StringIO()
         outstring.write(comment)
         # loop over top-level
-        top_block_names = [a[1].block_id for a in self.child_table.items() if a[1].parent is None]
-        for blockname in top_block_names:
+        top_block_names = [(a[0],a[1].block_id) for a in self.child_table.items() if a[1].parent is None]
+        for blockref,blockname in top_block_names:
             outstring.write('\n' + 'data_' +blockname+'\n')
-            child_names = [a[1].block_id for a in self.child_table.items() if a[1].parent==blockname]
-            for child_name in child_names:
+            child_names = [(a[0],a[1].block_id) for a in self.child_table.items() if a[1].parent==blockref]
+            for child_ref,child_name in child_names:
                 outstring.write('\n' + 'save_' + child_name + '\n')
-                self.block_to_string(child_name,outstring)    
+                self.block_to_string(child_ref,child_name,outstring,1)    
                 outstring.write('\n' + 'save_'+ '\n')   
-            self.dictionary[blockname].SetOutputLength(wraplength,maxoutlength)
-            outstring.write(str(self.dictionary[blockname]))
+            self[blockref].SetOutputLength(wraplength,maxoutlength)
+            outstring.write(str(self[blockref]))
         returnstring =  outstring.getvalue()
         outstring.close()
         return returnstring
 
-    def block_to_string(self,block_id,outstring):
-        """Output a complete datablock, including children"""
-        child_names = [a[1].block_id for a in self.child_table.items() if a[1].parent==block_id]
-        for child_name in child_names:
-            outstring.write('\n' + 'save_' + child_name + '\n')
-            self.block_to_string(child_name,outstring)
-            outstring.write('\n' + 'save_' + '\n')
-        outstring.write(str(self.dictionary[block_id]))
+    def block_to_string(self,block_ref,block_id,outstring,indentlevel=0):
+        """Output a complete datablock indexed by [[block_ref]] and named [[block_id]], including children"""
+        child_names = [(a[0],a[1].block_id) for a in self.child_table.items() if a[1].parent==block_ref]
+        for child_ref,child_name in child_names:
+            outstring.write('\n' + '    '*indentlevel + 'save_' + child_name + '\n')
+            self.block_to_string(child_ref,child_name,outstring,indentlevel+1)
+            outstring.write('\n' + '    '*indentlevel + 'save_' + '\n')
+        outstring.write(str(self[block_ref]))
         
 @ \section{StarFile}
 
@@ -926,7 +1018,7 @@ def items(self):
     return map(lambda a,b:(a,b),self.keys(),self.values())
 
 def has_key(self,key):
-    if key.lower() in self.lower_keys:
+    if isinstance(key,StringTypes) and key.lower() in self.lower_keys:
         return 1
     for aloop in self.loops:
         if aloop.has_key(key): return 1
@@ -1264,8 +1356,10 @@ Perhaps we should raise an error in this case.
 
 <<Get packet by key>>=
 def GetKeyedPacket(self,keyname,keyvalue):
+    """Return the loop packet where [[keyname]] has value [[keyvalue]]"""
     #print "Looking for %s in %s" % (keyvalue, self[keyname])
-    one_pack= filter(lambda a:getattr(a,keyname)==keyvalue,self)
+    my_loop = self.GetLoop(keyname)
+    one_pack= [a for a in my_loop if getattr(a,keyname)==keyvalue]
     if len(one_pack)!=1:
         raise KeyError, "Bad packet key %s = %s: returned %d packets" % (keyname,keyvalue,len(one_pack))
     #print "Keyed packet: %s" % one_pack[0]
@@ -1537,7 +1631,7 @@ def check_data_name(self,dataname,maxlength=-1):
         if len (filter (lambda a: ord(a) < 33 or ord(a) > 126, dataname)) > 0:
             raise StarError( 'Dataname ' + dataname + ' contains forbidden characters')
     else:
-        print 'Checking %s for unicode characterset conformance' % dataname
+        # print 'Checking %s for unicode characterset conformance' % dataname
         if len (filter (lambda a: ord(a) < 33, dataname)) > 0:
             raise StarError( 'Dataname ' + dataname + ' contains forbidden characters (below code point 33)')
         if len (filter (lambda a: ord(a) > 126 and ord(a) < 160, dataname)) > 0:

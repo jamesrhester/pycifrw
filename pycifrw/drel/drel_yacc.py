@@ -654,6 +654,7 @@ def p_arglist(p):
 
 def p_error(p):
     print 'Syntax error at token %s, value %s' % (p.type,p.value)
+    raise SyntaxError, 'Syntax error at token %s, value %s' % (p.type,p.value)
  
 ### Now some helper functions
 # do indentation: we substitute any "\n" characters in the

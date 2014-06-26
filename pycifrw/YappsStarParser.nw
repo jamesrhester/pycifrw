@@ -241,7 +241,7 @@ token dat_val_internal_sq: "\[([^\s\[\]]*)\]"
 # interpreted as a single-quote delimited string
 token triple_quote_data_value: "(?s)'''.*?'''|\"\"\".*\"\"\""
 token single_quote_data_value: "'([^\n\r\f'])*'+|\"([^\n\r\"])*\"+"
-token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$'_,\{\}\[\]][^\s,\{\}\[\]]*)"
+token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$',_\{\}\[\]][^\s,\{\}\[\]]*)"
 
 token END: '$'
 

@@ -327,7 +327,7 @@ class BlockNameTestCase(unittest.TestCase):
 class FileWriteTestCase(unittest.TestCase):
    def setUp(self):
        """Write out a file, then read it in again. Non alphabetic ordering to
-          check order preservation."""
+          check order preservation and mixed case."""
        # fill up the block with stuff
        items = (('_item_1','Some data'),
              ('_item_3','34.2332'),
@@ -503,7 +503,7 @@ class GrammarTestCase(unittest.TestCase):
        """Write out a file, then read it in again."""
        teststr1_0 = """
        #A test CIF file, grammar version 1.0 conformant
-       data_test
+       data_Test
          _item_1 'A simple item'
          _item_2 '(Bracket always ok in quotes)'
          _item_3 (can_have_bracket_here_if_1.0)
@@ -534,12 +534,101 @@ class GrammarTestCase(unittest.TestCase):
        except StarFile.StarError:
            pass
 
+class ParentChildTestCase(unittest.TestCase):
+   def setUp(self):
+       """Write out a multi-save-frame file, read in again"""
+       outstring = """
+data_Toplevel
+ _item_1         a
+ save_1
+   _s1_item1     b
+   save_12
+   _s12_item1    c
+   save_
+   save_13
+   _s13_item1    d
+   save_
+ save_
+ _item_2         e
+ save_2
+   _s2_item1     f
+   save_21
+   _s21_item1    g
+     save_211
+     _s211_item1 h
+     save_
+     save_212
+     _s212_item1 i
+     save_
+    save_
+   save_22
+    _s22_item1   j
+   save_
+ save_
+ save_toplevel
+   _item_1       k
+ save_
+"""
+       f = open('save_test.cif','w')
+       f.write(outstring)
+       f.close()
+       self.testcif = CifFile.CifFile('save_test.cif',scoping='dictionary')
+
+   def testGoodRead(self):
+       """Check that there is a top level block"""
+       self.failUnless('toplevel+' in [a[0] for a in self.testcif.child_table.items() if a[1].parent is None])
+       self.failUnless(self.testcif.child_table['toplevel'].parent == 'toplevel+')
+
+   def testGetParent(self):
+       """Check that parent is correctly identified"""
+       self.failUnless(self.testcif.get_parent('212')=='21')
+       self.failUnless(self.testcif.get_parent('12')=='1')
+
+   def testGetChildren(self):
+       """Test that our child blocks are constructed correctly"""
+       p = self.testcif.get_children('1')
+       self.failUnless(p.has_key('13'))
+       self.failUnless(not p.has_key('1'))
+       self.failUnless(p.get_parent('13')==None)
+       self.failUnless(p['12']['_s12_item1']=='c')
+
+   def testGetChildrenwithParent(self):
+       """Test that the parent is included if necessary"""
+       p = self.testcif.get_children('1',include_parent=True)
+       self.failUnless(p.has_key('1')) 
+       self.failUnless(p.get_parent('13')=='1')
+  
+   def testSetParent(self):
+       """Test that the parent is correctly set"""
+       self.testcif.set_parent('1','211')
+       q = self.testcif.get_children('1')
+       self.failUnless('211' in q.keys())
+
+   def testChangeParent(self):
+       """Test that a duplicated save frame is OK if the duplicate name is a data block"""
+       self.failUnless('toplevel+' in self.testcif.keys())
+       self.failUnless(self.testcif.get_parent('1')=='toplevel+')
+
+   def testRename1(self):
+       """Test that re-identifying a datablock works"""
+       self.testcif._rekey('2','timey-wimey')
+       self.failUnless(self.testcif.get_parent('21')=='timey-wimey')
+       self.failUnless(self.testcif.has_key('timey-wimey'))
+       self.failUnless(self.testcif['timey-wimey']['_s2_item1']=='f')
+       print str(self.testcif)
+ 
+   def testRename2(self):
+       """Test that renamng a block works"""
+       self.testcif.rename('2','Timey-wimey')
+       self.failUnless(self.testcif.has_key('timey-wimey'))
+       self.failUnless(self.testcif.child_table['timey-wimey'].block_id=='Timey-wimey')
+
 class DDLmTestCase(unittest.TestCase):
    def setUp(self):
        """Write out a file, then read it in again."""
        teststr1_2 = """
        #A test CIF file, grammar version 1.2 nonconformant
-       data_test
+       data_Test
          _item_1 'A simple item'
          _item_2 '(Bracket always ok in quotes)'
          _item_3 (can_have_bracket_here_if_1.2)
@@ -547,7 +636,7 @@ class DDLmTestCase(unittest.TestCase):
        """
        goodstr1_2 = """
        #A test CIF file, grammar version 1.2 conformant with nested save frames
-       data_test
+       data_Test
           _name.category_id           CIF_DIC
           _name.object_id             CIF_CORE
           _import.get       
@@ -557,9 +646,9 @@ class DDLmTestCase(unittest.TestCase):
          {"save":'MODEL',        "file":'core_model.dic', "mode":'full' },
          {"save":'PUBLICATION',  "file":'core_publn.dic', "mode":'full' },
          {"save":'FUNCTION',     "file":'core_funct.dic', "mode":'full' }]
-        save_savelevel1
+        save_Savelevel1
          _item_in_save [1,2,3,4]
-         save_savelevel2
+         save_saveLevel2
             _item_in_inside_save {"hello":"goodbye","e":"mc2"}
          save_
         save_
@@ -568,6 +657,7 @@ class DDLmTestCase(unittest.TestCase):
          _test_3 {"ppp":{'qqq':2,'poke':{'joke':[5,6,7],'jike':[{'aa':bb,'cc':dd},{'ee':ff,"gg":100}]}},"rrr":[11,12,13]}
          _triple_quote_test '''The comma is ok if, the quotes
                                 are ok'''
+         _underscore_test underscores_are_allowed_inside_text
        """
        f = open("test_1.2","w")
        f.write(teststr1_2)
@@ -610,6 +700,15 @@ class DDLmTestCase(unittest.TestCase):
        f = CifFile.ReadCif("goodtest_1.2",grammar="DDLm")
        print f["test"]["_triple_quote_test"]
        self.failUnless(f["test"]["_triple_quote_test"][:9] == 'The comma')
+
+##########
+#
+# Test DDLm imports
+#
+##########
+class DDLmImportCase(unittest.TestCase):
+    def setUp(self):
+        pass
 
 ##############################################################
 #
