@@ -320,6 +320,10 @@ def get_parent(self,blockname):
        return first[1].parent
     raise StarError('More than one parent for %s' % blockname)
 
+def get_roots(self):
+    """Get the top-level blocks"""
+    return [a for a in self.child_table.items() if a[1].parent==None]
+
 def get_children(self,blockname,include_parent=False,scoping='dictionary'):
     """Get all children of [[blockname]] as a block collection. If [[include_parent]] is
     True, the parent block will also be included in the block collection as the root."""
@@ -337,6 +341,11 @@ def get_children(self,blockname,include_parent=False,scoping='dictionary'):
         newbc.dictionary.update({block_lower:self.dictionary[block_lower]})
     newbc.scoping = scoping
     return newbc
+
+def get_immediate_children(self,parentname):
+    """Get the next level of children of the given block as a list, without nested levels"""
+    child_handles = [a for a in self.child_table.items() if a[1].parent == parentname.lower()]
+    return child_handles
 
 def is_child_of_parent(self,parentname,blockname):
     """Recursively search for children of blockname, case is important for now"""
@@ -376,7 +385,9 @@ names may be identical to the enclosing datablock.  We rename the
 access key if an identically-named save frame is introduced
 anywhere in the file by appending a '+'.  These renames are stored
 in the rename dictionary.  The name appearing in the output file
-is not changed, only the access key.
+is not changed, only the access key.  If [[self.standard]] is 'Dic',
+then we put block contents before save frames in accordance with
+stylistic conventions.
 
 Note that we must take account of upper/lower case differences being irrelevant
 for STAR/CIF, but that we want to preserve the original case.
@@ -386,7 +397,9 @@ file is printed, the new block will appear inside the parent block. This is
 how save frames are produced.
 
 <<Add a new data section>>=
-def NewBlock(self,blockname,blockcontents=StarBlock(),fix=True,parent=None):
+def NewBlock(self,blockname,blockcontents=None,fix=True,parent=None):
+    if blockcontents is None:
+       blockcontents = StarBlock()
     if self.standard is not None:
        if self.standard == 'CIF':
           self.checknamelengths(blockcontents,maxlength=75)  #
@@ -680,12 +693,16 @@ Note that child blocks must be save frames, so we hard-code 'save'.
         for blockref,blockname in top_block_names:
             outstring.write('\n' + 'data_' +blockname+'\n')
             child_names = [(a[0],a[1].block_id) for a in self.child_table.items() if a[1].parent==blockref]
+            if self.standard == 'Dic':
+              self[blockref].SetOutputLength(wraplength,maxoutlength)
+              outstring.write(str(self[blockref]))
             for child_ref,child_name in child_names:
                 outstring.write('\n' + 'save_' + child_name + '\n')
                 self.block_to_string(child_ref,child_name,outstring,1)    
                 outstring.write('\n' + 'save_'+ '\n')   
-            self[blockref].SetOutputLength(wraplength,maxoutlength)
-            outstring.write(str(self[blockref]))
+            if self.standard != 'Dic':
+                self[blockref].SetOutputLength(wraplength,maxoutlength)
+                outstring.write(str(self[blockref]))
         returnstring =  outstring.getvalue()
         outstring.close()
         return returnstring
@@ -693,11 +710,14 @@ Note that child blocks must be save frames, so we hard-code 'save'.
     def block_to_string(self,block_ref,block_id,outstring,indentlevel=0):
         """Output a complete datablock indexed by [[block_ref]] and named [[block_id]], including children"""
         child_names = [(a[0],a[1].block_id) for a in self.child_table.items() if a[1].parent==block_ref]
+        if self.standard == 'Dic':
+            outstring.write(str(self[block_ref]))
         for child_ref,child_name in child_names:
             outstring.write('\n' + '    '*indentlevel + 'save_' + child_name + '\n')
             self.block_to_string(child_ref,child_name,outstring,indentlevel+1)
             outstring.write('\n' + '    '*indentlevel + 'save_' + '\n')
-        outstring.write(str(self[block_ref]))
+        if self.standard != 'Dic':
+            outstring.write(str(self[block_ref]))
         
 @ \section{StarFile}
 

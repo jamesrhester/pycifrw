@@ -319,7 +319,15 @@ class BlockNameTestCase(unittest.TestCase):
        cf['_LowerCaseBlock'] = ef
        assert(cf['_Lowercaseblock']['_random_1'] == 'newval')
        assert(len(cf) == 1)
-       
+
+   def testEmptyBlock(self):
+       """Test that empty blocks are not the same object"""
+       cf = CifFile.CifFile()
+       cf.NewBlock('first_block')
+       cf.NewBlock('second_block')
+       cf['first_block']['_test1'] = 'abc'
+       cf['second_block']['_test1'] = 'def'
+       self.failUnless(cf['first_block']['_test1']=='abc')
 
 #
 #   Test reading cases
