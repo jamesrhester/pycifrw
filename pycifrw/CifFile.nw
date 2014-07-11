@@ -365,29 +365,20 @@ class ValidCifError(Exception):
 
 @ \section {Dictionaries}
 
-We would like to abstract out the differences in dictionary 
-behaviour,  so we define a dictionary class.  Although we could
-subclass this from a [[CifFile]], we have inconsistent behaviour in
-that a DDL2 dictionary will need to go through the "saves" key to
-get the definitions, whereas the DDL1 dictionary will not.   
-Furthermore, the data block in the DDL2 dictionary contains useful
-information, so we don't want to hide access to that either.
+To avoid ambiguity with the Python dictionary type, we use capital
+D to denote CIF dictionaries where misinterpretation is possible.
 
-Fortunately, as both a collection
-of save frames and a collection of data blocks are represented by
-the same underlying type, initialisation is very easy: in one case we do
-nothing, and for DDL2 we return the "saves" item.
-
-A dictionary is optionally specified during initialisation, 
-and it is either a filename or a [[CifFile]] type.  
+We build our Dictionary behaviour on top of the StarFile object, which
+is notionally a collection of StarBlocks. A Dictionary is simply a
+collection of datablocks, where each datablock corresponds to a single
+definition. DDLm introduced nesting of definitions.  DDL1 had no
+category definitions. 
 
 We adopt a data model whereby the excess information in a DDL2
 dictionary is absorbed into special methods (and I'm thinking here
 of the [[_item_type_list.construct]] stuff which appears at the
 global level), which we initialise
-ourselves for a DDL1 dictionary.  The square bracket notation
-then refers only to the definitions and not to the original
-CIF file.
+ourselves for a DDL1 dictionary. 
 
 Note that the underscore following the data or save frame header is
 technically not part of the name, and so in DDL2 dictionaries there are
@@ -410,6 +401,7 @@ class CifDic(StarFile.BlockCollection):
     <<Add type information>>
     <<Add category information>>
     <<List all items in a category>>
+    <<Category manipulation methods>>
     <<Return a single packet by key>>
     <<Extract number and esd>>
     <<Analyse range>>
@@ -428,21 +420,20 @@ class CifDic(StarFile.BlockCollection):
 @ We want to be able to accept strings, giving the file name
 of the CIF dictionary, and pre-initialised [[CifFile]] objects.  We do
 not accept [[CifDic]] objects.  Our initialisation procedure 
-first unifies the interface to the dictionary by finding the 
-appropriate [[BlockCollection]], and then runs through the
-dictionary producing a normalised form.  Following this, type 
+first unifies the interface to the Dictionary, and then runs through the
+Dictionary producing a normalised form.  Following this, type 
 and category information can be collected for later reference.
 
 Validation functions are listed so that it would be possible to
 add and remove them from the "valid set".  This behaviour has
 not yet been implemented.
 
-When loading DDLm dictionaries we may recursively call this initialisation
-function with a dictionary to be imported as the argument.  In this
-case we don't want to do all the method derivation, as the necessary
-categories will be loaded into the calling dictionary rather than the
-currently initialising dictionary.  So there is
-a keyword argument to stop the operations that should operate on the
+When loading DDLm dictionaries we may recursively call this
+initialisation function with a dictionary to be imported as the
+argument.  In this case we don't want to do all the method derivation,
+as the necessary categories will be loaded into the calling dictionary
+rather than the currently initialising dictionary.  So there is a
+keyword argument to stop the operations that should operate on the
 dictionary as a whole taking place.
 
 The dREL methods require Numpy support, but we do not wish to introduce
@@ -992,6 +983,40 @@ def ddlm_parse_valid(self):
             elif valid_info[i]=="!":
                self.scopes_naughty[scope.lower()].append(valid_info[i+1].lower())
 
+@  These methods were added when developing interactive editing tools, which allow
+shifting categories around.  Changing a category name involves changing the [[_name.category_id]]
+in all children as well as the category definition itself and datablock names, then updating our internal
+structures.
+
+<<Category manipulation methods>>=
+def change_category_name(self,oldname,newname):
+    self.unlock()
+    """Change the category name from [[oldname]] to [[newname]]"""
+    if not self.has_key(oldname):
+        raise KeyError,'Cannot rename non-existent category %s to %s' % (oldname,newname)
+    if self.has_key(newname):
+        raise KeyError,'Cannot rename %s to %s as %s already exists' % (oldname,newname,oldname)
+    self.rename(oldname,newname)   #NB no name integrity checks
+    self[newname]['_name.object_id']=newname
+    child_defs = [a[0] for a in self.get_immediate_children(newname)]
+    for child_def in child_defs:
+        newid = self.create_catobj_name(newname,self[child_def]['_name.object_id'])
+        self[child_def]['_name.category_id'] = newname
+        self[child_def]['_definition.id']=newid
+        self.rename(child_def,newid[1:])  #no underscore at the beginning
+    # update categories
+    print `self.cat_map.values()`
+    oldid = [a[0] for a in self.cat_map.items() if a[1].lower()==oldname.lower()]
+    if len(oldid)!=1:
+        raise CifError, 'Unable to find old category name in category map: %s not in %s' % (oldname.lower(),`self.cat_map.items()`)
+    del self.cat_map[oldid[0]]
+    self.cat_map[newname.lower()] = newname
+    self.lock()
+
+def create_catobj_name(self,cat,obj):
+    """Combine category and object in approved fashion to create id"""
+    return '_'+cat+'.'+obj
+
 @ Dictionaries have the category-wide information in the category
 definition area.  We create a map from data block / save frame header to
 category id.  For DDL1 the block name has square brackets appended. For DDL2
@@ -1018,8 +1043,8 @@ category_ids = map(lambda a:self[a]["_category.id"],categories)
 so we use a get instead of a straight square bracket.
 
 <<Get list of DDLm categories>>=
-categories = filter(lambda a:self[a].get("_definition.scope","Item")=="Category",self.keys())
-category_ids = map(lambda a:self[a]["_definition.id"],categories)
+categories = [a for a in self.keys() if self[a].get("_definition.scope","Item")=="Category"]
+category_ids = [self[a]["_definition.id"] for a in categories]
 
 
 @ This method was added to facilitate running dREL scripts, which treat

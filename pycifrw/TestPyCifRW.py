@@ -630,6 +630,12 @@ data_Toplevel
        self.testcif.rename('2','Timey-wimey')
        self.failUnless(self.testcif.has_key('timey-wimey'))
        self.failUnless(self.testcif.child_table['timey-wimey'].block_id=='Timey-wimey')
+   
+   def testUnlock(self):
+       """Test that unlocking will change overwrite flag"""
+       self.testcif['2'].overwrite = False
+       self.testcif.unlock()
+       self.failUnless(self.testcif['2'].overwrite is True)
 
 class DDLmTestCase(unittest.TestCase):
    def setUp(self):
@@ -724,9 +730,9 @@ class DDLmImportCase(unittest.TestCase):
 #
 ##############################################################
 ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
+ddldic = CifFile.CifDic("tests/ddl.dic",grammar='DDLm')  #small DDLm dictionary
 class DictTestCase(unittest.TestCase):
     def setUp(self):
-        # self.ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
 	pass
     
     def tearDown(self):
@@ -747,6 +753,15 @@ class DictTestCase(unittest.TestCase):
         """Make sure a single dot is skipped"""
         res1,res2 = CifFile.get_number_with_esd(".")
         self.failUnless(res1==None)
+
+    def testCategoryRename(self):
+        """Test that renaming a category works correctly"""
+        ddldic.change_category_name('Description','Opisanie')
+        self.failUnless(ddldic.has_key('opisanie'))
+        self.failUnless(ddldic['opisanie']['_name.object_id']=='Opisanie')
+        self.failUnless(ddldic.has_key('opisanie.text'))
+        self.failUnless(ddldic['opisanie.text']['_name.category_id']=='Opisanie')
+        self.failUnless(ddldic['opisanie.text']['_definition.id']=='_Opisanie.text')
 
 ##############################################################
 #

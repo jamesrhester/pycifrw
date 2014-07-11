@@ -120,6 +120,7 @@ based on how the block collection was initialised.
 <<BlockCollection class>>=
 class BlockCollection(object):
     <<Initialise BC data structures>>
+    <<Block collection locking>>
     <<BC emulation of mapping type>>
     <<Add a new data section>>
     <<Re-identify a data block>>
@@ -181,6 +182,20 @@ def __init__(self,datasource=None,standard='CIF',
              self[key]= value
     self.header_comment = ''
  
+@ Unlocking.  When editing dictionaries with many datablocks, we would
+rather just unlock all datablocks at once.
+
+<<Block collection locking>>=
+def unlock(self):
+    """Allow overwriting of all blocks in this collection"""
+    for a in self.lower_keys:
+        self[a].overwrite=True
+
+def lock(self):
+    """Disallow overwriting for all blocks in this collection"""
+    for a in self.lower_keys:
+        self[a].overwrite = False
+
 @ Checking block name lengths.  This is not needed for a STAR block, but
 is useful for CIF.
 
