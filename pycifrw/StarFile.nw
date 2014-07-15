@@ -269,6 +269,10 @@ def __delitem__(self,key):
 def __len__(self):
     return len(self.visible_keys)
 
+def __contains__(self,item):
+    """Support the 'in' operator"""
+    return self.has_key(item)
+
 # We iterate over all visible
 def __iter__(self):
     for one_block in self.keys():

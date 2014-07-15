@@ -532,8 +532,8 @@ def dic_determine(self,cifdic):
 	name = cifdic["on_this_dictionary"]["_dictionary_name"]
 	version = cifdic["on_this_dictionary"]["_dictionary_version"]
 	return (name+version,"DDL1",cifdic)
-    elif len(cifdic.keys()) == 1:              # DDL2/DDLm
-        self.master_key = cifdic.keys()[0]	
+    elif len(cifdic.get_roots()) == 1:              # DDL2/DDLm
+        self.master_key = cifdic.get_roots()[0][0]	
         # now change to dictionary scoping
         cifdic.scoping = 'dictionary'
 	name = cifdic[self.master_key]["_dictionary.title"]
@@ -1000,10 +1000,11 @@ def change_category_name(self,oldname,newname):
     self[newname]['_name.object_id']=newname
     child_defs = [a[0] for a in self.get_immediate_children(newname)]
     for child_def in child_defs:
-        newid = self.create_catobj_name(newname,self[child_def]['_name.object_id'])
         self[child_def]['_name.category_id'] = newname
-        self[child_def]['_definition.id']=newid
-        self.rename(child_def,newid[1:])  #no underscore at the beginning
+        if self[child_def].get('_definition.scope','Item')=='Item':
+            newid = self.create_catobj_name(newname,self[child_def]['_name.object_id'])
+            self[child_def]['_definition.id']=newid
+            self.rename(child_def,newid[1:])  #no underscore at the beginning
     # update categories
     print `self.cat_map.values()`
     oldid = [a[0] for a in self.cat_map.items() if a[1].lower()==oldname.lower()]
@@ -1015,8 +1016,40 @@ def change_category_name(self,oldname,newname):
 
 def create_catobj_name(self,cat,obj):
     """Combine category and object in approved fashion to create id"""
-    return '_'+cat+'.'+obj
+    return ('_'+cat+'.'+obj)
 
+def get_cat_obj(self,name):
+    """Return (cat,obj) tuple. [[name]] must contain only a single period"""
+    cat,obj = name.split('.')
+    return (cat.strip('_'),obj)
+    
+def change_category(self,itemname,catname):
+    """Move itemname into catname"""
+    defid = self[itemname]
+    if defid['_name.category_id'].lower()==catname.lower():
+        return
+    if catname not in self:    #don't have it
+        return
+    self.unlock()
+    self.set_parent(itemname,catname)  
+    objid = defid['_name.object_id']
+    defid['_name.category_id'] = catname
+    if defid.get('_definition.scope','Item') == 'Item':
+        newid = self.create_catobj_name(catname,objid)
+        defid['_definition.id']= newid
+        self.rename(itemname,newid)
+    self.lock()
+
+def change_name(self,one_def,newobj):
+    """Change the object_id of one_def to newobj"""
+    newid = self.create_catobj_name(self[one_def]['_name.category_id'],newobj)
+    self.unlock()
+    self.rename(one_def,newid)
+    self[newid]['_definition.id']=newid
+    self[newid]['_name.object_id']=newobj
+    self.lock()
+    return newid
+    
 @ Dictionaries have the category-wide information in the category
 definition area.  We create a map from data block / save frame header to
 category id.  For DDL1 the block name has square brackets appended. For DDL2

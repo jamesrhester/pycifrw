@@ -730,10 +730,10 @@ class DDLmImportCase(unittest.TestCase):
 #
 ##############################################################
 ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
-ddldic = CifFile.CifDic("tests/ddl.dic",grammar='DDLm')  #small DDLm dictionary
+
 class DictTestCase(unittest.TestCase):
     def setUp(self):
-	pass
+	self.ddldic = CifFile.CifDic("tests/ddl.dic",grammar='DDLm',scoping='dictionary')  #small DDLm dictionary
     
     def tearDown(self):
 	pass
@@ -756,12 +756,33 @@ class DictTestCase(unittest.TestCase):
 
     def testCategoryRename(self):
         """Test that renaming a category works correctly"""
-        ddldic.change_category_name('Description','Opisanie')
-        self.failUnless(ddldic.has_key('opisanie'))
-        self.failUnless(ddldic['opisanie']['_name.object_id']=='Opisanie')
-        self.failUnless(ddldic.has_key('opisanie.text'))
-        self.failUnless(ddldic['opisanie.text']['_name.category_id']=='Opisanie')
-        self.failUnless(ddldic['opisanie.text']['_definition.id']=='_Opisanie.text')
+        self.ddldic.change_category_name('Description','Opisanie')
+        self.failUnless(self.ddldic.has_key('opisanie'))
+        self.failUnless(self.ddldic['opisanie']['_name.object_id']=='Opisanie')
+        self.failUnless(self.ddldic.has_key('opisanie.text'))
+        self.failUnless(self.ddldic['opisanie.text']['_name.category_id']=='Opisanie')
+        self.failUnless(self.ddldic['opisanie.text']['_definition.id']=='_Opisanie.text')
+        self.failUnless(self.ddldic.has_key('description_example'))
+
+    def testChangeItemCategory(self):
+        """Test that changing an item's category works"""
+        self.ddldic.change_category('_description.common','type')
+        self.failUnless('_type.common' in self.ddldic)
+        self.failUnless('_description.common' not in self.ddldic)
+        self.failUnless(self.ddldic['_type.common']['_name.category_id'].lower()=='type')
+
+    def testChangeCategoryCategory(self):
+        """Test that changing a category's category works"""
+        self.ddldic.change_category('description_example','attributes')
+        self.failUnless(self.ddldic['description_example']['_name.category_id'].lower()=='attributes')
+
+    def testChangeName(self):
+        """Test that changing the object_id works"""
+        self.ddldic.change_name('_description.common','uncommon')
+        self.failUnless('_description.uncommon' in self.ddldic)
+        self.failUnless('_description.common' not in self.ddldic)
+        self.failUnless(self.ddldic['_description.uncommon']['_name.object_id']=='uncommon')
+        self.failUnless(self.ddldic['_description.uncommon']['_definition.id']=='_description.uncommon')
 
 ##############################################################
 #
