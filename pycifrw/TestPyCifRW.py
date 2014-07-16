@@ -770,11 +770,13 @@ class DictTestCase(unittest.TestCase):
         self.failUnless('_type.common' in self.ddldic)
         self.failUnless('_description.common' not in self.ddldic)
         self.failUnless(self.ddldic['_type.common']['_name.category_id'].lower()=='type')
+        self.failUnless(self.ddldic.get_parent('_type.common')=='type')
 
     def testChangeCategoryCategory(self):
         """Test that changing a category's category works"""
         self.ddldic.change_category('description_example','attributes')
         self.failUnless(self.ddldic['description_example']['_name.category_id'].lower()=='attributes')
+        self.failUnless(self.ddldic.get_parent('description_example')=='attributes')
 
     def testChangeName(self):
         """Test that changing the object_id works"""
@@ -799,6 +801,17 @@ class DictTestCase(unittest.TestCase):
         self.failUnless(self.ddldic['_description.junkjunk']['_name.category_id'].lower()=='description')
         self.failUnless(self.ddldic['_description.junkjunk']['_name.object_id']=='junkjunk')
         self.failUnless(self.ddldic['_description.junkjunk']['_definition.id']=='_description.junkjunk')
+
+    def testDeleteDefinition(self):
+        """Test that we can delete a definition"""
+        self.ddldic.remove_definition('_alias.deprecation_date')
+        self.failUnless('_alias.deprecation_date' not in self.ddldic)
+
+    def testDeleteCategory(self):
+        """test that we can delete whole categories"""
+        self.ddldic.remove_definition('description')
+        self.failUnless('description' not in self.ddldic)
+        self.failUnless('description_example' not in self.ddldic)
 
 ##############################################################
 #

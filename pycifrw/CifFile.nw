@@ -1031,13 +1031,14 @@ def change_category(self,itemname,catname):
     if catname not in self:    #don't have it
         return
     self.unlock()
-    self.set_parent(itemname,catname)  
     objid = defid['_name.object_id']
     defid['_name.category_id'] = catname
+    newid = itemname # stays the same for categories
     if defid.get('_definition.scope','Item') == 'Item':
         newid = self.create_catobj_name(catname,objid)
         defid['_definition.id']= newid
         self.rename(itemname,newid)
+    self.set_parent(newid,catname)  
     self.lock()
 
 def change_name(self,one_def,newobj):
@@ -1063,6 +1064,8 @@ def add_category(self,catname,catparent=None):
             root_cat = root_cat[0]
         else:
             root_cat = self.get_roots()[0]
+    else:
+        root_cat = catparent
     realname = self.NewBlock(catname,parent=root_cat)
     self[realname]['_name.object_id'] = realname
     self[realname]['_name.category_id'] = self[root_cat]['_name.object_id']
@@ -1074,7 +1077,7 @@ def add_category(self,catname,catparent=None):
     self.cat_map[realname]=realname
     return realname
 
-def add_definition(self,itemname,catparent):
+def add_definition(self,itemname,catparent,def_text='PLEASE DEFINE ME'):
     """Add itemname to category [[catparent]]. If itemname contains periods,
     all text before the final period is ignored."""
     self.unlock()
@@ -1092,8 +1095,19 @@ def add_definition(self,itemname,catparent):
     self[realname]['_name.object_id']=objname
     self[realname]['_name.category_id']=catparent
     self[realname]['_definition.class']='Datum'
-    self[realname]['_description.text']='PLEASE DEFINE ME'
+    self[realname]['_description.text']=def_text
+    return realname
     
+def remove_definition(self,defname):
+    """Remove a definition from the dictionary. If a category, we have to
+    remove the links in cat_map"""
+    if defname not in self:
+        return
+    if self[defname].get('_definition.scope')=='Category':
+        child_cats = [a['_name.category_id'] for a in self.get_children(defname) if a.get('_definition.scope')=='Category']
+        for cc in child_cats: del self.cat_map[cc]
+    del self[defname]
+
 @ Dictionaries have the category-wide information in the category
 definition area.  We create a map from data block / save frame header to
 category id.  For DDL1 the block name has square brackets appended. For DDL2
