@@ -1049,6 +1049,50 @@ def change_name(self,one_def,newobj):
     self[newid]['_name.object_id']=newobj
     self.lock()
     return newid
+   
+def add_category(self,catname,catparent=None):
+    """Add a new category to the dictionary with name [[catname]].
+       If [[catparent]] is None, the category will be a child of
+       the topmost 'Head' category or else the top data block."""
+    if catname in self:
+        raise CifError, 'Attempt to add existing category %s' % catname
+    self.unlock()
+    if catparent is None:
+        root_cat = [a for a in self.keys() if self[a].get('_definition.class',None)=='Head']
+        if len(root_cat)>0:
+            root_cat = root_cat[0]
+        else:
+            root_cat = self.get_roots()[0]
+    realname = self.NewBlock(catname,parent=root_cat)
+    self[realname]['_name.object_id'] = realname
+    self[realname]['_name.category_id'] = self[root_cat]['_name.object_id']
+    self[realname]['_definition.id'] = realname
+    self[realname]['_definition.scope'] = 'Category'
+    self[realname]['_definition.class'] = 'Loop'
+    self[realname]['_description.text'] = 'No definition provided'
+    self.lock()
+    self.cat_map[realname]=realname
+    return realname
+
+def add_definition(self,itemname,catparent):
+    """Add itemname to category [[catparent]]. If itemname contains periods,
+    all text before the final period is ignored."""
+    self.unlock()
+    if '.' in itemname:
+        objname = itemname[:-1].split('.')[-1]
+    else:
+        objname = itemname
+    objname = objname.strip('_')
+    if catparent not in self or self[catparent]['_definition.scope']!='Category':
+        raise CifError, 'No category %s in dictionary' % catparent
+    fullname = '_'+catparent.lower()+'.'+objname
+    print 'New name: %s' % fullname
+    realname = self.NewBlock(fullname, fix=False, parent=catparent)
+    self[realname]['_definition.id']=fullname
+    self[realname]['_name.object_id']=objname
+    self[realname]['_name.category_id']=catparent
+    self[realname]['_definition.class']='Datum'
+    self[realname]['_description.text']='PLEASE DEFINE ME'
     
 @ Dictionaries have the category-wide information in the category
 definition area.  We create a map from data block / save frame header to

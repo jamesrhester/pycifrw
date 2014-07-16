@@ -784,6 +784,22 @@ class DictTestCase(unittest.TestCase):
         self.failUnless(self.ddldic['_description.uncommon']['_name.object_id']=='uncommon')
         self.failUnless(self.ddldic['_description.uncommon']['_definition.id']=='_description.uncommon')
 
+    def testNewCategory(self):
+        """Test that we can add a new category"""
+        self.ddldic.add_category('brand-new')
+        self.failUnless('brand-new' in self.ddldic)
+        self.failUnless(self.ddldic['brand-new']['_name.object_id']=='brand-new')
+        self.failUnless(self.ddldic.get_parent('brand-new').lower()=='attributes')
+        self.failUnless(self.ddldic['brand-new']['_name.category_id'].lower()=='attributes')
+
+    def testNewDefinition(self):
+        """Test that we can add a new definition"""
+        self.ddldic.add_definition('_junkety._junkjunk_','description')
+        self.failUnless('_description.junkjunk' in self.ddldic)
+        self.failUnless(self.ddldic['_description.junkjunk']['_name.category_id'].lower()=='description')
+        self.failUnless(self.ddldic['_description.junkjunk']['_name.object_id']=='junkjunk')
+        self.failUnless(self.ddldic['_description.junkjunk']['_definition.id']=='_description.junkjunk')
+
 ##############################################################
 #
 #  Validation testing
