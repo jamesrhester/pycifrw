@@ -1027,8 +1027,10 @@ def change_category(self,itemname,catname):
     """Move itemname into catname"""
     defid = self[itemname]
     if defid['_name.category_id'].lower()==catname.lower():
+        print 'Already in category, no change'
         return
     if catname not in self:    #don't have it
+        print 'No such category %s' % catname
         return
     self.unlock()
     objid = defid['_name.object_id']
@@ -1038,7 +1040,7 @@ def change_category(self,itemname,catname):
         newid = self.create_catobj_name(catname,objid)
         defid['_definition.id']= newid
         self.rename(itemname,newid)
-    self.set_parent(newid,catname)  
+    self.set_parent(catname,newid)  
     self.lock()
 
 def change_name(self,one_def,newobj):
