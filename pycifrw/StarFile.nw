@@ -104,6 +104,7 @@ except NameError:
 <<Star packet class>>
 <<BlockCollection class>>
 <<StarFile class>>
+<<Subclass StringIO>>
 <<Define an error class>>
 <<Read in a STAR file>>
 <<Get data dimension>>
@@ -732,9 +733,9 @@ Note that child blocks must be save frames, so we hard-code 'save'.
         if self.standard == 'Dic':
             outstring.write(str(self[block_ref]))
         for child_ref,child_name in child_names:
-            outstring.write('\n' + '    '*indentlevel + 'save_' + child_name + '\n')
+            outstring.write('\n' + '  '*indentlevel + 'save_' + child_name + '\n')
             self.block_to_string(child_ref,child_name,outstring,indentlevel+1)
-            outstring.write('\n' + '    '*indentlevel + 'save_' + '\n')
+            outstring.write('\n' + '  '*indentlevel + 'save_' + '\n')
         if self.standard != 'Dic':
             outstring.write(str(self[block_ref]))
         
@@ -885,7 +886,8 @@ def ReadStar(filename,prepared = StarFile(),maxlength=2048,scantype='standard',g
 DDLm introduced data values which could be lists, tuples or hash tables.  As
 we use lists in the API for loop values, and think this is convenient, we
 define a pseudo collection class to hold CIF lists/tuples/hashes.  Note that
-we have to recursively modify all contents as well.
+we have to recursively modify all contents as well.  We also need to define
+custom output functions in order to properly format the internal datatypes.
 
 <<Define a collection datatype>>=
 class StarList(list):
@@ -893,6 +895,7 @@ class StarList(list):
 
 class StarDict(dict):
     pass
+
 
 @ \section{Loop Block class}
 
@@ -1757,6 +1760,11 @@ def get_dim(dataitem,current=0,packlen=0):
         return get_dim(dataitem[0],current+1,len(dataitem))
     else: return current+1,0
     
+@ The philosophy of outputting strings is to create a StringIO
+object, and pass this between all the routines.  As there are
+specific rules about when a new line can occur (especially
+concerning semicolon-delimited strings) we subclass StringIO
+and fiddle with the write method.
 
 <<Functions for printing out>>=
 <<Set the output length>>
@@ -1765,6 +1773,79 @@ def get_dim(dataitem,current=0,packlen=0):
 <<Format loop packets>>
 <<Format a single packet item>>
 <<Format a string>>
+<<Format a data value>>
+
+@ We adjust the write method to intelligently output lines, taking
+care with CIF/STAR rules for output.  We allow the caller to specify:
+(1) a line break prior to output (e.g. for a new dataname)
+(2) a tab stepsize, in which case we try to pad out to this value
+(3) that we can do a line break if we wish
+(4) moving to a nested indent level, starting from the current position
+(5) Whether or not to align the next item with the tab stops
+
+We never insert newlines inside supplied strings.  Tabs are applied
+after any requested line breaks, and both are applied before the next
+item is output.
+
+After adding any line breaks and/or tab stops, we recognise the following situations:
+(1) The supplied string does not overflow the line: we output, and
+update the length of the current line
+(2) The supplied string does overflow the line.  
+ (i) If we are allowed to break, we output a linefeed, and then the string.
+ (ii) Otherwise, we output the string
+(3) The supplied string contains linefeeds: we update the current line length according
+to the number of characters from the beginning of the line.
+
+<<Subclass StringIO>>=
+from StringIO import StringIO
+import math
+class CIFStringIO(StringIO):
+    def __init__(self,target_width=80,**kwargs):
+        StringIO.__init__(self,**kwargs)
+        self.currentpos = 0
+        self.target_width = target_width
+        self.tabwidth = -1
+        self.indentlist = [0]
+
+    def write(self,outstring,canbreak=False,mustbreak=False,do_tab=True,newindent=False,unindent=False):
+        """Write a string with correct linebreak, tabs and indents"""
+        # do we need to break?
+        if mustbreak:    #insert a new line and indent
+            StringIO.write(self,'\n' + ' '*self.indentlist[-1])
+            self.currentpos = self.indentlist[-1]
+        if self.currentpos+len(outstring)>self.target_width: #try to break
+            if canbreak:
+                StringIO.write(self,'\n'+' '*self.indentlist[-1])
+                self.currentpos = self.indentlist[-1]
+        if newindent:           #indent by current amount
+            if self.indentlist[-1] == 0:    #first time
+                self.indentlist.append(self.currentpos)
+                print 'Indentlist: ' + `self.indentlist`
+            else:
+                self.indentlist.append(self.indentlist[-1]+2)
+        elif unindent:
+            if len(self.indentlist)>1:
+                self.indentlist.pop()
+            else:
+                print 'Warning: cannot unindent any further'
+        #handle tabs
+        if self.tabwidth >0 and do_tab:
+            next_stop = ((self.currentpos//self.tabwidth)+1)*self.tabwidth
+            #print 'Currentpos %d: Next tab stop at %d' % (self.currentpos,next_stop)
+            if self.currentpos < next_stop:
+                StringIO.write(self,(next_stop-self.currentpos)*' ')
+                self.currentpos = next_stop
+        #now output the string
+        StringIO.write(self,outstring)
+        last_line_break = outstring.rfind('\n')
+        if last_line_break >=0:
+            self.currentpos = len(outstring)-last_line_break
+        else:
+            self.currentpos = self.currentpos + len(outstring)
+        
+    def set_tab(self,tabwidth):
+        """Set the tab stop position"""
+        self.tabwidth = tabwidth
 
 @ For non-default output lengths, we include a function which will set
 the internal attribute that controls maximum line length.  As this is
@@ -1810,13 +1891,12 @@ tab stop at 40 characters.
 
 <<Print a loop block>>=
 def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
-    import cStringIO
     import string
     # first make an ordering
     order = self.item_order[:]
     # now do it...
     if not instring:
-        outstring = cStringIO.StringIO()       # the returned string
+        outstring = CIFStringIO(target_width=80)       # the returned string
     else:
         outstring = instring
     if not coord:
@@ -1826,43 +1906,26 @@ def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
     if(len(coords)<self.dimension-1):
         raise StarError("Not enough block packet coordinates to uniquely define data")
     # print loop delimiter
-    outstring.write(blockstart)
+    outstring.write(blockstart,canbreak=True)
     while len(order)>0:
         # print "Order now: " + `order`
         itemname = order.pop(0)
         if self.dimension == 0:            # ie value next to tag
    	    if not isinstance(itemname,LoopBlock):  #no loop
-	       # grab any comment
-	       thiscomment = self.comment_list.get(itemname.lower(),'') 
+               outstring.set_tab(40)
                itemvalue = self[itemname]
-               if isinstance(itemvalue,StringTypes):  #need to sanitize
-                     thisstring = self._formatstring(itemvalue)
-               else: thisstring = str(itemvalue)
-               # try for a tabstop at 40
-               if len(itemname)<40 and (len(thisstring)-40 < self.wraplength-1):
-                   itemname = itemname + ' '*(40-len(itemname))
-               else: itemname = itemname + ' '
-               if len(thisstring) + len(itemname) < (self.wraplength-1):
-                     outstring.write('%s%s' % (itemname,thisstring))
-		     if thiscomment:
-		         if len(thiscomment)+len(thisstring)+len(itemname)< (self.wraplength-3):
-			     outstring.write(' #'+thiscomment)
-               else:
-                     outstring.write('%s\n %s' % (itemname, thisstring))
-		     if thiscomment:
-			 if len(thiscomment)+len(thisstring)<(self.wraplength-3):
-		             outstring.write(' #'+thiscomment)
-                         else:
-			     outstring.write('\n#'+thiscomment)
-               outstring.write('\n')
+               outstring.write(itemname,mustbreak=True,do_tab=False)
+               outstring.write(' ',canbreak=True,do_tab=False)    #space after itemname
+               self.format_value(itemvalue,outstring)
             else:   # we are asked to print an internal loop block
                 #first make sure we have sensible coords.  Length should be one
                 #less than the current dimension
-                outstring.write(' '*indent); outstring.write('loop_\n')
+                outstring.set_tab(10)       #guess this is OK?
+                outstring.write(' '*indent,do_tab=False); outstring.write('loop_\n',do_tab=False)
                 itemname.format_names(outstring,indent+2)
                 itemname.format_packets(outstring,coords,indent+2)
         else:   # we are a nested loop
-            outstring.write(' '*indent); outstring.write('loop_\n')
+            outstring.write(' '*indent,do_tab=False); outstring.write('loop_\n',do_tab=False)
 	    self.format_names(outstring,indent+2)
 	    self.format_packets(outstring,coords,indent+2)
     if instring: return   #inside a recursion
@@ -1870,6 +1933,39 @@ def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
         returnstring = outstring.getvalue()
     outstring.close()
     return returnstring
+
+@ Formatting a data value. Data values may be stored as strings, numbers or compound values.  We call this routine recursively to format data values.  We use [[compound]] to flag that we are an embedded compound value, so that
+we do not insert a line break before the top-level compound delimiter.
+
+<<Format a data value>>=
+def format_value(self,itemvalue,stringsink,compound=False):
+    """Format a Star data value"""
+    if isinstance(itemvalue,StringTypes):  #need to sanitize
+       stringsink.write(self._formatstring(itemvalue),canbreak = True)
+    elif isinstance(itemvalue,StarList):
+       stringsink.set_tab(0)
+       stringsink.write('[',canbreak=True,newindent=True,mustbreak=compound)
+       if len(itemvalue)>0:
+           self.format_value(itemvalue[0],stringsink)
+           for listval in itemvalue[1:]:
+              print 'Formatting %s' % `listval`
+              stringsink.write(', ',do_tab=False)
+              self.format_value(listval,stringsink,compound=True)
+       stringsink.write(']',unindent=True)
+    elif isinstance(itemvalue,StarDict):
+       stringsink.set_tab(0)
+       stringsink.write('{',newindent=True,mustbreak=compound)  #start a new line inside
+       items = itemvalue.items()
+       if len(items)>0:
+           stringsink.write("'"+items[0][0]+"'"+':',canbreak=True)
+           self.format_value(items[0][1],stringsink)
+           for key,value in items[1:]:
+               stringsink.write(', ')
+               stringsink.write("'"+key+"'"+":",canbreak=True)
+               self.format_value(value,stringsink)   #never break between key and value
+       stringsink.write('}',unindent=True)
+    else: 
+       stringsink.write(str(itemvalue),canbreak=True)   #numbers
 
 @ Formatting a loop section.  We are passed an indent and destination string,
 and are expected to append a list of item names to the string indented by
@@ -1881,14 +1977,14 @@ def format_names(self,outstring,indent=0):
     while len(temp_order)>0:
         itemname = temp_order.pop(0)
         if isinstance(itemname,StringTypes):  #(not loop)
-            outstring.write(' ' * indent) 
-            outstring.write(itemname)
-            outstring.write("\n")
+            outstring.write(' ' * indent,do_tab=False) 
+            outstring.write(itemname,do_tab=False)
+            outstring.write("\n",do_tab=False)
         else:                                # a loop
-            outstring.write(' ' * indent) 
-            outstring.write("loop_\n")
+            outstring.write(' ' * indent,do_tab=False) 
+            outstring.write("loop_\n",do_tab=False)
             itemname.format_names(outstring,indent+2)
-            outstring.write(" stop_\n")
+            outstring.write(" stop_\n",do_tab=False)
 
 @ Formatting a loop packet.  We are passed an array of coordinates into
 the required packet, of length dim - 1, and have to output the corresponding
@@ -1906,20 +2002,11 @@ def format_packets(self,outstring,coordinates,indent=0):
    # print 'Alldata: %s' % `alldata`
    packet_data = apply(zip,alldata)
    # print 'Packet data: %s' % `packet_data`
-   curstring = ''
    for position in range(len(packet_data)):
        for point in range(len(packet_data[position])):
            datapoint = packet_data[position][point]
-           packstring = self.format_packet_item(datapoint,indent)
-           if len(curstring) + len(packstring)> self.wraplength-2: #past end of line with space
-               curstring = curstring + '\n' + ' '*indent + packstring
-           elif curstring == '':
-               curstring = curstring + ' '*indent + packstring
-           else:
-               curstring = curstring + ' ' + packstring
-       outstring.write(curstring + '\n')     #end of one packet
-       curstring = ''
-   outstring.write(' ' + curstring + '\n')    #last time through
+           packstring = self.format_packet_item(datapoint,indent,outstring)
+       outstring.write("\n",do_tab=False)
            
 @ Formatting a single packet item - could be a nested packet!  If we have a
 list of nested packets, we have to transpose first.  Note also that a nested
@@ -1928,36 +2015,25 @@ We are therefore a bit sloppy with our checking against [[wraplength]] and
 [[maxoutlength]].
 
 <<Format a single packet item>>=
-def format_packet_item(self,pack_item,indent):
+def format_packet_item(self,pack_item,indent,outstring):
     # print 'Formatting %s' % `pack_item`
-    curstring = ''
     if isinstance(pack_item,(StringType,UnicodeType,IntType,FloatType,LongType,StarList,StarDict)):
        if isinstance(pack_item,StringTypes):
-           thisstring = self._formatstring(pack_item) #no spaces yet
-           if '\n' in thisstring:    #must have semicolon digraph then 
-               curstring = curstring + thisstring
-               curstring = curstring + (' ' * indent)
-               thisstring = ''
+           outstring.write(self._formatstring(pack_item)) 
        else: 
-           thisstring = '%s' % str(pack_item)
-       if len(curstring) + len(thisstring)> self.wraplength-2: #past end of line with space
-           curstring = curstring + '\n' #add the space
-           curstring = curstring + (' ' * indent) + thisstring
-       else: 
-           curstring = curstring + ' ' + thisstring
+           self.format_value(pack_item,outstring)
+       outstring.write(' ',canbreak=True,do_tab=False)
     # Now, for each nested loop we call ourselves again
-    # After first outputting the current line
     else:               # a nested packet
        if not isinstance(pack_item[0],(ListType,TupleType)):  #base packet
            item_list = pack_item
        else:
            item_list = apply(zip,pack_item)
        for sub_item in item_list:
-           curstring = curstring + ' ' + self.format_packet_item(sub_item,indent)
+           outstring.write(' ' + self.format_packet_item(sub_item,indent,outstring),canbreak=True)
        # stop_ is not issued at the end of each innermost packet
        if isinstance(pack_item[0],(ListType,TupleType)):
-           curstring = curstring + ' stop_ '
-    return curstring          
+           outstring.write(' stop_ ',canbreak=True)
 
 @ Formatting a string.  We make sure that the length of the item value
 is less than [[self.maxoutlength]], or else we should split them, and so on. We check the
@@ -1985,8 +2061,8 @@ def _formatstring(self,instring):
     if len(instring)==0: return "''"
     if len(instring)< (self.maxoutlength-2) and '\n' not in instring and not ('"' in instring and '\'' in instring):
         if not ' ' in instring and not '\t' in instring and not '\v' \
-          in instring and not '_' in instring and not (instring[0]=="'" or \
-             instring[0]=='"'):                  # no blanks
+          in instring and not '_' in instring and not ',' in instring \
+          and not (instring[0]=="'" or instring[0]=='"'):                  # no blanks
             return instring
         if not "'" in instring:                                       #use apostrophes
             return "'%s'" % (instring)

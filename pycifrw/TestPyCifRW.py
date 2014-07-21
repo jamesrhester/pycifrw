@@ -715,6 +715,19 @@ class DDLmTestCase(unittest.TestCase):
        print f["test"]["_triple_quote_test"]
        self.failUnless(f["test"]["_triple_quote_test"][:9] == 'The comma')
 
+   def testRoundTrip(self):
+       """Test that a DDLm file can be read in, written out and read in again"""
+       f = CifFile.ReadCif("goodtest_1.2",grammar="DDLm")
+       g = open("newgoodtest_1.2.cif","w")
+       g.write(str(f))
+       g.close()
+       h = CifFile.ReadCif("newgoodtest_1.2.cif",grammar="DDLm")
+       #print h['Test']
+       #print h['Test']['_import.get']
+       #print h['Test']['_import.get'][2]
+       #print h['Test']['_import.get'][2]['file']
+       self.failUnless(h['Test']['_import.get'][2]['file']=='core_struc.dic')
+
 ##########
 #
 # Test DDLm imports
@@ -729,11 +742,11 @@ class DDLmImportCase(unittest.TestCase):
 # Test dictionary type
 #
 ##############################################################
-ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
+ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic",do_minimum=True)
 
 class DictTestCase(unittest.TestCase):
     def setUp(self):
-	self.ddldic = CifFile.CifDic("tests/ddl.dic",grammar='DDLm',scoping='dictionary')  #small DDLm dictionary
+	self.ddldic = CifFile.CifDic("tests/ddl.dic",grammar='DDLm',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
     
     def tearDown(self):
 	pass
