@@ -475,26 +475,33 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
     self.typedic={}
     self.primdic = {}   #typecode<->primitive type translation
     self.add_type_info()
-    self.item_validation_funs = [
+    if self.diclang != 'DDLm':
+      self.item_validation_funs = [
 	self.validate_item_type,
         self.validate_item_esd,
 	self.validate_item_enum,   # functions which check conformance
         self.validate_enum_range,
         self.validate_looping]
-    self.loop_validation_funs = [
+     self.loop_validation_funs = [
         self.validate_loop_membership,
         self.validate_loop_key,
         self.validate_loop_references]    # functions checking loop values
-    self.global_validation_funs = [
+     self.global_validation_funs = [
         self.validate_exclusion,
         self.validate_parent,
         self.validate_child,
         self.validate_dependents,
         self.validate_uniqueness] # where we need to look at other values
-    self.block_validation_funs = [  # where only a full block will do
+     self.block_validation_funs = [  # where only a full block will do
         self.validate_mandatory_category]
-    self.global_remove_validation_funs = [
+     self.global_remove_validation_funs = [
         self.validate_remove_parent_child] # removal is quicker with special checks
+    elif self.diclang == 'DDLm':
+        self.item_validation_funs = []
+        self.loop_validation_funs = []
+        self.global_validation_funs = []
+        self.block_validation_funs = []
+        self.global_remove_validation_funs = []
     self.optimize = False        # default value
     self.done_parents = []
     self.done_children = []
@@ -1365,7 +1372,8 @@ dictionary with at least one key: "result", as well as optional
 keys depending on the type of error.
 
 <<Item-level validation>>=
-<<Validate the type of an item>>
+<<Validate the type of an item (DDL1/2)>>
+<<Validate the type of an item (DDLm)>>
 <<Validate esd presence>>
 <<Validate enumeration range>>
 <<Validate an enumeration>>
@@ -1401,6 +1409,36 @@ def validate_item_type(self,item_name,item_value):
     check_all = filter(lambda a: mymatch(matchexpr,a) != a, check_all)
     if len(check_all)>0: return {"result":False,"bad_values":check_all}
     else: return {"result":True}
+
+@ DDLm types are far more nuanced, and we are not provided with prepacked
+regular expressions in order to check them.  We have identified the following
+checks: that the type is in the correct container; that the contents are as
+described in _type.contents; that 'State' purpose datanames have a list of
+enumerated states; that 'Link' purpose datanames have '_name.linked_item_id'
+in the same definition; that 'SU' purpose datanames also has the above.
+ 
+<<Validate the type of an item (DDLm)>>=
+def decide(self,result_list):
+    """Construct the return list"""
+    if len(result_list)==0:
+           return {"result":True}
+    else:
+           return {"result":False,"bad_values":result_list}
+
+def validate_item_container(self, item_name,item_value):
+    container_type = self[item_name][_type.container]
+    item_values = listify(item_value)
+    if container_type == 'Single':
+       okcheck = [a for a in item_values if not isinstance(a,(int,float,long,basestring))]
+       return decide(okcheck)
+    if container_type in ('Multiple','List'):
+       okcheck = [a for a in item_values if not isinstance(a,StarList)]
+       return decide(okcheck)
+    if container_type == 'Array':    #A list with numerical values
+       okcheck = [a for a in item_values if not isinstance(a,StarList)]
+       first_check = decide(okcheck)
+       if not first_check['result']: return first_check
+       num_check = [a for a in item_values if len([b for b in a if not isinstance
 
 @ Esds.  Numbers are sometimes not allowed to have esds appended.  The
 default is that esds are not OK, and we should also skip anything that
@@ -2233,7 +2271,7 @@ def normal_numerify(self,valarray):
     # print 'Recursive evaluation of %s' % `valarray`
     if isinstance(valarray,StarFile.StarList):
         return StarFile.StarList(map(self.recursive_numerify,valarray))
-    if isinstance(valarray,(StringType,UnicodeType,IntType,LongType)):
+    if isinstance(valarray,(basestring,IntType,LongType)):
         return float_with_esd(valarray)
     else:
         return valarray    #assume is OK
@@ -2249,7 +2287,7 @@ def numpy_numerify(self,valarray):
 by searching for an opening round bracket
 <<Convert value to float, ignore esd>>=
 def float_with_esd(inval):
-    if isinstance(inval,StringTypes):
+    if isinstance(inval,basestring):
         j = inval.find("(")
         if j>=0:  return float(inval[:j])
     return float(inval)

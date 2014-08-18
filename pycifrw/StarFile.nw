@@ -1921,11 +1921,11 @@ def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
                 #first make sure we have sensible coords.  Length should be one
                 #less than the current dimension
                 outstring.set_tab(10)       #guess this is OK?
-                outstring.write(' '*indent,do_tab=False); outstring.write('loop_\n',do_tab=False)
+                outstring.write(' '*indent,mustbreak=True,do_tab=False); outstring.write('loop_\n',do_tab=False)
                 itemname.format_names(outstring,indent+2)
                 itemname.format_packets(outstring,coords,indent+2)
         else:   # we are a nested loop
-            outstring.write(' '*indent,do_tab=False); outstring.write('loop_\n',do_tab=False)
+            outstring.write(' '*indent,mustbreak=True,do_tab=False); outstring.write('loop_\n',do_tab=False)
 	    self.format_names(outstring,indent+2)
 	    self.format_packets(outstring,coords,indent+2)
     if instring: return   #inside a recursion
