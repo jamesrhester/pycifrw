@@ -356,6 +356,7 @@ class FileWriteTestCase(unittest.TestCase):
              ('_item_quote',"'ABC"),
              ('_item_apost','"def'),
              ('_item_sws'," \n "),
+             ('_item_raw',r" a greek letter \f (phi) in IUCr-speak"),
              (('_item_5','_item_7','_item_6'),
              ([1,2,3,4],
               ['a','b','c','d'],
@@ -404,6 +405,10 @@ class FileWriteTestCase(unittest.TestCase):
        CifFile.CifFile(tstream,scantype="flex")
        self.flf = flfile['testblock']
        self.flfs = self.flf["saves"]["test_save_frame"]
+       # and output the input file just for fun
+       outfile = open('test2.cif','w')
+       outfile.write(str(self.ef))
+       outfile.close()
 
    def tearDown(self):
        import os
@@ -453,6 +458,11 @@ class FileWriteTestCase(unittest.TestCase):
        compstring = re.sub('\n','',self.flfs['_sitem_4'])
        self.failUnless(compstring == self.cfs['_sitem_4'])
 
+   def testRawStringInOut(self):
+       """Make sure that a raw string remains so"""
+       self.failUnless(self.df['_item_raw']==r" a greek letter \f (phi) in IUCr-speak")
+       self.failUnless(self.flf['_item_raw']==r" a greek letter \f (phi) in IUCr-speak")
+       
    def testEmptyStringInOut(self):
        """An empty string is in fact kosher""" 
        self.failUnless(self.cf['_item_empty']=='')
