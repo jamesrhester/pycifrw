@@ -713,14 +713,14 @@ Note that child blocks must be save frames, so we hard-code 'save'.
         for blockref,blockname in top_block_names:
             outstring.write('\n' + 'data_' +blockname+'\n')
             child_names = [(a[0],a[1].block_id) for a in self.child_table.items() if a[1].parent==blockref]
-            if self.standard == 'Dic':
+            if self.standard == 'Dic':              #put contents before save frames
               self[blockref].SetOutputLength(wraplength,maxoutlength)
               outstring.write(str(self[blockref]))
             for child_ref,child_name in child_names:
                 outstring.write('\n' + 'save_' + child_name + '\n')
-                self.block_to_string(child_ref,child_name,outstring,1)    
+                self.block_to_string(child_ref,child_name,outstring,4)    
                 outstring.write('\n' + 'save_'+ '\n')   
-            if self.standard != 'Dic':
+            if self.standard != 'Dic':              #put contents after save frames
                 self[blockref].SetOutputLength(wraplength,maxoutlength)
                 outstring.write(str(self[blockref]))
         returnstring =  outstring.getvalue()
@@ -733,8 +733,8 @@ Note that child blocks must be save frames, so we hard-code 'save'.
         if self.standard == 'Dic':
             outstring.write(str(self[block_ref]))
         for child_ref,child_name in child_names:
-            outstring.write('\n' + '  '*indentlevel + 'save_' + child_name + '\n')
-            self.block_to_string(child_ref,child_name,outstring,indentlevel+1)
+            outstring.write('\n' + 'save_' + child_name + '\n')
+            self.block_to_string(child_ref,child_name,outstring,indentlevel)
             outstring.write('\n' + '  '*indentlevel + 'save_' + '\n')
         if self.standard != 'Dic':
             outstring.write(str(self[block_ref]))
@@ -967,6 +967,10 @@ detect duplicated values, so we set this to false.  As DDLm introduces the
 unicode character set, we need to indicate which character set we are
 prepared to accept.
 
+Formatting hints are used on output to suggest column positions for
+looped datanames and delimiters. In practice these are used only for
+dictionaries where fine-tuned layout is helpful for human readers.
+
 <<Initialise Loop Block>>=
 def __init__(self,data = (), dimension = 0, maxoutlength=2048, wraplength=80, overwrite=True,
              characterset='ascii'):
@@ -975,6 +979,7 @@ def __init__(self,data = (), dimension = 0, maxoutlength=2048, wraplength=80, ov
     self.loops = []
     self.no_packets = 0
     self.item_order = []
+    self.formatting_hints = {}
     self.lower_keys = []    #for efficiency
     self.comment_list = {}
     self.dimension = dimension
@@ -1760,7 +1765,9 @@ def get_dim(dataitem,current=0,packlen=0):
         return get_dim(dataitem[0],current+1,len(dataitem))
     else: return current+1,0
     
-@ The philosophy of outputting strings is to create a StringIO
+@ \section{Output}
+
+The philosophy of outputting strings is to create a StringIO
 object, and pass this between all the routines.  As there are
 specific rules about when a new line can occur (especially
 concerning semicolon-delimited strings) we subclass StringIO

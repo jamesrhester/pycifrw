@@ -452,6 +452,7 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
     if isinstance(dic,StringTypes):
         self.dic_as_cif = CifFile(dic,grammar=grammar,**kwargs)
     (self.dicname,self.diclang,self.defdata) = self.dic_determine(self.dic_as_cif)
+    print '%s is a %s dictionary' % (self.dicname,self.diclang)
     super(CifDic,self).__init__(datasource=self.defdata,**kwargs) 
     self.scopes_mandatory = {"dictionary":[],"category":[],"item":[]}
     self.scopes_naughty = {"dictionary":[],"category":[],"item":[]}
@@ -482,19 +483,19 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
 	self.validate_item_enum,   # functions which check conformance
         self.validate_enum_range,
         self.validate_looping]
-     self.loop_validation_funs = [
+      self.loop_validation_funs = [
         self.validate_loop_membership,
         self.validate_loop_key,
         self.validate_loop_references]    # functions checking loop values
-     self.global_validation_funs = [
+      self.global_validation_funs = [
         self.validate_exclusion,
         self.validate_parent,
         self.validate_child,
         self.validate_dependents,
         self.validate_uniqueness] # where we need to look at other values
-     self.block_validation_funs = [  # where only a full block will do
+      self.block_validation_funs = [  # where only a full block will do
         self.validate_mandatory_category]
-     self.global_remove_validation_funs = [
+      self.global_remove_validation_funs = [
         self.validate_remove_parent_child] # removal is quicker with special checks
     elif self.diclang == 'DDLm':
         self.item_validation_funs = []
@@ -1005,6 +1006,7 @@ def change_category_name(self,oldname,newname):
         raise KeyError,'Cannot rename %s to %s as %s already exists' % (oldname,newname,oldname)
     self.rename(oldname,newname)   #NB no name integrity checks
     self[newname]['_name.object_id']=newname
+    self[newname]['_definition.id']=newname
     child_defs = [a[0] for a in self.get_immediate_children(newname)]
     for child_def in child_defs:
         self[child_def]['_name.category_id'] = newname
