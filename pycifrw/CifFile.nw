@@ -1393,7 +1393,7 @@ try to get a group.
 Note also that none of the extant dictionaries use the 'none' or 'seq'
 values for type.  The seq value in particular would complicate matters.
 
-<<Validate the type of an item>>=
+<<Validate the type of an item (DDL1/2)>>=
 def validate_item_type(self,item_name,item_value):
     def mymatch(m,a):  
         res = m.match(a)
@@ -1440,7 +1440,7 @@ def validate_item_container(self, item_name,item_value):
        okcheck = [a for a in item_values if not isinstance(a,StarList)]
        first_check = decide(okcheck)
        if not first_check['result']: return first_check
-       num_check = [a for a in item_values if len([b for b in a if not isinstance
+       #num_check = [a for a in item_values if len([b for b in a if not isinstance
 
 @ Esds.  Numbers are sometimes not allowed to have esds appended.  The
 default is that esds are not OK, and we should also skip anything that

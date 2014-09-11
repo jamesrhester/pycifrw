@@ -501,6 +501,49 @@ class FileWriteTestCase(unittest.TestCase):
        b.close()
        testin = CifFile.CifFile("test2.cif",standard=None)
 
+class TemplateTestCase(unittest.TestCase):
+   def setUp(self):
+       """Create a template"""
+       self.template = """#
+# Template
+#
+data_TEST_DIC
+ 
+    _dictionary.title            DDL_DIC
+    _definition.update           2011-07-27
+    _description.text
+;
+     This dictionary specifies through its layout how we desire to
+     format datanames.  It is not a valid dictionary, but it must 
+     be a valid CIF file.
+;
+
+    _name.object_id              ALIAS
+    _category.key_id           '_alias.definition_id'
+    _category.key_list        ['_alias.definition_id']
+    _type.purpose                Key     
+    _type.dimension              [*]
+    _import.get    [{"file":'templ_enum.cif',"save":'units_code'}]
+     loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+          Dictionary        "applies to all defined items in the dictionary"
+          Category          "applies to all defined items in the category"
+          Item              "applies to a single item definition"
+    _enumeration.default        Item   
+"""  
+
+   def testTemplateInput(self):
+       """Test that an output template is successfully input"""
+       p = CifFile.CifBlock()
+       p.process_template(self.template)
+       self.failUnless(p.form_hints[0]['dataname']=='_dictionary.title')
+       self.failUnless(p.form_hints[4]['column']==31)
+       self.failUnless(p.form_hints[2]['delimiter']==';')
+       self.failUnless(p.form_hints[9]['column']==10)
+       self.failUnless(p.form_hints[10]['delimiter']=='"')
+
+###### template tests #####
 ##############################################################
 #
 #   Test alternative grammars (1.0, DDLm)
@@ -986,5 +1029,7 @@ class DicMergeTestCase(unittest.TestCase):
         pass
 
 if __name__=='__main__':
+    #suite = unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
+    #unittest.TextTestRunner(verbosity=2).run(suite)
     unittest.main()
 

@@ -1781,6 +1781,8 @@ and fiddle with the write method.
 <<Format a single packet item>>
 <<Format a string>>
 <<Format a data value>>
+<<Input a guide template>>
+<<Create a proper ordering>>
 
 @ We adjust the write method to intelligently output lines, taking
 care with CIF/STAR rules for output.  We allow the caller to specify:
@@ -1789,6 +1791,8 @@ care with CIF/STAR rules for output.  We allow the caller to specify:
 (3) that we can do a line break if we wish
 (4) moving to a nested indent level, starting from the current position
 (5) Whether or not to align the next item with the tab stops
+(6) The column that this item should start at. If we are past this column, a
+line break is inserted and a new line is begun.
 
 We never insert newlines inside supplied strings.  Tabs are applied
 after any requested line breaks, and both are applied before the next
@@ -1814,7 +1818,7 @@ class CIFStringIO(StringIO):
         self.tabwidth = -1
         self.indentlist = [0]
 
-    def write(self,outstring,canbreak=False,mustbreak=False,do_tab=True,newindent=False,unindent=False):
+    def write(self,outstring,canbreak=False,mustbreak=False,do_tab=True,newindent=False,unindent=False,startcol=-1):
         """Write a string with correct linebreak, tabs and indents"""
         # do we need to break?
         if mustbreak:    #insert a new line and indent
@@ -1893,14 +1897,19 @@ our choice for every non-specified dimension.
 
 This routine should not be called recursively.
 
+As an alternative, we may have formatting hints, perhaps from a template that
+we have input through 'process_template'.  The formatting hints specify a desired
+column and delimiter, and an order of output.  We can always satisfy the output order,
+but may have to fiddle with columns and delimiters depending on the datavalue contents.
+
 We attempt some nice formatting by printing non-packet items with an apparent
 tab stop at 40 characters.
 
 <<Print a loop block>>=
-def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
+def printsection(self,instring='',ordering=[],blockstart="",blockend="",indent=0,coord=[]):
     import string
     # first make an ordering
-    order = self.item_order[:]
+    self.create_ordering(ordering)
     # now do it...
     if not instring:
         outstring = CIFStringIO(target_width=80)       # the returned string
@@ -1914,16 +1923,23 @@ def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
         raise StarError("Not enough block packet coordinates to uniquely define data")
     # print loop delimiter
     outstring.write(blockstart,canbreak=True)
-    while len(order)>0:
-        # print "Order now: " + `order`
-        itemname = order.pop(0)
-        if self.dimension == 0:            # ie value next to tag
+    while len(self.output_order)>0:
+       print "Remaining to output " + `self.output_order`
+       itemname = self.output_order.pop(0)
+       item_spec = [i for i in ordering if i['dataname'].lower()==itemname.lower()]
+       if len(item_spec)>0:
+           col_pos = item_spec[0].get('column',-1)
+       else:
+           col_pos = -1
+           item_spec = {}
+       if self.dimension == 0:            # ie value next to tag
    	    if not isinstance(itemname,LoopBlock):  #no loop
-               outstring.set_tab(40)
+               if col_pos < 0: col_pos = 40
+               outstring.set_tab(col_pos)
                itemvalue = self[itemname]
                outstring.write(itemname,mustbreak=True,do_tab=False)
                outstring.write(' ',canbreak=True,do_tab=False)    #space after itemname
-               self.format_value(itemvalue,outstring)
+               self.format_value(itemvalue,outstring,hints=item_spec)
             else:   # we are asked to print an internal loop block
                 #first make sure we have sensible coords.  Length should be one
                 #less than the current dimension
@@ -1931,7 +1947,7 @@ def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
                 outstring.write(' '*indent,mustbreak=True,do_tab=False); outstring.write('loop_\n',do_tab=False)
                 itemname.format_names(outstring,indent+2)
                 itemname.format_packets(outstring,coords,indent+2)
-        else:   # we are a nested loop
+       else:   # we are a nested loop
             outstring.write(' '*indent,mustbreak=True,do_tab=False); outstring.write('loop_\n',do_tab=False)
 	    self.format_names(outstring,indent+2)
 	    self.format_packets(outstring,coords,indent+2)
@@ -1942,13 +1958,15 @@ def printsection(self,instring='',blockstart="",blockend="",indent=0,coord=[]):
     return returnstring
 
 @ Formatting a data value. Data values may be stored as strings, numbers or compound values.  We call this routine recursively to format data values.  We use [[compound]] to flag that we are an embedded compound value, so that
-we do not insert a line break before the top-level compound delimiter.
+we do not insert a line break before the top-level compound delimiter.  If hints is supplied, it is a dictionary
+containing an entry 'delimiter' that requests a particular delimiter.
 
 <<Format a data value>>=
-def format_value(self,itemvalue,stringsink,compound=False):
+def format_value(self,itemvalue,stringsink,compound=False,hints={}):
     """Format a Star data value"""
+    delimiter = hints.get('delimiter',None)
     if isinstance(itemvalue,StringTypes):  #need to sanitize
-       stringsink.write(self._formatstring(itemvalue),canbreak = True)
+       stringsink.write(self._formatstring(itemvalue,delimiter=delimiter),canbreak = True)
     elif isinstance(itemvalue,StarList):
        stringsink.set_tab(0)
        stringsink.write('[',canbreak=True,newindent=True,mustbreak=compound)
@@ -2062,20 +2080,33 @@ concerns 'embedded' strings; if the datavalue begins with a quote, it
 will be output verbatim (and misunderstood) unless spaces elsewhere
 force quotation.
 
+The caller is allowed to request a particular delimiter, with 'None'
+corresponding to no delimiter and the choices being apostrophe,
+double quote, or semicolon.  CIF2-style triple quotes are not
+currently supported.
+
 <<Format a string>>=
-def _formatstring(self,instring):
+def _formatstring(self,instring,delimiter=None,standard='CIF1'):
     import string
-    if len(instring)==0: return "''"
-    if len(instring)< (self.maxoutlength-2) and '\n' not in instring and not ('"' in instring and '\'' in instring):
-        if not ' ' in instring and not '\t' in instring and not '\v' \
-          in instring and not '_' in instring and not ',' in instring \
-          and not (instring[0]=="'" or instring[0]=='"'):                  # no blanks
-            return instring
-        if not "'" in instring:                                       #use apostrophes
-            return "'%s'" % (instring)
-        elif not "\"" in instring:
-            return '"%s"' % (instring)
-    # is a long one or one that needs semicolons due to carriage returns
+    if standard == 'CIF2':
+        allowed_delimiters = set(['"',"'",";",None,'"""',"'''"])
+    else:
+        allowed_delimiters = set(['"',"'",";",None])
+    if len(instring)==0: allowed_delimiters.difference_update([None])
+    if len(instring) > (self.maxoutlength-2) or '\n' in instring:
+            allowed_delimiters.intersection_update([";","'''",'"""'])
+    if ' ' in instring or '\t' in instring or '\v' in instring or '_' in instring or ',' in instring:
+            allowed_delimiters.difference_update([None])
+    if '"' in instring: allowed_delimiters.difference_update(['"',None])
+    if "'" in instring: allowed_delimiters.difference_update(["'",None])
+    out_delimiter = ";"  #default (most conservative)
+    if delimiter in allowed_delimiters:
+        out_delimiter = delimiter
+    elif "'" in allowed_delimiters: out_delimiter = "'"
+    elif '"' in allowed_delimiters: out_delimiter = '"'
+    if out_delimiter in ['"',"'",'"""',"'''"]: return out_delimiter + instring + out_delimiter
+    elif out_delimiter is None: return instring
+    # we are left with semicolon strings
     outstring = "\n;"
     # if there are returns in the string, try to work with them
     while 1:
@@ -2094,6 +2125,101 @@ def _formatstring(self,instring):
             instring = instring[letter+1:]            
     return outstring
 
+@ \subsection{Templating}
+
+A ``template'' is a CifFile containing a single block, where the datanames
+are laid out in the way that the user desires. The layout elements that are
+picked up from the template CifFile are: (1) order (2) column position of
+datavalues (only the first row of a loop block counts) (3) delimiters. The
+information that is gleaned is converted to entries in the formatting_hints
+table which are then consulted when writing out.  Note that the order
+from formatting_hints will override the item_order information.
+
+Constraints on the template:
+(1) There should only ever be one dataname on each line
+(2) loop_ and and datablock tokens should appear as the only non-blank 
+characters on their lines
+(3) Comments are flagged by a '#' as the first character
+(4) Blank lines are acceptable
+(5) Datavalues should use only alphanumeric characters
+(6) Semicolon-delimited strings are not allowed in loops
+
+<<Input a guide template>>=
+def process_template(self,template_string):
+    """Process a template datafile to formatting instructions"""
+    template_as_cif = StarFile(StringIO(template_string),grammar="DDLm").first_block()
+    #template_as_lines = template_string.split("\n")
+    #template_as_lines = [l for l in template_as_lines if len(l)>0 and l[0]!='#']
+    #template_as_lines = [l for l in template_as_lines if l.split()[0] != 'loop_']
+    #template_full_lines = dict([(l.split()[0],l) for l in template_as_lines if len(l.split())>0])
+    self.form_hints = []   #ordered array of hint dictionaries
+    for item in template_as_cif.item_order:  #order of input
+        if not isinstance(item,LoopBlock):    #not nested
+            hint_dict = {"dataname":item}
+            # find the line in the file
+            start_pos = re.search("(^[ \t]*" + item + "[ \t\n]+)(?P<spec>([\S]+)|(^;))",template_string,re.I|re.M)
+            if start_pos.group("spec") != None:
+                spec_pos = start_pos.start("spec")-start_pos.start(0)
+                spec_char = template_string[start_pos.start("spec")]
+                if spec_char in '\'";':
+                    hint_dict.update({"delimiter":spec_char})
+                if spec_char != ";":   #so we need to work out the column number
+                    hint_dict.update({"column":spec_pos})
+            print '%s: %s' % (item,`hint_dict`)
+            self.form_hints.append(hint_dict)
+        else:           #loop block
+            testname = item.item_order[0]
+            #find the loop spec line in the file
+            loop_regex = "(^[ \t]*loop_[ \t\n\r]+" + testname + "([ \t\n\r]+_[\S]+){%d}[ \t]*$(?P<packet>(.(?!_loop|_[\S]+))*))" % (len(item.item_order) - 1)
+            loop_line = re.search(loop_regex,template_string,re.I|re.M|re.S)
+            loop_so_far = loop_line.end()
+            packet_text = loop_line.group('packet')
+            packet_regex = "[ \t]*(?P<all>(?P<sq>'([^\n\r\f']*)'+)|(?P<dq>\"([^\n\r\"]*)\"+)|(?P<none>[^\s]+))"
+            packet_pos = re.finditer(packet_regex,packet_text)
+            line_end_pos = re.finditer("^",packet_text,re.M)
+            next_end = line_end_pos.next().end()
+            last_end = next_end
+            for loopname in item.item_order:
+                hint_dict = {"dataname":loopname}
+                thismatch = packet_pos.next()
+                while thismatch.start('all') > next_end:
+                    try: 
+                        last_end = next_end
+                        next_end = line_end_pos.next().start()
+                        print 'next end %d' % next_end
+                    except StopIteration:
+                        pass 
+                print 'Start %d, last_end %d' % (thismatch.start('all'),last_end)
+                col_pos = thismatch.start('all') - last_end
+                if thismatch.group('none') is None:
+                    hint_dict.update({'delimiter':thismatch.groups()[0][0]})
+                hint_dict.update({'column':col_pos})
+                print '%s: %s' % (loopname,`hint_dict`)
+                self.form_hints.append(hint_dict)
+    return
+
+@ Creating a proper ordering for output from the template information.  When we output,
+we expect the ordering to consist of a sequence of datanames or loop references.  Our
+templated ordering is essentially a list of datanames, so we now have to find which
+loops each dataname corresponds to and put the loop reference into the order list, 
+pushing down the information about ordering for the loop.
+
+<<Create a proper ordering>>=
+def create_ordering(self,order_dict):
+    """Create a canonical ordering that includes loops using our formatting hints dictionary"""
+    requested_order = [i['dataname'] for i in order_dict]
+    new_order = []
+    for item in requested_order:
+       if isinstance(item,basestring) and item.lower() in self.item_order:
+           new_order.append(item)
+       elif self.has_key(item):    #in a loop somewhere
+           target_loop = self.GetLoop(item)
+           target_loop.create_ordering(order_dict)
+           new_order.append(self.GetLoop(item))
+    extras = [i for i in self.item_order if i not in new_order]
+    self.output_order = new_order + extras
+    print 'Final order: ' + `self.output_order`
+    
 @ \section{Star Block class}
 
 A Star Block is simply a LoopBlock. Historically it was distinguished by
