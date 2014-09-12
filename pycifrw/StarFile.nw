@@ -2083,10 +2083,19 @@ force quotation.
 The caller is allowed to request a particular delimiter, with 'None'
 corresponding to no delimiter and the choices being apostrophe,
 double quote, or semicolon.  CIF2-style triple quotes are not
-currently supported.
+currently supported.  The 'indent' argument allows the routine to
+enforce indentation of multi-line strings by the specified amount. 
+Note that this will technically change the datavalue contents by
+adding spaces, although for datavalues intended only for human
+consumption this is irrelevant. 
+
+'lbprotocol' allows use of the line-breaking protocol from CIF1.1 to
+express long lines, and 'pref_protocol' allows use of the CIF2 
+text-prefix protocol.
 
 <<Format a string>>=
-def _formatstring(self,instring,delimiter=None,standard='CIF1'):
+def _formatstring(self,instring,delimiter=None,standard='CIF1',indent=0,
+    lbprotocol=True,pref_protocol=True):
     import string
     if standard == 'CIF2':
         allowed_delimiters = set(['"',"'",";",None,'"""',"'''"])
@@ -2124,6 +2133,58 @@ def _formatstring(self,instring,delimiter=None,standard='CIF1'):
             outstring = outstring + '\n'
             instring = instring[letter+1:]            
     return outstring
+
+@ \subsection{Line folding protocol}
+
+The line folding protocol allows lines to be broken by appending a backslash as the last
+character of a line.  It is signalled by a backslash as the first character of the line
+following an opening semicolon.  We use it to introduce line breaks where appropriate. We
+search for whitespace between [[minwraplength]] and [[maxwraplength]], and if none is
+forthcoming we wrap at maxlength-1 (-1 to allow for the backslash).
+
+<<Apply line folding>>=
+def apply_line_folding(instring,minwraplength=60,maxwraplength=80):
+    """Insert line folding characters into instring between min/max wraplength"""
+    # first check that we need to do this
+    lines = instring.split('\n')
+    line_len = [len(l) for l in lines]
+    if max(line_len) < maxwraplength and re.match("\\[ \v\t\f]*\n",instring) is None:
+        return instring
+    outstring = "\\\n"   #header
+    for l in lines:
+        if len(l) < maxwraplength:
+            outstring = outstring + l
+            if len(l) > 0 and l[-1]=='\\': #who'da thunk it?  A line ending with a backslash
+                    print 'Found line ending in backslash-> ' + `l`
+                    outstring = outstring + "\\\n"  #
+            outstring = outstring + "\n"  #  put back the split character
+        else:
+            current_bit = l
+            while len(current_bit) > maxwraplength:
+                print 'Currently working on %s' % `current_bit`
+                space_pos = re.search('[ \v\f\t]+',current_bit[minwraplength:])
+                if space_pos is not None and space_pos.start()<maxwraplength-1:
+                    outstring = outstring + current_bit[:minwraplength+space_pos.start()] + "\\\n"
+                    current_bit = current_bit[minwraplength+space_pos.start():]
+                else:    #just blindly insert
+                    outstring = outstring + current_bit[:maxwraplength-1] + "\\\n"
+                    current_bit = current_bit[maxwraplength-1:]
+            print 'Finishing line normally: %s' % current_bit
+            outstring = outstring + current_bit
+            if current_bit[-1] == '\\':  #a backslash just happens to be here
+                outstring = outstring + "\\\n"
+            outstring = outstring + '\n'
+    outstring = outstring[:-1]  #remove final newline
+    return outstring
+
+<<Remove line folding>>=
+def remove_line_folding(instring):
+    """Remove line folding from instring"""
+    if re.match(r"\\[ \v\t\f]*" +"\n",instring) is not None:
+        print 'Unfolding %s' % instring
+        return re.sub(r"\\[ \v\t\f]*" + "\n","",instring)
+    else:
+        return instring
 
 @ \subsection{Templating}
 
@@ -2386,10 +2447,21 @@ class StarLengthError(Exception):
     def __str__(self):
         return '\nStar length error: ' + self.value
 
-@ Listify - used to allow uniform treatment of datanames - otherwise sequence functions might
-operate on a string instead of a list.
+@ \section{Utility functions}
+
+These functions do not depend on knowing the internals of the various classes
+and are therefore kept outside of the class definitions to allow general
+use.
 
 <<Utility functions>>=
+<<Apply line folding>>
+<<Remove line folding>>
+<<List manipulations>>
+
+@  Listify - used to allow uniform treatment of datanames - otherwise sequence functions might
+operate on a string instead of a list.
+
+<<List manipulations>>=
 def listify(item):
     if isinstance(item,StringTypes): return [item]
     else: return item

@@ -7,6 +7,73 @@ import unittest, CifFile
 import StarFile
 import re
 
+# Test general string and number manipulation functions
+class BasicUtilitiesTestCase(unittest.TestCase):
+    def testPlainLineFolding(self):
+       """Test that we can fold a line correctly"""
+       test_string = "1234567890123456789012"
+       outstring = StarFile.apply_line_folding(test_string,5,10)
+       out_lines = outstring.split('\n')
+       print outstring
+       self.failUnless(out_lines[0]=="\\")
+       self.failUnless(len(out_lines[1])==10)
+
+    def testPreWrappedFolding(self):
+       """Test that pre-wrapped lines are untouched"""
+       test_string = "123456789\n012345678\n9012"
+       outstring = StarFile.apply_line_folding(test_string,5,10)
+       self.failUnless(outstring == test_string)
+
+    def testManyLineEndings(self):
+       """Test that empty lines are handled OK"""
+       test_string = "123456789\n\n012345678\n\n9012\n\n"
+       outstring = StarFile.apply_line_folding(test_string,5,10)
+       self.failUnless(outstring == test_string)
+
+    def testOptionalBreak(self):
+       """Test that internal whitespace is used to break"""
+       test_string = "123456  7890123  45678\n90 12\n\n"
+       outstring = StarFile.apply_line_folding(test_string,5,10)
+       print "\n;" + outstring + "\n;"
+       out_lines = outstring.split('\n')
+       self.failUnless(len(out_lines[1]) == 7)
+
+    def testCorrectEnding(self):
+       """Make sure that no line feeds are added/removed"""
+       test_string = "123456  7890123  45678\n90 12\n\n"
+       outstring = StarFile.apply_line_folding(test_string,5,10)
+       self.failUnless(outstring[-4:] == "12\n\n")
+
+    def testFoldingRemoval(self):
+       """Test that we round-trip correctly"""
+       test_string = "123456  7890123  45678\n90 12\n\n"
+       outstring = StarFile.apply_line_folding(test_string,5,10)
+       old_string = StarFile.remove_line_folding(outstring)
+       print "Test:" + `test_string`
+       print "Fold:" + `outstring`
+       print "UnFo:" + `old_string`
+       self.failUnless(old_string == test_string)
+
+    def testTrickyFoldingRemoval(self):
+       """Try to produce a tough string for unfolding"""
+       test_string = "\n1234567890\\\n r t s 345 19\n\nlife don't talk to me about life"
+       outstring = StarFile.apply_line_folding(test_string,5,10)
+       old_string = StarFile.remove_line_folding(outstring)
+       print "Test:" + `test_string`
+       print "Fold:" + `outstring`
+       print "UnFo:" + `old_string`
+       self.failUnless(old_string == test_string)
+
+    def testTrailingBackslash(self):
+       """Make sure that a trailing backslash is not removed"""
+       test_string = "\n123\\\n 456\\n\n"
+       outstring = StarFile.apply_line_folding(test_string,5,10)
+       old_string = StarFile.remove_line_folding(outstring)
+       print "Test:" + `test_string`
+       print "Fold:" + `outstring`
+       print "UnFo:" + `old_string`
+       self.failUnless(old_string == test_string)
+
 # Test basic setting and reading of the CifBlock
 
 class BlockRWTestCase(unittest.TestCase):
@@ -785,7 +852,7 @@ class DDLmImportCase(unittest.TestCase):
 # Test dictionary type
 #
 ##############################################################
-ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic",do_minimum=True)
+#ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic",do_minimum=True)
 
 class DictTestCase(unittest.TestCase):
     def setUp(self):
@@ -1029,7 +1096,7 @@ class DicMergeTestCase(unittest.TestCase):
         pass
 
 if __name__=='__main__':
-    #suite = unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
-    #unittest.TextTestRunner(verbosity=2).run(suite)
-    unittest.main()
+    suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
+    unittest.TextTestRunner(verbosity=2).run(suite)
+    #unittest.main()
 
