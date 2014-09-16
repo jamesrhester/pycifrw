@@ -14,7 +14,7 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        test_string = "1234567890123456789012"
        outstring = StarFile.apply_line_folding(test_string,5,10)
        out_lines = outstring.split('\n')
-       print outstring
+       #print outstring
        self.failUnless(out_lines[0]=="\\")
        self.failUnless(len(out_lines[1])==10)
 
@@ -34,7 +34,7 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        """Test that internal whitespace is used to break"""
        test_string = "123456  7890123  45678\n90 12\n\n"
        outstring = StarFile.apply_line_folding(test_string,5,10)
-       print "\n;" + outstring + "\n;"
+       #print "\n;" + outstring + "\n;"
        out_lines = outstring.split('\n')
        self.failUnless(len(out_lines[1]) == 7)
 
@@ -49,9 +49,9 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        test_string = "123456  7890123  45678\n90 12\n\n"
        outstring = StarFile.apply_line_folding(test_string,5,10)
        old_string = StarFile.remove_line_folding(outstring)
-       print "Test:" + `test_string`
-       print "Fold:" + `outstring`
-       print "UnFo:" + `old_string`
+       #print "Test:" + `test_string`
+       #print "Fold:" + `outstring`
+       #print "UnFo:" + `old_string`
        self.failUnless(old_string == test_string)
 
     def testTrickyFoldingRemoval(self):
@@ -59,9 +59,9 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        test_string = "\n1234567890\\\n r t s 345 19\n\nlife don't talk to me about life"
        outstring = StarFile.apply_line_folding(test_string,5,10)
        old_string = StarFile.remove_line_folding(outstring)
-       print "Test:" + `test_string`
-       print "Fold:" + `outstring`
-       print "UnFo:" + `old_string`
+       #print "Test:" + `test_string`
+       #print "Fold:" + `outstring`
+       #print "UnFo:" + `old_string`
        self.failUnless(old_string == test_string)
 
     def testTrailingBackslash(self):
@@ -69,10 +69,52 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        test_string = "\n123\\\n 456\\n\n"
        outstring = StarFile.apply_line_folding(test_string,5,10)
        old_string = StarFile.remove_line_folding(outstring)
-       print "Test:" + `test_string`
-       print "Fold:" + `outstring`
-       print "UnFo:" + `old_string`
+       #print "Test:" + `test_string`
+       #print "Fold:" + `outstring`
+       #print "UnFo:" + `old_string`
        self.failUnless(old_string == test_string)
+
+    def testFinalBackslash(self):
+        """Make sure that a single final backslash is removed when unfolding"""
+        test_string = "\n1234567890\\\n r t s 345 19\n\nlife don't talk to me about life"
+        folded_string = StarFile.apply_line_folding(test_string,5,10)
+        folded_string = folded_string + "\ "
+        old_string = StarFile.remove_line_folding(folded_string)
+        self.failUnless(old_string == test_string)
+
+    def testAddIndent(self):
+        """Test insertion of a line prefix"""
+        test_string = "\n12345\n678910\n\n"
+        outstring = StarFile.apply_line_prefix(test_string,"abc>")
+        print "Converted %s to %s " %(test_string,outstring)
+        self.failUnless(outstring == "abc>\\\nabc>\nabc>12345\nabc>678910\nabc>\nabc>")
+
+    def testRemoveIndent(self):
+        """Test removal of a line prefix"""
+        test_string = "abc>\\\nabc>12345\nabc>678910\nabc>\nabc>"
+        outstring = StarFile.remove_line_prefix(test_string)
+        print "Removed indent: " + `outstring`
+        self.failUnless(outstring == "12345\n678910\n\n")
+
+    def testReverseIndent(self):
+        """Test reversible indentation of line"""
+        test_string = "12345\n678910\n\n"
+        outstring = StarFile.apply_line_prefix(test_string,"cif><")
+        newtest = StarFile.remove_line_prefix(outstring)
+        print 'Before indenting: ' + `test_string`
+        print 'After indenting: ' + `outstring`
+        print 'After unindent: ' + `newtest`
+        self.failUnless(newtest == test_string)
+
+    def testPrefixAndFold(self):
+        """Test reversible folding and indenting"""
+        test_string = "\n1234567890\\\n r t s 345 19\n\nlife don't talk to me about life"
+        outstring = StarFile.apply_line_folding(test_string,5,10)
+        indoutstring = StarFile.apply_line_prefix(outstring,"CIF>")
+        newoutstring = StarFile.remove_line_prefix(indoutstring)
+        newtest_string = StarFile.remove_line_folding(newoutstring)
+        print "%s -> %s -> %s -> %s -> %s" % (`test_string`,`outstring`,`indoutstring`,`newoutstring`,`newtest_string`)
+        self.failUnless(newtest_string == test_string)
 
 # Test basic setting and reading of the CifBlock
 

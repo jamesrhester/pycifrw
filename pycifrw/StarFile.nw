@@ -2155,13 +2155,11 @@ def apply_line_folding(instring,minwraplength=60,maxwraplength=80):
         if len(l) < maxwraplength:
             outstring = outstring + l
             if len(l) > 0 and l[-1]=='\\': #who'da thunk it?  A line ending with a backslash
-                    print 'Found line ending in backslash-> ' + `l`
                     outstring = outstring + "\\\n"  #
             outstring = outstring + "\n"  #  put back the split character
         else:
             current_bit = l
             while len(current_bit) > maxwraplength:
-                print 'Currently working on %s' % `current_bit`
                 space_pos = re.search('[ \v\f\t]+',current_bit[minwraplength:])
                 if space_pos is not None and space_pos.start()<maxwraplength-1:
                     outstring = outstring + current_bit[:minwraplength+space_pos.start()] + "\\\n"
@@ -2169,7 +2167,6 @@ def apply_line_folding(instring,minwraplength=60,maxwraplength=80):
                 else:    #just blindly insert
                     outstring = outstring + current_bit[:maxwraplength-1] + "\\\n"
                     current_bit = current_bit[maxwraplength-1:]
-            print 'Finishing line normally: %s' % current_bit
             outstring = outstring + current_bit
             if current_bit[-1] == '\\':  #a backslash just happens to be here
                 outstring = outstring + "\\\n"
@@ -2177,14 +2174,70 @@ def apply_line_folding(instring,minwraplength=60,maxwraplength=80):
     outstring = outstring[:-1]  #remove final newline
     return outstring
 
+@  Believe it or not, a final backslash followed by whitespace is also considered
+to be part of the line folding protocol, even though the last line obviously cannot
+be folded together with the next line as there is no next line.
+
 <<Remove line folding>>=
 def remove_line_folding(instring):
     """Remove line folding from instring"""
     if re.match(r"\\[ \v\t\f]*" +"\n",instring) is not None:
-        print 'Unfolding %s' % instring
-        return re.sub(r"\\[ \v\t\f]*" + "\n","",instring)
+        return re.sub(r"\\[ \v\t\f]*$" + "\n?","",instring,flags=re.M)
     else:
         return instring
+
+@ \subsection{Line indenting}
+
+CIF2 introduces a line indenting protocol for embedding arbitrary
+text strings in a semicolon-delimited string.  If the first line ends in
+one or two backslashes, the text before the first backslash defines an
+indent that should appear at the beginning of all subsequent lines.  For
+brevity, two backslashes are used to signal that line folding should
+be performed after indenting.  Alternatively, the line folding signal
+will simply correspond to a second 'header' line in the indented
+text consisting of the indent followed by a backslash, optional 
+whitespace, and a line feed.
+
+<<Apply line indent>>=
+def apply_line_prefix(instring,prefix):
+    """Prefix every line in instring with prefix"""
+    if prefix[0] != ";" and "\\" not in prefix:
+        header = re.match(r"(\\[ \v\t\f]*" +"\n)",instring)
+        if header is not None:
+            print 'Found line folded string for prefixing...'
+            not_header = instring[header.end():]
+            outstring = prefix + "\\\\\n" + prefix
+        else:
+            print 'No folding in input string...'
+            not_header = instring
+            outstring = prefix + "\\\n" + prefix
+        outstring = outstring + not_header.replace("\n","\n"+prefix)
+        return outstring
+    raise StarError, "Requested prefix starts with semicolon or contains a backslash: " + prefix
+
+@ Line indents are signalled by one or two backslashes at the end of
+the first line.  If this is detected,the text before the backslash is
+removed from every line.  We do not use regular expressions for the
+replacement in case the prefix contains significant characters.
+ 
+<<Remove line indent>>=
+def remove_line_prefix(instring):
+    """Remove prefix from every line if present"""
+    prefix_match = re.match("(?P<prefix>[^;\\\n][^\n\\\\]+)(?P<folding>\\\\{1,2}[ \t\v\f]*\n)",instring)
+    if prefix_match is not None:
+        prefix_text = prefix_match.group('prefix')
+        print 'Found prefix %s' % prefix_text
+        prefix_end = prefix_match.end('folding')
+        # keep any line folding instructions
+        if prefix_match.group('folding')[:2]=='\\\\':  #two backslashes
+            outstring = instring[prefix_match.end('folding')-1:].replace("\n"+prefix_text,"\n")
+            return "\\" + outstring  #keep line folding first line
+        else:
+            outstring = instring[prefix_match.end('folding')-1:].replace("\n"+prefix_text,"\n")
+            return outstring[1:]   #drop first line ending, no longer necessary
+    else:
+        return instring
+    
 
 @ \subsection{Templating}
 
@@ -2456,6 +2509,8 @@ use.
 <<Utility functions>>=
 <<Apply line folding>>
 <<Remove line folding>>
+<<Apply line indent>>
+<<Remove line indent>>
 <<List manipulations>>
 
 @  Listify - used to allow uniform treatment of datanames - otherwise sequence functions might
