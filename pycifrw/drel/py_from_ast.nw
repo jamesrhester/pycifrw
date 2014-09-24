@@ -1,0 +1,215 @@
+@ These routines convert a dREL AST into Python text and were originally in the direct
+conversion code.
+
+<<*>>=
+import re
+<<AST builder>>
+<<AST traverser>>
+<<With finder>>
+<<Utility functions>>
+
+@  The AST builder puts the infrastructure around the statement list to turn it into a
+function call with two arguments.
+
+<<AST builder>>=
+def make_python_function(in_ast,func_name,returnname=None,cat_meth=False, have_sn=True):
+    """Convert in_ast to python code"""
+    if not returnname: returnname = "__dreltarget"
+    print "incoming AST:"
+    print `in_ast`
+    func_text = start_traverse(in_ast)
+    print 'Start========'
+    print func_text
+    print 'End=========='
+    with_indices = find_withs(in_ast)
+    # now indent the string
+    noindent = func_text.splitlines()
+    # get the minimum indent and remove empty lines
+    noindent = filter(lambda a:a,noindent)
+    no_spaces = map(lambda a:re.match(r' *',a),noindent)
+    no_spaces = map(lambda a:a.end(),no_spaces)
+    min_spaces = min(no_spaces)+4   # because we add 4 ourselves to everything
+    w_i_list = ",".join(with_indices)
+    preamble = "def %s(self,ciffile,%s):\n" % (func_name,w_i_list)
+    preamble += min_spaces*" " + "import StarFile\n"
+    preamble += min_spaces*" " + "import math\n"
+    preamble += min_spaces*" " + "import numpy\n"
+    if have_sn:
+        preamble += min_spaces*" " + "self.switch_numpy(True)\n"
+    if cat_meth:
+        preamble += min_spaces*" " + "%s = {}\n" % returnname
+    indented = map(lambda a:"    " + a+"\n",noindent)  
+    postamble = ""
+    if have_sn:
+        postamble = " "*min_spaces + "self.switch_numpy(False)\n"
+    postamble += " "*min_spaces + "return %s" % returnname
+    final = preamble + "".join(indented) + postamble
+    return final
+
+@  The AST traverser is a recursive function which is passed a node.  It returns
+a string.  We define it inside an external function so that our global variables
+are actually just local variables of the enclosing function.
+
+<<AST traverser>>=
+def start_traverse(in_node):
+  special_info = {"special_id":[{}],"target_id":None,"withtable":{},"sub_subject":""}
+  def traverse_ast(in_node):
+    if isinstance(in_node,basestring):
+        return in_node
+    if isinstance(in_node[0],list):
+        raise SyntaxError, 'First element of AST Node must be string: ' + `in_node`
+    node_type = in_node[0]
+    if node_type == "ARGLIST":
+        pass
+<<Literal nodes>>
+<<Other primaries>>
+<<Maths>>
+<<Compound statements>>
+<<Top level constructions>>
+    else:
+       return "Not found: %s" % `in_node`
+  result = traverse_ast(in_node)
+  return result
+
+@  These are the simple constants that we have detected.
+
+<<Literal nodes>>=
+    elif node_type == "BINARY":
+        return("%d" % int(in_node[1],base=2))
+    elif node_type == "FALSE":
+        return("False")
+    elif node_type == "REAL":
+        return(in_node[1])
+    elif node_type == "HEX":
+        return("%d" % int(in_node[1],base=16))
+    elif node_type == "INT":
+        return(in_node[1])
+    elif node_type == "IMAGINARY":
+        return(in_node[1])
+    elif node_type == "OCTAL":
+        return("%d" % int(in_node[1],base=8))
+
+@  We need to catch all variables and other primary items here. Note that
+for now literals are simply repeated, as the Python representation is
+the same as the dREL representation. 
+    
+<<Other primaries>>=
+    elif node_type == "ATOM":
+        if isinstance(in_node[1],basestring):
+            return in_node[1]
+        else:
+            return traverse_ast(in_node[1])
+    elif node_type == "ITEM_TAG":
+        if special_info.get("target_id","") == in_node[1]:
+            return "__dreltarget"
+        else:
+            return "ciffile['%s']" % in_node[1]
+    elif node_type == "LITERAL":
+        return in_node[1]
+    elif node_type == "LIST":
+        if len(in_node)==1:  #empty list
+           return "[]"
+        outstring = "["
+        for list_elem in in_node[1:]:
+            outstring = outstring + traverse_ast(list_elem) + ","
+        return outstring + "]"
+    elif node_type == "SUBSCRIPTION":  # variable, expression list
+        # check to see if this is a special variable
+        newid = 0
+        primary = traverse_ast(in_node[1])
+        for idtable in special_info["special_id"]:
+            newid = idtable.get(primary,0)
+            if newid: break
+        if newid:
+            key_item = 'self["'+newid[0]+'"]["_category.key_id"]'
+            get_loop = "ciffile.GetLoop(%s).GetKeyedPacket(%s,%s)" % (key_item,key_item,traverse_ast(in_node[2]))
+            special_info["sub_subject"] = "_"+newid[0]  #in case of attribute reference following
+            print "Set sub_subject to %s" % special_info["sub_subject"]
+            return get_loop
+        else:
+            outstring = primary + "["
+            for expr in in_node[2]:
+                outstring = outstring + traverse_ast(expr) + ","
+            return outstring[:-1] + "]"
+
+@  Compound statements
+
+<<Compound statements>>=
+    elif node_type == "IF_EXPR":   #IF_EXPR test true_suite false_suite
+        outstring = "if "
+        outstring = outstring + traverse_ast(in_node[1])
+        outstring = outstring + ":"
+        true_bit = traverse_ast(in_node[2])
+        outstring = outstring + true_bit.sub("\n","\n"+" "*4)  #indent
+        if len(in_node)>3:
+            outstring = outstring + "else:"
+            false_bit = traverse_ast(in_node[3])
+            outstring = outstring + false_bit.sub("\n","\n"+" "*4)  #indent
+        return outstring
+
+# dREL for statements include the final value, whereas a python range will include
+# everything up to the final number
+    elif node_type == "FOR":    #FOR ID = start, finish, incr, suite
+        outstring = "for " + in_node[1] + " in range(" + traverse_ast(in_node[2]) + ","
+        finish = traverse_ast(in_node[3])
+        increment = traverse_ast(in_node[4])
+        outstring = outstring + finish + "+1" + "," + increment
+        outstring = outstring + "):"
+        suite = add_indent("\n"+traverse_ast(in_node[5]))
+        return outstring + suite
+
+@  Top level constructions. Ultimately we end up with a list of statements.
+
+<<Top level constructions>>=
+    elif node_type == "STATEMENTS":
+        outstring = ""
+        for one_statement in in_node[1]:
+            outstring = outstring + traverse_ast(one_statement) + "\n" 
+        return outstring
+    elif node_type == "ASSIGN":  #Target_list ,assigner, expression list
+        outstring = ""
+        for target_value in in_node[1]:
+            outstring = outstring + traverse_ast(target_value)+","
+        outstring = outstring[:-1] + in_node[2]
+        for expression in in_node[3]:
+            outstring = outstring + traverse_ast(expression)+","
+        return outstring[:-1]
+    elif node_type == "LIST":
+        outstring = "[" 
+        for one_element in in_node[1]:
+            outstring = outstring + traverse_ast(one_element)  + ","
+        return outstring + "]"
+    elif node_type == "EXPR":
+        return traverse_ast(in_node[1])
+    elif node_type == "GROUP":
+        outstring = "("
+        for expression in in_node[1]:
+             outstring = outstring + traverse_ast(expression) + ","
+        return outstring[:-1] + ")"
+
+@  Maths.  We have to catch vector and matrix operations and farm them out
+to numpy. Not implemented yet.  A binary maths operation is 'mathop'.  We
+take a shortcut and assume that the operators are written identically in
+dREL and python, so that the AST contains the textual form of the operator.
+
+<<Maths>>=
+    elif node_type == "MATHOP":
+        outstring = traverse_ast(in_node[2]) + in_node[1] + traverse_ast(in_node[3])
+        return outstring
+    elif node_type == "SIGN":
+        outstring = in_node[1] + traverse_ast(in_node[2])
+        return outstring
+
+@  We keep a track of any categories that are aliased by the method so that
+we can explicitly pass those categories as an argument of the function. The
+following method traverses the AST to pick up all such aliases.
+
+<<With finder>>=
+def find_withs(in_ast):
+    """Return all catagories that are aliased with With statements"""
+    return []
+
+<<Utility functions>>=
+def add_indent(text,n=4):
+    """Indent text by n spaces"""
+    return re.sub("\n","\n"+4*" ",text)
