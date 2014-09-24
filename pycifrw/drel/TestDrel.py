@@ -188,7 +188,7 @@ class MoreComplexTestCase(unittest.TestCase):
           }
        """
        self.parser.special_id = [{'axy':1}]
-       res = self.parser.parse(teststrg + "\n",debug=True,lexer=self.lexer)
+       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","pp",have_sn=False)
        exec realfunc
        realres = myfunc(self,self)
@@ -225,7 +225,7 @@ class MoreComplexTestCase(unittest.TestCase):
        radius_bond = 2.0
        If (d1<dmin or d1>(rad1+radius_bond)) b = 5 
        """
-       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       res = self.parser.parse(teststrg + "\n",debug=True,lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","b",have_sn=False)
        exec realfunc
        b = myfunc(self,self)

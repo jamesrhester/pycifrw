@@ -53,6 +53,7 @@ are actually just local variables of the enclosing function.
 <<AST traverser>>=
 def start_traverse(in_node):
   special_info = {"special_id":[{}],"target_id":None,"withtable":{},"sub_subject":""}
+  <<Maths operator conversion table>>
   def traverse_ast(in_node):
     if isinstance(in_node,basestring):
         return in_node
@@ -140,11 +141,11 @@ the same as the dREL representation.
         outstring = outstring + traverse_ast(in_node[1])
         outstring = outstring + ":"
         true_bit = traverse_ast(in_node[2])
-        outstring = outstring + true_bit.sub("\n","\n"+" "*4)  #indent
+        outstring = outstring + add_indent("\n"+true_bit)  #indent
         if len(in_node)>3:
-            outstring = outstring + "else:"
+            outstring = outstring + "\nelse:"
             false_bit = traverse_ast(in_node[3])
-            outstring = outstring + false_bit.sub("\n","\n"+" "*4)  #indent
+            outstring = outstring + add_indent("\n"+false_bit)  #indent
         return outstring
 
 # dREL for statements include the final value, whereas a python range will include
@@ -194,12 +195,26 @@ dREL and python, so that the AST contains the textual form of the operator.
 
 <<Maths>>=
     elif node_type == "MATHOP":
-        outstring = traverse_ast(in_node[2]) + in_node[1] + traverse_ast(in_node[3])
+        op = mathop_table[in_node[1]]
+        outstring = traverse_ast(in_node[2]) + op + traverse_ast(in_node[3])
         return outstring
     elif node_type == "SIGN":
         outstring = in_node[1] + traverse_ast(in_node[2])
         return outstring
+    elif node_type == "UNARY":
+        outstring = in_node[1] + " " + traverse_ast(in_node[2])
+        return outstring
 
+@  Although in most cases we could simply directly write in the binary maths
+operator, we do a table lookup to facilitate reuse of this code with other
+language targets.
+
+<<Maths operator conversion table>>=
+mathop_table = {"+":"+", "-":"-", "<":"<", "*":"*", "/":"/",
+                ">":">", "<=":"<=", ">=":">=", "!=":"!=",
+                "or":" or ", "and":" and ",
+                "==":"==", "in":" in ", "not in":" not in "}
+ 
 @  We keep a track of any categories that are aliased by the method so that
 we can explicitly pass those categories as an argument of the function. The
 following method traverses the AST to pick up all such aliases.

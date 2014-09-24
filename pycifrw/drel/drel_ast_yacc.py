@@ -93,26 +93,26 @@ def p_or_test(p):
     ''' or_test : and_test
                  | or_test OR and_test'''
     if len(p) == 2: p[0] = p[1]
-    else: p[0] = " ".join((p[1],"or",p[3]))
+    else: p[0] = ["MATHOP","or",p[1],p[3]]
 
 def p_and_test(p):
     '''and_test : not_test
                  | and_test AND not_test'''
     if len(p) == 2: p[0] = p[1]
-    else: p[0] = " ".join((p[1],"and",p[3]))
+    else: p[0] = ["MATHOP","and", p[1],p[3]]
 
 def p_not_test(p):
     '''not_test : comparison
                  | NOT not_test'''
     if len(p) == 2: p[0] = p[1]
-    else: p[0] = " ".join(("not",p[2]))
+    else: p[0] = ["UNARY","not",p[2]]
 
 def p_comparison(p):
     '''comparison : a_expr
                    | a_expr comp_operator a_expr'''
     if len(p) == 2: p[0] = p[1]
     else:
-       p[0] = " ".join((p[1],p[2],p[3]))
+       p[0] = ["MATHOP",p[2],p[1],p[3]]
 
 def p_comp_operator(p):
     '''comp_operator : "<"
@@ -477,7 +477,7 @@ def p_compound_stmt(p):
 def p_if_stmt(p):
     '''if_stmt : IF expression suite
                | if_stmt ELSE suite '''
-    if p[1].lower() == "if":    #first form of expression
+    if isinstance(p[1],basestring):    #first form of expression
         p[0] = ["IF_EXPR"]
         p[0].append(p[2])
         p[0].append(p[3])
