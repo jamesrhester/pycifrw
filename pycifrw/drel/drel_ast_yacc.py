@@ -376,25 +376,13 @@ def p_long_slice(p):
 # the built-in functions are found OK 
 #
 def p_call(p):
-    '''call : primary "(" ")"
-            | primary "(" argument_list ")" '''
-    # simple built-in functions only at this stage
-    builtins = {"list":"StarFile.StarList",
-                "tuple":"StarFile.StarTuple",
-                "table":"dict",
-                "int":"int",
-                "len":"len"}
-    funcname = builtins.get(p[1].lower(),p[1])
-    # try to catch a few straightforward trickier ones
-    if funcname.lower() == "mod":
-        p[0] = "divmod" + "".join(p[2:]) + "[1]"
-    elif funcname.lower() in ['sind','cosd','tand']:
-        p[0] = "math."+funcname[:3].lower()+"("+ "math.radians" + "".join(p[2:])+")"
-    elif funcname.lower() in ['array']:
-        p[0] = "numpy.array(" + "".join(p[2:]) + ")"
-    else: 
-        p[0] = funcname + "".join(p[2:])
-    #print "Function call: %s" % p[0]
+    '''call : ID "(" ")"
+            | ID "(" argument_list ")" '''
+    if len(p) == 4:
+        p[0] = ["FUNC_CALL",p[1],[]]
+    else:
+        p[0] = ["FUNC_CALL",p[1],p[3]]
+    #print "Function call: %s" % `p[0]`
 
 # It seems that in dREL the arguments are expressed differently
 # in the form arg [: specifier], arg ...
@@ -404,11 +392,14 @@ def p_call(p):
 def p_argument_list(p):
     '''argument_list : func_arg 
                      | argument_list "," func_arg '''
-    p[0] = " ".join(p[1:])
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = p[1] + [p[3]]
 
 def p_func_arg(p):
     '''func_arg : expression '''
-    p[0] = p[1]   #ignore list structure for now
+    p[0] = p[1]
                  
 def p_augmented_assignment_stmt(p):
     '''augmented_assignment_stmt : target_list AUGOP expression_list'''
@@ -422,10 +413,9 @@ def p_augmented_assignment_stmt(p):
 # entry.
 
 def p_fancy_drel_assignment_stmt(p):
-    '''fancy_drel_assignment_stmt : primary "(" dotlist ")" '''
-    del p.parser.fancy_drel_id 
-    p[0] = p[3]
-    print "Fancy assignment -> " + p[0]
+    '''fancy_drel_assignment_stmt : ID "(" dotlist ")" ''' 
+    p[0] = ["FANCY_ASSIGN",p[1],p[3]]
+    print "Fancy assignment -> " + `p[0]`
 
 # Something made up specially for drel.  We accumulate results for a series of
 # items in a dictionary which is returned
@@ -433,20 +423,22 @@ def p_fancy_drel_assignment_stmt(p):
 def p_dotlist(p):
     '''dotlist : "." ID "=" expression 
                | dotlist "," "." ID "=" expression'''
-    if len(p) == 5:   #first element of dotlist, element -2 is category id
-        p.parser.fancy_drel_id = p[-2]
-        if p[-2] == p.parser.target_id:      #we will return the results
-            realid = p[-2]+"."+p[2]
-            p[0] = "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (realid,realid,p[4])
-        else:
-            p[0] = p[-2] + "".join(p[1:]) + "\n"
-        print 'Fancy id is ' + `p[-2]`
-    else:
-        if p.parser.fancy_drel_id == p.parser.target_id:
-            realid = p.parser.fancy_drel_id + "." + p[4]
-            p[0] = p[1] + "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (realid,realid,p[6])
-        else:
-            p[0] =  p[1] + p.parser.fancy_drel_id + "".join(p[3:]) + "\n"
+    if len(p) == 5:   #first element of dotlist
+        p[0] = [[p[2],p[4]]]
+    #    p.parser.fancy_drel_id = p[-2]
+    #    if p[-2] == p.parser.target_id:      #we will return the results
+    #        realid = p[-2]+"."+p[2]
+    #        p[0] = "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (realid,realid,p[4])
+    #    else:
+    #        p[0] = p[-2] + "".join(p[1:]) + "\n"
+    #    print 'Fancy id is ' + `p[-2]`
+    else:              #append to previous elements
+         p[0] = p[1] + [[p[4],p[6]]]
+    #    if p.parser.fancy_drel_id == p.parser.target_id:
+    #        realid = p.parser.fancy_drel_id + "." + p[4]
+    #        p[0] = p[1] + "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (realid,realid,p[6])
+    #    else:
+    #        p[0] =  p[1] + p.parser.fancy_drel_id + "".join(p[3:]) + "\n"
 
 def p_assignment_stmt(p):
     '''assignment_stmt : target_list "=" expression_list'''

@@ -5,6 +5,7 @@ conversion code.
 import re
 <<AST builder>>
 <<AST traverser>>
+<<Function transformer>>
 <<With finder>>
 <<Utility functions>>
 
@@ -17,7 +18,7 @@ def make_python_function(in_ast,func_name,returnname=None,cat_meth=False, have_s
     if not returnname: returnname = "__dreltarget"
     print "incoming AST:"
     print `in_ast`
-    func_text = start_traverse(in_ast)
+    func_text = start_traverse(in_ast,target_id=returnname)
     print 'Start========'
     print func_text
     print 'End=========='
@@ -51,8 +52,8 @@ a string.  We define it inside an external function so that our global variables
 are actually just local variables of the enclosing function.
 
 <<AST traverser>>=
-def start_traverse(in_node):
-  special_info = {"special_id":[{}],"target_id":None,"withtable":{},"sub_subject":""}
+def start_traverse(in_node,target_id=None):
+  special_info = {"special_id":[{}],"target_id":target_id,"withtable":{},"sub_subject":""}
   <<Maths operator conversion table>>
   def traverse_ast(in_node):
     if isinstance(in_node,basestring):
@@ -128,10 +129,17 @@ the same as the dREL representation.
             print "Set sub_subject to %s" % special_info["sub_subject"]
             return get_loop
         else:
-            outstring = primary + "["
+            outstring = primary + "[ "   #extra space for empty list - see :-1 below
             for expr in in_node[2]:
                 outstring = outstring + traverse_ast(expr) + ","
             return outstring[:-1] + "]"
+    elif node_type == "FUNC_CALL":
+            func_name,arg_prefix,postfix = get_function_name(in_node[1])
+            outstring = func_name + "( "
+            for argument in in_node[2]:
+                outstring = outstring + arg_prefix + traverse_ast(argument) + ","
+            outstring = outstring[:-1] + ")" + postfix
+            return outstring
 
 @  Compound statements
 
@@ -167,14 +175,7 @@ the same as the dREL representation.
         for one_statement in in_node[1]:
             outstring = outstring + traverse_ast(one_statement) + "\n" 
         return outstring
-    elif node_type == "ASSIGN":  #Target_list ,assigner, expression list
-        outstring = ""
-        for target_value in in_node[1]:
-            outstring = outstring + traverse_ast(target_value)+","
-        outstring = outstring[:-1] + in_node[2]
-        for expression in in_node[3]:
-            outstring = outstring + traverse_ast(expression)+","
-        return outstring[:-1]
+    <<Assignment statements>>
     elif node_type == "LIST":
         outstring = "[" 
         for one_element in in_node[1]:
@@ -187,6 +188,29 @@ the same as the dREL representation.
         for expression in in_node[1]:
              outstring = outstring + traverse_ast(expression) + ","
         return outstring[:-1] + ")"
+
+@  Assignment. The category-level assignments write to a table indexed by
+object id, so the final result will be a set of list-valued datanames for
+insertion into the ciffile.
+
+<<Assignment statements>>=
+elif node_type == "ASSIGN":  #Target_list ,assigner, expression list
+    outstring = ""
+    for target_value in in_node[1]:
+        outstring = outstring + traverse_ast(target_value)+","
+    outstring = outstring[:-1] + in_node[2]
+    for expression in in_node[3]:
+        outstring = outstring + traverse_ast(expression)+","
+    return outstring[:-1]
+elif node_type == "FANCY_ASSIGN":  # [1] is cat name, [2] is list of objects
+    catname = in_node[1]
+    outstring = ""
+    for obj,value in in_node[2]:
+        real_id = "_" + catname + "." + obj
+        newvalue = traverse_ast(value)
+        outstring = outstring + "%s.update({'%s':%s.get('%s',[])+[%s]})\n" % (target_id,real_id,target_id,real_id,newvalue)
+    return outstring 
+
 
 @  Maths.  We have to catch vector and matrix operations and farm them out
 to numpy. Not implemented yet.  A binary maths operation is 'mathop'.  We
@@ -214,6 +238,31 @@ mathop_table = {"+":"+", "-":"-", "<":"<", "*":"*", "/":"/",
                 ">":">", "<=":"<=", ">=":">=", "!=":"!=",
                 "or":" or ", "and":" and ",
                 "==":"==", "in":" in ", "not in":" not in "}
+
+@ To avoid cluttering up the main switch statement, we call out to this function
+in order to find out what the Python name of the given function is.  Where we have
+to provide our own function, that is also listed.
+  
+<<Function transformer>>=
+def get_function_name(in_name):
+    """Return the Python name of the dREL function, an argument prefix,
+       and anything to be appended to the end"""
+    builtins = {"list":"StarFile.StarList",
+                "tuple":"StarFile.StarTuple",
+                "table":"dict",
+                "int":"int",
+                "len":"len"}
+    test_name = in_name.lower()
+    target_name = builtins.get(test_name,None)
+    if target_name is not None:
+        return target_name,"",""
+    if test_name in ['sind','cosd','tand']:
+        return "math."+target_name[:3],"math.radians*",""
+    if test_name in ['array']:
+        return "numpy.array","",""
+    if test_name == "mod":
+        return "divmod","","[1]"
+    return in_name,"",""   #no idea
  
 @  We keep a track of any categories that are aliased by the method so that
 we can explicitly pass those categories as an argument of the function. The
@@ -228,3 +277,4 @@ def find_withs(in_ast):
 def add_indent(text,n=4):
     """Indent text by n spaces"""
     return re.sub("\n","\n"+4*" ",text)
+ 

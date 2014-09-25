@@ -225,7 +225,7 @@ class MoreComplexTestCase(unittest.TestCase):
        radius_bond = 2.0
        If (d1<dmin or d1>(rad1+radius_bond)) b = 5 
        """
-       res = self.parser.parse(teststrg + "\n",debug=True,lexer=self.lexer)
+       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","b",have_sn=False)
        exec realfunc
        b = myfunc(self,self)
@@ -245,14 +245,13 @@ class MoreComplexTestCase(unittest.TestCase):
                       .value = jkl)
                       }
        """
-       self.parser.target_id = "geom_angle"
-       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       res = self.parser.parse(teststrg + "\n",debug=True,lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc",None,cat_meth = True,have_sn=False)
        print "Fancy assign: %s" % res[0]
        exec realfunc
        b = myfunc(self,self)
-       print "Geom_angle.angle = %s" % b['geom_angle.value']
-       self.failUnless(b['geom_angle.value']==[1,2,3,4])
+       print "Geom_angle.angle = %s" % b['_geom_angle.value']
+       self.failUnless(b['_geom_angle.value']==[1,2,3,4,5])
 
    def test_tables(self):
        """Test that tables are parsed correctly"""
@@ -263,7 +262,6 @@ class MoreComplexTestCase(unittest.TestCase):
        print "Table test:"
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","jk",have_sn=False)
-       print "Table: %s" % `res[0]`
        exec realfunc
        b = myfunc(self,self)
        self.failUnless(b['bx']==25)
