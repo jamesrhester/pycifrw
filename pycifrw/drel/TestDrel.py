@@ -6,7 +6,7 @@ import drel_lex
 import drel_ast_yacc
 import py_from_ast
 import CifFile
-import StarFile
+from CifFile import StarFile
 
 # Test simple statements
 
@@ -128,10 +128,6 @@ class MoreComplexTestCase(unittest.TestCase):
        #create our lexer and parser
        self.lexer = drel_lex.lexer
        self.parser = drel_ast_yacc.parser
-       self.parser.withtable = {}
-       self.parser.special_id = []
-       self.parser.target_id = None
-       self.parser.indent = ""
 
    def testassignment(self):
        """Test that an assignment works"""
@@ -245,7 +241,7 @@ class MoreComplexTestCase(unittest.TestCase):
                       .value = jkl)
                       }
        """
-       res = self.parser.parse(teststrg + "\n",debug=True,lexer=self.lexer)
+       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc",None,cat_meth = True,have_sn=False)
        print "Fancy assign: %s" % res[0]
        exec realfunc
@@ -273,15 +269,12 @@ class WithDictTestCase(unittest.TestCase):
        self.lexer = drel_lex.lexer
        self.parser = drel_ast_yacc.parser
        #use a simple dictionary
-       self.testdic = CifFile.CifDic("testdic",grammar="DDLm")
-       self.testblock = CifFile.CifFile("testdic",grammar="DDLm")["DDL_DIC"]
+       #self.testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
+       self.testblock = CifFile.CifFile("nick1.cif",grammar="DDLm")["saly2_all_aniso"]
        #create the global namespace
        self.namespace = self.testblock.keys()
        self.namespace = dict(map(None,self.namespace,self.namespace))
-       self.parser.special_id = [self.namespace]
-       self.parser.withtable = {}
-       self.parser.target_id = None
-       self.parser.indent = ""
+       self.special_ids = [self.namespace]
 
    def test_with_stmt(self):
        """Test what comes out of a simple flow statement, including
@@ -296,9 +289,8 @@ class WithDictTestCase(unittest.TestCase):
            _dictionary.date = "2007-04-01"
            }"""
        self.parser.loopable_cats = []   #category dictionary is not looped
-       self.parser.target_id = '_dictionary.date'
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc",None)
+       realfunc = py_from_ast.make_python_function(res,"myfunc",None,returnname="_dictionary.date")
        print "With statement -> \n" + realfunc
        exec realfunc
        newdate = myfunc(self.testdic,self.testblock)
@@ -308,19 +300,22 @@ class WithDictTestCase(unittest.TestCase):
    def test_loop_statement(self):
        """Test proper processing of loop statements"""
        teststrg = """
-       n = 0
-       loop p as dictionary_audit n += 1
-           _symmetry.ops = n 
+       mass = 0.
+       Loop t as atom_type  {
+                   mass += t.number_in_cell * t.atomic_mass
+       }
+       _cell.atomic_mass = mass
             """
-       self.parser.loopable_cats = ['dictionary_audit']   #category dictionary is not looped
-       self.parser.target_id = '_symmetry.ops'
-       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc",None)
+       loopable_cats = ['atom_type']   #
+       ast = self.parser.parse(teststrg+"\n",debug=True,lexer=self.lexer)
+       realfunc = py_from_ast.make_python_function(ast,"myfunc","_cell.atomic_mass",loopable=loopable_cats)
        print "Loop statement -> \n" + realfunc
        exec realfunc
-       symops = myfunc(self.testdic,self.testblock)
-       print 'symops now %d' % symops 
-       self.failUnless(symops == 81)
+       #  
+       testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
+       atmass = myfunc(testdic,self.testblock)
+       print 'atomic mass now %d' % atmass  
+       self.failUnless(atmass == 81)
        
    def test_functions(self):
        """Test that functions are converted correctly"""
@@ -345,7 +340,7 @@ class WithDictTestCase(unittest.TestCase):
        # We need to do a scary funky attribute of a key lookup 
        ourdic = CifFile.CifDic("testdic2",grammar="DDLm")
        testblock = CifFile.CifFile("test_data.cif",grammar="DDLm")["testdata"]
-       self.parser.loopable_cats = ['geom','position'] #
+       loopable_cats = ['geom','position'] #
        teststrg = """
        LineList = []
        PointList = []
@@ -354,16 +349,15 @@ class WithDictTestCase(unittest.TestCase):
        If (g.type == "point") {
              PointList += Tuple(g.vertex1_id,p[g.vertex1_id].vector_xyz)
        }
-       #Else if (g.type == "line") {
-       #      LineList ++= Tuple(Tuple(g.vertex1_id, g.vertex2_id),
-       #                            Tuple(p[g.vertex1_id].vector_xyz,
-       #                                    p[g.vertex2_id].vector_xyz))
-       #}
+       Else if (g.type == "line") {
+             LineList ++= Tuple(Tuple(g.vertex1_id, g.vertex2_id),
+                                   Tuple(p[g.vertex1_id].vector_xyz,
+                                           p[g.vertex2_id].vector_xyz))
+       }
        }
        """
-       self.parser.target_id = 'PointList'
-       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","PointList")
+       res = self.parser.parse(teststrg+"\n",debug=True,lexer=self.lexer)
+       realfunc = py_from_ast.make_python_function(res,"myfunc","PointList",loopable=loopable_cats)
        print "Function -> \n" + realfunc
        exec realfunc
        retval = myfunc(ourdic,testblock,"LineList")
@@ -391,6 +385,6 @@ class WithDictTestCase(unittest.TestCase):
        
 if __name__=='__main__':
     #unittest.main()
-    suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase)
+    suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     unittest.TextTestRunner(verbosity=2).run(suite)
 

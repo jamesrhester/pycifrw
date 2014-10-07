@@ -115,17 +115,21 @@ def p_comparison(p):
        p[0] = ["MATHOP",p[2],p[1],p[3]]
 
 def p_comp_operator(p):
-    '''comp_operator : "<"
-                     | ">"
-                     | GTE
-                     | LTE
-                     | NEQ
-                     | ISEQUAL
+    '''comp_operator : restricted_comp_operator
                      | IN
                      | NOT IN '''
     if len(p)==3:
         p[0] = " not in "
     else: p[0] = p[1]
+
+def p_restricted_comp_operator(p):   #for loop tests
+    '''restricted_comp_operator :  "<"
+                     | ">"
+                     | GTE
+                     | LTE
+                     | NEQ
+                     | ISEQUAL '''
+    p[0] = p[1]
 
 def p_a_expr(p):
     '''a_expr : m_expr
@@ -296,28 +300,15 @@ def p_attributeref(p):
     '''attributeref : primary attribute_tag '''
     # intercept special loop variables
     # print `p.parser.special_id`
-    newid = None
-    for idtable in p.parser.special_id:
-        newid = idtable.get(p[1],0)
-        if newid: break
-    if newid: 
-        p[0] = "ciffile["+'"_'+newid[0]+p[2]+'"]' 
-        print "In ID processing: %s\n" % `newid`
-        # a with statement may require an index
-        if newid[1]:
-            p[0] = p[0] + "[" + newid[1] + "]"
-    elif p.parser.special_id[0].has_key("".join(p[1:])):
-        # a global variable from the dictionary
-        print "Using global dictionary variable "+p[1:]
-        p[0] = 'ciffile['+"".join(p[1:])+']'
-    else:   #could be a keyed index operation, add back category val
-        p[0] = 'getattr('+ p[1]+ ',"'+p.parser.sub_subject+p[2] + '")' 
-        p.parser.sub_subject = ""
+    p[0] = ["ATTRIBUTE",p[1],p[2]]
 
 def p_attribute_tag(p):
     '''attribute_tag : "." ID 
                      | REAL '''
-    p[0] = "".join(p[1:])
+    if len(p) == 3:
+        p[0] = p[2]
+    else: 
+        p[0] = p[1][1:]
 
 # A subscription becomes a key lookup if the primary is a 
 # pre-defined 'category variable'.  We use the GetKeyedPacket
@@ -519,33 +510,21 @@ def p_for_stmt(p):
 
 def p_loop_stmt(p):
     '''loop_stmt : loop_head suite'''
-    p[0] = p[1] + add_indent(p[2])
+    p[0] = ["LOOP"] + p[1] + [p[2]]
 
 # We capture a list of all the actually present items in the current
 # datafile
 def p_loop_head(p):
     '''loop_head : LOOP ID AS ID 
                  | LOOP ID AS ID ":" ID
-                 | LOOP ID AS ID ":" ID comp_operator ID'''
-    p[0] = "__pycitems = self.names_in_cat('%s')" % p[4]
-    p[0] += "\nprint 'names in cat = %s' % `__pycitems`"
-    p[0] += "\n" + "__pycitems = filter(lambda a:ciffile.has_key(a),__pycitems)"
-    p[0] += "\nprint 'names in cat -> %s' % `__pycitems`\n"
-    p.parser.special_id[-1].update({p[2]: [p[4],"",False]})
-    print "%s means %s" % (p[2],p.parser.special_id[-1][p[2]][0])
-    if p[4] in p.parser.loopable_cats:   #loop over another index
-        if len(p)>5:  #are provided with index
-            loop_index = p[6]
-        else:
-            loop_index =  "__pi%d" % len(p.parser.special_id[-1])
-        p.parser.special_id[-1][p[2]][1] = loop_index
-        p.parser.special_id[-1][p[2]][2] = True 
-        p[0] += "\n"+ "for %s in range(len(ciffile[__pycitems[0]])):" % loop_index
-    else:         #have to emit a block which runs once...
-        p[0] += "\n" + "for __noloop in [0]:"
-    if len(p)==9:             # do an "if" test before proceeding
-        iftest = "if " + "".join(p[6:9]) + ":"
-        p[0] += "\n  " + iftest
+                 | LOOP ID AS ID ":" ID restricted_comp_operator ID'''
+    p[0] = [p[2],p[4]]
+    if len(p)>= 7:
+        p[0] = p[0] + [p[6]]
+    else: p[0] = p[0] + [""]
+    if len(p) == 9:
+        p[0] = p[0] + [p[7],p[8]]
+    else: p[0] = p[0] + ["",""]
 
 def p_do_stmt(p):
     '''do_stmt : do_stmt_head suite'''
@@ -564,11 +543,9 @@ def p_do_stmt_head(p):
     else:
         p[0] = p[0] + [["EXPR",["LITERAL","1"]]]
 
-# Statement blocks after with statements do not require indenting so we
-# undo our indentation
 def p_with_stmt(p):
     '''with_stmt : with_head suite'''
-    p[0] = p[2] 
+    p[0] = p[1]+[p[2]] 
     #outgoing = p.parser.special_id.pop()
     #outindents = filter(lambda a:a[2],outgoing.values())
     #p.parser.indent = p.parser.indent[:len(p.parser.indent)-4*len(outindents)]
@@ -586,14 +563,15 @@ def p_with_stmt(p):
 def p_with_head(p):
     '''with_head : WITH ID AS ID'''
     # p[0] = "__pycitems = self.names_in_cat('%s')" % p[4]
-    p.parser.special_id.append({p[2]: [p[4],"",False]})
-    if p[4] in p.parser.loopable_cats:
-        tb_length = len(p.parser.withtable)  #generate unique id
-        p.parser.withtable.update({p[4]:"__pi%d" % tb_length})
-        p.parser.special_id[-1][p[2]][1] = p.parser.withtable[p[4]]
-    print "%s means %s" % (p[2],p.parser.special_id[-1][p[2]][0])
-    if p.parser.special_id[-1][p[2]][1]:
-        print "%s looped using %s" % (p[2],p.parser.special_id[-1][p[2]][1])
+    # p.parser.special_id.append({p[2]: [p[4],"",False]})
+    # if p[4] in p.parser.loopable_cats:
+    #    tb_length = len(p.parser.withtable)  #generate unique id
+    #    p.parser.withtable.update({p[4]:"__pi%d" % tb_length})
+    #    p.parser.special_id[-1][p[2]][1] = p.parser.withtable[p[4]]
+    #print "%s means %s" % (p[2],p.parser.special_id[-1][p[2]][0])
+    #if p.parser.special_id[-1][p[2]][1]:
+    #    print "%s looped using %s" % (p[2],p.parser.special_id[-1][p[2]][1])
+    p[0] = ["WITH",p[2],p[4]]
 
 def p_where_stmt(p):
     '''where_stmt : WHERE expression suite ELSE suite'''

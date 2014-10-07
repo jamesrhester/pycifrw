@@ -978,6 +978,63 @@ class DictTestCase(unittest.TestCase):
         self.failUnless('description' not in self.ddldic)
         self.failUnless('description_example' not in self.ddldic)
 
+# now for some value testing
+class DDLmValueTestCase(unittest.TestCase):
+    def setUp(self):
+        filedata = """
+data_testblock
+_float.value 4.2
+_hex.value 0xA2
+_list1.value [1.2, 2.3, 4.5]
+_list2.value [['i',4.2],['j',1.5],['lmnop',-4.5]]
+_matrix.value [[1,2,3],[4,5,6],[7,8,9]]
+"""
+        p = open('ddlm_testdata','w')
+        p.write(filedata)
+        p.close()
+        self.testblock = CifFile.CifFile('ddlm_testdata',grammar="DDLm")['testblock']
+
+    def testSingleConversion(self):
+        namedef = CifFile.CifBlock()
+        namedef['_type.container'] = 'Single'
+        namedef['_type.contents'] = 'Real'
+        result = CifFile.convert_type(self.testblock['_float.value'],namedef)
+        self.failUnless(result == 4.2)
+
+    def testListConversion(self):
+        namedef = CifFile.CifBlock()
+        namedef['_type.container'] = 'List'
+        namedef['_type.contents'] = ['Text','Real']
+        result = CifFile.convert_type(self.testblock['_list2.value'],namedef)
+        print 'Result: ' + `result`
+        self.failUnless(result ==  [['i',4.2],['j',1.5],['lmnop',-4.5]])
+
+    def testSimpleListConversion(self):
+        namedef = CifFile.CifBlock()
+        namedef['_type.container'] = 'List'
+        namedef['_type.contents'] = 'Real'
+        result = CifFile.convert_type(self.testblock['_list1.value'],namedef)
+        self.failUnless(result ==  [1.2, 2.3, 4.5])
+
+    def testMatrixConversion(self):
+        namedef = CifFile.CifBlock()
+        namedef['_type.container'] = 'Matrix'
+        namedef['_type.contents'] = 'Integer'
+        result = CifFile.convert_type(self.testblock['_matrix.value'],namedef)
+        self.failUnless(result[1][2] == 6)
+
+    def testTypeInterpretation(self):
+        """Test that we decode DDLm type.contents correctly"""
+        import TypeContentsParser as t
+        p = t.TypeParser(t.TypeParserScanner('List(Real,Real,Real)'))
+        q = getattr(p,"input")()
+        print `q`
+        self.failUnless(q == ['Real','Real','Real'])
+        p = t.TypeParser(t.TypeParserScanner('List(Real,List(Integer,Real),Real)'))
+        q = getattr(p,"input")()
+        print `q`
+        self.failUnless(q == ['Real',['Integer','Real'],'Real'])
+
 ##############################################################
 #
 #  Validation testing
@@ -1138,7 +1195,7 @@ class DicMergeTestCase(unittest.TestCase):
         pass
 
 if __name__=='__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
+    suite = unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase)
     unittest.TextTestRunner(verbosity=2).run(suite)
     #unittest.main()
 

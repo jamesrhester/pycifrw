@@ -2860,6 +2860,7 @@ def run_data_checks(check_block,fulldic,globals={},fake_mand=False):
 <<Utility functions>>=
 <<Extract number and esd>>
 <<Convert value to float, ignore esd>>
+<<Conversions to dictionary types>>
 <<Append update>>
 <<Transpose data>>
 <<Merge dictionaries as CIFs>>
@@ -2902,6 +2903,102 @@ def get_number_with_esd(numstring):
             esd = esd * (10 ** (float(exp[1:])))
     return base_num,esd
 
+@  For dREl operations we require that all numerical types actually appear
+as numerical types rather than strings.  This function takes a datablock
+and a dictionary and converts all the datablock contents to numerical
+values according to the dictionary specifications.  
+
+Note that as written we are happy to interpret a floating point string as
+an integer.  We are therefore assuming that the value has been validated.
+
+<<Conversions to dictionary types>>=
+<<Overall conversion>>
+<<Convert a single value>>
+<<Convert a list value>>
+<<Convert a matrix value>>
+<<Parse the structure specification>>
+
+<<Overall conversion>>=
+def convert_type(value,definition):
+    """Convert value to have the type given by definition"""
+    #extract the actual required type information
+    container = definition['_type.container']
+    structure = interpret_structure(definition['_type.contents'])
+    if container == 'Single':   #a single value to convert
+        return convert_single_value(value,structure)
+    elif container == 'List':   #lots of the same value
+        return convert_list_values(value,structure)
+    elif container == 'Multiple': #no idea 
+        return value
+    elif container in ('Array','Matrix'): #numpy array
+        return convert_matrix_values(value,structure)
+    return value    #unable to convert
+
+<<Convert a single value>>=
+def convert_single_value(value,type_spec):
+    """Convert a single item according to type_spec"""
+    if type_spec == 'Real':
+        return float(value)
+    if type_spec in ('Count','Integer','Index','Binary','Hexadecimal','Octal'):
+        return int(value)
+    if type_spec == 'Complex':
+        return complex(value)
+    if type_spec == 'Imag':
+        return complex(0,value)
+    return value    #can't do anything numeric
+    
+@ Convert a whole DDLm list.  A 'List' type implies a repetition of
+the types given in the 'type.contents' entry.  We get all fancy and
+build a function to decode each entry in our input list.  This function
+is then mapped over the List, and in the case of looped List values,
+it can be mapped over the dataname value as well.  TODO: Note that we do not
+yet handle the case that we are supposed to convert to a Matrix, rather
+than a list.
+
+<<Convert a list value>>=
+def convert_list_values(value,structure):
+    """Convert the values in [[value]] according to the element
+       structure given in [[structure]]"""
+    if isinstance(structure,basestring):   #simple repetition
+        func_def =  "element_convert = lambda a: convert_single_value(a,'%s')" % structure
+    else:
+        func_def =       "def element_convert(element):\n"
+        func_def +=      "   final_val = []\n"   
+        for pos_no in range(len(structure)):
+            func_def +=  "   final_val.append(convert_single_value(element[%d],'%s'))\n" % (pos_no,structure[pos_no])
+        func_def +=      "   return final_val\n"
+    print func_def
+    exec func_def  #(re)defines element_convert in this namespace
+    return map(element_convert,value)
+
+<<Convert a matrix value>>=
+def convert_matrix_values(value,valtype):
+    """Convert a dREL String-valued List structure to a numpy matrix structure"""
+    # first convert to numpy array, then let numpy do the work
+    try: import numpy
+    except:
+        return value   #can't do it
+    p = numpy.array(value)
+    if valtype == 'Real':
+        return p.astype('float')
+    if valtype == 'Integer':
+        return p.astype('int')
+    if valtype == 'Complex':
+        return p.astype('complex')
+    else:
+        raise ValueError, 'Unknown matrix value type'    
+        
+@  DDLm specifies List element composition using a notation of form 'cont(el,el,el...)'
+where 'cont' refers to a container constructor (list or matrix so far) and 'el' is a simple
+element type. If 'cont' is missing, the sequence of elements is a sequence of elements in
+a simple list.  We convert this specification into a list of string elements.
+
+<<Parse the structure specification>>=
+def interpret_structure(struc_spec):
+    """Interpret a DDLm structure specification"""
+    import re
+    simple_els = re.split
+    
 <<Append update>>=
 # A utility function to append to item values rather than replace them
 def update_value(base_dict,new_items):

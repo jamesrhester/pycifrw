@@ -16,8 +16,9 @@ documentation: CifFile.nw YappsStarParser.nw StarFile.nw
 	noweave -html -index -filter l2h CifFile.nw > CifFile.html
 	noweave -html -index -filter l2h StarFile.nw > StarFile.html
 	noweave -html -index -filter l2h YappsStarParser.nw > YappsStarParser.html
+	noweave -html -index -filter l2h TypeContentsParser.nw > TypeContentsParser.html
 # 
-Parsers: YappsStarParser_DDLm.py YappsStarParser_1_1.py YappsStarParser_1_0.py
+Parsers: YappsStarParser_DDLm.py YappsStarParser_1_1.py YappsStarParser_1_0.py  TypeContentsParser.py
 	
 #
 clean: 
@@ -36,4 +37,7 @@ YappsStarParser_DDLm.py: YappsStarParser.nw
 	notangle -RDDLm_syntax YappsStarParser.nw > YappsStarParser_DDLm.g
 	export PYTHONPATH=.; python ./yapps3/yapps2.py YappsStarParser_DDLm.g
 #
+TypeContentsParser.py: TypeContentsParser.nw
+	notangle -RTypeContents_syntax TypeContentsParser.nw > TypeContentsParser.g
+	export PYTHONPATH=.; python ./yapps3/yapps2.py TypeContentsParser.g
 
