@@ -290,7 +290,7 @@ class WithDictTestCase(unittest.TestCase):
            }"""
        self.parser.loopable_cats = []   #category dictionary is not looped
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc",None,returnname="_dictionary.date")
+       realfunc = py_from_ast.make_python_function(res,"myfunc",returnname="_dictionary.date")
        print "With statement -> \n" + realfunc
        exec realfunc
        newdate = myfunc(self.testdic,self.testblock)
@@ -313,6 +313,9 @@ class WithDictTestCase(unittest.TestCase):
        exec realfunc
        #  
        testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
+       # attach dictionary to testblock, which will trigger conversion of
+       # string values to numeric values...
+       self.testblock.assign_dictionary(testdic)
        atmass = myfunc(testdic,self.testblock)
        print 'atomic mass now %d' % atmass  
        self.failUnless(atmass == 81)

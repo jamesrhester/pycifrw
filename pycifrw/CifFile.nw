@@ -289,6 +289,9 @@ If we are passed a non-DDLm dictionary, we ignore the request as there is
 nothing we can do with it outside the normal validity checking, for which
 a different routine is in place.
 
+Having a dictionary in place also implies that values that are returned are
+automatically converted to the type given in the dictionary.
+
 <<Assign a Cif Dictionary>>=
 def assign_dictionary(self,dic):
     if not dic.diclang=="DDLm":
@@ -2223,16 +2226,12 @@ def derive_item(self,key,cifdata,store_value = False):
 
 @ In the single case of executing dREL methods, we wish to return numpy
 Arrays from our __getitem__ so that the mathematical operations proceed
-as expected for matrix etc. objects.  So we provide an alternative
-dictionary 'numerify' routine.  This switch might also work for general
-cases (i.e. non-dREL) but that is not tested.
+as expected for matrix etc. objects. This needs to be reimplimented:
+currently numpy must be installed for 'numerification' to work.
 
 <<Switch on numpy arrays>>=
 def switch_numpy(self,to_val):
-    if to_val:
-        self.recursive_numerify = self.numpy_numerify
-    else:
-        self.recursive_numerify = self.normal_numerify
+    pass
 
 @ This function converts the string-valued items returned from the parser into
 types that correspond to the dictionary specifications.  For DDLm it must also
@@ -2247,43 +2246,12 @@ should still have no Numpy dependence for non DDLm cases
 <<Convert string to appropriate type>>=
 def change_type(self,itemname,inval):
     import numpy
-    # we need to iterate over the structure description.  For now we deal only with
-    # Single and Array containers, with types that are a simple specification
-    item_type = self[itemname]["_type.contents"]
-    item_container = self[itemname]["_type.container"]
-    isnumeric = (item_type == "Real" or \
-       item_type == "Float" or \
-       item_type == "Count" or \
-       item_type == "Integer" or \
-       item_type == "Digit")
-    if not isnumeric: return inval   # we don't attempt any changes
-    # even for a 'Single' container, it may be looped 
-    # print 'Changing type for %s' % `inval`
-    if StarFile.get_dim(inval)[0] == 0:
-        if item_container == 'Single': return float_with_esd(inval)
-        if item_container == 'Array':
-            return self.recursive_numerify(inval) 
-    else:
-        if item_container == 'Single': return map(float_with_esd,inval)
-        if item_container == 'Array': return map(self.recursive_numerify,inval)
- 
-# A utility function to recursively make all atomic values numeric
-# All embedded values will be StarLists
-def normal_numerify(self,valarray): 
-    # print 'Recursive evaluation of %s' % `valarray`
-    if isinstance(valarray,StarFile.StarList):
-        return StarFile.StarList(map(self.recursive_numerify,valarray))
-    if isinstance(valarray,(basestring,IntType,LongType)):
-        return float_with_esd(valarray)
-    else:
-        return valarray    #assume is OK
-            
-# Identical to the above except that a numpy array is returned.  We
-# do the normal_numerify call in order to perform the float conversion.
-#
-def numpy_numerify(self,valarray):
-    import numpy
-    return numpy.array(self.normal_numerify(valarray))
+    change_function = convert_type(self[itemname])
+    if isinstance(inval,list) and not isinstance(inval,StarList):   #from a loop
+        newval = map(change_function,inval)
+    else: 
+        newval = change_function(inval)
+    return newval
 
 @ We may be passed float values which have esds appended.  We catch this case
 by searching for an opening round bracket
@@ -2918,34 +2886,38 @@ an integer.  We are therefore assuming that the value has been validated.
 <<Convert a matrix value>>
 <<Parse the structure specification>>
 
+@  Instead of returning a value, we return a function that can be used
+to convert the values. This saves time reconstructing the conversion
+function for every value in a loop.  
+
 <<Overall conversion>>=
-def convert_type(value,definition):
+def convert_type(definition):
     """Convert value to have the type given by definition"""
     #extract the actual required type information
     container = definition['_type.container']
     structure = interpret_structure(definition['_type.contents'])
     if container == 'Single':   #a single value to convert
-        return convert_single_value(value,structure)
+        return convert_single_value(structure)
     elif container == 'List':   #lots of the same value
-        return convert_list_values(value,structure)
+        return convert_list_values(structure)
     elif container == 'Multiple': #no idea 
-        return value
+        return None
     elif container in ('Array','Matrix'): #numpy array
-        return convert_matrix_values(value,structure)
+        return convert_matrix_values(structure)
     return value    #unable to convert
 
 <<Convert a single value>>=
-def convert_single_value(value,type_spec):
+def convert_single_value(type_spec):
     """Convert a single item according to type_spec"""
     if type_spec == 'Real':
-        return float(value)
+        return float
     if type_spec in ('Count','Integer','Index','Binary','Hexadecimal','Octal'):
-        return int(value)
+        return int
     if type_spec == 'Complex':
-        return complex(value)
+        return complex
     if type_spec == 'Imag':
-        return complex(0,value)
-    return value    #can't do anything numeric
+        return lambda a:complex(0,a)
+    return lambda a:a   #can't do anything numeric
     
 @ Convert a whole DDLm list.  A 'List' type implies a repetition of
 the types given in the 'type.contents' entry.  We get all fancy and
@@ -2956,48 +2928,67 @@ yet handle the case that we are supposed to convert to a Matrix, rather
 than a list.
 
 <<Convert a list value>>=
-def convert_list_values(value,structure):
-    """Convert the values in [[value]] according to the element
+def convert_list_values(structure):
+    """Convert the values according to the element
        structure given in [[structure]]"""
     if isinstance(structure,basestring):   #simple repetition
-        func_def =  "element_convert = lambda a: convert_single_value(a,'%s')" % structure
+        func_def =  "element_convert = convert_single_value('%s')" % structure
     else:
         func_def =       "def element_convert(element):\n"
         func_def +=      "   final_val = []\n"   
         for pos_no in range(len(structure)):
-            func_def +=  "   final_val.append(convert_single_value(element[%d],'%s'))\n" % (pos_no,structure[pos_no])
+            func_def +=  "   final_val.append("
+            type_spec = structure[pos_no]
+            if type_spec == 'Real':
+                cf = "float("
+            elif type_spec in ('Count','Integer','Index','Binary','Hexadecimal','Octal'):
+                cf = 'int('
+            elif type_spec == 'Complex':
+                cf = 'complex('
+            elif type_spec == 'Imag':
+                cf = 'complex(0,'
+            else: cf = ''
+            func_def += cf
+            func_def += "element[%d]" % pos_no
+            if "(" in cf: func_def +=")"
+            func_def +=")\n"  # close append
         func_def +=      "   return final_val\n"
     print func_def
-    exec func_def  #(re)defines element_convert in this namespace
-    return map(element_convert,value)
+    exec func_def in globals() #(re)defines element_convert in global namespace
+    return lambda a: map(element_convert,a)
 
 <<Convert a matrix value>>=
-def convert_matrix_values(value,valtype):
+def convert_matrix_values(valtype):
     """Convert a dREL String-valued List structure to a numpy matrix structure"""
     # first convert to numpy array, then let numpy do the work
     try: import numpy
     except:
-        return value   #can't do it
-    p = numpy.array(value)
+        return lambda a:a   #can't do it
+    func_def =     "def matrix_convert(a):\n"
+    func_def +=    "    import numpy\n"
+    func_def +=    "    p = numpy.array(a)\n"
     if valtype == 'Real':
-        return p.astype('float')
-    if valtype == 'Integer':
-        return p.astype('int')
-    if valtype == 'Complex':
-        return p.astype('complex')
+        func_def+= "    return p.astype('float')\n"
+    elif valtype == 'Integer':
+        func_def +="    return p.astype('int')\n"
+    elif valtype == 'Complex':
+        func_def +="    return p.astype('complex')\n"
     else:
-        raise ValueError, 'Unknown matrix value type'    
+        raise ValueError, 'Unknown matrix value type'
+    exec func_def  #matrix convert is defined
+    return matrix_convert    
         
 @  DDLm specifies List element composition using a notation of form 'cont(el,el,el...)'
 where 'cont' refers to a container constructor (list or matrix so far) and 'el' is a simple
 element type. If 'cont' is missing, the sequence of elements is a sequence of elements in
-a simple list.  We convert this specification into a list of string elements.
+a simple list.  We have written a simple parser to interpret this.
 
 <<Parse the structure specification>>=
 def interpret_structure(struc_spec):
     """Interpret a DDLm structure specification"""
-    import re
-    simple_els = re.split
+    import TypeContentsParser as t
+    p = t.TypeParser(t.TypeParserScanner(struc_spec))
+    return getattr(p,"input")()
     
 <<Append update>>=
 # A utility function to append to item values rather than replace them

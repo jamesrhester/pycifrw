@@ -993,36 +993,7 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
         p.write(filedata)
         p.close()
         self.testblock = CifFile.CifFile('ddlm_testdata',grammar="DDLm")['testblock']
-
-    def testSingleConversion(self):
-        namedef = CifFile.CifBlock()
-        namedef['_type.container'] = 'Single'
-        namedef['_type.contents'] = 'Real'
-        result = CifFile.convert_type(self.testblock['_float.value'],namedef)
-        self.failUnless(result == 4.2)
-
-    def testListConversion(self):
-        namedef = CifFile.CifBlock()
-        namedef['_type.container'] = 'List'
-        namedef['_type.contents'] = ['Text','Real']
-        result = CifFile.convert_type(self.testblock['_list2.value'],namedef)
-        print 'Result: ' + `result`
-        self.failUnless(result ==  [['i',4.2],['j',1.5],['lmnop',-4.5]])
-
-    def testSimpleListConversion(self):
-        namedef = CifFile.CifBlock()
-        namedef['_type.container'] = 'List'
-        namedef['_type.contents'] = 'Real'
-        result = CifFile.convert_type(self.testblock['_list1.value'],namedef)
-        self.failUnless(result ==  [1.2, 2.3, 4.5])
-
-    def testMatrixConversion(self):
-        namedef = CifFile.CifBlock()
-        namedef['_type.container'] = 'Matrix'
-        namedef['_type.contents'] = 'Integer'
-        result = CifFile.convert_type(self.testblock['_matrix.value'],namedef)
-        self.failUnless(result[1][2] == 6)
-
+    
     def testTypeInterpretation(self):
         """Test that we decode DDLm type.contents correctly"""
         import TypeContentsParser as t
@@ -1034,6 +1005,39 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
         q = getattr(p,"input")()
         print `q`
         self.failUnless(q == ['Real',['Integer','Real'],'Real'])
+
+    def testSingleConversion(self):
+        namedef = CifFile.CifBlock()
+        namedef['_type.container'] = 'Single'
+        namedef['_type.contents'] = 'Real'
+        result = CifFile.convert_type(namedef)(self.testblock['_float.value'])
+        self.failUnless(result == 4.2)
+
+    def testListConversion(self):
+        namedef = CifFile.CifBlock()
+        namedef['_type.container'] = 'List'
+        namedef['_type.contents'] = 'List(Text,Real)'
+        result = CifFile.convert_type(namedef)(self.testblock['_list2.value'])
+        print 'Result: ' + `result`
+        self.failUnless(result ==  [['i',4.2],['j',1.5],['lmnop',-4.5]])
+
+    def testSimpleListConversion(self):
+        namedef = CifFile.CifBlock()
+        namedef['_type.container'] = 'List'
+        namedef['_type.contents'] = 'Real'
+        result = CifFile.convert_type(namedef)(self.testblock['_list1.value'])
+        self.failUnless(result ==  [1.2, 2.3, 4.5])
+
+    def testMatrixConversion(self):
+        namedef = CifFile.CifBlock()
+        namedef['_type.container'] = 'Matrix'
+        namedef['_type.contents'] = 'Integer'
+        result = CifFile.convert_type(namedef)(self.testblock['_matrix.value'])
+        self.failUnless(result[1][2] == 6)
+
+    def testValuesReturned(self):
+        """Test that values are returned transparently converted when a dictionary is supplied"""
+        pass
 
 ##############################################################
 #
