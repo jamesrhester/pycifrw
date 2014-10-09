@@ -2,9 +2,8 @@
 # 
 import sys
 sys.path[0] = '.'
-print sys.path
 import unittest, CifFile
-import StarFile
+from CifFile import StarFile
 import re
 
 # Test general string and number manipulation functions
@@ -12,7 +11,7 @@ class BasicUtilitiesTestCase(unittest.TestCase):
     def testPlainLineFolding(self):
        """Test that we can fold a line correctly"""
        test_string = "1234567890123456789012"
-       outstring = StarFile.apply_line_folding(test_string,5,10)
+       outstring = CifFile.apply_line_folding(test_string,5,10)
        out_lines = outstring.split('\n')
        #print outstring
        self.failUnless(out_lines[0]=="\\")
@@ -21,19 +20,19 @@ class BasicUtilitiesTestCase(unittest.TestCase):
     def testPreWrappedFolding(self):
        """Test that pre-wrapped lines are untouched"""
        test_string = "123456789\n012345678\n9012"
-       outstring = StarFile.apply_line_folding(test_string,5,10)
+       outstring = CifFile.apply_line_folding(test_string,5,10)
        self.failUnless(outstring == test_string)
 
     def testManyLineEndings(self):
        """Test that empty lines are handled OK"""
        test_string = "123456789\n\n012345678\n\n9012\n\n"
-       outstring = StarFile.apply_line_folding(test_string,5,10)
+       outstring = CifFile.apply_line_folding(test_string,5,10)
        self.failUnless(outstring == test_string)
 
     def testOptionalBreak(self):
        """Test that internal whitespace is used to break"""
        test_string = "123456  7890123  45678\n90 12\n\n"
-       outstring = StarFile.apply_line_folding(test_string,5,10)
+       outstring = CifFile.apply_line_folding(test_string,5,10)
        #print "\n;" + outstring + "\n;"
        out_lines = outstring.split('\n')
        self.failUnless(len(out_lines[1]) == 7)
@@ -41,14 +40,14 @@ class BasicUtilitiesTestCase(unittest.TestCase):
     def testCorrectEnding(self):
        """Make sure that no line feeds are added/removed"""
        test_string = "123456  7890123  45678\n90 12\n\n"
-       outstring = StarFile.apply_line_folding(test_string,5,10)
+       outstring = CifFile.apply_line_folding(test_string,5,10)
        self.failUnless(outstring[-4:] == "12\n\n")
 
     def testFoldingRemoval(self):
        """Test that we round-trip correctly"""
        test_string = "123456  7890123  45678\n90 12\n\n"
-       outstring = StarFile.apply_line_folding(test_string,5,10)
-       old_string = StarFile.remove_line_folding(outstring)
+       outstring = CifFile.apply_line_folding(test_string,5,10)
+       old_string = CifFile.remove_line_folding(outstring)
        #print "Test:" + `test_string`
        #print "Fold:" + `outstring`
        #print "UnFo:" + `old_string`
@@ -57,8 +56,8 @@ class BasicUtilitiesTestCase(unittest.TestCase):
     def testTrickyFoldingRemoval(self):
        """Try to produce a tough string for unfolding"""
        test_string = "\n1234567890\\\n r t s 345 19\n\nlife don't talk to me about life"
-       outstring = StarFile.apply_line_folding(test_string,5,10)
-       old_string = StarFile.remove_line_folding(outstring)
+       outstring = CifFile.apply_line_folding(test_string,5,10)
+       old_string = CifFile.remove_line_folding(outstring)
        #print "Test:" + `test_string`
        #print "Fold:" + `outstring`
        #print "UnFo:" + `old_string`
@@ -67,8 +66,8 @@ class BasicUtilitiesTestCase(unittest.TestCase):
     def testTrailingBackslash(self):
        """Make sure that a trailing backslash is not removed"""
        test_string = "\n123\\\n 456\\n\n"
-       outstring = StarFile.apply_line_folding(test_string,5,10)
-       old_string = StarFile.remove_line_folding(outstring)
+       outstring = CifFile.apply_line_folding(test_string,5,10)
+       old_string = CifFile.remove_line_folding(outstring)
        #print "Test:" + `test_string`
        #print "Fold:" + `outstring`
        #print "UnFo:" + `old_string`
@@ -77,30 +76,30 @@ class BasicUtilitiesTestCase(unittest.TestCase):
     def testFinalBackslash(self):
         """Make sure that a single final backslash is removed when unfolding"""
         test_string = "\n1234567890\\\n r t s 345 19\n\nlife don't talk to me about life"
-        folded_string = StarFile.apply_line_folding(test_string,5,10)
+        folded_string = CifFile.apply_line_folding(test_string,5,10)
         folded_string = folded_string + "\ "
-        old_string = StarFile.remove_line_folding(folded_string)
+        old_string = CifFile.remove_line_folding(folded_string)
         self.failUnless(old_string == test_string)
 
     def testAddIndent(self):
         """Test insertion of a line prefix"""
         test_string = "\n12345\n678910\n\n"
-        outstring = StarFile.apply_line_prefix(test_string,"abc>")
+        outstring = CifFile.apply_line_prefix(test_string,"abc>")
         print "Converted %s to %s " %(test_string,outstring)
         self.failUnless(outstring == "abc>\\\nabc>\nabc>12345\nabc>678910\nabc>\nabc>")
 
     def testRemoveIndent(self):
         """Test removal of a line prefix"""
         test_string = "abc>\\\nabc>12345\nabc>678910\nabc>\nabc>"
-        outstring = StarFile.remove_line_prefix(test_string)
+        outstring = CifFile.remove_line_prefix(test_string)
         print "Removed indent: " + `outstring`
         self.failUnless(outstring == "12345\n678910\n\n")
 
     def testReverseIndent(self):
         """Test reversible indentation of line"""
         test_string = "12345\n678910\n\n"
-        outstring = StarFile.apply_line_prefix(test_string,"cif><")
-        newtest = StarFile.remove_line_prefix(outstring)
+        outstring = CifFile.apply_line_prefix(test_string,"cif><")
+        newtest = CifFile.remove_line_prefix(outstring)
         print 'Before indenting: ' + `test_string`
         print 'After indenting: ' + `outstring`
         print 'After unindent: ' + `newtest`
@@ -109,10 +108,10 @@ class BasicUtilitiesTestCase(unittest.TestCase):
     def testPrefixAndFold(self):
         """Test reversible folding and indenting"""
         test_string = "\n1234567890\\\n r t s 345 19\n\nlife don't talk to me about life"
-        outstring = StarFile.apply_line_folding(test_string,5,10)
-        indoutstring = StarFile.apply_line_prefix(outstring,"CIF>")
-        newoutstring = StarFile.remove_line_prefix(indoutstring)
-        newtest_string = StarFile.remove_line_folding(newoutstring)
+        outstring = CifFile.apply_line_folding(test_string,5,10)
+        indoutstring = CifFile.apply_line_prefix(outstring,"CIF>")
+        newoutstring = CifFile.remove_line_prefix(indoutstring)
+        newtest_string = CifFile.remove_line_folding(newoutstring)
         print "%s -> %s -> %s -> %s -> %s" % (`test_string`,`outstring`,`indoutstring`,`newoutstring`,`newtest_string`)
         self.failUnless(newtest_string == test_string)
 
@@ -154,7 +153,7 @@ class BlockRWTestCase(unittest.TestCase):
         dataname = '_a_long_long_'*7
         try:
             self.cf[dataname] = 1.0
-        except (StarFile.StarError,CifFile.CifError): pass
+        except (CifFile.StarError,CifFile.CifError): pass
         else: self.fail()
 
     def testTooLongLoopSet(self):
@@ -162,7 +161,7 @@ class BlockRWTestCase(unittest.TestCase):
         dataname = '_a_long_long_'*7
         try:
             self.cf[dataname] = (1.0,2.0,3.0)
-        except (StarFile.StarError,CifFile.CifError): pass
+        except (CifFile.StarError,CifFile.CifError): pass
         else: self.fail()
 
     def testBadStringSet(self):
@@ -170,7 +169,7 @@ class BlockRWTestCase(unittest.TestCase):
         dataname = '_name_is_ok'
         try:
             self.cf[dataname] = "eca234\f\vaqkadlf"
-        except StarFile.StarError: pass
+        except CifFile.StarError: pass
         else: self.fail()
 
     def testBadNameSet(self):
@@ -178,7 +177,7 @@ class BlockRWTestCase(unittest.TestCase):
         dataname = "_this_is_not ok"
         try:
             self.cf[dataname] = "nnn"
-        except StarFile.StarError: pass
+        except CifFile.StarError: pass
         else: self.fail()
 
     def testMoreBadStrings(self):
@@ -186,7 +185,7 @@ class BlockRWTestCase(unittest.TestCase):
         val = u"so far, ok, but now we have a " + unichr(128)
         try:
             self.cf[dataname] = val
-        except StarFile.StarError: pass
+        except CifFile.StarError: pass
         else: self.fail()
 
     def testEmptyString(self):
@@ -195,7 +194,7 @@ class BlockRWTestCase(unittest.TestCase):
         
     def testStarList(self):
         """Test that a StarList is treated as a primitive item"""
-        self.cf['_a_star_list'] = StarFile.StarList([1,2,3,4])
+        self.cf['_a_star_list'] = CifFile.StarList([1,2,3,4])
         jj = self.cf.GetLoop('_a_star_list')
         self.failUnless(jj.dimension==0)
        
@@ -277,7 +276,7 @@ class BlockChangeTestCase(unittest.TestCase):
        else: self.fail()
        try:
            self.cf.AddToLoop('_item_name#2',adddict)
-       except StarFile.StarLengthError:
+       except CifFile.StarLengthError:
            pass 
        else: self.fail()
 
@@ -413,7 +412,7 @@ class BlockNameTestCase(unittest.TestCase):
        cf = CifFile.CifFile()
        try:
            cf['a_very_long_block_name_which_should_be_rejected_out_of_hand123456789012345678']=df
-       except StarFile.StarError: pass
+       except CifFile.StarError: pass
        else: self.fail()
 
    def testBlockOverwrite(self):
@@ -684,14 +683,14 @@ class GrammarTestCase(unittest.TestCase):
        """Read in a 1.0 conformant file with 1.1 grammar; should fail"""
        try:
            f = CifFile.ReadCif("test_1.0",grammar="1.1")  
-       except StarFile.StarError:
+       except CifFile.StarError:
            pass
 
    def testObject(self):
        """Test use of grammar keyword when initialising object"""
        try:
            f = CifFile.CifFile("test_1.0",grammar="1.0")
-       except StarFile.StarError:
+       except CifFile.StarError:
            pass
 
 class ParentChildTestCase(unittest.TestCase):
@@ -839,7 +838,7 @@ class DDLmTestCase(unittest.TestCase):
        """Read in 1.2 nonconformant file; should fail"""
        try:
            f = CifFile.ReadCif("test_1.2",grammar="DDLm")  
-       except StarFile.StarError:
+       except CifFile.StarError:
            pass
       
    def testgood(self):
@@ -894,11 +893,11 @@ class DDLmImportCase(unittest.TestCase):
 # Test dictionary type
 #
 ##############################################################
-#ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic",do_minimum=True)
+ddl1dic = CifFile.CifDic("pycifrw/dictionaries/cif_core.dic",scantype="flex",do_minimum=True)
 
 class DictTestCase(unittest.TestCase):
     def setUp(self):
-	self.ddldic = CifFile.CifDic("tests/ddl.dic",grammar='DDLm',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
+	self.ddldic = CifFile.CifDic("pycifrw/tests/ddl.dic",grammar='DDLm',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
     
     def tearDown(self):
 	pass
@@ -996,7 +995,7 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
     
     def testTypeInterpretation(self):
         """Test that we decode DDLm type.contents correctly"""
-        import TypeContentsParser as t
+        import CifFile.TypeContentsParser as t
         p = t.TypeParser(t.TypeParserScanner('List(Real,Real,Real)'))
         q = getattr(p,"input")()
         print `q`
@@ -1049,7 +1048,7 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
 class DDL1TestCase(unittest.TestCase):
 
     def setUp(self):
-	# self.ddl1dic = CifFile.CifFile("dictionaries/cif_core.dic")
+	# self.ddl1dic = CifFile.CifFile("pycifrw/dictionaries/cif_core.dic")
 	#items = (("_atom_site_label","S1"),
 	#	 ("_atom_site_fract_x","0.74799(9)"),
         #         ("_atom_site_adp_type","Umpe"),
@@ -1134,43 +1133,43 @@ class DDL1TestCase(unittest.TestCase):
 	#       [["C","C","N"],["C1","C2","N1"]]))
 
     def testReport(self):
-        CifFile.validate_report(CifFile.validate("tests/C13H2203_with_errors.cif",dic=ddl1dic))
+        CifFile.validate_report(CifFile.validate("pycifrw/tests/C13H2203_with_errors.cif",dic=ddl1dic))
 
 class FakeDicTestCase(unittest.TestCase):
 # we test stuff that hasn't been used in official dictionaries to date.
     def setUp(self):
-        self.testcif = CifFile.CifFile("dictionaries/novel_test.cif")
+        self.testcif = CifFile.CifFile("pycifrw/dictionaries/novel_test.cif")
 
     def testTypeConstruct(self):
         self.assertRaises(CifFile.ValidCifError,CifFile.ValidCifFile,
-                           diclist=["dictionaries/novel.dic"],datasource=self.testcif)
+                           diclist=["pycifrw/dictionaries/novel.dic"],datasource=self.testcif)
           
 class DicMergeTestCase(unittest.TestCase):
     def setUp(self):
-        self.offdic = CifFile.CifFile("dictionaries/dict_official",standard=None)
-        self.adic = CifFile.CifFile("dictionaries/dict_A",standard=None)
-        self.bdic = CifFile.CifFile("dictionaries/dict_B",standard=None)
-        self.cdic = CifFile.CifFile("dictionaries/dict_C",standard=None)
-        self.cvdica = CifFile.CifFile("dictionaries/cvdica.dic",standard=None)
-        self.cvdicb = CifFile.CifFile("dictionaries/cvdicb.dic",standard=None)
-        self.cvdicc = CifFile.CifFile("dictionaries/cvdicc.dic",standard=None)
-        self.cvdicd = CifFile.CifFile("dictionaries/cvdicd.dic",standard=None)
-        self.testcif = CifFile.CifFile("dictionaries/merge_test.cif",standard=None)
+        self.offdic = CifFile.CifFile("pycifrw/dictionaries/dict_official",standard=None)
+        self.adic = CifFile.CifFile("pycifrw/dictionaries/dict_A",standard=None)
+        self.bdic = CifFile.CifFile("pycifrw/dictionaries/dict_B",standard=None)
+        self.cdic = CifFile.CifFile("pycifrw/dictionaries/dict_C",standard=None)
+        self.cvdica = CifFile.CifFile("pycifrw/dictionaries/cvdica.dic",standard=None)
+        self.cvdicb = CifFile.CifFile("pycifrw/dictionaries/cvdicb.dic",standard=None)
+        self.cvdicc = CifFile.CifFile("pycifrw/dictionaries/cvdicc.dic",standard=None)
+        self.cvdicd = CifFile.CifFile("pycifrw/dictionaries/cvdicd.dic",standard=None)
+        self.testcif = CifFile.CifFile("pycifrw/dictionaries/merge_test.cif",standard=None)
        
     def testAStrict(self):
-        self.assertRaises(StarFile.StarError,CifFile.merge_dic,[self.offdic,self.adic],mergemode="strict")
+        self.assertRaises(CifFile.StarError,CifFile.merge_dic,[self.offdic,self.adic],mergemode="strict")
         
     def testAOverlay(self):
         newdic = CifFile.merge_dic([self.offdic,self.adic],mergemode='overlay')
         # print newdic.__str__()
         self.assertRaises(CifFile.ValidCifError,CifFile.ValidCifFile,
-                                  datasource="dictionaries/merge_test.cif",
+                                  datasource="pycifrw/dictionaries/merge_test.cif",
                                   dic=newdic)
         
 #    def testAReverseO(self):
 #        # the reverse should be OK!
 #        newdic = CifFile.merge_dic([self.adic,self.offdic],mergemode='overlay')
-#        jj = CifFile.ValidCifFile(datasource="dictionaries/merge_test.cif",
+#        jj = CifFile.ValidCifFile(datasource="pycifrw/dictionaries/merge_test.cif",
 #                                 dic = newdic)
 
 #    def testCOverlay(self):
@@ -1178,7 +1177,7 @@ class DicMergeTestCase(unittest.TestCase):
 #        print "New dic..."
 #        print self.offdic.__str__()
 #        self.assertRaises(CifFile.ValidCifError,CifFile.ValidCifFile,
-#                          datasource="dictionaries/merge_test.cif",
+#                          datasource="pycifrw/dictionaries/merge_test.cif",
 #                          dic = self.offdic)
 
     # now for the final example in "maintenance.html"
@@ -1199,7 +1198,7 @@ class DicMergeTestCase(unittest.TestCase):
         pass
 
 if __name__=='__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-    #unittest.main()
+#     suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
+#     unittest.TextTestRunner(verbosity=2).run(suite)
+     unittest.main()
 

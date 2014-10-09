@@ -881,6 +881,38 @@ def ReadStar(filename,prepared = StarFile(),maxlength=2048,scantype='standard',g
     proto_star.scoping = save_scoping
     return proto_star
 
+@ \section{Dictionaries}
+
+If a dictionary is attached to a StarBlock, we can use it to provide
+automatic value conversion whenever a value is retrieved. 
+
+<<Working with dictionaries>>=
+<<Assigning a dictionary>>
+
+@ In DDL1 and DDL2, there is not a whole lot of point associating a DDL
+dictionary with a CIF file in an ongoing way.  However, with DDLm the dictionary
+can be used when searching for attributes, so is no longer simply a checking
+mechanism but is now also a generative mechanism.  So there are advantages to
+making this assignment for DDLm.
+
+If we are passed a non-DDLm dictionary, we ignore the request as there is
+nothing we can do with it outside the normal validity checking, for which
+a different routine is in place.
+
+Having a dictionary in place also implies that values that are returned are
+automatically converted to the type given in the dictionary.
+
+<<Assigning a dictionary>>=
+def assign_dictionary(self,dic):
+    if not dic.diclang=="DDLm":
+        print "Warning: ignoring dictionary %s" % dic.dic_as_cif.my_uri
+        return
+    self.dictionary = dic
+
+def unassign_dictionary(self):
+    """Remove dictionary-dependent behaviour"""
+    self.dictionary = None
+
 @ \section{Collection datatype}
 
 DDLm introduced data values which could be lists, tuples or hash tables.  As
@@ -904,8 +936,8 @@ loop to mean a collection of tag value pairs and a collection of
 zero or more loop blocks (recursive definition).  The values have a
 dimension that increases by one with each embedding. In practice we
 expect only a single level of embedding, i.e. dimension 1 or 0, but
-due to the historical STAR standard allowing multiple levels of loop
-block nesting we can handle more.
+the original STAR standard allows multiple levels of loop
+block nesting so we can handle more.
 
 A CifBlock inherits from a CifLoopBlock which inherits from a Star
 Block which inherits from this LoopBlock class.
@@ -983,6 +1015,7 @@ def __init__(self,data = (), dimension = 0, maxoutlength=2048, wraplength=80, ov
     self.lower_keys = []    #for efficiency
     self.comment_list = {}
     self.dimension = dimension
+    self.dictionary = None      #DDLm dictionary
     self.popout = False         #used during load iteration
     self.curitem = -1           #used during iteration
     self.maxoutlength = maxoutlength
@@ -1023,18 +1056,41 @@ functions we'd like to emulate.   [[__len__]] returns the number
 of items in this block, either in a loop or not.  So it is
 not the simple length of the dictionary.
 
+A Star Block is a Loop Block which can hold save frames in the outermost
+loop.   From version 4.05 we do not allow save frames to be set from within
+the block; rather, an enclosing block collection should be created (e.g. a
+Star File) and the save frame added to that block collection with the
+'enclosing' StarBlock set as its parent. We catch the saves key and
+print an error message to show deprecation.
+
 <<Add emulation of a mapping type>>=
 def __str__(self):
     return self.printsection()
 
 def __setitem__(self,key,value):
+    if key == "saves":
+        raise StarError("""Setting the saves key is deprecated. Add the save block to
+an enclosing block collection (e.g. CIF or STAR file) with this block as child""")
     self.AddLoopItem((key,value))
 
 def __getitem__(self,key):
     if isinstance(key,IntType):   #return a packet!!
-        return self.GetPacket(key)        
-    return self.GetLoopItem(key)
-
+        return self.GetPacket(key) 
+    if key == "saves":
+        raise StarError("""The saves key is deprecated. Access the save block from
+the enclosing block collection (e.g. CIF or STAR file object)""") 
+    try:
+       rawitem = self.GetLoopItem(key)
+    except KeyError:
+       if self.dictionary:
+           # send the dictionary the required key and a pointer to us
+           return self.dictionary.derive_item(key,self)
+       else:
+           raise KeyError, 'No such item: %s' % key
+    # we now have an item, we can try to convert it to a number if that is appropriate
+    if not self.dictionary or not self.dictionary.has_key(key): return rawitem
+    return self.dictionary.change_type(key,rawitem)
+      
 def __delitem__(self,key):
     self.RemoveLoopItem(key)
 
@@ -1389,14 +1445,16 @@ def AddPacket(self,packet):
     self.no_packets +=1 
         # print "%s now %s" % (myitem,`self[myitem]`)
     
-@ The draft DDLm specification uses square brackets next to a pre-specified
-identifier to mean "the packet containing this key item".  As the meaning in
-PyCIFRW is always that of a simple table, we instead implement a function which
-fullfils this role and pre-process the DRel script later to remove the
-square brackets where necessary.   At the LoopBlock level we have no idea as
-to which data name is the key, so that is passed to us from the dictionary
-processing layer.  Note we assume a single key rather than multiple keys for
-this call, and let the calling layer handle multiple or missing packets.
+@ The draft DDLm specification uses square brackets next to a
+pre-specified identifier to mean "the packet containing this key
+item".  As the meaning of such square brackets in PyCIFRW is always
+that of simple dictionary access, we instead implement a function
+which fullfils this role and pre-process the DRel script to
+remove the square brackets where necessary.  At the LoopBlock level we
+have no idea as to which data name is the key, so that is passed to us
+from the dictionary processing layer.  Note we assume a single key
+rather than multiple keys for this call, and let the calling layer
+handle multiple or missing packets.
 
 We guarantee to return a single packet, even if multiple packets match.
 Perhaps we should raise an error in this case.
@@ -2343,31 +2401,16 @@ holding save frames, but this has been removed.
 class StarBlock(LoopBlock):
     <<Adjust emulation of mapping type>>
     <<Merge with another block>>
+    <<Working with dictionaries>>
 
-@ A Star Block is a Loop Block which can hold save frames in the outermost
-loop.   From version 4.05 we do not allow save frames to be set from within
-the block; rather, an enclosing block collection should be created (e.g. a
-Star File) and the save frame added to that block collection with the
-'enclosing' StarBlock set as its parent. We catch the saves key and
-print an error message to show deprecation.
+@ 
+
+The other difference between LoopBlocks and StarBlocks is that the latter
+can have a dictionary attached, whereas inner LoopBlocks should not. 
 
 <<Adjust emulation of mapping type>>=
-def __getitem__(self,key):
-    if key == "saves":
-        raise StarError("""The saves key is deprecated. Access the save block from
-the enclosing block collection (e.g. CIF or STAR file)""")
-    else:
-        return LoopBlock.__getitem__(self,key)
-
-def __setitem__(self,key,value):
-    if key == "saves":
-        raise StarError("""Setting the saves key is deprecated. Add the save block to
-an enclosing block collection (e.g. CIF or STAR file) with this block as child""")
-    else:
-        LoopBlock.__setitem__(self,key,value)
-
 def copy(self):
-    newblock = LoopBlock.copy(self)
+    newblock = super(StarBlock,self).copy()
     return self.copy.im_class(newblock)   #catch inheritance
 
 @ Merging.  Normally merging of dictionaries is done at the data file 

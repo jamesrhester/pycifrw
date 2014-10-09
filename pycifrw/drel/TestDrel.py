@@ -27,7 +27,7 @@ class SimpleStatementTestCase(unittest.TestCase):
         exec realfunc
         self.failUnless(myfunc(self,self)==5.45)
         res = self.parser.parse('a=.45e-24\n',lexer=self.lexer)
-        realfunc = py_from_ast.make_python_function(res,"myfunc","a",have_sn=False)
+        realfunc,_ = py_from_ast.make_python_function(res,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) ==.45e-24)
 
@@ -40,14 +40,14 @@ class SimpleStatementTestCase(unittest.TestCase):
         resm[2] = self.parser.parse('a = 0B0101\n',lexer=self.lexer)
         resm[3] = self.parser.parse('a = 0o731\n',lexer=self.lexer)
         for res,check in zip(resm,checkm):
-            realfunc = py_from_ast.make_python_function(res,"myfunc","a",have_sn=False)
+            realfunc,_ = py_from_ast.make_python_function(res,"myfunc","a",have_sn=False)
             exec realfunc
             self.failUnless(myfunc(self,self) == check)
 
     def testcomplex(self):
         """test parsing a complex number"""
         resc = self.parser.parse('a = 13.45j\n',lexer=self.lexer)
-        realfunc = py_from_ast.make_python_function(resc,"myfunc","a",have_sn=False)
+        realfunc,_ = py_from_ast.make_python_function(resc,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) == 13.45j)
 
@@ -57,10 +57,10 @@ class SimpleStatementTestCase(unittest.TestCase):
         jl = "a = 'my pink pony\"s mane'"
         ress = self.parser.parse(jk+"\n",lexer=self.lexer)
         resr = self.parser.parse(jl+"\n",lexer=self.lexer)
-        realfunc = py_from_ast.make_python_function(ress,"myfunc","a",have_sn=False)
+        realfunc,_ = py_from_ast.make_python_function(ress,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) == jk[5:-1])
-        realfunc = py_from_ast.make_python_function(resr,"myfunc","a",have_sn=False)
+        realfunc,_ = py_from_ast.make_python_function(resr,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) == jl[5:-1])
 #
@@ -77,12 +77,12 @@ class SimpleStatementTestCase(unittest.TestCase):
           end'''"""
         ress = self.parser.parse(jk+"\n",lexer=self.lexer)
         resr = self.parser.parse(jl+"\n",lexer=self.lexer)
-        realfunc = py_from_ast.make_python_function(ress,"myfunc","a",have_sn=False)
+        realfunc,_ = py_from_ast.make_python_function(ress,"myfunc","a",have_sn=False)
         exec realfunc
         print `myfunc(self,self)`
         print `jk[7:-3]`
         self.failUnless(myfunc(self,self) == jk[7:-3])
-        realfunc = py_from_ast.make_python_function(resr,"myfunc","a",have_sn=False)
+        realfunc,_ = py_from_ast.make_python_function(resr,"myfunc","a",have_sn=False)
         exec realfunc
         print `myfunc(self,self)`
         print `jl[7:-3]`
@@ -95,7 +95,7 @@ class SimpleStatementTestCase(unittest.TestCase):
                     ("a = 45.6 / 22.2",45.6/22.2))
         for test,check in testexpr:
             res = self.parser.parse(test+"\n",lexer=self.lexer)
-            realfunc = py_from_ast.make_python_function(res,"myfunc","a",have_sn=False)
+            realfunc,_ = py_from_ast.make_python_function(res,"myfunc","a",have_sn=False)
             exec realfunc
             self.failUnless(myfunc(self,self) == check)
 
@@ -103,7 +103,7 @@ class SimpleStatementTestCase(unittest.TestCase):
         """test comma-separated expressions"""
         test = "a = 5,6,7+8.5e2"
         res = self.parser.parse(test+"\n",lexer=self.lexer) 
-        realfunc = py_from_ast.make_python_function(res,"myfunc","a",have_sn=False)
+        realfunc,_ = py_from_ast.make_python_function(res,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) ==(5,6,7+8.5e2))
 
@@ -111,7 +111,7 @@ class SimpleStatementTestCase(unittest.TestCase):
         """test parentheses"""
         test = "a = ('once', 'upon', 6,7j +.5e2)"
         res = self.parser.parse(test+"\n",lexer=self.lexer) 
-        realfunc = py_from_ast.make_python_function(res,"myfunc","a",have_sn=False)
+        realfunc,_ = py_from_ast.make_python_function(res,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) ==('once' , 'upon' , 6 , 7j + .5e2 ))
 
@@ -119,7 +119,7 @@ class SimpleStatementTestCase(unittest.TestCase):
         """test list parsing"""
         test = "a = ['once', 'upon', 6,7j +.5e2]"
         res = self.parser.parse(test+"\n",lexer=self.lexer) 
-        realfunc = py_from_ast.make_python_function(res,"myfunc","a",have_sn=False)
+        realfunc,_ = py_from_ast.make_python_function(res,"myfunc","a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self) ==['once' , 'upon' , 6 , 7j + .5e2 ])
 
@@ -133,7 +133,7 @@ class MoreComplexTestCase(unittest.TestCase):
        """Test that an assignment works"""
        teststrg = "n  = 11" 
        res = self.parser.parse(teststrg,lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","n",have_sn=False)
+       realfunc,_ = py_from_ast.make_python_function(res,"myfunc","n",have_sn=False)
        exec realfunc
        self.failUnless(myfunc(self,self)==11)
     
@@ -146,7 +146,7 @@ class MoreComplexTestCase(unittest.TestCase):
        do jkl = 0,10,2 {i = i + jkl}
        """
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","i",have_sn=False)
+       realfunc,_ = py_from_ast.make_python_function(res,"myfunc","i",have_sn=False)
        exec realfunc
        realres = myfunc(self,self)
        # Do statements are inclusive
@@ -165,7 +165,7 @@ class MoreComplexTestCase(unittest.TestCase):
           }
        """
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","total",have_sn=False)
+       realfunc,_ = py_from_ast.make_python_function(res,"myfunc","total",have_sn=False)
        exec realfunc
        realres = myfunc(self,self)
        # Do statements are inclusive
@@ -185,7 +185,7 @@ class MoreComplexTestCase(unittest.TestCase):
        """
        self.parser.special_id = [{'axy':1}]
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","pp",have_sn=False)
+       realfunc,_ = py_from_ast.make_python_function(res,"myfunc","pp",have_sn=False)
        exec realfunc
        realres = myfunc(self,self)
        # Do statements are inclusive
@@ -222,7 +222,7 @@ class MoreComplexTestCase(unittest.TestCase):
        If (d1<dmin or d1>(rad1+radius_bond)) b = 5 
        """
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","b",have_sn=False)
+       realfunc,_ = py_from_ast.make_python_function(res,"myfunc","b",have_sn=False)
        exec realfunc
        b = myfunc(self,self)
        print "if returns %d" %  b 
@@ -242,7 +242,7 @@ class MoreComplexTestCase(unittest.TestCase):
                       }
        """
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc",None,cat_meth = True,have_sn=False)
+       realfunc,_ = py_from_ast.make_python_function(res,"myfunc",None,cat_meth = True,have_sn=False)
        print "Fancy assign: %s" % res[0]
        exec realfunc
        b = myfunc(self,self)
@@ -257,7 +257,7 @@ class MoreComplexTestCase(unittest.TestCase):
        """
        print "Table test:"
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","jk",have_sn=False)
+       realfunc,_ = py_from_ast.make_python_function(res,"myfunc","jk",have_sn=False)
        exec realfunc
        b = myfunc(self,self)
        self.failUnless(b['bx']==25)
@@ -269,7 +269,7 @@ class WithDictTestCase(unittest.TestCase):
        self.lexer = drel_lex.lexer
        self.parser = drel_ast_yacc.parser
        #use a simple dictionary
-       #self.testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
+       self.testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
        self.testblock = CifFile.CifFile("nick1.cif",grammar="DDLm")["saly2_all_aniso"]
        #create the global namespace
        self.namespace = self.testblock.keys()
@@ -280,22 +280,24 @@ class WithDictTestCase(unittest.TestCase):
        """Test what comes out of a simple flow statement, including
           multiple with statements"""
        teststrg = """
-       with p as description
-       with q as dictionary {
+       with e as exptl
+       with c as cell_length {
            x = 22
            j = 25
-           jj = q.date
-           px = p.text
-           _dictionary.date = "2007-04-01"
+           jj = e.crystals_number
+           px = c.a
+           _exptl.method = "single-crystal diffraction"
            }"""
-       self.parser.loopable_cats = []   #category dictionary is not looped
+       self.parser.loopable_cats = []   #none looped
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc",returnname="_dictionary.date")
+       realfunc,_ = py_from_ast.make_python_function(res,"myfunc","_exptl.method")
        print "With statement -> \n" + realfunc
        exec realfunc
-       newdate = myfunc(self.testdic,self.testblock)
-       print 'date now %s' % newdate 
-       self.failUnless(newdate == "2007-04-01")
+       # attach dictionary  
+       self.testblock.assign_dictionary(self.testdic)
+       newmeth = myfunc(self.testdic,self.testblock)
+       print 'exptl method now %s' % newmeth 
+       self.failUnless(newmeth == "single-crystal diffraction")
 
    def test_loop_statement(self):
        """Test proper processing of loop statements"""
@@ -307,36 +309,22 @@ class WithDictTestCase(unittest.TestCase):
        _cell.atomic_mass = mass
             """
        loopable_cats = ['atom_type']   #
-       ast = self.parser.parse(teststrg+"\n",debug=True,lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(ast,"myfunc","_cell.atomic_mass",loopable=loopable_cats)
+       ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       realfunc,_ = py_from_ast.make_python_function(ast,"myfunc","_cell.atomic_mass",loopable=loopable_cats)
        print "Loop statement -> \n" + realfunc
        exec realfunc
        #  
-       testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
+       # testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
        # attach dictionary to testblock, which will trigger conversion of
        # string values to numeric values...
-       self.testblock.assign_dictionary(testdic)
-       atmass = myfunc(testdic,self.testblock)
-       print 'atomic mass now %d' % atmass  
-       self.failUnless(atmass == 81)
+       self.testblock.assign_dictionary(self.testdic)
+       atmass = myfunc(self.testdic,self.testblock)
+       print 'atomic mass now %f' % atmass  
+       self.failUnless(atmass == 552.488)
        
    def test_functions(self):
        """Test that functions are converted correctly"""
-       struct_testdic = CifFile.CifFile("/home/jrh/COMCIFS/DDLm_20071010/cif_core.dic")
-       struct_testblock = struct_testdic["CIF_CORE"]
-       self.parser.loopable_cats = ["import"]   #category import is looped
-       self.parser.target_id = "_import_list.id"
-       self.parser.withtable = {}
-       teststrg = """
-       with i as import 
-           _import_list.id = List([i.scope, i.block, i.file, i.if_dupl, i.if_miss])
-       """
-       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc",None)
-       print "With statement -> \n" + realfunc
-       exec realfunc
-       retval = myfunc(self.testdic,struct_testblock,3)
-       self.failUnless(retval == StarFile.StarList(["dic","CORE_MODEL","core_model.dic","exit","exit"]))
+       pass
        
    def test_attributes(self):
        """Test that attributes of complex expressions come out OK"""
@@ -352,15 +340,15 @@ class WithDictTestCase(unittest.TestCase):
        If (g.type == "point") {
              PointList += Tuple(g.vertex1_id,p[g.vertex1_id].vector_xyz)
        }
-       Else if (g.type == "line") {
-             LineList ++= Tuple(Tuple(g.vertex1_id, g.vertex2_id),
-                                   Tuple(p[g.vertex1_id].vector_xyz,
-                                           p[g.vertex2_id].vector_xyz))
-       }
+       #Else if (g.type == "line") {
+       #      LineList ++= Tuple(Tuple(g.vertex1_id, g.vertex2_id),
+       #                            Tuple(p[g.vertex1_id].vector_xyz,
+       #                                    p[g.vertex2_id].vector_xyz))
+       #}
        }
        """
        res = self.parser.parse(teststrg+"\n",debug=True,lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","PointList",loopable=loopable_cats)
+       realfunc,_ = py_from_ast.make_python_function(res,"myfunc","PointList",loopable=loopable_cats)
        print "Function -> \n" + realfunc
        exec realfunc
        retval = myfunc(ourdic,testblock,"LineList")
@@ -378,8 +366,7 @@ class WithDictTestCase(unittest.TestCase):
 
             Closest = Tuple ( v+t, t )
        } """
-       self.parser.target_id = 'Closest'
-       res,ww = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        print "Function -> \n" + res
        exec res
        retval = Closest(0.2,0.8)

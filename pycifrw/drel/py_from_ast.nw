@@ -10,15 +10,16 @@ import re
 <<Utility functions>>
 
 @  The AST builder puts the infrastructure around the statement list to turn it into a
-function call with two arguments: a dictionary and a data file.
+function call with two arguments: a dictionary and a data file.  The target id will
+usually be the dataname that is being defined. We always call this ``__dreltarget''
+within the generated method and need to catch references to it.
 
 <<AST builder>>=
-def make_python_function(in_ast,func_name,returnname=None,cat_meth=False, have_sn=True,loopable=[]):
+def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=False, have_sn=True,loopable=[]):
     """Convert in_ast to python code"""
-    if not returnname: returnname = "__dreltarget"
     print "incoming AST:"
     print `in_ast`
-    func_text = start_traverse(in_ast,target_id=returnname,loopable=loopable)
+    func_text,withtable = start_traverse(in_ast,target_id=targetname,special_ids=special_ids,loopable=loopable)
     print 'Start========'
     print func_text
     print 'End=========='
@@ -44,9 +45,9 @@ def make_python_function(in_ast,func_name,returnname=None,cat_meth=False, have_s
     postamble = ""
     if have_sn:
         postamble = " "*min_spaces + "self.switch_numpy(False)\n"
-    postamble += " "*min_spaces + "return %s" % returnname
+    postamble += " "*min_spaces + "return __dreltarget"
     final = preamble + "".join(indented) + postamble
-    return final
+    return final,withtable
 
 @  The AST traverser is a recursive function which is passed a node.  It returns
 a string.  We define it inside an external function so that our global variables
@@ -80,7 +81,7 @@ def start_traverse(in_node,target_id=None,loopable=[]):
     else:
        return "Not found: %s" % `in_node`
   result = traverse_ast(in_node)
-  return result
+  return result,special_info["withtable"]
 
 @  These are the simple constants that we have detected.
 
@@ -150,6 +151,7 @@ the same as the dREL representation.
             newid = idtable.get(primary,0)
             if newid: break
         if newid:
+            if newid[2]:   # we are looping, not with'ing
             outstring = "ciffile[" + '"_' + newid[0] + "." + in_node[2]+'"]'
             if newid[1]:  # a with or loop statement requires an index
                 outstring += "[" + newid[1]+ "]" 
@@ -358,8 +360,8 @@ following method traverses the AST to pick up all such aliases.
 
 <<With finder>>=
 def find_withs(in_ast):
-    """Return all catagories that are aliased with With statements"""
-    return []
+    """Return all loop categories that are aliased with with statements"""
+    pass
 
 <<Utility functions>>=
 def add_indent(text,n=4):

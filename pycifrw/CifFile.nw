@@ -204,7 +204,6 @@ class CifBlock(CifLoopBlock):
     <<Adjust emulation of a mapping type>>
     <<Add a data item>>
     <<Return all looped names>>
-    <<Assign a Cif Dictionary>>
 
 @ We include the dimension argument in initialisation, as the initialisation
 method could be
@@ -231,29 +230,11 @@ dictionary supplied, we are able to determine the type of the returned
 object, and make the appropriate changes.
 
 <<Adjust emulation of a mapping type>>=
-def __getitem__(self,key):
-    if key == "saves":
-        raise CifError('access via "saves" key is deprecated. Use the enclosing CIF file instead')
-    try:     
-       rawitem = CifLoopBlock.__getitem__(self,key)
-    except KeyError:
-       if self.dictionary:
-           # send the dictionary the required key and a pointer to us
-           rawitem = self.dictionary.derive_item(key,self)
-       else:
-           raise KeyError, 'No such item: %s' % key
-    # we now have an item, we can try to convert it to a number if that is appropriate
-    if not self.dictionary or not self.dictionary.has_key(key): return rawitem
-    return self.dictionary.change_type(key,rawitem)
-
 def __setitem__(self,key,value):
     if key == "saves":
         raise CifError('Access to save frames via "save" key has been removed. Use enclosing CIF/STAR file instead')
     else:
         self.AddCifItem((key,value))
-
-def clear(self):
-    CifLoopBlock.clear(self)
 
 def copy(self):
     newblock = CifLoopBlock.copy(self)
@@ -278,27 +259,6 @@ corresponding to the names in each loop of the file.
 <<Return all looped names>>=
 def loopnames(self):
     return map(lambda a:a.keys(),self.loops)
-
-@ In DDL1 and DDL2, there is not a whole lot of point associating a DDL
-dictionary with a CIF file in an ongoing way.  However, with DDLm the dictionary
-can be used when searching for attributes, so is no longer simply a checking
-mechanism but is now also a generative mechanism.  So there are advantages to
-making this assignment for DDLm.
-
-If we are passed a non-DDLm dictionary, we ignore the request as there is
-nothing we can do with it outside the normal validity checking, for which
-a different routine is in place.
-
-Having a dictionary in place also implies that values that are returned are
-automatically converted to the type given in the dictionary.
-
-<<Assign a Cif Dictionary>>=
-def assign_dictionary(self,dic):
-    if not dic.diclang=="DDLm":
-        print "Warning: ignoring dictionary %s" % dic.dic_as_cif.my_uri
-        return
-    self.dictionary = dic
-
                           
 @ Adding a data item.  We are passed a tuple with the (set) of data
 names at the beginning, and a (set) of values for them following. 
@@ -2082,7 +2042,7 @@ expression.
 In order to correctly treat loops over items within drel, we make a list
 of all listable categories, and a list of all items which can be made into
 an arbitrary length list.  This latter method is very crude, as it
-simply searches for an asterisk in the dimension method.
+simply searches for an asterisk in the dimension attribute.
 
 The parser will return a 2-element list [function text, looped categories].
 We capture the last element in order to properly loop when the function is
@@ -2093,7 +2053,7 @@ are called elsewhere.  We could include assignments to these variable names
 within the generated functions.
 
 If we were really serious about dictionary-driven software, the attribute
-lookups that follow would not use get(), but brackets and allow default
+lookups that follow would not use get(), but square brackets and allow default
 values to be returned.  However, that would require assigning a dictionary
 to the dictionary and consequent automated searches which I can't be bothered
 to do at this stage.  Just be aware that the default value in the get()
@@ -2101,19 +2061,20 @@ statement is the _enumeration.default specified in ddl.dic...
 
 <<Transform drel to python>>=
 def transform_drel(self):
-    from drel import drel_yacc
-    parser = drel_yacc.parser
+    from drel import drel_ast_yacc
+    from drel import py_from_ast
+    parser = drel_ast_yacc.parser
     my_namespace = self.keys()
     my_namespace = dict(map(None,my_namespace,my_namespace)) 
     parser.loopable_cats = [self[a]["_definition.id"] for a in self.keys() if self[a].get("_definition.class","Datum")=="Loop"]
     parser.listable_items = [a for a in self.keys() if "*" in self[a].get("_type.dimension","")] 
     derivable_list = [a for a in self.keys() if self[a].has_key("_method.expression") and self[a].get("_definition.scope","")!='Category' and self[a].get("_name.category_id","")!= "function"]
     for derivable in derivable_list:
-        parser.target_id = derivable
+        target_id = derivable
         # reset the list of visible names for parser
-        parser.special_id = [dict(map(None,self.keys(),self.keys()))]
+        special_ids = [dict(map(None,self.keys(),self.keys()))]
         # reset list of looped with statements
-        parser.withtable = {}
+        withtable = {}
         print "Target id: %s" % derivable
         drel_expr = self[derivable]["_method.expression"]
         if isinstance(drel_expr,ListType):
@@ -2126,16 +2087,18 @@ def transform_drel(self):
         print "Transforming %s" % drel_expr
         # List categories are treated differently...
         try:
-            pyth_meth = parser.parse(drel_expr,debug=True)
+            meth_ast = parser.parse(drel_expr,debug=True)
         except:
-            print 'Failed to construct method for %s; leaving as is' % derivable
-        else:
-                save_overwrite = self[derivable].overwrite
-                self[derivable].overwrite = True
-                self[derivable]["_loop_categories"] = pyth_meth[1].keys()
-                self[derivable]["_method.expression"] = drel_yacc.make_func(pyth_meth,"pyfunc",None) 
-                self[derivable].overwrite = save_overwrite
-                print "Final result:\n " + self[derivable]["_method.expression"]
+            print 'Syntax error in method for %s; leaving as is' % derivable
+            continue
+        # Construct the python method
+        pyth_meth,withtable = py_from_ast.make_python_function(meth_ast,"pyfunc",target_id,special_ids=special_ids)
+        save_overwrite = self[derivable].overwrite
+        self[derivable].overwrite = True
+        self[derivable]["_map_categories"] = withtable.keys()
+        self[derivable]["_method.expression"] = pyth_meth  #NB we hereby unloop the method category
+        self[derivable].overwrite = save_overwrite
+        print "Final result:\n " + self[derivable]["_method.expression"]
 
 @ Drel functions are all stored in category 'functions' in our final dictionary.  We want to
 convert them to executable python code and store them in an appropriate namespace which we
@@ -2174,12 +2137,14 @@ adds the '_enumerations.def_index_id' as an alternative way to derive a value fr
 During development, we deliberately allow errors arising from the method to
 be propagated so that we can see anything that might be wrong.
 
+The store_value flag asks us to update the ciffile object with the new value. 
+
 <<Derive item information>>=
 def derive_item(self,key,cifdata,store_value = False):
     # store any default value in case we have a problem
     def_val = self[key].get("_enumeration.default","")
     def_index_val = self[key].get("_enumeration.def_index_id","")
-    the_func = self[key].get("_method.expression","")  
+    the_func = self[key].get('_method.expression',"")
     if def_val and not the_func : return def_val
     if def_index_val and not the_func:            #derive a default value
         index_vals = self[key]["_enumeration_default.index"]
@@ -2194,35 +2159,39 @@ def derive_item(self,key,cifdata,store_value = False):
         print "Indexed on %s to get %s for %s" % (def_index_val,`result`,`val_to_index`)
         return result
     # read it in
+    if not the_func:   #can't do anything else
+        raise KeyError, 'No way of deriving item %s' % key
     the_category = self[key]["_name.category_id"]
     the_type = self[the_category]["_definition.class"]
     global_table = globals()
     global_table.update(self.ddlm_functions)
-    exec the_func in global_table,locals() #will access dREL functions, puts "pyfunc" in scope
     print 'Executing following function'
     print the_func
-    print 'With following loop categories:' + `self[key].get("_loop_categories","")`
-    # print 'in following global environment: ' + `global_table` 
-    if self[key].get("_loop_categories",""): 
-       loop_category = self[key]["_loop_categories"][0]
-       loop_names = self.names_in_cat(loop_category)
-       no_of_packs = len(cifdata[loop_names[0]])
-       packlist = []
-       for pack_index in range(no_of_packs):
+    exec the_func in global_table,locals() #will access dREL functions, puts "pyfunc" in scope
+    # print 'in following global environment: ' + `global_table`
+    map_categories = self[key].get("_map_categories","") 
+    if map_categories:
+        if len(map_categories > 1):
+            raise CifError, "Found method that operates on two loop categories at once!!"
+        loop_category = map_categories[0]
+        loop_names = self.names_in_cat(loop_category)
+        no_of_packs = len(cifdata[loop_names[0]])
+        packlist = []
+        for pack_index in range(no_of_packs):
           packlist.append(pyfunc(self,cifdata,pack_index))
     # now try to insert the new information into the right place
     # find if items of this category already appear...
-       if store_value: 
-           cat_names = filter(lambda a:self[a].get["_name.category_id",None]==the_category,self.keys())
-           has_cat_names = filter(lambda a:cifdata.has_key(a),cat_names)
-           if len(has_cat_names)>0:
-              target_loop = cifdata.GetLoop(has_cat_names[0])
-              target_loop[key] = packlist      #lengths must match or else!!
-           else:
-              cifdata[key] = packlist  
-       return packlist
-    else:              # No looped categories
-       return pyfunc(self,cifdata)
+    #  if store_value: 
+    #       cat_names = filter(lambda a:self[a].get["_name.category_id",None]==the_category,self.keys())
+    #       has_cat_names = filter(lambda a:cifdata.has_key(a),cat_names)
+    #       if len(has_cat_names)>0:
+    #          target_loop = cifdata.GetLoop(has_cat_names[0])
+    #          target_loop[key] = packlist      #lengths must match or else!!
+    #       else:
+    #          cifdata[key] = packlist  
+    #   return packlist
+    #else:              # No looped categories
+    return pyfunc(self,cifdata)
 
 @ In the single case of executing dREL methods, we wish to return numpy
 Arrays from our __getitem__ so that the mathematical operations proceed
@@ -2247,7 +2216,7 @@ should still have no Numpy dependence for non DDLm cases
 def change_type(self,itemname,inval):
     import numpy
     change_function = convert_type(self[itemname])
-    if isinstance(inval,list) and not isinstance(inval,StarList):   #from a loop
+    if isinstance(inval,list) and not isinstance(inval,StarFile.StarList):   #from a loop
         newval = map(change_function,inval)
     else: 
         newval = change_function(inval)
@@ -2910,7 +2879,7 @@ def convert_type(definition):
 def convert_single_value(type_spec):
     """Convert a single item according to type_spec"""
     if type_spec == 'Real':
-        return float
+        return float_with_esd
     if type_spec in ('Count','Integer','Index','Binary','Hexadecimal','Octal'):
         return int
     if type_spec == 'Complex':
@@ -2940,7 +2909,7 @@ def convert_list_values(structure):
             func_def +=  "   final_val.append("
             type_spec = structure[pos_no]
             if type_spec == 'Real':
-                cf = "float("
+                cf = "float_with_esd("
             elif type_spec in ('Count','Integer','Index','Binary','Hexadecimal','Octal'):
                 cf = 'int('
             elif type_spec == 'Complex':
