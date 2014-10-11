@@ -501,7 +501,7 @@ def p_statement_block(p):
 
 def p_for_stmt(p):
     '''for_stmt : FOR target_list IN expression_list suite'''
-    p[0] = "for " + p[2] + "in" + p[4] + ":\n" + add_indent(p[5])
+    p[0] = ["FOR", p[2], p[4], p[5]]
 
 # We split the loop statement into parts so that we can capture the
 # ID before the suite is processed.  Note that we should record that
@@ -537,7 +537,7 @@ def p_do_stmt_head(p):
     '''do_stmt_head : DO ID "=" expression "," expression
                     | DO ID "=" expression "," expression "," expression '''
     print "Do stmt: " + `p[1:]`
-    p[0] = ["FOR",p[2],p[4],p[6]]
+    p[0] = ["DO",p[2],p[4],p[6]]
     if len(p)==9:
         p[0] = p[0] + [p[8]]
     else:

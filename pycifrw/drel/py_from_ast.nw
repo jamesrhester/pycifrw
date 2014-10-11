@@ -12,42 +12,62 @@ import re
 @  The AST builder puts the infrastructure around the statement list to turn it into a
 function call with two arguments: a dictionary and a data file.  The target id will
 usually be the dataname that is being defined. We always call this ``__dreltarget''
-within the generated method and need to catch references to it.
+within the generated method and so need to catch references to the target_id.
+
+The generated function can be called to generate all values in a loop column, or only
+a single value, by setting keyword argument ``packet_no'' to the required packet, or
+-1.
 
 <<AST builder>>=
 def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=False, have_sn=True,loopable=[]):
     """Convert in_ast to python code"""
     print "incoming AST:"
     print `in_ast`
-    func_text,withtable = start_traverse(in_ast,target_id=targetname,special_ids=special_ids,loopable=loopable)
+    func_text,withtable = start_traverse(in_ast,target_id=targetname,loopable=loopable)
     print 'Start========'
     print func_text
     print 'End=========='
-    with_indices = find_withs(in_ast)
     # now indent the string
     noindent = func_text.splitlines()
     # get the minimum indent and remove empty lines
-    noindent = filter(lambda a:a,noindent)
-    no_spaces = map(lambda a:re.match(r' *',a),noindent)
-    no_spaces = map(lambda a:a.end(),no_spaces)
+    no_spaces = [re.match(r' *',a).end() for a in noindent if a] #drop empty lines
     min_spaces = min(no_spaces)+4   # because we add 4 ourselves to everything
-    w_i_list = ",".join(with_indices)
-    preamble = "def %s(self,ciffile,%s):\n" % (func_name,w_i_list)
-    preamble += min_spaces*" " + "import math\n"
-    preamble += min_spaces*" " + "try:\n"
-    preamble += min_spaces*" " + "    import numpy\n"
-    preamble += min_spaces*" " + "except: pass\n"
-    if have_sn:
-        preamble += min_spaces*" " + "self.switch_numpy(True)\n"
-    if cat_meth:
-        preamble += min_spaces*" " + "%s = {}\n" % returnname
-    indented = map(lambda a:"    " + a+"\n",noindent)  
+    if len(withtable) > 0:  # a loop method
+        <<Create function header for loop>>
+    else:
+        <<Create function header for unlooped data>>
+    #if cat_meth:
+    #    preamble += min_spaces*" " + "%s = {}\n" % returnname
+    indented = map(lambda a:" "*8 + a +"\n",noindent)  #indent dREL body
     postamble = ""
-    if have_sn:
-        postamble = " "*min_spaces + "self.switch_numpy(False)\n"
-    postamble += " "*min_spaces + "return __dreltarget"
+    postamble += " "*8 + "return __dreltarget"
     final = preamble + "".join(indented) + postamble
-    return final,withtable
+    return final
+
+@  Creating functions for looped categories.  We provide a shell function which
+internally calls the transformed function with the option of performing the
+calculation on a single packet or on the whole category.
+
+<<Create function header for loop>>=
+    dummy_vars = [a[0] for a in withtable.items()]
+    dummy_vars = ",".join(dummy_vars)
+    actual_names = [k for k in withtable.keys()]
+    actual_names = ["ciffile[repr(a)]" for a in actual_names]
+    map_names = ",".join(actual_names)
+    one_pack_names = [a+"[packet_no]" for a in actual_names]
+    one_packet_each = ",".join(one_pack_names)
+    preamble = "def %s(self,ciffile,packet_no=-1):\n" % (func_name)
+    preamble += "    if packet_no < 0:   #map\n"""
+    preamble  +="        return map(lambda %s: drel_func(self,ciffile,%s),%s)\n" % (dummy_vars,dummy_vars,map_names)
+    preamble  +="    else:\n"
+    preamble  +="        return drel_func(self,ciffile,%s)\n" % one_packet_each
+    preamble  +="    def drel_func(dic,cifdata,%s):\n" % dummy_vars
+
+@ Un'with'ed data can simply be called with the dictionary and ciffile, with no
+need for any extra variables
+
+<<Create function header for unlooped data>>=
+    preamble = "def %s(self,ciffile):\n" % func_name
 
 @  The AST traverser is a recursive function which is passed a node.  It returns
 a string.  We define it inside an external function so that our global variables
@@ -57,9 +77,11 @@ handled, either because they correspond to datanames (first entry in list) or to
 A variable defined in a loop statement will also have a loop index that
 needs to be incremented and used to index a packet; this is the second entry in the list
 indexed by the variable alias. The second entry is also used to hold the
-packet index for the 'with' statement (this index is passed to the main
-generated function by the caller).  The final boolean entry determines if
-looping is necessary.
+dummy variable for the 'with' statement.  The final function can be mapped across the
+keys of the with table to calculate the whole column of a category.
+
+The final boolean entry determines whether the second entry is for looping (True) or
+not (False).
 
 <<AST traverser>>=
 def start_traverse(in_node,target_id=None,loopable=[]):
@@ -143,25 +165,7 @@ the same as the dREL representation.
             for expr in in_node[2]:
                 outstring = outstring + traverse_ast(expr) + ","
             return outstring[:-1] + "]"
-    elif node_type == "ATTRIBUTE":  # id , att
-        # check for special ids
-        outstring = ""
-        primary = traverse_ast(in_node[1])
-        for idtable in special_info["special_id"]:
-            newid = idtable.get(primary,0)
-            if newid: break
-        if newid:
-            if newid[2]:   # we are looping, not with'ing
-            outstring = "ciffile[" + '"_' + newid[0] + "." + in_node[2]+'"]'
-            if newid[1]:  # a with or loop statement requires an index
-                outstring += "[" + newid[1]+ "]" 
-        elif special_info["special_id"][0].has_key(primary+"."+in_node[2]):
-            # a simple cat.obj dataname from the dictionary
-            outstring = "ciffile['" + in_node[1] + "." + in_node[2] +"']"
-        else: # default to Python attribute access
-            outstring = "getattr(" + primary + ",'" + special_info['sub_subject'] + in_node[2] + "')"
-            special_info['sub_subject'] = ""
-        return outstring
+    <<Process attribute reference>>
     elif node_type == "FUNC_CALL":
             func_name,arg_prefix,postfix = get_function_name(in_node[1])
             outstring = func_name + "( "
@@ -169,6 +173,44 @@ the same as the dREL representation.
                 outstring = outstring + arg_prefix + traverse_ast(argument) + ","
             outstring = outstring[:-1] + ")" + postfix
             return outstring
+
+@  Attribute references.  We need to catch all attribute references to special
+variables (those defined by loop or with statements).  For ``with'' variables, we
+create a dummy variable for every attribute reference, keyed by the actual
+dataname formed from the variable.object syntax.  We store the order that
+it appears in the function call that is created, so that we can include the function
+within a 'map' statement and give the correct order of items.  So the withtable
+has syntax {``dataname'':(dummyname,dummyorder)}.
+
+<<Process attribute reference>>=
+elif node_type == "ATTRIBUTE":  # id , att
+    # check for special ids
+    outstring = ""
+    primary = traverse_ast(in_node[1])
+    for idtable in special_info["special_id"]:
+        newid = idtable.get(primary,0)
+        if newid: break
+    if newid:
+        # if we are looping, we add a loop prefix. If we are withing an
+        # unlooped category, we put the full name back.
+        if newid[2] or (not newid[2] and not newid[1]):   # looping or simple with
+            outstring = "ciffile[" + '"_' + newid[0] + "." + in_node[2]+'"]'
+            if newid[1]:  # a loop statement requires an index
+                outstring += "[" + newid[1]+ "]"
+        else:   # a with statement; capture the name and create a dummy variable
+            var_name = "_" + newid[1]+"." + in_node[2]
+            if not special_info["withtable"].has_key(var_name):  #new
+                position = len(special_info["withtable"])
+                new_var = "__w%d" % position
+                special_info["withtable"][var_name] = (new_var,position)
+            outstring += special_info["withtable"][var_name][0]
+    elif special_info["special_id"][0].has_key(primary+"."+in_node[2]):
+        # a simple cat.obj dataname from the dictionary
+        outstring = "ciffile['" + in_node[1] + "." + in_node[2] +"']"
+    else: # default to Python attribute access
+        outstring = "getattr(" + primary + ",'" + special_info['sub_subject'] + in_node[2] + "')"
+        special_info['sub_subject'] = ""
+    return outstring
 
 @  Compound statements
 
@@ -187,7 +229,7 @@ the same as the dREL representation.
 
 # dREL for statements include the final value, whereas a python range will include
 # everything up to the final number
-    elif node_type == "FOR":    #FOR ID = start, finish, incr, suite
+    elif node_type == "DO":    #DO ID = start, finish, incr, suite
         outstring = "for " + in_node[1] + " in range(" + traverse_ast(in_node[2]) + ","
         finish = traverse_ast(in_node[3])
         increment = traverse_ast(in_node[4])
@@ -195,6 +237,15 @@ the same as the dREL representation.
         outstring = outstring + "):"
         suite = add_indent("\n"+traverse_ast(in_node[5]))
         return outstring + suite
+    elif node_type == "FOR": # FOR target_list expression_list suite
+        outstring = "for "
+        for express in in_node[1]:
+            outstring = outstring + traverse_ast(express) + ","
+        outstring = outstring[:-1] + " in "
+        for target in in_node[2]:
+            outstring += traverse_ast(target) + ","
+        outstring = outstring[:-1] + ":" + add_indent("\n" + traverse_ast(in_node[3]))
+        return outstring
     <<With statements>>
     <<Loop statements>>
 
@@ -210,14 +261,10 @@ elif node_type == "WITH": #old_id new_id suite
     alias_id = in_node[1]
     cat_id = in_node[2]
     special_info['special_id'][-1].update({alias_id:[cat_id,"",False]})
-    if in_node[2] in special_info['loopable_cats']: #create a packet index
-        tb_length = len(special_info['withtable'])
-        withid = "__pi%d" % tb_length
-        special_info['withtable'].update({in_node[1]:withid})
-        special_info['special_id'][-1][alias_id][1] = withid
-    print "%s means %s" % (in_node[1],special_info['special_id'][-1][alias_id][0])
-    if special_info['special_id'][-1][alias_id][1]:
-        print "%s looped using %s" % (alias_id,special_info['special_id'][-1][alias_id][-1])
+    if in_node[2] in special_info['loopable_cats']: #flat this
+        if len(special_info['withtable'])!= 0:
+            raise CifError, "Error: cannot map over two categories in single method"
+        special_info['special_id'][-1][1] = "looped_cat"
     outstring = traverse_ast(in_node[3])
     return outstring
 
