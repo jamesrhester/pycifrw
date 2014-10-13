@@ -57,14 +57,22 @@ def p_simple_stmt(p):
                     | augmented_assignment_stmt
                     | fancy_drel_assignment_stmt
                     | print_stmt
-                    | BREAK
-                    | NEXT'''
+                    | break_stmt
+                    | next_stmt'''
     p[0] = p[1]
     # print "Simple statement: " + `p[0]`
 
+def p_break_stmt(p):
+    '''break_stmt : BREAK'''
+    p[0] = ["BREAK"]
+
+def p_next_stmt(p):
+    '''next_stmt : NEXT'''
+    p[0] = ["NEXT"]
+
 def p_print_stmt(p):
     '''print_stmt : PRINT expression '''
-    p[0] = 'print ' + p[2]
+    p[0] = ['PRINT', p[2]]
 
 # note do not accept trailing commas
 
@@ -75,7 +83,6 @@ def p_expression_list(p):
     if len(p) == 2: p[0] = [p[1]]
     else: 
         p[0] = p[1] + [p[3]]
-        print "constructing expr list: %s" % `p[0]`
 
 
 # Simplified from the python 2.5 version due to apparent conflict with
@@ -91,13 +98,15 @@ def p_expression(p):
 
 def p_or_test(p):
     ''' or_test : and_test
-                 | or_test OR and_test'''
+                 | or_test OR and_test
+                 | or_test BADOR and_test'''
     if len(p) == 2: p[0] = p[1]
     else: p[0] = ["MATHOP","or",p[1],p[3]]
 
 def p_and_test(p):
     '''and_test : not_test
-                 | and_test AND not_test'''
+                 | and_test AND not_test
+                 | and_test BADAND not_test'''
     if len(p) == 2: p[0] = p[1]
     else: p[0] = ["MATHOP","and", p[1],p[3]]
 
@@ -180,7 +189,6 @@ def p_primary(p):
 # Separated out so that we can re-initialise subscription category
 def p_primary_att(p):
     '''primary_att : attributeref'''
-    print "Reinitialising sub_subject from %s to null" % p.parser.sub_subject
     p.parser.sub_subject = ""
     p[0] = p[1]
 
@@ -232,7 +240,8 @@ def p_parenth_form(p):
 
 def p_string_conversion(p):
     '''string_conversion : "`" expression_list "`" '''
-    p[0] = "".join(p[1:])
+    # WARNING: NOT IN PUBLISHED dREL papaer
+    p[0] = ["FUNC_CALL","str",p[2]]
 
 def p_list_display(p):
     ''' list_display : "[" listmaker "]"
@@ -320,52 +329,40 @@ def p_subscription(p):
     p[0] = ["SUBSCRIPTION",p[1],p[3]]
 
 def p_slicing(p):
-    '''slicing : simple_slicing
-               | extended_slicing '''
-    p[0] = p[1] 
-
-def p_simple_slicing(p):
-    '''simple_slicing : primary "[" short_slice "]" '''
-    p[0] = " ".join(p[1:]) 
-
-def p_short_slice(p):
-    '''short_slice : ":"
-                   | expression ":" expression
-                   | ":" expression
-                   | expression ":" '''
-    p[0] = " ".join(p[1:]) 
-
-def p_extended_slicing(p):
-    '''extended_slicing : primary "[" slice_list "]" '''
-    p[0] = " ".join(p[1:])
-
-def p_slice_list(p):
-    '''slice_list : slice_item
-                  | slice_list "," slice_item '''
-    p[0] = " ".join(p[1:])
-
-def p_slice_item(p):
-    '''slice_item : expression
-                  | proper_slice
-                  | ELLIPSIS '''
-    p[0] = p[1] 
+    '''slicing :  primary "[" proper_slice "]" '''
+    p[0] = ["SLICE", p[1], p[2] ] 
 
 def p_proper_slice(p):
     '''proper_slice : short_slice
                     | long_slice '''
     p[0] = p[1]
 
+# Our slice convention is that, if anything is mentioned,
+# the first element is always
+# explicitly mentioned. A single element will be a starting
+# element. Two elements are start and finish. An empty list
+# is all elements. Three elements are start, finish, step
+
+def p_short_slice(p):
+    '''short_slice : ":"
+                   | expression ":" expression
+                   | ":" expression
+                   | expression ":" '''
+    if len(p) == 2: p[0] = []
+    if len(p) == 4: p[0] = [p[1],p[3]]
+    if len(p) == 3 and p[1] == ":":
+        p[0] = [0,p[2]]
+    if len(p) == 3 and p[2] == ":":
+        p[0] = [p[1]]
+
 def p_long_slice(p):
     '''long_slice : short_slice ":"
                   | short_slice ":" expression '''
-    p[0] = " ".join(p[1:])
+    if len(p) == 4:
+        p[0] = p[1] + [p[3]]
+    else:
+        p[0] = p[1]
 
-# Last of the primary non-terminals...
-# We can catch quite a few of the functions simply by
-# rewriting the function name.  By default, the function
-# name is passed through unchanged; this makes sure that
-# the built-in functions are found OK 
-#
 def p_call(p):
     '''call : ID "(" ")"
             | ID "(" argument_list ")" '''
@@ -375,11 +372,8 @@ def p_call(p):
         p[0] = ["FUNC_CALL",p[1],p[3]]
     #print "Function call: %s" % `p[0]`
 
-# It seems that in dREL the arguments are expressed differently
-# in the form arg [: specifier], arg ...
-#
-# We assume a simplified form
-#
+# These are the arguments to a call, not a definition
+
 def p_argument_list(p):
     '''argument_list : func_arg 
                      | argument_list "," func_arg '''
@@ -451,8 +445,7 @@ def p_compound_stmt(p):
                      | do_stmt
                      | loop_stmt
                      | with_stmt
-                     | where_stmt
-                     | switch_stmt
+                     | repeat_stmt
                      | funcdef '''
     p[0] = p[1]
     #print "Compound statement: \n" + p[0]
@@ -466,7 +459,6 @@ def p_if_stmt(p):
         p[0].append(p[3])
     else:                       #else statement
         p[0] = p[1].append(p[3])
-    print "If statement: \n" + `p[0]`
 
 # Note the dREL divergence from Python here: we allow compound
 # statements to follow without a separate block (like C etc.)
@@ -481,17 +473,10 @@ def p_if_stmt(p):
 def p_suite(p):
     '''suite : simple_stmt
              | compound_stmt
-             | open_brace statement_block close_brace '''
+             | "{" statement_block "}" '''
     if len(p) == 2: p[0] =  ["STATEMENTS", [p[1]]]
     else:
         p[0] = p[2]  #already have a statement block
-
-# separate so we can do the indent/dedent thing
-def p_open_brace(p):
-    '''open_brace : "{"'''
-
-def p_close_brace(p):
-    '''close_brace : "}"'''
 
 def p_statement_block(p):
     '''statement_block : statement
@@ -536,12 +521,15 @@ def p_do_stmt(p):
 def p_do_stmt_head(p):
     '''do_stmt_head : DO ID "=" expression "," expression
                     | DO ID "=" expression "," expression "," expression '''
-    print "Do stmt: " + `p[1:]`
     p[0] = ["DO",p[2],p[4],p[6]]
     if len(p)==9:
         p[0] = p[0] + [p[8]]
     else:
         p[0] = p[0] + [["EXPR",["LITERAL","1"]]]
+
+def p_repeat_stmt(p):
+    '''repeat_stmt : REPEAT suite'''
+    p[0] = ["REPEAT",p[2]]
 
 def p_with_stmt(p):
     '''with_stmt : with_head suite'''
@@ -573,47 +561,21 @@ def p_with_head(p):
     #    print "%s looped using %s" % (p[2],p.parser.special_id[-1][p[2]][1])
     p[0] = ["WITH",p[2],p[4]]
 
-def p_where_stmt(p):
-    '''where_stmt : WHERE expression suite ELSE suite'''
-    pass
-
-def p_switch_stmt(p):
-    '''switch_stmt : SWITCH ID open_brace caselist DEFAULT suite close_brace '''
-    pass
-
-def p_caselist(p):
-    '''caselist : CASE target_list suite
-                | caselist CASE target_list suite'''
-    pass
-
 def p_funcdef(p):
     ''' funcdef : FUNCTION ID "(" arglist ")" suite '''
-    p[0] = "def " + "".join(p[2:6]) + ":"
-    # add some import statements 
-    p[0] += "\n" + add_indent("import StarFile,math,numpy")
-    # add a return statement as the last statement of the suite
-    p[0] += "\n" + add_indent(p[6] + 'return ' + p[2] + '\n')
+    p[0] = ["FUNCTION",p[2],p[3],p[4]]
 
 def p_arglist(p):
     ''' arglist : ID ":" list_display
                 | arglist "," ID ":" list_display '''
-    if len(p) == 4: p[0] = p[1]
-    else: p[0] = p[1] + "," + p[3]
+    if len(p) == 4: p[0] = [(p[1],p[2])]
+    else: p[0] = p[1] + [(p[3],p[5])]
 
 def p_error(p):
-    print 'Syntax error at token %s, value %s' % (p.type,p.value)
+    print 'Syntax error at position %d, token %s, value %s' % (p.lexpos,p.type,p.value)
+    print 'Surrounding text: 
     raise SyntaxError, 'Syntax error at token %s, value %s' % (p.type,p.value)
  
-### Now some helper functions
-# do indentation: we substitute any "\n" characters in the
-# input with "\n+4 spaces"
-def add_indent(instring):
-    import re
-    indented = re.sub("(?m)^","    ",instring)
-    indented = indented.rstrip(" ")  #remove extras at end
-    print "Indenting: \n%s\n->\n%s" % (instring,indented)
-    return indented
-
 # The following function creates a function. The function
 # modifies the 'ciffile' argument in place.  The pi argument is a 
 # packet index for when we are accessing looped data using a

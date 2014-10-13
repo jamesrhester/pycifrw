@@ -173,6 +173,20 @@ the same as the dREL representation.
                 outstring = outstring + arg_prefix + traverse_ast(argument) + ","
             outstring = outstring[:-1] + ")" + postfix
             return outstring
+    elif node_type == "SLICE":  # primary [start,finish,step]
+        outstring = traverse_ast(in_node[1]) + "["
+        slice_list = in_node[2]
+        if len(slice_list) == 0:
+            return outstring + ":]"
+        if len(slice_list) >0:    # at least start
+            outstring += traverse_ast(slice_list[0]) + ":"
+        if len(slice_list) == 1:    #start only
+            return outstring + "]"
+        outstring += traverse_ast(slice_list[1])
+        if len(slice_list) == 3:    #step as well
+          outstring += ":" + traverse_ast(slice_list[2])
+        outstring += "]"
+        return outstring
 
 @  Attribute references.  We need to catch all attribute references to special
 variables (those defined by loop or with statements).  For ``with'' variables, we
@@ -246,8 +260,11 @@ elif node_type == "ATTRIBUTE":  # id , att
             outstring += traverse_ast(target) + ","
         outstring = outstring[:-1] + ":" + add_indent("\n" + traverse_ast(in_node[3]))
         return outstring
+    elif node_type == "REPEAT": #REPEAT suite
+        outstring = "while True:" + add_indent("\n" + traverse_ast(in_node[1]))
     <<With statements>>
     <<Loop statements>>
+    <<Function definitions>>
 
 @  With statements.  ``With'' in dREL is ultimately just a simple alias (see separate document discussing this) if we consider that a looped item
 method is necessarily mapped across all packets of the category, or in other
@@ -304,7 +321,21 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     outstring = outstring + add_indent("\n"+loop_body)
     return outstring
 
-@  Top level constructions. Ultimately we end up with a list of statements.
+@  Function arguments can have their types explicitly specified, but we don't make use
+of this.
+
+<<Function definitions>>=
+elif node_type == "FUNCTION":   #FUNCTION ID ARGLIST SUITE
+    func_name = in_node[1]
+    outstring = "def %s (" % func_name
+    for one_arg in in_node[2]:
+        outstring += one_arg[0] + ","
+    outstring = outstring[:-1] + "):"
+    outstring = outstring + add_indent("\n" + traverse_ast(in_node[3])+"\nreturn %s" % func_name)
+    return outstring
+
+@  \section{Top level constructions}. 
+Ultimately we end up with a list of statements.
 
 <<Top level constructions>>=
     elif node_type == "STATEMENTS":
@@ -325,6 +356,12 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
         for expression in in_node[1]:
              outstring = outstring + traverse_ast(expression) + ","
         return outstring[:-1] + ")"
+    elif node_type == "PRINT":
+        return 'print ' + traverse_ast(in_node[1])
+    elif node_type == "BREAK":
+        return 'break '
+    elif node_type == "NEXT":
+        return 'continue '
 
 @  Assignment. The category-level assignments write to a table indexed by
 object id, so the final result will be a set of list-valued datanames for

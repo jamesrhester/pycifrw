@@ -22,12 +22,15 @@ tokens = (
     'STRPREFIX',
     'ELLIPSIS',
     'AND',
+    'BADAND',
     'OR',
+    'BADOR',
     'IN',
     'NOT',
     'DO',
     'FOR',
     'LOOP',
+    'REPEAT',
     'AS',
     'WITH',
     'WHERE',
@@ -40,7 +43,8 @@ tokens = (
     'DEFAULT',
     'AUGOP',
     'PRINT',
-    'FUNCTION'
+    'FUNCTION',
+    'ESCAPE_NEWLINE'
      )
 
 literals = '+*-/;()[],:^<>{}=.`'
@@ -55,9 +59,11 @@ t_NEQ = r'!='
 t_GTE = r'>='
 t_LTE = r'<='
 t_ELLIPSIS = r'\.\.\.'
+t_BADOR = r'\|\|'
+t_BADAND = r'&&'
 
 def t_AUGOP(t):
-    r'(\+\+=)|(\+=)|(-=)|(\*=)|(/=)'
+    r'(\+\+=)|(\+=)|(-=)|(--=)|(\*=)|(/=)'
     return t
 
 # Do the reals before the integers, otherwise the integer will
@@ -145,6 +151,7 @@ reserved = {
     'Next': 'NEXT',
     'next' : 'NEXT',
     'break': 'BREAK',
+    'Break': 'BREAK',
     'if': 'IF',
     'If': 'IF',
     'switch': 'SWITCH',
@@ -153,20 +160,25 @@ reserved = {
     'function' : 'FUNCTION',
     'Print' : 'PRINT',
     'print' : 'PRINT',
+    'Repeat': 'REPEAT',
+    'repeat': 'REPEAT',
     'default' : 'DEFAULT'
     }
 
 def t_ID(t):
     r'[a-zA-Z][a-zA-Z0-9_$]*'
     t.type = reserved.get(t.value,'ID')
-    if t.type == 'NEXT': t.value = 'continue'
     return t
 
-# Item tags can have periods and underscores inside, and must have
-# at least one of them at the front 
+# Item tags can have periods, underscores and digits inside, and must have
+# at least one underscore at the front
 def t_ITEM_TAG(t):
-    r'_[a-zA-Z_.]+'
+    r'_[a-zA-Z_.0-9]+'
     return t
+
+def t_ESCAPE_NEWLINE(t):
+    r'\\\n'
+    pass
 
 def t_COMMENT(t):
     r'\#.*'
