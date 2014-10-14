@@ -227,6 +227,32 @@ class MoreComplexTestCase(unittest.TestCase):
        print "if returns %d" %  b 
        self.failUnless(b==5)
 
+   def test_complex_if(self):
+       """Test if with single-statement suite"""
+       teststrg = """
+       setting = 'triclinic'
+       a   = 20.0
+       b   = 20.0
+       c   = 20.0
+       d   = 0.01
+       alp = 90.0
+       bet = 90.0
+       gam = 90.0
+       warn_len = 'Possible mismatch between cell lengths and cell setting'
+       warn_ang = 'Possible mismatch between cell angles and cell setting'
+ 
+       If(setting == 'triclinic') {
+         If( Abs(a-b)<d || Abs(a-c)<d || Abs(b-c)<d )          Alert('B', warn_len)
+         If( Abs(alp-90)<d || Abs(bet-90)<d || Abs(gam-90)<d ) Alert('B', warn_ang)
+       } else _res = ('None',"")
+       """
+       res = self.parser.parse(teststrg + "\n",debug=True,lexer=self.lexer)
+       realfunc = py_from_ast.make_python_function(res,"myfunc","_res",have_sn=False)
+       exec realfunc
+       b = myfunc(self,self)
+       print "if returns " + `b` 
+       self.failUnless(b==('B', 'Possible mismatch between cell angles and cell setting'))
+
    def test_for_statement(self):
        """Test for statement with list"""
        teststrg = """

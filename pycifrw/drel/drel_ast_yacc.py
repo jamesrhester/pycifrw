@@ -458,7 +458,7 @@ def p_if_stmt(p):
         p[0].append(p[2])
         p[0].append(p[3])
     else:                       #else statement
-        p[0] = p[1].append(p[3])
+        p[0] = p[1] + [p[3]]
 
 # Note the dREL divergence from Python here: we allow compound
 # statements to follow without a separate block (like C etc.)
@@ -572,8 +572,8 @@ def p_arglist(p):
     else: p[0] = p[1] + [(p[3],p[5])]
 
 def p_error(p):
-    print 'Syntax error at position %d, token %s, value %s' % (p.lexpos,p.type,p.value)
-    print 'Surrounding text: 
+    print 'Syntax error at position %d, line %d token %s, value %s' % (p.lexpos,p.lineno,p.type,p.value)
+    print 'Surrounding text: ' + p.lexer.lexdata[p.lexpos - 100: p.lexpos + 100]
     raise SyntaxError, 'Syntax error at token %s, value %s' % (p.type,p.value)
  
 # The following function creates a function. The function
