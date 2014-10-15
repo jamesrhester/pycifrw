@@ -341,7 +341,12 @@ Ultimately we end up with a list of statements.
     elif node_type == "STATEMENTS":
         outstring = ""
         for one_statement in in_node[1]:
-            outstring = outstring + traverse_ast(one_statement) + "\n" 
+            try:
+                outstring = outstring + traverse_ast(one_statement) + "\n" 
+            except SyntaxError, message:
+                outstring += "raise SyntaxError, %s" % message
+            except:
+                outstring += "raise SyntaxError, %s" % `one_statement`
         return outstring
     <<Assignment statements>>
     elif node_type == "LIST":
@@ -351,6 +356,12 @@ Ultimately we end up with a list of statements.
         return outstring + "]"
     elif node_type == "EXPR":
         return traverse_ast(in_node[1])
+    # Expr list occurs only when a non-assignment statement appears as expr_stmt
+    elif node_type == "EXPRLIST":
+        outstring = ""
+        for one_expr in in_node[1]:
+            outstring += traverse_ast(one_expr) + "\n"
+        return outstring
     elif node_type == "GROUP":
         outstring = "("
         for expression in in_node[1]:

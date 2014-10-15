@@ -22,7 +22,7 @@ class SimpleStatementTestCase(unittest.TestCase):
 
     def testrealnum(self):
         """test parsing of real numbers"""
-        res = self.parser.parse('_a=5.45\n',lexer=self.lexer)
+        res = self.parser.parse('_a=5.45\n',debug=True,lexer=self.lexer)
         realfunc = py_from_ast.make_python_function(res,"myfunc","_a",have_sn=False)
         exec realfunc
         self.failUnless(myfunc(self,self)==5.45)
@@ -127,6 +127,7 @@ class MoreComplexTestCase(unittest.TestCase):
    def setUp(self):
        #create our lexer and parser
        self.lexer = drel_lex.lexer
+       self.lexer.lineno = 0
        self.parser = drel_ast_yacc.parser
 
    def testassignment(self):
@@ -145,7 +146,7 @@ class MoreComplexTestCase(unittest.TestCase):
        _i = 0
        do jkl = 0,10,2 {_i = _i + jkl}
        """
-       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       res = self.parser.parse(teststrg + "\n", lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_i",have_sn=False)
        exec realfunc
        realres = myfunc(self,self)
@@ -242,11 +243,11 @@ class MoreComplexTestCase(unittest.TestCase):
        warn_ang = 'Possible mismatch between cell angles and cell setting'
  
        If(setting == 'triclinic') {
-         If( Abs(a-b)<d || Abs(a-c)<d || Abs(b-c)<d )          Alert('B', warn_len)
-         If( Abs(alp-90)<d || Abs(bet-90)<d || Abs(gam-90)<d ) Alert('B', warn_ang)
+         If( Abs(a-b)<d || Abs(a-c)<d || Abs(b-c)<d )          _res = ('B', warn_len)
+         If( Abs(alp-90)<d || Abs(bet-90)<d || Abs(gam-90)<d ) _res = ('B', warn_ang)
        } else _res = ('None',"")
        """
-       res = self.parser.parse(teststrg + "\n",debug=True,lexer=self.lexer)
+       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_res",have_sn=False)
        exec realfunc
        b = myfunc(self,self)
@@ -280,7 +281,7 @@ class MoreComplexTestCase(unittest.TestCase):
                       .value = jkl)
                       }
        """
-       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       res = self.parser.parse(teststrg + "\n", debug = True, lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc",None,cat_meth = True,have_sn=False)
        print "Fancy assign: %s" % res[0]
        exec realfunc
@@ -386,7 +387,7 @@ class WithDictTestCase(unittest.TestCase):
        #}
        }
        """
-       res = self.parser.parse(teststrg+"\n",debug=True,lexer=self.lexer)
+       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","PointList",loopable=loopable_cats)
        print "Function -> \n" + realfunc
        exec realfunc

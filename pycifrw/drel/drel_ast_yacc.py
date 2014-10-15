@@ -19,43 +19,39 @@ tokens = drel_lex.tokens
 # 
 
 def p_input(p):
-    '''input : statement
-             | input statement'''
-    if len(p)==2:
-        p[0] = ["STATEMENTS"]+ [p[1]]
+    '''input : statements 
+             | input statements'''
+    if len(p) == 2:
+        p[0] = p[1]
     else:
-        #print "Appending more statements:  "
-        #print "Before: " + `p[1]`
-        #print "adding..." + `p[2]`
-        p[0] = ["STATEMENTS"] + [p[1][1] + p[2]] 
-        #print "After: " + `p[0]`
+        so_far = p[1][1]
+        new_statements = p[2][1]
+        p[0] = ["STATEMENTS",p[1][1] + p[2][1]]
+        print 'input now ' + `p[0]`
 
-def p_statement(p):
-    '''statement : stmt_list '''
-#                | compound_stmt_as_list'''
-    p[0] = p[1]
-
-#def p_compound_stmt_as_list(p):
-#    '''compound_stmt_as_list : compound_stmt '''
-#    p[0] = [p[1]]
-
-def p_stmt_list(p): 
-    '''stmt_list : simple_stmt
+def p_statements(p): 
+    '''statements : small_stmt
                  | compound_stmt
-                 | stmt_list ";" simple_stmt
-                 | stmt_list ";" simple_stmt ";" '''
-    if len(p) == 2: p[0] = [p[1]]
-    else: p[0] = p[1] + [p[3]]
+                 | NEWLINE small_stmt
+                 | NEWLINE compound_stmt
+                 | statements separator
+                 | statements separator small_stmt
+                 | statements separator compound_stmt
+                 | statements separator small_stmt separator
+                 | statements separator compound_stmt separator '''
+    if len(p) == 2: p[0] = ["STATEMENTS",[p[1]]]
+    elif len(p) == 3:
+        if p[1][0] == '\n': p[0] = ["STATEMENTS",[p[2]]]
+        else: p[0] = p[1]
+    else: p[0] = ["STATEMENTS", p[1][1] + [p[3]]]
 
-# differs from Python in that an expression list is not
-# allowed.  Thus no procedure calls, for example.
-# This is done to avoid a reduce/reduce conflict for
-# identifiers (start of expression? start of target?)
-
-def p_simple_stmt(p):
-    '''simple_stmt :  assignment_stmt
-                    | augmented_assignment_stmt
-                    | fancy_drel_assignment_stmt
+def p_separator(p):
+    '''separator : NEWLINE 
+                 | ";" '''
+    pass
+    
+def p_small_stmt(p):
+    '''small_stmt :   expr_stmt
                     | print_stmt
                     | break_stmt
                     | next_stmt'''
@@ -74,15 +70,39 @@ def p_print_stmt(p):
     '''print_stmt : PRINT expression '''
     p[0] = ['PRINT', p[2]]
 
+# Note here that a simple testlist_star_expr is useless as in our
+# side-effect-free world it will be evaluated and discarded. We
+# could just drop it right now but we let it go through to the
+# AST processor for language-dependent processing
+def p_expr_stmt(p):
+    ''' expr_stmt : testlist_star_expr
+                  | testlist_star_expr AUGOP testlist_star_expr 
+                  | testlist_star_expr "=" testlist_star_expr
+                  | fancy_drel_assignment_stmt '''
+    if len(p) == 2 and p[1][0] != 'FANCY_ASSIGN':  # we have a list of expressions which we
+        p[0] = ["EXPRLIST",p[1]]
+    elif len(p) == 2 and p[1][0] == 'FANCY_ASSIGN':
+        p[0] = p[1]
+    else:
+        p[0] = ["ASSIGN",p[1],p[2],p[3]]
+
+def p_testlist_star_expr(p):  # list of expressions in fact
+    ''' testlist_star_expr : expression
+                           | testlist_star_expr "," expression '''
+    if len(p) == 2:
+       p[0] = [p[1]]
+    else:
+       p[0] = p[1] + [p[3]]
+
 # note do not accept trailing commas
 
-def p_expression_list(p):
-    '''expression_list : expression
-                        | expression_list "," expression '''
-
-    if len(p) == 2: p[0] = [p[1]]
-    else: 
-        p[0] = p[1] + [p[3]]
+#def p_expression_list(p):
+#    '''expression_list : expression
+#                        | expression_list "," expression '''
+#
+#    if len(p) == 2: p[0] = [p[1]]
+#    else: 
+#        p[0] = p[1] + [p[3]]
 
 
 # Simplified from the python 2.5 version due to apparent conflict with
@@ -202,7 +222,6 @@ def p_atom(p):
 
 def p_item_tag(p):
     '''item_tag : ITEM_TAG'''
-    # print "Target %s, treating %s" % (p.parser.target_name,"".join(p[1:]))
     p[0] = ["ITEM_TAG",p[1]]
 
 def p_literal(p): 
@@ -231,7 +250,7 @@ def p_enclosure(p):
     p[0]=p[1]
 
 def p_parenth_form(p):
-    '''parenth_form : "(" expression_list ")"
+    '''parenth_form : "(" testlist_star_expr ")"
                      | "(" ")" '''
     if len(p) == 3: p[0] = ["GROUP"]
     else:
@@ -239,7 +258,7 @@ def p_parenth_form(p):
     # print 'Parens: %s' % `p[0]`
 
 def p_string_conversion(p):
-    '''string_conversion : "`" expression_list "`" '''
+    '''string_conversion : "`" testlist_star_expr "`" '''
     # WARNING: NOT IN PUBLISHED dREL papaer
     p[0] = ["FUNC_CALL","str",p[2]]
 
@@ -253,9 +272,7 @@ def p_list_display(p):
 
 # scrap the trailing comma
 def p_listmaker(p):
-    '''listmaker : expression listmaker2 
-                   | expression list_for '''
-
+    '''listmaker : expression listmaker2  '''
     p[0] = [p[1]] + p[2]
     # print 'listmaker: %s' % `p[0]`
 
@@ -270,45 +287,13 @@ def p_listmaker2(p):
     else:
         p[0] = p[1] + [p[3]] 
 
-def p_list_for(p):
-    '''list_for : FOR expression_list IN testlist
-                | FOR expression_list IN testlist list_iter'''
-    pass
-
-def p_testlist(p):
-    '''testlist : or_test
-                | testlist "," or_test
-                | testlist "," or_test "," '''
-    pass
-
-def p_list_iter(p): 
-    '''list_iter : list_for 
-                  | list_if'''
-    pass
-
-def p_list_if(p):
-    '''list_if : IF or_test
-               | IF or_test list_iter'''
-    pass
-
-# We have to intercept attribute references which relate to
-# aliased category variables, as well as to catch literal
-# item names containing a period.
-#
 # Note that we need to catch tags of the form 't.12', which
 # our lexer will interpret as ID REAL.  We therefore also
 # accept t.12(3), which is not allowed, but we don't bother
 # trying to catch this error here.
-#
-# Note that there is no other meaning for '.' in drel beyond
-# category-item specifications, so we adopt a default stance
-# of converting all otherwise unresolvable attribute references
-# to simple table references to fit in with the PyCIFRW practice.
  
 def p_attributeref(p):
     '''attributeref : primary attribute_tag '''
-    # intercept special loop variables
-    # print `p.parser.special_id`
     p[0] = ["ATTRIBUTE",p[1],p[2]]
 
 def p_attribute_tag(p):
@@ -325,7 +310,7 @@ def p_attribute_tag(p):
 # code here
 #
 def p_subscription(p):
-    '''subscription : primary "[" expression_list "]" '''
+    '''subscription : primary "[" testlist_star_expr "]" '''
     p[0] = ["SUBSCRIPTION",p[1],p[3]]
 
 def p_slicing(p):
@@ -386,12 +371,12 @@ def p_func_arg(p):
     '''func_arg : expression '''
     p[0] = p[1]
                  
-def p_augmented_assignment_stmt(p):
-    '''augmented_assignment_stmt : target_list AUGOP expression_list'''
-    if p[2] == "++=":          #append to list
-        p[0] = ["CONCAT",p[1],p[3]]
-    else:
-        p[0] = ["ASSIGN",p[1],p[2],p[3]]
+#def p_augmented_assignment_stmt(p):
+#    '''augmented_assignment_stmt : target_list AUGOP testlist_star_expr'''
+#    if p[2] == "++=":          #append to list
+#        p[0] = ["CONCAT",p[1],p[3]]
+#    else:
+#        p[0] = ["ASSIGN",p[1],p[2],p[3]]
 
 # We simultaneously create multiple results for a single category.  In 
 # this case __dreltarget is a dictionary with keys for each category
@@ -400,15 +385,20 @@ def p_augmented_assignment_stmt(p):
 def p_fancy_drel_assignment_stmt(p):
     '''fancy_drel_assignment_stmt : ID "(" dotlist ")" ''' 
     p[0] = ["FANCY_ASSIGN",p[1],p[3]]
-    print "Fancy assignment -> " + `p[0]`
+#    print "Fancy assignment -> " + `p[0]`
 
 # Something made up specially for drel.  We accumulate results for a series of
-# items in a dictionary which is returned
+# items in a dictionary which is returned.  A newline is OK between assignments
 
 def p_dotlist(p):
     '''dotlist : "." ID "=" expression 
-               | dotlist "," "." ID "=" expression'''
-    if len(p) == 5:   #first element of dotlist
+               | "." ID "=" expression NEWLINE
+               | dotlist "," "." ID "=" expression
+               | dotlist "," NEWLINE "." ID "=" expression
+               | dotlist "," "." ID "=" expression NEWLINE
+               | dotlist "," NEWLINE "." ID "=" expression NEWLINE '''
+               
+    if len(p) <= 6:   #first element of dotlist
         p[0] = [[p[2],p[4]]]
     #    p.parser.fancy_drel_id = p[-2]
     #    if p[-2] == p.parser.target_id:      #we will return the results
@@ -417,21 +407,23 @@ def p_dotlist(p):
     #    else:
     #        p[0] = p[-2] + "".join(p[1:]) + "\n"
     #    print 'Fancy id is ' + `p[-2]`
-    else:              #append to previous elements
+    elif p[3][0] != '\n':              #append to previous elements
          p[0] = p[1] + [[p[4],p[6]]]
+    else:
+         p[0] = p[1] + [[p[5],p[7]]]
     #    if p.parser.fancy_drel_id == p.parser.target_id:
     #        realid = p.parser.fancy_drel_id + "." + p[4]
     #        p[0] = p[1] + "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (realid,realid,p[6])
     #    else:
     #        p[0] =  p[1] + p.parser.fancy_drel_id + "".join(p[3:]) + "\n"
 
-def p_assignment_stmt(p):
-    '''assignment_stmt : target_list "=" expression_list'''
-    p[0] = ["ASSIGN", p[1],"=",p[3]]
+#def p_assignment_stmt(p):
+#    '''assignment_stmt : target_list "=" testlist_star_expr '''
+#    p[0] = ["ASSIGN", p[1],"=",p[3]]
 
-def p_target_list(p):
-    '''target_list : primary 
-                   | target_list "," primary '''
+def p_exprlist(p):
+    ''' exprlist : a_expr
+                 | exprlist "," a_expr ''' 
     if len(p) == 2:
         p[0] = [p[1]]
     else: p[0] = p[1] + [p[3]]
@@ -464,28 +456,22 @@ def p_if_stmt(p):
 # statements to follow without a separate block (like C etc.)
 # For simplicity we indent consistently (further up). Where
 # we have a single statement immediately following we have
-# to make the statement block.  A simple_stmt will be a single
+# to make the statement block.  A small_stmt will be a single
 # production, so must be put into a list in order to match
 # the 'statements' structure (i.e. 2nd element is a list of
 # statements).  A compound_stmt is thus forced to be also a
 # non-listed object.
 
 def p_suite(p):
-    '''suite : simple_stmt
+    '''suite : small_stmt
              | compound_stmt
-             | "{" statement_block "}" '''
+             | "{" statements "}" '''
     if len(p) == 2: p[0] =  ["STATEMENTS", [p[1]]]
     else:
         p[0] = p[2]  #already have a statement block
 
-def p_statement_block(p):
-    '''statement_block : statement
-                      | statement_block statement'''
-    if len(p) == 2: p[0] = ["STATEMENTS", p[1]] 
-    else: p[0] = ["STATEMENTS",p[1][1] + p[2]]
-
 def p_for_stmt(p):
-    '''for_stmt : FOR target_list IN expression_list suite'''
+    '''for_stmt : FOR exprlist IN testlist_star_expr suite'''
     p[0] = ["FOR", p[2], p[4], p[5]]
 
 # We split the loop statement into parts so that we can capture the

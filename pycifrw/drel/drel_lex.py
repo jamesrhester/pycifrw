@@ -44,15 +44,12 @@ tokens = (
     'AUGOP',
     'PRINT',
     'FUNCTION',
+    'NEWLINE',
     'ESCAPE_NEWLINE'
      )
 
 literals = '+*-/;()[],:^<>{}=.`'
 t_ignore = ' \t'
-
-def t_newline(t):
-    r'\n+'
-    t.lexer.lineno+=len(t.value)
 
 def t_error(t):
     print 'Illegal character %s' % repr(t.value[0])
@@ -183,6 +180,11 @@ def t_ITEM_TAG(t):
 def t_ESCAPE_NEWLINE(t):
     r'\\\n'
     t.lexer.lineno += 1
+
+def t_NEWLINE(t):
+    r'\n+'
+    t.lexer.lineno+=len(t.value)
+    return t
 
 def t_COMMENT(t):
     r'\#.*'
