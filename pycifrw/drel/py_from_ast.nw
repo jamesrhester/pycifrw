@@ -19,7 +19,8 @@ a single value, by setting keyword argument ``packet_no'' to the required packet
 -1.
 
 <<AST builder>>=
-def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=False, have_sn=True,loopable=[]):
+def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=False, 
+                         func_def = False, have_sn=True,loopable=[]):
     """Convert in_ast to python code"""
     print "incoming AST:"
     print `in_ast`
@@ -27,6 +28,8 @@ def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=F
     print 'Start========'
     print func_text
     print 'End=========='
+    if func_def:
+        return func_text
     # now indent the string
     noindent = func_text.splitlines()
     # get the minimum indent and remove empty lines
@@ -147,7 +150,7 @@ the same as the dREL representation.
         for list_elem in in_node[1:]:
             outstring = outstring + traverse_ast(list_elem) + ","
         return outstring + "]"
-    elif node_type == "SUBSCRIPTION":  # variable, expression list
+    elif node_type == "SUBSCRIPTION":  # variable, single expression
         # check to see if this is a special variable
         newid = 0
         primary = traverse_ast(in_node[1])
@@ -161,10 +164,9 @@ the same as the dREL representation.
             print "Set sub_subject to %s" % special_info["sub_subject"]
             return get_loop
         else:
-            outstring = primary + "[ "   #extra space for empty list - see :-1 below
-            for expr in in_node[2]:
-                outstring = outstring + traverse_ast(expr) + ","
-            return outstring[:-1] + "]"
+            outstring = primary + "["
+            outstring = outstring + traverse_ast(in_node[2]) + "]"
+            return outstring
     <<Process attribute reference>>
     elif node_type == "FUNC_CALL":
             func_name,arg_prefix,postfix = get_function_name(in_node[1])
@@ -341,12 +343,12 @@ Ultimately we end up with a list of statements.
     elif node_type == "STATEMENTS":
         outstring = ""
         for one_statement in in_node[1]:
-#            try:
+            try:
                 outstring = outstring + traverse_ast(one_statement) + "\n" 
-#            except SyntaxError, message:
-#                outstring += "raise SyntaxError, %s" % message
-#            except:
-#                outstring += "raise SyntaxError, %s" % `one_statement`
+            except SyntaxError, message:
+                outstring += "raise SyntaxError, %s" % message
+            except:
+                outstring += "raise SyntaxError, %s" % `one_statement`
         return outstring
     <<Assignment statements>>
     elif node_type == "LIST":

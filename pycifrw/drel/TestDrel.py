@@ -144,7 +144,7 @@ class MoreComplexTestCase(unittest.TestCase):
        total = 0
        jjj = 11.5
        _i = 0
-       do jkl = 0,10,2 {_i = _i + jkl}
+       do jkl = 0,10,2 _i = _i + jkl
        """
        res = self.parser.parse(teststrg + "\n", lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_i",have_sn=False)
@@ -175,17 +175,19 @@ class MoreComplexTestCase(unittest.TestCase):
        print res
 
    def test_do_stmt_2(self):
-       """Test how another do statement comes out"""
+       """Test how another do statement comes out with long suite"""
        teststrg = """
        _pp = 0
        geom_hbond = [(1,2),(2,3),(3,4)]
        do i= 0,1 {
           l,s = geom_hbond [i] 
+          a = 'hello'
+          c = int(4.5)
+          bb = [1,c,a]
           _pp += s
           }
        """
-       self.parser.special_id = [{'axy':1}]
-       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       res = self.parser.parse(teststrg + "\n",debug=True,lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_pp",have_sn=False)
        exec realfunc
        realres = myfunc(self,self)
@@ -281,7 +283,7 @@ class MoreComplexTestCase(unittest.TestCase):
                       .value = jkl)
                       }
        """
-       res = self.parser.parse(teststrg + "\n", debug = True, lexer=self.lexer)
+       res = self.parser.parse(teststrg + "\n", lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","geom_angle",cat_meth = True,have_sn=False)
        print "Fancy assign: %s" % res[0]
        exec realfunc
@@ -308,6 +310,7 @@ class WithDictTestCase(unittest.TestCase):
        #create our lexer and parser
        self.lexer = drel_lex.lexer
        self.parser = drel_ast_yacc.parser
+       self.parser.lineno = 0
        #use a simple dictionary
        self.testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
        self.testblock = CifFile.CifFile("nick1.cif",grammar="DDLm")["saly2_all_aniso"]
@@ -369,16 +372,18 @@ class WithDictTestCase(unittest.TestCase):
    def test_attributes(self):
        """Test that attributes of complex expressions come out OK"""
        # We need to do a scary funky attribute of a key lookup 
+       # This is not a proper test as it does not return any value that
+       # can be tested.  It is purely a test of the grammar
        ourdic = CifFile.CifDic("testdic2",grammar="DDLm")
        testblock = CifFile.CifFile("test_data.cif",grammar="DDLm")["testdata"]
        loopable_cats = ['geom','position'] #
        teststrg = """
        LineList = []
-       PointList = []
+       _PointList = []
        With p as position
        Loop g as geom {
        If (g.type == "point") {
-             PointList += Tuple(g.vertex1_id,p[g.vertex1_id].vector_xyz)
+             _PointList += [g.vertex1_id,p[g.vertex1_id].vector_xyz]
        }
        #Else if (g.type == "line") {
        #      LineList ++= Tuple(Tuple(g.vertex1_id, g.vertex2_id),
@@ -388,12 +393,12 @@ class WithDictTestCase(unittest.TestCase):
        }
        """
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","PointList",loopable=loopable_cats)
+       realfunc = py_from_ast.make_python_function(res,"myfunc","_PointList",loopable=loopable_cats)
        print "Function -> \n" + realfunc
        exec realfunc
-       retval = myfunc(ourdic,testblock,"LineList")
-       print "testdic2 return value" + `retval`
-       print "Value for comparison with docs: %s" % `retval[0]`
+       retval = myfunc(ourdic,testblock)
+       #print "testdic2 return value" + `retval`
+       #print "Value for comparison with docs: %s" % `retval[0]`
 
    def test_funcdef(self):
        """Test function conversion"""
@@ -403,15 +408,16 @@ class WithDictTestCase(unittest.TestCase):
 
             d  =  v - w
             t  =  Int( Mod( 99.5 + d, 1.0 ) - d )
-
-            Closest = Tuple ( v+t, t )
+            q = 1 + 1
+            Closest = [ v+t, t ]
        } """
-       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       print "Function -> \n" + res
-       exec res
+       res = self.parser.parse(teststrg+"\n",debug=True,lexer=self.lexer)
+       realfunc = py_from_ast.make_python_function(res,"myfunc",None, func_def = True)
+       print "Function -> \n" + realfunc
+       exec realfunc
        retval = Closest(0.2,0.8)
        print 'Closest 0.2,0.8 returns ' + ",".join([`retval[0]`,`retval[1]`])
-       self.failUnless(retval == StarFile.StarTuple(1.2,1))
+       self.failUnless(retval == [1.2,1])
        
 if __name__=='__main__':
     #unittest.main()

@@ -36,9 +36,7 @@ def p_statements(p):
                  | NEWLINE compound_stmt
                  | statements separator
                  | statements separator small_stmt
-                 | statements separator compound_stmt
-                 | statements separator small_stmt separator
-                 | statements separator compound_stmt separator '''
+                 | statements separator compound_stmt '''
     if len(p) == 2: p[0] = ["STATEMENTS",[p[1]]]
     elif len(p) == 3:
         if p[1][0] == '\n': p[0] = ["STATEMENTS",[p[2]]]
@@ -310,7 +308,7 @@ def p_attribute_tag(p):
 # code here
 #
 def p_subscription(p):
-    '''subscription : primary "[" testlist_star_expr "]" '''
+    '''subscription : primary "[" expression "]" '''
     p[0] = ["SUBSCRIPTION",p[1],p[3]]
 
 def p_slicing(p):
@@ -443,12 +441,12 @@ def p_compound_stmt(p):
     #print "Compound statement: \n" + p[0]
 
 def p_if_stmt(p):
-    '''if_stmt : IF expression suite
-               | if_stmt ELSE suite '''
+    '''if_stmt : IF "(" expression ")" n_suite
+               | if_stmt ELSE n_suite '''
     if isinstance(p[1],basestring):    #first form of expression
         p[0] = ["IF_EXPR"]
-        p[0].append(p[2])
         p[0].append(p[3])
+        p[0].append(p[5])
     else:                       #else statement
         p[0] = p[1] + [p[3]]
 
@@ -470,6 +468,15 @@ def p_suite(p):
     else:
         p[0] = p[2]  #already have a statement block
 
+# A convenience production to allow newlines before suites
+def p_n_suite(p):
+    '''n_suite : suite
+               | NEWLINE suite'''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = p[2]
+
 def p_for_stmt(p):
     '''for_stmt : FOR exprlist IN testlist_star_expr suite'''
     p[0] = ["FOR", p[2], p[4], p[5]]
@@ -480,25 +487,26 @@ def p_for_stmt(p):
 # end, but we haven't done this yet.
 
 def p_loop_stmt(p):
-    '''loop_stmt : loop_head suite'''
+    '''loop_stmt : loop_head n_suite '''
     p[0] = ["LOOP"] + p[1] + [p[2]]
 
 # We capture a list of all the actually present items in the current
 # datafile
 def p_loop_head(p):
     '''loop_head : LOOP ID AS ID 
-                 | LOOP ID AS ID ":" ID
-                 | LOOP ID AS ID ":" ID restricted_comp_operator ID'''
+                 | LOOP ID AS ID ":" ID 
+                 | LOOP ID AS ID ":" ID restricted_comp_operator ID '''
+
     p[0] = [p[2],p[4]]
     if len(p)>= 7:
         p[0] = p[0] + [p[6]]
     else: p[0] = p[0] + [""]
-    if len(p) == 9:
+    if len(p) >= 9:
         p[0] = p[0] + [p[7],p[8]]
     else: p[0] = p[0] + ["",""]
 
 def p_do_stmt(p):
-    '''do_stmt : do_stmt_head suite'''
+    '''do_stmt : do_stmt_head n_suite '''
     p[0] = p[1] + [p[2]]
 
 # To translate the dREL do to a for statement, we need to make the
@@ -506,7 +514,8 @@ def p_do_stmt(p):
 
 def p_do_stmt_head(p):
     '''do_stmt_head : DO ID "=" expression "," expression
-                    | DO ID "=" expression "," expression "," expression '''
+                    | DO ID "=" expression "," expression "," expression'''
+
     p[0] = ["DO",p[2],p[4],p[6]]
     if len(p)==9:
         p[0] = p[0] + [p[8]]
@@ -514,11 +523,11 @@ def p_do_stmt_head(p):
         p[0] = p[0] + [["EXPR",["LITERAL","1"]]]
 
 def p_repeat_stmt(p):
-    '''repeat_stmt : REPEAT suite'''
+    '''repeat_stmt : REPEAT n_suite'''
     p[0] = ["REPEAT",p[2]]
 
 def p_with_stmt(p):
-    '''with_stmt : with_head suite'''
+    '''with_stmt : with_head n_suite'''
     p[0] = p[1]+[p[2]] 
     #outgoing = p.parser.special_id.pop()
     #outindents = filter(lambda a:a[2],outgoing.values())
@@ -548,14 +557,17 @@ def p_with_head(p):
     p[0] = ["WITH",p[2],p[4]]
 
 def p_funcdef(p):
-    ''' funcdef : FUNCTION ID "(" arglist ")" suite '''
-    p[0] = ["FUNCTION",p[2],p[3],p[4]]
+    ''' funcdef : FUNCTION ID "(" arglist ")" n_suite '''
+    p[0] = ["FUNCTION",p[2],p[4],p[6]]
 
 def p_arglist(p):
     ''' arglist : ID ":" list_display
-                | arglist "," ID ":" list_display '''
+                | arglist "," ID ":" list_display
+                | arglist "," NEWLINE ID ":" list_display '''
     if len(p) == 4: p[0] = [(p[1],p[2])]
-    else: p[0] = p[1] + [(p[3],p[5])]
+    elif p[3][0] != '\n':
+         p[0] = p[1] + [(p[3],p[5])]
+    else: p[0] = p[1] + [(p[4],p[6])]
 
 def p_error(p):
     print 'Syntax error at position %d, line %d token %s, value %s' % (p.lexpos,p.lineno,p.type,p.value)
