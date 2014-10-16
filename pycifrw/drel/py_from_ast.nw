@@ -23,7 +23,7 @@ def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=F
     """Convert in_ast to python code"""
     print "incoming AST:"
     print `in_ast`
-    func_text,withtable = start_traverse(in_ast,target_id=targetname,loopable=loopable)
+    func_text,withtable = start_traverse(in_ast,target_id=targetname,cat_meth=cat_meth,loopable=loopable)
     print 'Start========'
     print func_text
     print 'End=========='
@@ -36,8 +36,8 @@ def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=F
         <<Create function header for loop>>
     else:
         <<Create function header for unlooped data>>
-    #if cat_meth:
-    #    preamble += min_spaces*" " + "%s = {}\n" % returnname
+    if cat_meth:
+        preamble += " "*8 + "__dreltarget = {}\n" # initialise
     indented = map(lambda a:" "*8 + a +"\n",noindent)  #indent dREL body
     postamble = ""
     postamble += " "*8 + "return __dreltarget"
@@ -84,7 +84,7 @@ The final boolean entry determines whether the second entry is for looping (True
 not (False).
 
 <<AST traverser>>=
-def start_traverse(in_node,target_id=None,loopable=[]):
+def start_traverse(in_node,target_id=None,loopable=[],cat_meth=False):
   special_info = {"special_id":[{}],"target_id":target_id,"withtable":{},"sub_subject":"","loopable_cats":loopable}
   <<Maths operator conversion table>>
   def traverse_ast(in_node):
@@ -341,12 +341,12 @@ Ultimately we end up with a list of statements.
     elif node_type == "STATEMENTS":
         outstring = ""
         for one_statement in in_node[1]:
-            try:
+#            try:
                 outstring = outstring + traverse_ast(one_statement) + "\n" 
-            except SyntaxError, message:
-                outstring += "raise SyntaxError, %s" % message
-            except:
-                outstring += "raise SyntaxError, %s" % `one_statement`
+#            except SyntaxError, message:
+#                outstring += "raise SyntaxError, %s" % message
+#            except:
+#                outstring += "raise SyntaxError, %s" % `one_statement`
         return outstring
     <<Assignment statements>>
     elif node_type == "LIST":
@@ -393,7 +393,7 @@ elif node_type == "FANCY_ASSIGN":  # [1] is cat name, [2] is list of objects
     for obj,value in in_node[2]:
         real_id = "_" + catname + "." + obj
         newvalue = traverse_ast(value)
-        outstring = outstring + "%s.update({'%s':%s.get('%s',[])+[%s]})\n" % (target_id,real_id,target_id,real_id,newvalue)
+        outstring = outstring + "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (real_id,real_id,newvalue)
     return outstring 
 
 

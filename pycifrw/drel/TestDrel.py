@@ -276,13 +276,13 @@ class MoreComplexTestCase(unittest.TestCase):
        b = 3
        c= 4
        do jkl = 1,5,1 {
-          geom_angle( .id = Tuple(a,b,c),
-                      .distances = Tuple(b,c),
+          geom_angle( .id = [a,b,c],
+                      .distances = [b,c],
                       .value = jkl)
                       }
        """
        res = self.parser.parse(teststrg + "\n", debug = True, lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc",None,cat_meth = True,have_sn=False)
+       realfunc = py_from_ast.make_python_function(res,"myfunc","geom_angle",cat_meth = True,have_sn=False)
        print "Fancy assign: %s" % res[0]
        exec realfunc
        b = myfunc(self,self)
@@ -415,6 +415,6 @@ class WithDictTestCase(unittest.TestCase):
        
 if __name__=='__main__':
     #unittest.main()
-    suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase)
+    suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     unittest.TextTestRunner(verbosity=2).run(suite)
 
