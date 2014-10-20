@@ -34,6 +34,7 @@ tokens = (
     'AS',
     'WITH',
     'WHERE',
+    'ELSEIF',
     'ELSE',
     'BREAK',
     'NEXT',
@@ -131,6 +132,11 @@ def t_SHORTSTRING(t):
     r"('([^'\n]|(\\.))*')|(\"([^\"\n]|(\\.))*\")"
     return t
 
+# special to avoid any ambiguity
+def t_ELSEIF(t):
+    r"(?i)ELSE\s+IF"
+    return t
+
 reserved = {
     'and': 'AND',
     'or': 'OR',
@@ -182,12 +188,12 @@ def t_ESCAPE_NEWLINE(t):
     t.lexer.lineno += 1
 
 def t_NEWLINE(t):
-    r'\n+'
+    r'\n[\n \t]*'
     t.lexer.lineno+=len(t.value)
     return t
 
 def t_COMMENT(t):
-    r'\#.*'
+    r'\#.*\n'
     pass
 
 lexer = lex.lex(reflags=re.MULTILINE)

@@ -18,35 +18,48 @@ tokens = drel_lex.tokens
 # and corresponding index names
 # 
 
+# Our input is a sequence of statements
 def p_input(p):
-    '''input : statements 
-             | input statements'''
-    if len(p) == 2:
-        p[0] = p[1]
+    '''input : maybe_nline statement
+             | input statement '''
+    if p[1] is None:
+        p[0] = p[2]
     else:
-        so_far = p[1][1]
-        new_statements = p[2][1]
-        p[0] = ["STATEMENTS",p[1][1] + p[2][1]]
-        print 'input now ' + `p[0]`
+         so_far = p[1][1]
+         new_statements = p[2][1]
+         p[0] = ["STATEMENTS",p[1][1] + p[2][1]]
+         #print 'input now ' + `p[0]`
 
+# We distinguish between compound statements and
+# small statements. Small statements may be
+# chained together on a single line with semicolon
+# separators. Compound statements are not separated
+# in this way, and will always be terminated by
+# a newline.
+def p_statement(p):
+    '''statement : simple_stmt NEWLINE
+                 | simple_stmt ";" NEWLINE
+                 | compound_stmt '''
+    p[0] = p[1]
+
+# A simple statement is a sequence of small statements terminated by
+# a NEWLINE or EOF
+def p_simple_stmt(p):
+    ''' simple_stmt : small_stmt
+                    | simple_stmt ";" small_stmt '''
+    if len(p) == 2:
+        p[0] = ["STATEMENTS",[p[1]]]
+    else:
+        p[0] = ["STATEMENTS",p[1][1] + [p[3]]]
+
+# This production appears inside a set of braces. Any statement
+# will be automatically terminated by a newline so we do not
+# need to include that here
 def p_statements(p): 
-    '''statements : small_stmt
-                 | compound_stmt
-                 | NEWLINE small_stmt
-                 | NEWLINE compound_stmt
-                 | statements separator
-                 | statements separator small_stmt
-                 | statements separator compound_stmt '''
-    if len(p) == 2: p[0] = ["STATEMENTS",[p[1]]]
-    elif len(p) == 3:
-        if p[1][0] == '\n': p[0] = ["STATEMENTS",[p[2]]]
-        else: p[0] = p[1]
-    else: p[0] = ["STATEMENTS", p[1][1] + [p[3]]]
-
-def p_separator(p):
-    '''separator : NEWLINE 
-                 | ";" '''
-    pass
+    '''statements : statement
+                 | statements statement '''
+    if len(p) == 2: p[0] = p[1]
+    else: p[0] = ["STATEMENTS", p[1][1] + [p[2]]]
     
 def p_small_stmt(p):
     '''small_stmt :   expr_stmt
@@ -54,7 +67,6 @@ def p_small_stmt(p):
                     | break_stmt
                     | next_stmt'''
     p[0] = p[1]
-    # print "Simple statement: " + `p[0]`
 
 def p_break_stmt(p):
     '''break_stmt : BREAK'''
@@ -261,11 +273,11 @@ def p_string_conversion(p):
     p[0] = ["FUNC_CALL","str",p[2]]
 
 def p_list_display(p):
-    ''' list_display : "[" listmaker "]"
-                     | "[" "]" '''
-    if len(p) == 3: p[0] = ["LIST"]
+    ''' list_display : "[" maybe_nline listmaker maybe_nline "]"
+                     | "[" maybe_nline "]" '''
+    if len(p) == 4: p[0] = ["LIST"]
     else:
-        p[0] = ["LIST"] + p[2]
+        p[0] = ["LIST"] + p[3]
     
 
 # scrap the trailing comma
@@ -275,15 +287,15 @@ def p_listmaker(p):
     # print 'listmaker: %s' % `p[0]`
 
 def p_listmaker2(p):
-    '''listmaker2 : "," expression 
-                  | listmaker2 "," expression
+    '''listmaker2 : "," maybe_nline expression 
+                  | listmaker2 "," maybe_nline expression
                   |             '''
-    if len(p) == 3:
-        p[0] = [p[2]]
+    if len(p) == 4:
+        p[0] = [p[3]]
     elif len(p) < 2:
         p[0] = p[0]
     else:
-        p[0] = p[1] + [p[3]] 
+        p[0] = p[1] + [p[4]] 
 
 # Note that we need to catch tags of the form 't.12', which
 # our lexer will interpret as ID REAL.  We therefore also
@@ -347,23 +359,23 @@ def p_long_slice(p):
         p[0] = p[1]
 
 def p_call(p):
-    '''call : ID "(" ")"
-            | ID "(" argument_list ")" '''
-    if len(p) == 4:
+    '''call : ID "(" maybe_nline ")"
+            | ID "(" maybe_nline argument_list maybe_nline ")" '''
+    if len(p) == 5:
         p[0] = ["FUNC_CALL",p[1],[]]
     else:
-        p[0] = ["FUNC_CALL",p[1],p[3]]
+        p[0] = ["FUNC_CALL",p[1],p[4]]
     #print "Function call: %s" % `p[0]`
 
 # These are the arguments to a call, not a definition
 
 def p_argument_list(p):
     '''argument_list : func_arg 
-                     | argument_list "," func_arg '''
+                     | argument_list "," maybe_nline func_arg '''
     if len(p) == 2:
         p[0] = [p[1]]
     else:
-        p[0] = p[1] + [p[3]]
+        p[0] = p[1] + [p[4]]
 
 def p_func_arg(p):
     '''func_arg : expression '''
@@ -389,13 +401,8 @@ def p_fancy_drel_assignment_stmt(p):
 # items in a dictionary which is returned.  A newline is OK between assignments
 
 def p_dotlist(p):
-    '''dotlist : "." ID "=" expression 
-               | "." ID "=" expression NEWLINE
-               | dotlist "," "." ID "=" expression
-               | dotlist "," NEWLINE "." ID "=" expression
-               | dotlist "," "." ID "=" expression NEWLINE
-               | dotlist "," NEWLINE "." ID "=" expression NEWLINE '''
-               
+    '''dotlist : "." ID "=" expression maybe_nline
+               | dotlist "," maybe_nline "." ID "=" expression maybe_nline'''               
     if len(p) <= 6:   #first element of dotlist
         p[0] = [[p[2],p[4]]]
     #    p.parser.fancy_drel_id = p[-2]
@@ -405,9 +412,7 @@ def p_dotlist(p):
     #    else:
     #        p[0] = p[-2] + "".join(p[1:]) + "\n"
     #    print 'Fancy id is ' + `p[-2]`
-    elif p[3][0] != '\n':              #append to previous elements
-         p[0] = p[1] + [[p[4],p[6]]]
-    else:
+    else:              #append to previous elements
          p[0] = p[1] + [[p[5],p[7]]]
     #    if p.parser.fancy_drel_id == p.parser.target_id:
     #        realid = p.parser.fancy_drel_id + "." + p[4]
@@ -426,29 +431,40 @@ def p_exprlist(p):
         p[0] = [p[1]]
     else: p[0] = p[1] + [p[3]]
 
-# now for the compound statements
-# they are in a single-element list as
-# they are equivalent to a statement list
+# now for the compound statements. We prepare them as a "STATEMENT"
+# list for smooth processing in the simple_stmt production
+
 def p_compound_stmt(p):
     '''compound_stmt : if_stmt
+                     | if_else_stmt
                      | for_stmt
                      | do_stmt
                      | loop_stmt
                      | with_stmt
                      | repeat_stmt
                      | funcdef '''
-    p[0] = p[1]
+    p[0] = ["STATEMENTS",[p[1]]]
     #print "Compound statement: \n" + p[0]
 
+# There must only be one else statement at the end of the else if statements,
+# so we show this by creating a separate production
+def p_if_else_stmt(p):
+    '''if_else_stmt : if_stmt ELSE suite'''
+    p[0] = p[1]
+    p[0].append(p[3])
+
+# The AST node is [IF_EXPR,cond, suite,[[elseif cond1,suite],[elseifcond2,suite]...]]
 def p_if_stmt(p):
-    '''if_stmt : IF "(" expression ")" n_suite
-               | if_stmt ELSE n_suite '''
-    if isinstance(p[1],basestring):    #first form of expression
-        p[0] = ["IF_EXPR"]
-        p[0].append(p[3])
-        p[0].append(p[5])
-    else:                       #else statement
-        p[0] = p[1] + [p[3]]
+    '''if_stmt : IF "(" expression ")" maybe_nline suite 
+               | if_stmt ELSEIF "(" expression ")" maybe_nline suite '''
+    if len(p) == 7:
+       p[0] = ["IF_EXPR"]
+       p[0].append(p[3])
+       p[0].append(p[6])
+       p[0].append([])
+    else:
+       p[0] = p[1]
+       p[0][3].append([p[4],p[7]])
 
 # Note the dREL divergence from Python here: we allow compound
 # statements to follow without a separate block (like C etc.)
@@ -461,21 +477,12 @@ def p_if_stmt(p):
 # non-listed object.
 
 def p_suite(p):
-    '''suite : small_stmt
-             | compound_stmt
-             | "{" statements "}" '''
-    if len(p) == 2: p[0] =  ["STATEMENTS", [p[1]]]
-    else:
-        p[0] = p[2]  #already have a statement block
-
-# A convenience production to allow newlines before suites
-def p_n_suite(p):
-    '''n_suite : suite
-               | NEWLINE suite'''
+    '''suite : statement
+               | "{" maybe_nline statements "}" maybe_nline '''
     if len(p) == 2:
         p[0] = p[1]
     else:
-        p[0] = p[2]
+        p[0] = p[3]  #already have a statement block
 
 def p_for_stmt(p):
     '''for_stmt : FOR exprlist IN testlist_star_expr suite'''
@@ -487,7 +494,7 @@ def p_for_stmt(p):
 # end, but we haven't done this yet.
 
 def p_loop_stmt(p):
-    '''loop_stmt : loop_head n_suite '''
+    '''loop_stmt : loop_head suite '''
     p[0] = ["LOOP"] + p[1] + [p[2]]
 
 # We capture a list of all the actually present items in the current
@@ -506,7 +513,7 @@ def p_loop_head(p):
     else: p[0] = p[0] + ["",""]
 
 def p_do_stmt(p):
-    '''do_stmt : do_stmt_head n_suite '''
+    '''do_stmt : do_stmt_head suite '''
     p[0] = p[1] + [p[2]]
 
 # To translate the dREL do to a for statement, we need to make the
@@ -523,12 +530,12 @@ def p_do_stmt_head(p):
         p[0] = p[0] + [["EXPR",["LITERAL","1"]]]
 
 def p_repeat_stmt(p):
-    '''repeat_stmt : REPEAT n_suite'''
+    '''repeat_stmt : REPEAT suite'''
     p[0] = ["REPEAT",p[2]]
 
 def p_with_stmt(p):
-    '''with_stmt : with_head n_suite'''
-    p[0] = p[1]+[p[2]] 
+    '''with_stmt : with_head maybe_nline suite'''
+    p[0] = p[1]+[p[3]] 
     #outgoing = p.parser.special_id.pop()
     #outindents = filter(lambda a:a[2],outgoing.values())
     #p.parser.indent = p.parser.indent[:len(p.parser.indent)-4*len(outindents)]
@@ -557,21 +564,28 @@ def p_with_head(p):
     p[0] = ["WITH",p[2],p[4]]
 
 def p_funcdef(p):
-    ''' funcdef : FUNCTION ID "(" arglist ")" n_suite '''
+    ''' funcdef : FUNCTION ID "(" arglist ")" suite '''
     p[0] = ["FUNCTION",p[2],p[4],p[6]]
 
 def p_arglist(p):
     ''' arglist : ID ":" list_display
-                | arglist "," ID ":" list_display
-                | arglist "," NEWLINE ID ":" list_display '''
+                | arglist "," maybe_nline ID ":" list_display '''
     if len(p) == 4: p[0] = [(p[1],p[2])]
-    elif p[3][0] != '\n':
-         p[0] = p[1] + [(p[3],p[5])]
     else: p[0] = p[1] + [(p[4],p[6])]
+
+def p_maybe_nline(p):
+    ''' maybe_nline : NEWLINE
+                    | empty '''
+    pass
+
+def p_empty(p):
+    ''' empty       : '''
+    pass
 
 def p_error(p):
     print 'Syntax error at position %d, line %d token %s, value %s' % (p.lexpos,p.lineno,p.type,p.value)
-    print 'Surrounding text: ' + p.lexer.lexdata[p.lexpos - 100: p.lexpos + 100]
+    print 'Surrounding text: ' + p.lexer.lexdata[max(p.lexpos - 100,0): p.lexpos] + "*" + \
+       p.lexer.lexdata[p.lexpos:min(p.lexpos + 100,len(p.lexer.lexdata))]
     raise SyntaxError, 'Syntax error at token %s, value %s' % (p.type,p.value)
  
 # The following function creates a function. The function

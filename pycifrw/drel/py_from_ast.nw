@@ -20,14 +20,16 @@ a single value, by setting keyword argument ``packet_no'' to the required packet
 
 <<AST builder>>=
 def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=False, 
-                         func_def = False, have_sn=True,loopable=[]):
+                         func_def = False, have_sn=True,loopable=[],debug=False):
     """Convert in_ast to python code"""
-    print "incoming AST:"
-    print `in_ast`
+    if debug:
+        print "incoming AST:"
+        print `in_ast`
     func_text,withtable = start_traverse(in_ast,target_id=targetname,cat_meth=cat_meth,loopable=loopable)
-    print 'Start========'
-    print func_text
-    print 'End=========='
+    if debug:
+        print 'Start========'
+        print func_text
+        print 'End=========='
     if func_def:
         return func_text
     # now indent the string
@@ -231,15 +233,20 @@ elif node_type == "ATTRIBUTE":  # id , att
 @  Compound statements
 
 <<Compound statements>>=
-    elif node_type == "IF_EXPR":   #IF_EXPR test true_suite false_suite
+    elif node_type == "IF_EXPR":   #IF_EXPR test true_suite [ELSE IF_EXPR] false_suite
         outstring = "if "
         outstring = outstring + traverse_ast(in_node[1])
         outstring = outstring + ":"
         true_bit = traverse_ast(in_node[2])
         outstring = outstring + add_indent("\n"+true_bit)  #indent
-        if len(in_node)>3:
+        elseif = in_node[3]
+        if len(elseif)!=0:
+            for one_cond in elseif:  #each entry is condition, suite
+                outstring += "\nelif " + traverse_ast(one_cond[0]) + ":"
+                outstring += add_indent("\n" + traverse_ast(one_cond[1]))
+        if len(in_node)>4:
             outstring = outstring + "\nelse:"
-            false_bit = traverse_ast(in_node[3])
+            false_bit = traverse_ast(in_node[4])
             outstring = outstring + add_indent("\n"+false_bit)  #indent
         return outstring
 
@@ -347,8 +354,8 @@ Ultimately we end up with a list of statements.
                 outstring = outstring + traverse_ast(one_statement) + "\n" 
             except SyntaxError, message:
                 outstring += "raise SyntaxError, %s" % message
-            except:
-                outstring += "raise SyntaxError, %s" % `one_statement`
+#            except:
+#                outstring += "raise SyntaxError, %s" % `one_statement`
         return outstring
     <<Assignment statements>>
     elif node_type == "LIST":
