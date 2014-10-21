@@ -33,7 +33,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
 
     def testrealnum(self):
         """test parsing of real numbers"""
-        self.create_test('_a=5.45',5.45,debug=True)
+        self.create_test('_a=5.45',5.45)
         self.create_test('_a=.45e-24',.45e-24)
 
     def testinteger(self):
@@ -52,6 +52,10 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
     def testList(self):
         """test parsing a list over two lines"""
         self.create_test('_a = [1,2,\n 3,4,\n 5,6]',[1,2,3,4,5,6])
+
+    def testparenth(self):
+        """test parsing a parenthesis over two lines"""
+        self.create_test('_a = (1,2,\n3,4)',(1,2,3,4))
 
     def testshortstring(self):
         """test parsing a one-line string"""
@@ -107,15 +111,38 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
         test = "_a = 1.2;b = 'abc';qrs = 4.4"
         self.create_test(test,1.2)
 
+    def test_slicing(self):
+        """Test that our slicing is parsed correctly"""
+        test = "b = array([[1,2],[3,4],[5,6]]);_a=b[0,1]"
+        self.create_test(test,2)
+
+    def test_paren_balance(self):
+        """Test that multi-line parentheses work """
+        test = """b = (
+                       (1,2,(
+                             3,4
+                            )
+                       ,5),6
+                     ,7)\n _a=b[0][2][0]"""
+        self.create_test(test,3)
+    
+    def test_non_python_ops(self):
+        """Test operators that have no direct Python equivalents"""
+        test_expr = (("b = [1,2]; _a = [3,4]; _a++=b",[1,2,3,4]),)
+        for one_expr in test_expr:
+            self.create_test(one_expr[0],one_expr[1])
+
     def test_tables(self):
        """Test that tables are parsed correctly"""
        teststrg = """
-       _jk = Table()
-       _jk['bx'] = 25
+       a = Table()
+       a['bx'] = 25
+       _jk = a
        """
        print "Table test:"
-       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       res = self.parser.parse(teststrg+"\n",lexer=self.lexer,debug=True)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_jk",have_sn=False)
+       print realfunc
        exec realfunc
        b = myfunc(self,self)
        self.failUnless(b['bx']==25)
@@ -242,7 +269,8 @@ class MoreComplexTestCase(unittest.TestCase):
        total = 0
        _othertotal = 0
        do jkl = 0,20,2 { total = total + jkl 
-          do emm = 1,5 { _othertotal = _othertotal + 1 } 
+          do emm = 1,5 { _othertotal = _othertotal + 1
+          } 
           }
        end_of_loop = -25.6
        """
@@ -271,7 +299,7 @@ class MoreComplexTestCase(unittest.TestCase):
          If( Abs(alp-90)<d || Abs(bet-90)<d || Abs(gam-90)<d ) _res = ('B', warn_ang)
        } else _res = ('None',"")
        """
-       res = self.parser.parse(teststrg + "\n",debug=True,lexer=self.lexer)
+       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_res",have_sn=False)
        exec realfunc
        b = myfunc(self,self)
@@ -299,6 +327,107 @@ class MoreComplexTestCase(unittest.TestCase):
        b = myfunc(self,self)
        print "Geom_angle.angle = %s" % b['_geom_angle.value']
        self.failUnless(b['_geom_angle.value']==[1,2,3,4,5])
+
+   def testSubscription(self):
+       """Test case found in Cif dictionary """
+       teststrg = """# Store unique sites as a local list
+ 
+     atomlist  = List()
+     Loop  a  as  atom_site  {
+        axyz       =    a.fract_xyz
+        cxyz       =   _atom_sites_Cartn_transform.matrix * axyz
+        radb       =   _atom_type[a.type_symbol].radius_bond
+        radc       =   _atom_type[a.type_symbol].radius_contact
+        ls         =   List ( a.label, "1_555" )
+        atomlist ++=   [ls, axyz, cxyz, radb, radc, 0]
+     }
+     _a = atomlist
+"""    
+       res = self.parser.parse(teststrg + "\n",debug=True,lexer=self.lexer)
+       realfunc = py_from_ast.make_python_function(res,"myfunc","_a",cat_meth=True,
+                   loopable=['atom_site'],have_sn=False,debug='SUBSCRIPTION')
+       print 'Simple function becomes:'
+       print realfunc
+       exec realfunc
+       b = myfunc(self,self)
+       print "subscription returns " + `b` 
+
+   def testModelSite(self):
+       """Test case found in Cif dictionary """
+       teststrg = """# Store unique sites as a local list
+ 
+     atomlist  = List()
+     Loop  a  as  atom_site  {
+        axyz       =    a.fract_xyz
+        cxyz       =   _atom_sites_Cartn_transform.matrix * axyz
+        radb       =   _atom_type[a.type_symbol].radius_bond
+        radc       =   _atom_type[a.type_symbol].radius_contact
+        ls         =   List ( a.label, "1_555" )
+        atomlist ++=   [ls, axyz, cxyz, radb, radc, 0]
+     }
+ 
+# Store closest connected sites as a list
+ 
+     molelist  = List()
+     dmin     =  _geom.bond_distance_min
+     m        =  0
+     n        =  0
+ 
+     For [ls1,a1,c1,rb1,rc1,m1] in atomlist  {
+         If (m1 != 0) Next
+         m         +=  1
+         n         +=  1
+         molelist ++=  [ls1,a1,c1,rb1,rc1,n,m]
+         atomlist --=  [ls1,a1,c1,rb1,rc1,m]
+ 
+         Repeat  {
+             connect =  "no"
+ 
+             For [ls2,a2,c2,rb2,rc2,n2,m2] in molelist  {
+                 If (m2 != m) Next
+ 
+                 For [ls3,a3,c3,rb3,rc3,m3] in atomlist  {
+                     dmax  =  rb2 + rb3 + _geom.bond_distance_incr
+ 
+                     Loop  s  as  symmetry_equiv  :ns   {
+ 
+                         axyz      =   s.R * a3 + s.T
+                         bxyz,tran =   Closest (axyz, a2)
+                         cxyz      =  _atom_sites_Cartn_transform.matrix *bxyz
+                         d         =   Norm (cxyz - c2)
+ 
+                        If (d > dmin and d < dmax)          {
+                            ls  =   List ( ls3[0], Symop(ns+1, tran) )
+ 
+                            If (ls not in Strip(molelist,0))    {
+                                n         +=  1
+                                molelist ++=  [ls,bxyz,cxyz,rb3,rc3,n,m]
+                                atomlist --=  [ls3,a3,c3,rb3,rc3,m]
+                                connect    =  "yes"
+         }   }   }   }   }
+        If (connect == "no") Break
+     }  }
+ 
+# Store connected molecular sites as MODEL_SITE list
+ 
+     For [ls,ax,cx,rb,rc,n,m] in molelist  {
+ 
+        model_site( .id              =  ls,
+                    .fract_xyz       =  ax,
+                    .Cartn_xyz       =  cx,
+                    .radius_bond     =  rb,
+                    .radius_contact  =  rc,
+                    .index           =  n,
+                    .mole_index      =  m  )
+      }"""
+       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       realfunc = py_from_ast.make_python_function(res,"myfunc","_res",cat_meth=True,
+                   loopable=['atom_site','symmetry_equiv'],have_sn=False)
+       #print 'Model site function becomes:'
+       #print realfunc
+       exec realfunc
+       b = myfunc(self,self)
+       print "model_site returns " + `b` 
       
 class WithDictTestCase(unittest.TestCase):
    """Now test flow control which requires a dictionary present"""
@@ -395,8 +524,9 @@ class WithDictTestCase(unittest.TestCase):
        
 if __name__=='__main__':
     #unittest.main()
-    suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
+    #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
-    #suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
+    suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
+    #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase)
     unittest.TextTestRunner(verbosity=2).run(suite)
 

@@ -2,6 +2,10 @@
 import ply.lex as lex
 import re    #for multiline flag
 
+states = (
+    ('paren','inclusive'),
+    )
+
 tokens = (
     'SHORTSTRING',
     'LONGSTRING',
@@ -46,11 +50,14 @@ tokens = (
     'PRINT',
     'FUNCTION',
     'NEWLINE',
-    'ESCAPE_NEWLINE'
+    'ESCAPE_NEWLINE',
+    'OPEN_PAREN',
+    'CLOSE_PAREN'
      )
 
-literals = '+*-/;()[],:^<>{}=.`'
-t_ignore = ' \t'
+literals = '+*-/;[],:^<>{}=.`'
+t_INITIAL_ignore = ' \t'
+t_paren_ignore = ' \t\n'
 
 def t_error(t):
     print 'Illegal character %s' % repr(t.value[0])
@@ -66,6 +73,25 @@ t_BADAND = r'&&'
 
 def t_AUGOP(t):
     r'(\+\+=)|(\+=)|(-=)|(--=)|(\*=)|(/=)'
+    return t
+
+# We do not have this as a literal so that we can switch to ignoring newlines
+def t_INITIAL_OPEN_PAREN(t):
+    r'\('
+    t.lexer.paren_level = 1
+    t.lexer.begin('paren')
+    return t
+
+def t_paren_OPEN_PAREN(t):
+    r'\('
+    t.lexer.paren_level +=1
+    return t
+
+def t_paren_CLOSE_PAREN(t):
+    r'\)'
+    t.lexer.paren_level -=1
+    if t.lexer.paren_level == 0:
+        t.lexer.begin('INITIAL')
     return t
 
 # Do the reals before the integers, otherwise the integer will
@@ -187,13 +213,13 @@ def t_ESCAPE_NEWLINE(t):
     r'\\\n'
     t.lexer.lineno += 1
 
-def t_NEWLINE(t):
+def t_INITIAL_NEWLINE(t):
     r'\n[\n \t]*'
     t.lexer.lineno+=len(t.value)
     return t
 
 def t_COMMENT(t):
-    r'\#.*\n'
+    r'\#.*'
     pass
 
 lexer = lex.lex(reflags=re.MULTILINE)

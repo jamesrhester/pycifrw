@@ -3,6 +3,7 @@ conversion code.
 
 <<*>>=
 import re
+from CifFile import CifError
 <<AST builder>>
 <<AST traverser>>
 <<Function transformer>>
@@ -20,13 +21,13 @@ a single value, by setting keyword argument ``packet_no'' to the required packet
 
 <<AST builder>>=
 def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=False, 
-                         func_def = False, have_sn=True,loopable=[],debug=False):
+                         func_def = False, have_sn=True,loopable=[],debug=None):
     """Convert in_ast to python code"""
-    if debug:
+    if debug is not None:
         print "incoming AST:"
         print `in_ast`
-    func_text,withtable = start_traverse(in_ast,target_id=targetname,cat_meth=cat_meth,loopable=loopable)
-    if debug:
+    func_text,withtable = start_traverse(in_ast,target_id=targetname,cat_meth=cat_meth,loopable=loopable,debug=debug)
+    if debug is not None:
         print 'Start========'
         print func_text
         print 'End=========='
@@ -43,6 +44,13 @@ def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=F
         <<Create function header for unlooped data>>
     if cat_meth:
         preamble += " "*8 + "__dreltarget = {}\n" # initialise
+    num_header = """
+        try:
+            import numpy
+        except:
+            print "Can't import numerical python, this method may not work"
+"""
+    preamble += num_header
     indented = map(lambda a:" "*8 + a +"\n",noindent)  #indent dREL body
     postamble = ""
     postamble += " "*8 + "return __dreltarget"
@@ -89,15 +97,17 @@ The final boolean entry determines whether the second entry is for looping (True
 not (False).
 
 <<AST traverser>>=
-def start_traverse(in_node,target_id=None,loopable=[],cat_meth=False):
+def start_traverse(in_node,target_id=None,loopable=[],cat_meth=False,debug=None):
   special_info = {"special_id":[{}],"target_id":target_id,"withtable":{},"sub_subject":"","loopable_cats":loopable}
   <<Maths operator conversion table>>
-  def traverse_ast(in_node):
+  def traverse_ast(in_node,debug=debug):
     if isinstance(in_node,basestring):
         return in_node
     if isinstance(in_node[0],list):
         raise SyntaxError, 'First element of AST Node must be string: ' + `in_node`
     node_type = in_node[0]
+    if debug == node_type:
+        print node_type + ": " + `in_node`
     if node_type == "ARGLIST":
         pass
 <<Literal nodes>>
@@ -155,14 +165,20 @@ the same as the dREL representation.
     elif node_type == "SUBSCRIPTION":  # variable, single expression
         # check to see if this is a special variable
         newid = 0
-        primary = traverse_ast(in_node[1])
+        if in_node[1][0] == "ATOM" and in_node[1][1][0] == "ITEM_TAG":
+            primary = in_node[1][1][1]
+        else:
+            primary = traverse_ast(in_node[1])  
+        print 'Subscription: primary is ' + primary
         for idtable in special_info["special_id"]:
             newid = idtable.get(primary,0)
             if newid: break
+        if not newid and primary[0] == '_': #assume an explicit category reference
+            newid = [primary[1:],False,False]
         if newid:
             key_item = 'self["'+newid[0]+'"]["_category.key_id"]'
             get_loop = "ciffile.GetLoop(%s).GetKeyedPacket(%s,%s)" % (key_item,key_item,traverse_ast(in_node[2]))
-            special_info["sub_subject"] = "_"+newid[0]  #in case of attribute reference following
+            special_info["sub_subject"] = "_"+newid[0]+"."  #in case of attribute reference following
             print "Set sub_subject to %s" % special_info["sub_subject"]
             return get_loop
         else:
@@ -177,19 +193,22 @@ the same as the dREL representation.
                 outstring = outstring + arg_prefix + traverse_ast(argument) + ","
             outstring = outstring[:-1] + ")" + postfix
             return outstring
-    elif node_type == "SLICE":  # primary [start,finish,step]
+    elif node_type == "SLICE":  # primary [[start,finish,step],[...]
         outstring = traverse_ast(in_node[1]) + "["
         slice_list = in_node[2]
-        if len(slice_list) == 0:
-            return outstring + ":]"
-        if len(slice_list) >0:    # at least start
-            outstring += traverse_ast(slice_list[0]) + ":"
-        if len(slice_list) == 1:    #start only
-            return outstring + "]"
-        outstring += traverse_ast(slice_list[1])
-        if len(slice_list) == 3:    #step as well
-          outstring += ":" + traverse_ast(slice_list[2])
-        outstring += "]"
+        for one_slice in slice_list:
+            if one_slice[0] == "EXPR":   #not a slice as such
+                outstring += traverse_ast(one_slice)
+            elif len(one_slice) == 0:
+                outstring + ":"
+            elif len(one_slice) >0:    # at least start
+                outstring += traverse_ast(one_slice[0]) + ":"
+            elif len(one_slice) >1:    #start,finish only
+                outstring += traverse_ast(one_slice[1])
+            elif len(one_slice) == 3:    #step as well
+                outstring += ":" + traverse_ast(one_slice[2])
+            outstring += ","
+        outstring = outstring[:-1] + "]"
         return outstring
 
 @  Attribute references.  We need to catch all attribute references to special
@@ -200,11 +219,18 @@ it appears in the function call that is created, so that we can include the func
 within a 'map' statement and give the correct order of items.  So the withtable
 has syntax {``dataname'':(dummyname,dummyorder)}.
 
+Furthermore, the square bracket syntax for keyed access to data packets requires
+that the result of the keyed access is accessed by attribute.  While dREL does not
+require the full dataname, PyCIFRW does, so we have to store the category that
+the keyed access comes from and add that back in - this is what 'sub_subject'
+contains.
+
 <<Process attribute reference>>=
 elif node_type == "ATTRIBUTE":  # id , att
     # check for special ids
     outstring = ""
-    primary = traverse_ast(in_node[1])
+    newid = 0
+    primary = traverse_ast(in_node[1])  # this will set sub_subject if necessary
     for idtable in special_info["special_id"]:
         newid = idtable.get(primary,0)
         if newid: break
@@ -302,13 +328,17 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     alias_id = in_node[1]
     cat_id = in_node[2]
     var_info = [cat_id,"",False]
-    if cat_id in special_info['loopable_cats']:  #loop over some index
-        if in_node[3] == "":  # provide our own
-            loop_index = "__pi%d" % (len(special_info['special_id'][-1])+1)
-        else:
-            loop_index = in_node[3]
-        var_info[1] = loop_index
-        var_info[2] = True
+    if cat_id not in special_info['loopable_cats']:
+        message =  "%s is not a loopable category (must be one of:\n%s)" % (cat_id,special_info['loopable_cats'])
+        print message
+        raise CifError, message
+    #loop over some index
+    if in_node[3] == "":  # provide our own
+        loop_index = "__pi%d" % (len(special_info['special_id'][-1])+1)
+    else:
+        loop_index = in_node[3]
+    var_info[1] = loop_index
+    var_info[2] = True
     special_info['special_id'][-1].update({alias_id:var_info})
     # now emit some text: first to find the length of the category
     outstring = "__pycitems = self.names_in_cat('%s')" % cat_id
@@ -354,8 +384,8 @@ Ultimately we end up with a list of statements.
                 outstring = outstring + traverse_ast(one_statement) + "\n" 
             except SyntaxError, message:
                 outstring += "raise SyntaxError, %s" % message
-#            except:
-#                outstring += "raise SyntaxError, %s" % `one_statement`
+            except:
+                outstring += "raise SyntaxError, %s" % `one_statement`
         return outstring
     <<Assignment statements>>
     elif node_type == "LIST":
@@ -385,17 +415,26 @@ Ultimately we end up with a list of statements.
 
 @  Assignment. The category-level assignments write to a table indexed by
 object id, so the final result will be a set of list-valued datanames for
-insertion into the ciffile.
+insertion into the ciffile.  These are dealt with by 'FANCY_ASSIGN'. The
+augmented assignments in dREL handle matrices as well, so we need to
+reimplement them, which we do by rewriting them in the form
+
+a = func(a,b)
 
 <<Assignment statements>>=
 elif node_type == "ASSIGN":  #Target_list ,assigner, expression list
     outstring = ""
     for target_value in in_node[1]:
         outstring = outstring + traverse_ast(target_value)+","
-    outstring = outstring[:-1] + in_node[2]
+    lhs = outstring[:-1]
+    rhs = ""
     for expression in in_node[3]:
-        outstring = outstring + traverse_ast(expression)+","
-    return outstring[:-1]
+        rhs += traverse_ast(expression)+","
+    if in_node[2] != "=":
+        outstring = "%s = %s(%s,%s)" % (lhs, aug_assign_table[in_node[2]],lhs,rhs[:-1])
+    else:
+        outstring = "%s = %s" % (lhs,rhs[:-1])
+    return outstring
 elif node_type == "FANCY_ASSIGN":  # [1] is cat name, [2] is list of objects
     catname = in_node[1]
     outstring = ""
@@ -425,13 +464,20 @@ dREL and python, so that the AST contains the textual form of the operator.
 
 @  Although in most cases we could simply directly write in the binary maths
 operator, we do a table lookup to facilitate reuse of this code with other
-language targets.
+language targets.  The augmented assignment table gives the function name
+to use as we need to cover array structures as well.
 
 <<Maths operator conversion table>>=
 mathop_table = {"+":"+", "-":"-", "<":"<", "*":"*", "/":"/",
                 ">":">", "<=":"<=", ">=":">=", "!=":"!=",
                 "or":" or ", "and":" and ",
-                "==":"==", "in":" in ", "not in":" not in "}
+                "==":"==", "in":" in ", "not in":" not in ",
+                "^":"^","**":"**"}
+
+aug_assign_table = {"++=":"aug_append",
+                    "+=":"aug_add",
+                    "-=":"aug_minus",
+                    "--=":"aug_drop"}
 
 @ To avoid cluttering up the main switch statement, we call out to this function
 in order to find out what the Python name of the given function is.  Where we have
@@ -452,7 +498,7 @@ def get_function_name(in_name):
     if target_name is not None:
         return target_name,"",""
     if test_name in ['sind','cosd','tand']:
-        return "math."+target_name[:3],"math.radians*",""
+        return "math."+test_name[:3],"math.radians*",""
     if test_name in ['array']:
         return "numpy.array","",""
     if test_name == "mod":

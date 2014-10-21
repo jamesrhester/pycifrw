@@ -37,8 +37,8 @@ def p_input(p):
 # in this way, and will always be terminated by
 # a newline.
 def p_statement(p):
-    '''statement : simple_stmt NEWLINE
-                 | simple_stmt ";" NEWLINE
+    '''statement : simple_stmt newlines
+                 | simple_stmt ";" newlines
                  | compound_stmt '''
     p[0] = p[1]
 
@@ -98,11 +98,11 @@ def p_expr_stmt(p):
 
 def p_testlist_star_expr(p):  # list of expressions in fact
     ''' testlist_star_expr : expression
-                           | testlist_star_expr "," expression '''
+                           | testlist_star_expr "," maybe_nline expression '''
     if len(p) == 2:
        p[0] = [p[1]]
     else:
-       p[0] = p[1] + [p[3]]
+       p[0] = p[1] + [p[4]]
 
 # note do not accept trailing commas
 
@@ -158,7 +158,7 @@ def p_comp_operator(p):
                      | IN
                      | NOT IN '''
     if len(p)==3:
-        p[0] = " not in "
+        p[0] = "not in"
     else: p[0] = p[1]
 
 def p_restricted_comp_operator(p):   #for loop tests
@@ -260,8 +260,8 @@ def p_enclosure(p):
     p[0]=p[1]
 
 def p_parenth_form(p):
-    '''parenth_form : "(" testlist_star_expr ")"
-                     | "(" ")" '''
+    '''parenth_form : OPEN_PAREN testlist_star_expr CLOSE_PAREN
+                     | OPEN_PAREN CLOSE_PAREN '''
     if len(p) == 3: p[0] = ["GROUP"]
     else:
         p[0] = ["GROUP",p[2]]
@@ -324,19 +324,21 @@ def p_subscription(p):
     p[0] = ["SUBSCRIPTION",p[1],p[3]]
 
 def p_slicing(p):
-    '''slicing :  primary "[" proper_slice "]" '''
-    p[0] = ["SLICE", p[1], p[2] ] 
+    '''slicing :  primary "[" proper_slice "]"
+               |  primary "[" slice_list "]" '''
+    p[0] = ["SLICE", p[1], p[3] ] 
 
 def p_proper_slice(p):
     '''proper_slice : short_slice
                     | long_slice '''
-    p[0] = p[1]
+    p[0] = [p[1]]
 
-# Our slice convention is that, if anything is mentioned,
+# Our AST slice convention is that, if anything is mentioned,
 # the first element is always
 # explicitly mentioned. A single element will be a starting
 # element. Two elements are start and finish. An empty list
-# is all elements. Three elements are start, finish, step
+# is all elements. Three elements are start, finish, step.
+# We combine these into a list of slices.
 
 def p_short_slice(p):
     '''short_slice : ":"
@@ -351,31 +353,43 @@ def p_short_slice(p):
         p[0] = [p[1]]
 
 def p_long_slice(p):
-    '''long_slice : short_slice ":"
-                  | short_slice ":" expression '''
+    '''long_slice : short_slice ":" expression '''
     if len(p) == 4:
         p[0] = p[1] + [p[3]]
     else:
         p[0] = p[1]
 
+def p_slice_list(p):
+    ''' slice_list : slice_item
+                   | slice_list "," slice_item '''
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = p[1] + [p[3]]
+
+def p_slice_item(p):
+    ''' slice_item : expression 
+                   | proper_slice '''
+    p[0] = p[1]
+
 def p_call(p):
-    '''call : ID "(" maybe_nline ")"
-            | ID "(" maybe_nline argument_list maybe_nline ")" '''
-    if len(p) == 5:
+    '''call : ID OPEN_PAREN CLOSE_PAREN
+            | ID OPEN_PAREN argument_list CLOSE_PAREN '''
+    if len(p) == 4:
         p[0] = ["FUNC_CALL",p[1],[]]
     else:
-        p[0] = ["FUNC_CALL",p[1],p[4]]
+        p[0] = ["FUNC_CALL",p[1],p[3]]
     #print "Function call: %s" % `p[0]`
 
 # These are the arguments to a call, not a definition
 
 def p_argument_list(p):
     '''argument_list : func_arg 
-                     | argument_list "," maybe_nline func_arg '''
+                     | argument_list "," func_arg '''
     if len(p) == 2:
         p[0] = [p[1]]
     else:
-        p[0] = p[1] + [p[4]]
+        p[0] = p[1] + [p[3]]
 
 def p_func_arg(p):
     '''func_arg : expression '''
@@ -393,7 +407,7 @@ def p_func_arg(p):
 # entry.
 
 def p_fancy_drel_assignment_stmt(p):
-    '''fancy_drel_assignment_stmt : ID "(" dotlist ")" ''' 
+    '''fancy_drel_assignment_stmt : ID OPEN_PAREN dotlist CLOSE_PAREN ''' 
     p[0] = ["FANCY_ASSIGN",p[1],p[3]]
 #    print "Fancy assignment -> " + `p[0]`
 
@@ -401,9 +415,9 @@ def p_fancy_drel_assignment_stmt(p):
 # items in a dictionary which is returned.  A newline is OK between assignments
 
 def p_dotlist(p):
-    '''dotlist : "." ID "=" expression maybe_nline
-               | dotlist "," maybe_nline "." ID "=" expression maybe_nline'''               
-    if len(p) <= 6:   #first element of dotlist
+    '''dotlist : "." ID "=" expression
+               | dotlist "," "." ID "=" expression '''               
+    if len(p) <= 5:   #first element of dotlist
         p[0] = [[p[2],p[4]]]
     #    p.parser.fancy_drel_id = p[-2]
     #    if p[-2] == p.parser.target_id:      #we will return the results
@@ -413,7 +427,7 @@ def p_dotlist(p):
     #        p[0] = p[-2] + "".join(p[1:]) + "\n"
     #    print 'Fancy id is ' + `p[-2]`
     else:              #append to previous elements
-         p[0] = p[1] + [[p[5],p[7]]]
+         p[0] = p[1] + [[p[4],p[6]]]
     #    if p.parser.fancy_drel_id == p.parser.target_id:
     #        realid = p.parser.fancy_drel_id + "." + p[4]
     #        p[0] = p[1] + "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (realid,realid,p[6])
@@ -455,8 +469,8 @@ def p_if_else_stmt(p):
 
 # The AST node is [IF_EXPR,cond, suite,[[elseif cond1,suite],[elseifcond2,suite]...]]
 def p_if_stmt(p):
-    '''if_stmt : IF "(" expression ")" maybe_nline suite 
-               | if_stmt ELSEIF "(" expression ")" maybe_nline suite '''
+    '''if_stmt : IF OPEN_PAREN expression CLOSE_PAREN maybe_nline suite 
+               | if_stmt ELSEIF OPEN_PAREN expression CLOSE_PAREN maybe_nline suite '''
     if len(p) == 7:
        p[0] = ["IF_EXPR"]
        p[0].append(p[3])
@@ -564,18 +578,25 @@ def p_with_head(p):
     p[0] = ["WITH",p[2],p[4]]
 
 def p_funcdef(p):
-    ''' funcdef : FUNCTION ID "(" arglist ")" suite '''
+    ''' funcdef : FUNCTION ID OPEN_PAREN arglist CLOSE_PAREN suite '''
     p[0] = ["FUNCTION",p[2],p[4],p[6]]
 
 def p_arglist(p):
     ''' arglist : ID ":" list_display
-                | arglist "," maybe_nline ID ":" list_display '''
+                | arglist "," ID ":" list_display '''
     if len(p) == 4: p[0] = [(p[1],p[2])]
-    else: p[0] = p[1] + [(p[4],p[6])]
+    else: p[0] = p[1] + [(p[3],p[5])]
 
 def p_maybe_nline(p):
-    ''' maybe_nline : NEWLINE
+    ''' maybe_nline : newlines
                     | empty '''
+    pass
+
+# We need to allow multiple newlines here and not just in the lexer as
+# an intervening comment can cause multiple newline tokens to appear
+def p_newlines(p):
+    ''' newlines : NEWLINE
+                 | newlines NEWLINE '''
     pass
 
 def p_empty(p):
