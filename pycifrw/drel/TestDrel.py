@@ -5,8 +5,48 @@ import unittest
 import drel_lex
 import drel_ast_yacc
 import py_from_ast
+import drel_runtime
+import numpy
 import CifFile
 from CifFile import StarFile
+
+class AugOpTestCase(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def testListAppend(self):
+        a = [[1,2],[3,4]]
+        b = drel_runtime.aug_append(a,1)
+        c = drel_runtime.aug_append(a,[3])
+        d = drel_runtime.aug_append(a,[[4,5,6]])
+        self.failUnless(b == [[1,2],[3,4],1])
+        self.failUnless(c == [[1,2],[3,4],3])
+        self.failUnless(d == [[1,2],[3,4],[4,5,6]])
+
+    def testListAdd(self):
+        a = [[1,2],[3,4]]
+        aa = 5
+        b = drel_runtime.aug_add(a,1)
+        c = drel_runtime.aug_add(a,[[1,2],[7,6]])
+        d = drel_runtime.aug_add(5,2)
+        self.failUnless((c == numpy.array([[2,4],[10,10]])).all())
+        self.failUnless((b == numpy.array([[2,3],[4,5]])).all())
+        self.failUnless(d == 7)
+
+    def testListUnappend(self):
+        a = [[1,2],[3,4]]
+        c = drel_runtime.aug_remove(a,[1,2])
+        self.failUnless(c == [[3,4]])
+
+    def testListSubtract(self):
+        a = [[1,2],[3,4]]
+        aa = 5
+        b = drel_runtime.aug_sub(a,1)
+        c = drel_runtime.aug_sub(a,[[1,2],[7,6]])
+        d = drel_runtime.aug_sub(5,2)
+        self.failUnless((c == numpy.array([[0,0],[-4,-2]])).all())
+        self.failUnless((b == numpy.array([[0,1],[2,3]])).all())
+        self.failUnless(d == 3)
 
 # Test simple statements
 
@@ -16,7 +56,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
         self.lexer = drel_lex.lexer
         self.parser = drel_ast_yacc.parser
 
-    def create_test(self,instring,right_value,debug=False):
+    def create_test(self,instring,right_value,debug=False,array=False):
         """Given a string, create and call a function then check result"""
         if instring[-1]!="\n":
            instring += '\n'
@@ -25,7 +65,15 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
         realfunc = py_from_ast.make_python_function(res,"myfunc",'_a',have_sn=False)
         if debug: print "-> %s" % realfunc
         exec realfunc
-        self.failUnless(myfunc(self,self) == right_value)
+        answer = myfunc(self,self)
+        if debug: print " -> %s" % `answer`
+        if not array:
+            self.failUnless(answer == right_value)
+        else:
+            try:
+                self.failUnless((answer == right_value).all())
+            except:
+                self.failUnless(answer == right_value)
 
 # as we disallow simple expressions on a separate line to avoid a 
 # reduce/reduce conflict for identifiers, we need at least an 
@@ -128,9 +176,12 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
     
     def test_non_python_ops(self):
         """Test operators that have no direct Python equivalents"""
-        test_expr = (("b = [1,2]; _a = [3,4]; _a++=b",[1,2,3,4]),)
+        test_expr = (("b = [1,2]; _a = [3,4]; _a++=b",[3,4,1,2]),
+        ("b = [1,2]; _a = [3,4]; _a+=b",[4,6]),
+        ("b = 3; _a = [3,4]; _a-=b",[0,1]),
+        ("b = [1,2]; _a = [[1,2],[3,4]]; _a--=b",[[3,4]]))
         for one_expr in test_expr:
-            self.create_test(one_expr[0],one_expr[1])
+            self.create_test(one_expr[0],one_expr[1],debug=True,array=True)
 
     def test_tables(self):
        """Test that tables are parsed correctly"""
@@ -140,7 +191,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
        _jk = a
        """
        print "Table test:"
-       res = self.parser.parse(teststrg+"\n",lexer=self.lexer,debug=True)
+       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_jk",have_sn=False)
        print realfunc
        exec realfunc
@@ -527,6 +578,7 @@ if __name__=='__main__':
     #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
     suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
-    #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase)
+    #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase) 
+    #suite = unittest.TestLoader().loadTestsFromTestCase(AugOpTestCase)
     unittest.TextTestRunner(verbosity=2).run(suite)
 

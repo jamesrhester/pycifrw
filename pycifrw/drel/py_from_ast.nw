@@ -45,6 +45,7 @@ def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=F
     if cat_meth:
         preamble += " "*8 + "__dreltarget = {}\n" # initialise
     num_header = """
+        from drel_runtime import aug_add,aug_sub,aug_append,aug_remove
         try:
             import numpy
         except:
@@ -476,8 +477,8 @@ mathop_table = {"+":"+", "-":"-", "<":"<", "*":"*", "/":"/",
 
 aug_assign_table = {"++=":"aug_append",
                     "+=":"aug_add",
-                    "-=":"aug_minus",
-                    "--=":"aug_drop"}
+                    "-=":"aug_sub",
+                    "--=":"aug_remove"}
 
 @ To avoid cluttering up the main switch statement, we call out to this function
 in order to find out what the Python name of the given function is.  Where we have
