@@ -394,92 +394,15 @@ class MoreComplexTestCase(unittest.TestCase):
      }
      _a = atomlist
 """    
-       res = self.parser.parse(teststrg + "\n",debug=True,lexer=self.lexer)
+       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_a",cat_meth=True,
-                   loopable=['atom_site'],have_sn=False,debug='SUBSCRIPTION')
+                   loopable=['atom_site'],have_sn=False)
        print 'Simple function becomes:'
        print realfunc
        exec realfunc
        b = myfunc(self,self)
        print "subscription returns " + `b` 
 
-   def testModelSite(self):
-       """Test case found in Cif dictionary """
-       teststrg = """# Store unique sites as a local list
- 
-     atomlist  = List()
-     Loop  a  as  atom_site  {
-        axyz       =    a.fract_xyz
-        cxyz       =   _atom_sites_Cartn_transform.matrix * axyz
-        radb       =   _atom_type[a.type_symbol].radius_bond
-        radc       =   _atom_type[a.type_symbol].radius_contact
-        ls         =   List ( a.label, "1_555" )
-        atomlist ++=   [ls, axyz, cxyz, radb, radc, 0]
-     }
- 
-# Store closest connected sites as a list
- 
-     molelist  = List()
-     dmin     =  _geom.bond_distance_min
-     m        =  0
-     n        =  0
- 
-     For [ls1,a1,c1,rb1,rc1,m1] in atomlist  {
-         If (m1 != 0) Next
-         m         +=  1
-         n         +=  1
-         molelist ++=  [ls1,a1,c1,rb1,rc1,n,m]
-         atomlist --=  [ls1,a1,c1,rb1,rc1,m]
- 
-         Repeat  {
-             connect =  "no"
- 
-             For [ls2,a2,c2,rb2,rc2,n2,m2] in molelist  {
-                 If (m2 != m) Next
- 
-                 For [ls3,a3,c3,rb3,rc3,m3] in atomlist  {
-                     dmax  =  rb2 + rb3 + _geom.bond_distance_incr
- 
-                     Loop  s  as  symmetry_equiv  :ns   {
- 
-                         axyz      =   s.R * a3 + s.T
-                         bxyz,tran =   Closest (axyz, a2)
-                         cxyz      =  _atom_sites_Cartn_transform.matrix *bxyz
-                         d         =   Norm (cxyz - c2)
- 
-                        If (d > dmin and d < dmax)          {
-                            ls  =   List ( ls3[0], Symop(ns+1, tran) )
- 
-                            If (ls not in Strip(molelist,0))    {
-                                n         +=  1
-                                molelist ++=  [ls,bxyz,cxyz,rb3,rc3,n,m]
-                                atomlist --=  [ls3,a3,c3,rb3,rc3,m]
-                                connect    =  "yes"
-         }   }   }   }   }
-        If (connect == "no") Break
-     }  }
- 
-# Store connected molecular sites as MODEL_SITE list
- 
-     For [ls,ax,cx,rb,rc,n,m] in molelist  {
- 
-        model_site( .id              =  ls,
-                    .fract_xyz       =  ax,
-                    .Cartn_xyz       =  cx,
-                    .radius_bond     =  rb,
-                    .radius_contact  =  rc,
-                    .index           =  n,
-                    .mole_index      =  m  )
-      }"""
-       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","_res",cat_meth=True,
-                   loopable=['atom_site','symmetry_equiv'],have_sn=False)
-       #print 'Model site function becomes:'
-       #print realfunc
-       exec realfunc
-       b = myfunc(self,self)
-       print "model_site returns " + `b` 
-      
 class WithDictTestCase(unittest.TestCase):
    """Now test flow control which requires a dictionary present"""
    def setUp(self):
@@ -577,8 +500,8 @@ if __name__=='__main__':
     #unittest.main()
     #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
-    suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
-    #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase) 
+    #suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
+    suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase) 
     #suite = unittest.TestLoader().loadTestsFromTestCase(AugOpTestCase)
     unittest.TextTestRunner(verbosity=2).run(suite)
 
