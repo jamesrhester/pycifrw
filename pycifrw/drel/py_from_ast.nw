@@ -49,6 +49,7 @@ def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=F
         preamble += " "*8 + "__dreltarget = {}\n" # initialise
     num_header = """
         from drel_runtime import aug_add,aug_sub,aug_append,aug_remove
+        import math
         try:
             import numpy
         except:
@@ -208,11 +209,9 @@ In all other cases we have a plain subscription as for normal Python.
 <<Process subscriptions>>=
 elif node_type == "SUBSCRIPTION":  # variable, single expression
     newid = 0
-    if in_node[1][0] == "ATOM":
-        print "Checking ATOM: " + `in_node[1]`
-        if in_node[1][1][0] == "ITEM_TAG":  #keyed lookup
-            print "Found category used as item tag: subscribing"
-            newid = [in_node[1][1][1][1:],False,False]  #drop underscore and remember
+    if in_node[1][0] == "ATOM" and in_node[1][1][0] == "ITEM_TAG":  #keyed lookup
+        print "Found category used as item tag: subscribing"
+        newid = [in_node[1][1][1][1:],False,False]  #drop underscore and remember
     else:
         primary = traverse_ast(in_node[1])  
         # check to see if this is a special variable

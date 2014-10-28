@@ -314,11 +314,6 @@ def p_attribute_tag(p):
     else: 
         p[0] = p[1][1:]
 
-# A subscription becomes a key lookup if the primary is a 
-# pre-defined 'category variable'.  We use the GetKeyedPacket
-# method we have specially added to PyCIFRW to simplify the
-# code here
-#
 def p_subscription(p):
     '''subscription : primary "[" expression "]" '''
     p[0] = ["SUBSCRIPTION",p[1],p[3]]
