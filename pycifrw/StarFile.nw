@@ -243,9 +243,9 @@ def __getitem__(self,key):
        lowerkey = key.lower()
        if lowerkey in self.lower_keys:
            return self.dictionary[lowerkey]
-       print 'Visible keys:' + `self.visible_keys`
-       print 'All keys' + `self.lower_keys`
-       print 'Child table' + `self.child_table`
+       #print 'Visible keys:' + `self.visible_keys`
+       #print 'All keys' + `self.lower_keys`
+       #print 'Child table' + `self.child_table`
        raise KeyError,'No such item %s' % key
 
 # we have to get an ordered list of the current keys,

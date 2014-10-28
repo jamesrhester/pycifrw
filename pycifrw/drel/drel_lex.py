@@ -203,10 +203,10 @@ def t_ID(t):
     t.type = reserved.get(t.value,'ID')
     return t
 
-# Item tags can have periods, underscores and digits inside, and must have
+# Item tags can have underscores and digits inside, and must have
 # at least one underscore at the front
 def t_ITEM_TAG(t):
-    r'_[a-zA-Z_.0-9]+'
+    r'_[a-zA-Z_0-9]+'
     return t
 
 def t_ESCAPE_NEWLINE(t):

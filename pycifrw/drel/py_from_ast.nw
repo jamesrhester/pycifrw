@@ -17,22 +17,25 @@ within the generated method and so need to catch references to the target_id.
 
 The generated function can be called to generate all values in a loop column, or only
 a single value, by setting keyword argument ``packet_no'' to the required packet, or
--1.
+-1.  If the 'depends' keyword is True, a list of datanames that this function depends
+upon is returned as a second item.
 
 <<AST builder>>=
 def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=False, 
-                         func_def = False, have_sn=True,loopable=[],debug=None):
+                         func_def = False, have_sn=True,loopable=[],debug=None,depends=False):
     """Convert in_ast to python code"""
     if debug is not None:
         print "incoming AST:"
         print `in_ast`
-    func_text,withtable = start_traverse(in_ast,target_id=targetname,cat_meth=cat_meth,loopable=loopable,debug=debug)
+    func_text,withtable,dependencies = start_traverse(in_ast,target_id=targetname,cat_meth=cat_meth,loopable=loopable,debug=debug)
     if debug is not None:
         print 'Start========'
         print func_text
         print 'End=========='
-    if func_def:
+    if func_def and not depends:
         return func_text
+    elif func_def:
+        return func_text, None
     # now indent the string
     noindent = func_text.splitlines()
     # get the minimum indent and remove empty lines
@@ -56,7 +59,9 @@ def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=F
     postamble = ""
     postamble += " "*8 + "return __dreltarget"
     final = preamble + "".join(indented) + postamble
-    return final
+    if not depends:
+        return final
+    else: return final, dependencies
 
 @  Creating functions for looped categories.  We provide a shell function which
 internally calls the transformed function with the option of performing the
@@ -99,7 +104,8 @@ not (False).
 
 <<AST traverser>>=
 def start_traverse(in_node,target_id=None,loopable=[],cat_meth=False,debug=None):
-  special_info = {"special_id":[{}],"target_id":target_id,"withtable":{},"sub_subject":"","loopable_cats":loopable}
+  special_info = {"special_id":[{}],"target_id":target_id,"withtable":{},"sub_subject":"",
+                  "depends":set(),"loopable_cats":loopable}
   <<Maths operator conversion table>>
   def traverse_ast(in_node,debug=debug):
     if isinstance(in_node,basestring):
@@ -119,7 +125,9 @@ def start_traverse(in_node,target_id=None,loopable=[],cat_meth=False,debug=None)
     else:
        return "Not found: %s" % `in_node`
   result = traverse_ast(in_node)
-  return result,special_info["withtable"]
+  # remove target id from dependencies
+  special_info["depends"].discard(special_info["target_id"])
+  return result,special_info["withtable"],special_info["depends"]
 
 @  These are the simple constants that we have detected.
 
@@ -141,7 +149,8 @@ def start_traverse(in_node,target_id=None,loopable=[],cat_meth=False,debug=None)
 
 @  We need to catch all variables and other primary items here. Note that
 for now literals are simply repeated, as the Python representation is
-the same as the dREL representation. 
+the same as the dREL representation.   We make a note of all tags
+mentioned so that we can create a dependency tree.
     
 <<Other primaries>>=
     elif node_type == "ATOM":
@@ -150,10 +159,7 @@ the same as the dREL representation.
         else:
             return traverse_ast(in_node[1])
     elif node_type == "ITEM_TAG":
-        if special_info.get("target_id","") == in_node[1]:
-            return "__dreltarget"
-        else:
-            return "ciffile['%s']" % in_node[1]
+        return in_node[1]
     elif node_type == "LITERAL":
         return in_node[1]
     elif node_type == "LIST":
@@ -163,28 +169,7 @@ the same as the dREL representation.
         for list_elem in in_node[1:]:
             outstring = outstring + traverse_ast(list_elem) + ","
         return outstring + "]"
-    elif node_type == "SUBSCRIPTION":  # variable, single expression
-        # check to see if this is a special variable
-        newid = 0
-        if in_node[1][0] == "ATOM" and in_node[1][1][0] == "ITEM_TAG":
-            primary = in_node[1][1][1]
-        else:
-            primary = traverse_ast(in_node[1])  
-        for idtable in special_info["special_id"]:
-            newid = idtable.get(primary,0)
-            if newid: break
-        if not newid and primary[0] == '_': #assume an explicit category reference
-            newid = [primary[1:],False,False]
-        if newid:
-            key_item = 'self["'+newid[0]+'"]["_category.key_id"]'
-            get_loop = "ciffile.GetLoop(%s).GetKeyedPacket(%s,%s)" % (key_item,key_item,traverse_ast(in_node[2]))
-            special_info["sub_subject"] = "_"+newid[0]+"."  #in case of attribute reference following
-            print "Set sub_subject to %s" % special_info["sub_subject"]
-            return get_loop
-        else:
-            outstring = primary + "["
-            outstring = outstring + traverse_ast(in_node[2]) + "]"
-            return outstring
+    <<Process subscriptions>>
     <<Process attribute reference>>
     elif node_type == "FUNC_CALL":
             func_name,arg_prefix,postfix = get_function_name(in_node[1])
@@ -211,6 +196,41 @@ the same as the dREL representation.
         outstring = outstring[:-1] + "]"
         return outstring
 
+@  Subscriptions, of form primary [ subscript ].  A subscription may be a simple element lookup, as in
+a[1], or it may be a keyed lookup of a different category using the
+value within the square brackets e.g. p[m.symop].  If we find the primary is something that
+we are looping or withing, we immediately adopt the keyed lookup.  If the
+primary is an item tag, then we can deduce that a keyed lookup follows as there is no other
+function for an item tag without accompanying attribute to make a full dataname.
+
+In all other cases we have a plain subscription as for normal Python.  
+
+<<Process subscriptions>>=
+elif node_type == "SUBSCRIPTION":  # variable, single expression
+    newid = 0
+    if in_node[1][0] == "ATOM":
+        print "Checking ATOM: " + `in_node[1]`
+        if in_node[1][1][0] == "ITEM_TAG":  #keyed lookup
+            print "Found category used as item tag: subscribing"
+            newid = [in_node[1][1][1][1:],False,False]  #drop underscore and remember
+    else:
+        primary = traverse_ast(in_node[1])  
+        # check to see if this is a special variable
+        for idtable in special_info["special_id"]:
+            newid = idtable.get(primary,0)
+            if newid: break
+    if newid:
+        key_item = 'self["'+newid[0]+'"]["_category.key_id"]'
+        special_info["depends"].add(newid[0])
+        get_loop = "ciffile.GetLoop(%s).GetKeyedPacket(%s,%s)" % (key_item,key_item,traverse_ast(in_node[2]))
+        special_info["sub_subject"] = "_"+newid[0]+"."  #in case of attribute reference following
+        print "Set sub_subject to %s" % special_info["sub_subject"]
+        return get_loop
+    else:
+        outstring = primary + "["
+        outstring = outstring + traverse_ast(in_node[2]) + "]"
+        return outstring
+
 @  Attribute references.  We need to catch all attribute references to special
 variables (those defined by loop or with statements).  For ``with'' variables, we
 create a dummy variable for every attribute reference, keyed by the actual
@@ -225,11 +245,15 @@ require the full dataname, PyCIFRW does, so we have to store the category that
 the keyed access comes from and add that back in - this is what 'sub_subject'
 contains.
 
+In a further twist, when keyed access followed by attribute lookup is performed on a non-aliased category, that category should have an underscore as the final result will be a
+dataname.  So we need to check for this construction before deciding how
+to translate the 'primary' part of the construction to Python.
+
 <<Process attribute reference>>=
-elif node_type == "ATTRIBUTE":  # id , att
-    # check for special ids
+elif node_type == "ATTRIBUTE":  # id/tag , att
     outstring = ""
     newid = 0
+    # check for special ids
     primary = traverse_ast(in_node[1])  # this will set sub_subject if necessary
     for idtable in special_info["special_id"]:
         newid = idtable.get(primary,0)
@@ -238,7 +262,9 @@ elif node_type == "ATTRIBUTE":  # id , att
         # if we are looping, we add a loop prefix. If we are withing an
         # unlooped category, we put the full name back.
         if newid[2] or (not newid[2] and not newid[1]):   # looping or simple with
-            outstring = "ciffile[" + '"_' + newid[0] + "." + in_node[2]+'"]'
+            var_name = "_" + newid[0] + "." + in_node[2]
+            outstring = "ciffile[" + '"' +var_name +'"]'
+            special_info["depends"].add(var_name)
             if newid[1]:  # a loop statement requires an index
                 outstring += "[" + newid[1]+ "]"
         else:   # a with statement; capture the name and create a dummy variable
@@ -248,11 +274,19 @@ elif node_type == "ATTRIBUTE":  # id , att
                 new_var = "__w%d" % position
                 special_info["withtable"][var_name] = (new_var,position)
             outstring += special_info["withtable"][var_name][0]
-    elif special_info["special_id"][0].has_key(primary+"."+in_node[2]):
+            special_info["depends"].add(var_name)
+    elif in_node[1][0] == "ATOM" and primary[0] == "_":   # a plain item name 
+        fullname = primary + "." + in_node[2]
+        print "Found simple item name %s" % fullname
         # a simple cat.obj dataname from the dictionary
-        outstring = "ciffile['" + in_node[1] + "." + in_node[2] +"']"
+        if special_info.get("target_id","") == fullname:
+            outstring = "__dreltarget"
+        else:
+            special_info["depends"].add(fullname)
+            outstring = "ciffile['%s']" % fullname
     else: # default to Python attribute access
         outstring = "getattr(" + primary + ",'" + special_info['sub_subject'] + in_node[2] + "')"
+        special_info['depends'].add(special_info['sub_subject'] + in_node[2])
         special_info['sub_subject'] = ""
     return outstring
 
@@ -334,8 +368,9 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
         print message
         raise CifError, message
     #loop over some index
+    loop_num = len(special_info['special_id'][-1])+1
     if in_node[3] == "":  # provide our own
-        loop_index = "__pi%d" % (len(special_info['special_id'][-1])+1)
+        loop_index = "__pi%d" % loop_num
     else:
         loop_index = in_node[3]
     var_info[1] = loop_index
@@ -347,15 +382,15 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     outstring += "\n" + "__pycitems = filter(lambda a:ciffile.has_key(a),__pycitems)"
     outstring += "\nprint 'names in cat -> %s' % `__pycitems`\n"
     if var_info[2] == True:
-        outstring += "\n" + "__loop_range = range(len(ciffile[__pycitems[0]]))"
+        outstring += "\n" + "__loop_range%d = range(len(ciffile[__pycitems[0]]))" % loop_num
     else:
-        outstring += "\n" + "__loop_range = [0]"
+        outstring += "\n" + "__loop_range%d = [0]" % loop_num
         #outstring +="\n" + "for __noloop in [0]:"
     # deal with this comparison test
     if in_node[4] != "":
-        outstring += "\n" + "__loop_range = [a for a in __loop_range if a %s %s]" % (in_node[4],in_node[5])
+        outstring += "\n" + "__loop_range%d = [a for a in __loop_range%d if a %s %s]" % (loop_num,loop_num,in_node[4],in_node[5])
     # now output the looping command
-    outstring += "\n" + "for %s in __loop_range:" % loop_index
+    outstring += "\n" + "for %s in __loop_range%d:" % (loop_index,loop_num)
     # now the actual body of the loop
     loop_body = traverse_ast(in_node[6])
     outstring = outstring + add_indent("\n"+loop_body)

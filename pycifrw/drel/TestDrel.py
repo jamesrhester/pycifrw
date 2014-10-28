@@ -198,6 +198,14 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
        b = myfunc(self,self)
        self.failUnless(b['bx']==25)
 
+    def test_subscription(self):
+       """Test proper list of dependencies is returned"""
+       teststrg = """
+       m   = [15,25,35]
+       _a = m [1]
+       """
+       self.create_test(teststrg,25)
+
 class SimpleCompoundStatementTestCase(unittest.TestCase):
    def setUp(self):
        #create our lexer and parser
@@ -379,7 +387,7 @@ class MoreComplexTestCase(unittest.TestCase):
        print "Geom_angle.angle = %s" % b['_geom_angle.value']
        self.failUnless(b['_geom_angle.value']==[1,2,3,4,5])
 
-   def testSubscription(self):
+   def testLists(self):
        """Test case found in Cif dictionary """
        teststrg = """# Store unique sites as a local list
  
@@ -395,9 +403,10 @@ class MoreComplexTestCase(unittest.TestCase):
      _a = atomlist
 """    
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","_a",cat_meth=True,
-                   loopable=['atom_site'],have_sn=False)
+       realfunc,dependencies = py_from_ast.make_python_function(res,"myfunc","_a",cat_meth=True,
+                   loopable=['atom_site'],have_sn=False,depends=True)
        print 'Simple function becomes:'
+       print 'Depends on: ' + `dependencies`
        print realfunc
        exec realfunc
        b = myfunc(self,self)
@@ -441,6 +450,18 @@ class WithDictTestCase(unittest.TestCase):
        print 'exptl method now %s' % newmeth 
        self.failUnless(newmeth == "single-crystal diffraction")
 
+   def test_subscription(self):
+       """Test proper list of dependencies is returned"""
+       teststrg = """
+       _model_site.symop = _model_site.id [1]
+       """
+       self.parser.loopable_cats = []   #none looped
+       res = self.parser.parse(teststrg,lexer=self.lexer)
+       print `res`
+       realfunc,dependencies = py_from_ast.make_python_function(res,"myfunc","_model_site.symop",depends=True)
+       print realfunc, `dependencies`
+       self.failUnless(dependencies == set(['_model_site.id']))
+
    def test_loop_statement(self):
        """Test proper processing of loop statements"""
        teststrg = """
@@ -464,6 +485,36 @@ class WithDictTestCase(unittest.TestCase):
        print 'atomic mass now %f' % atmass  
        self.failUnless(atmass == 552.488)
        
+   def test_complex_f(self):
+       """This calculation failed during testing"""
+       teststrg = """
+   With r  as  refln
+ 
+      fc  =   Complex (0., 0.)
+      h   =   r.hkl
+ 
+   Loop a  as  atom_site  {
+ 
+          f  =   a.site_symmetry_multiplicity * a.occupancy * (
+                 r.form_factor_table [a.type_symbol]      +
+                        _atom_type_scat[a.type_symbol].dispersion  )
+ 
+      Loop s  as  symmetry_equiv  {
+ 
+          t   =  Exp(-h * s.R * a.tensor_beta * s.RT * h)
+ 
+          fc +=  f * t * ExpImag(TwoPi *( h *( s.R * a.fract_xyz + s.T)))
+   }  }
+          _refln.F_complex  =   fc / _symmetry.multiplicity
+       """
+       loopable_cats = ['symmetry_equiv','atom_site']   #
+       ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       realfunc = py_from_ast.make_python_function(ast,"myfunc","_refln.F_complex",loopable=loopable_cats)
+       print "Incoming AST: " + `ast`
+       print "F_complex statement -> \n" + realfunc
+       exec realfunc
+       #  
+
    def test_attributes(self):
        """Test that attributes of complex expressions come out OK"""
        # We need to do a scary funky attribute of a key lookup 
@@ -498,10 +549,10 @@ class WithDictTestCase(unittest.TestCase):
        
 if __name__=='__main__':
     #unittest.main()
-    #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
+    suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
-    suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase) 
+    #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase) 
     #suite = unittest.TestLoader().loadTestsFromTestCase(AugOpTestCase)
     unittest.TextTestRunner(verbosity=2).run(suite)
 

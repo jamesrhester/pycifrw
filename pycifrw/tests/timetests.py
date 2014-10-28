@@ -3,13 +3,13 @@ import time
 import CifFile
 import cProfile
 import pstats
-testfiles = ['1YGG.cif','C13H22O3.cif','../dictionaries/cif_core.dic',
+testfiles = ['1YGG.cif','ag03.cif','C13H22O3.cif','../dictionaries/cif_core.dic',
               '../dictionaries/mmcif_pdbx.dic']
 #testfiles = []
 cached_mmdic = CifFile.CifDic('../dictionaries/mmcif_pdbx.dic',standard=None)
 # cached_mmdic = CifFile.CifDic('../dictionaries/mmcif_std_2.0.09.dic',standard=None)
 cached_core = CifFile.CifDic('../dictionaries/cif_core.dic')
-valfiles = [ ('1YGG.cif',cached_mmdic), 
+valfiles = [ ('ag03.cif',cached_mmdic), 
              ('C13H22O3.cif',cached_core)
            ]
 
