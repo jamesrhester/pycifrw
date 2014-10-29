@@ -467,6 +467,28 @@ class WithDictTestCase(unittest.TestCase):
        print 'exptl method now %s' % newmeth 
        self.failUnless(newmeth == "single-crystal diffraction")
 
+   def test_loop_with_statement(self):
+       """Test with statement on a looped category"""
+       teststrg = """ 
+       with t as atom_type
+       {
+       t.test = t.number_in_cell * 10
+       }
+       """
+       loopable_cats = ['atom_type']   #
+       ast = self.parser.parse(teststrg+"\n",debug=True,lexer=self.lexer)
+       realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.test",loopable=loopable_cats)
+       print "With statement for looped category -> \n" + realfunc
+       exec realfunc
+       #  
+       # testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
+       # attach dictionary to testblock, which will trigger conversion of
+       # string values to numeric values...
+       self.testblock.assign_dictionary(self.testdic)
+       atmass = myfunc(self.testdic,self.testblock)
+       print 'test value now %f' % atmass  
+       self.failUnless(atmass == [10,20,30])
+       
    def test_subscription(self):
        """Test proper list of dependencies is returned"""
        teststrg = """
@@ -567,10 +589,10 @@ class WithDictTestCase(unittest.TestCase):
 if __name__=='__main__':
     #maindic = CifFile.CifDic("testing/cif_core.dic",grammar="DDLm",do_minimum=True)
     #unittest.main()
-    #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
+    suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
-    suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase) 
+    #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase) 
     #suite = unittest.TestLoader().loadTestsFromTestCase(AugOpTestCase)
     unittest.TextTestRunner(verbosity=2).run(suite)
 

@@ -1,5 +1,7 @@
-@ These routines convert a dREL AST into Python text and were originally in the direct
-conversion code.
+@ These routines convert a dREL AST into Python text.  The top-level
+AST builder encloses the python fragment produced by the AST traverser.  
+The function transformer turns dREL function calls into
+the appropriate Python/CifFile/Numpy function calls.
 
 <<*>>=
 import re
@@ -10,10 +12,15 @@ from CifFile import CifError
 <<With finder>>
 <<Utility functions>>
 
-@  The AST builder puts the infrastructure around the statement list to turn it into a
+@  The AST builder puts the infrastructure around the AST statement list to turn it into a
 function call with two arguments: a dictionary and a data file.  The target id will
 usually be the dataname that is being defined. We always call this ``__dreltarget''
 within the generated method and so need to catch references to the target_id.
+
+Note that the ``_cat.name'' syntax is significant in the dREL context, and therefore
+in the context of the generator.  Only names with this form are possible targets,
+and the category part of the name is used to automatically generate the appropriate
+loop index when that category is referred to within the code.
 
 The generated function can be called to generate all values in a loop column, or only
 a single value, by setting keyword argument ``packet_no'' to the required packet, or
@@ -69,10 +76,10 @@ internally calls the transformed function with the option of performing the
 calculation on a single packet or on the whole category.
 
 <<Create function header for loop>>=
-    dummy_vars = [a[0] for a in withtable.items()]
+    dummy_vars = [a[1][0] for a in withtable.items()]
     dummy_vars = ",".join(dummy_vars)
     actual_names = [k for k in withtable.keys()]
-    actual_names = ["ciffile[repr(a)]" for a in actual_names]
+    actual_names = ["ciffile["+repr(a)+"]" for a in actual_names]
     map_names = ",".join(actual_names)
     one_pack_names = [a+"[packet_no]" for a in actual_names]
     one_packet_each = ",".join(one_pack_names)
@@ -89,16 +96,20 @@ need for any extra variables
 <<Create function header for unlooped data>>=
     preamble = "def %s(self,ciffile):\n" % func_name
 
-@  The AST traverser is a recursive function which is passed a node.  It returns
-a string.  We define it inside an external function so that our global variables
-are actually just local variables of the enclosing function. Variable 
-[[special_info.[special_id] ]] is a list of scopes, each containing a table of variables that need to be specially 
-handled, either because they correspond to datanames (first entry in list) or to variables that have been aliased to categories via loop or with statements.
-A variable defined in a loop statement will also have a loop index that
-needs to be incremented and used to index a packet; this is the second entry in the list
-indexed by the variable alias. The second entry is also used to hold the
-dummy variable for the 'with' statement.  The final function can be mapped across the
-keys of the with table to calculate the whole column of a category.
+@ The AST traverser is a recursive function which is passed a node.
+It returns a string.  We define it inside an external function so that
+our global variables are actually just local variables of the
+enclosing function. Variable [[special_info.[special_id] ]] is a list
+of scopes, each containing a table of variables that need to be
+specially handled, either because they correspond to datanames (first
+entry in list) or to variables that have been aliased to categories
+via loop or with statements.  A variable defined in a loop statement
+will also have a loop index that needs to be incremented and used to
+index a packet; this is the second entry in the list indexed by the
+variable alias. The second entry is also used to hold the dummy
+variable for the 'with' statement.  The generated function can thus be mapped
+across the keys of the with table to calculate the whole column of a
+category.
 
 The final boolean entry determines whether the second entry is for looping (True) or
 not (False).
@@ -107,6 +118,12 @@ not (False).
 def start_traverse(in_node,target_id=None,loopable=[],cat_meth=False,debug=None):
   special_info = {"special_id":[{}],"target_id":target_id,"withtable":{},"sub_subject":"",
                   "depends":set(),"loopable_cats":loopable}
+  # create an virtual enclosing 'with' statement
+  if target_id is not None:
+      cat,name = getcatname(target_id)
+      special_info["special_id"][-1].update({cat:[cat,"",False]})
+      if cat in special_info["loopable_cats"]:    #
+          special_info["special_id"][-1][cat][1] = "looped_cat"
   <<Maths operator conversion table>>
   def traverse_ast(in_node,debug=debug):
     if isinstance(in_node,basestring):
@@ -258,16 +275,18 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
         newid = idtable.get(primary,0)
         if newid: break
     if newid:
+        #catch our output name
+        var_name = "_" + newid[0]+"." + in_node[2]
+        if var_name == special_info.get("target_id",""):
+                outstring = "__dreltarget"
         # if we are looping, we add a loop prefix. If we are withing an
         # unlooped category, we put the full name back.
-        if newid[2] or (not newid[2] and not newid[1]):   # looping or simple with
-            var_name = "_" + newid[0] + "." + in_node[2]
+        elif newid[2] or (not newid[2] and not newid[1]):   # looping or simple with
             outstring = "ciffile[" + '"' +var_name +'"]'
             special_info["depends"].add(var_name)
             if newid[1]:  # a loop statement requires an index
                 outstring += "[" + newid[1]+ "]"
-        else:   # a with statement; capture the name and create a dummy variable
-            var_name = "_" + newid[1]+"." + in_node[2]
+        else:   # a with statement; capture the name and create a dummy variable        
             if not special_info["withtable"].has_key(var_name):  #new
                 position = len(special_info["withtable"])
                 new_var = "__w%d" % position
@@ -335,22 +354,30 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
     <<Loop statements>>
     <<Function definitions>>
 
-@  With statements.  ``With'' in dREL is ultimately just a simple alias (see separate document discussing this) if we consider that a looped item
-method is necessarily mapped across all packets of the category, or in other
-words it can only operate on the 'current packet'.  So we make
-a memo of the aliases that are currently in use and don't actually
-output anything.
+@ With statements.  ``With'' in dREL is ultimately just a simple alias
+(see separate document discussing this) if we consider that a looped
+item method is necessarily mapped across all packets of the category,
+or in other words it can *only* operate on the 'current packet'.  So we
+make a memo of the aliases that are currently in use and don't
+actually output anything.
+
+We do need to catch the case where a looped category has an explicit
+``with'' statement, as this should replace the implicit ``with''.
 
 <<With statements>>=
-elif node_type == "WITH": #old_id new_id suite
+elif node_type == "WITH": #new_id old_id suite
     # each entry in special_id is [alias:[cat_name,loop variable, is_loop]]
     alias_id = in_node[1]
     cat_id = in_node[2]
+    is_already_there = [a for a in special_info['special_id'][-1].keys() if \
+        special_info['special_id'][-1][a][0] == cat_id]
+    if len(is_already_there)>0:
+        del special_info['special_id'][-1][is_already_there[0]]
+        print "Found explicit loop category alias: %s for %s" % (alias_id,cat_id) 
     special_info['special_id'][-1].update({alias_id:[cat_id,"",False]})
-    if in_node[2] in special_info['loopable_cats']: #flat this
-        if len(special_info['withtable'])!= 0:
-            raise CifError, "Error: cannot map over two categories in single method"
-        special_info['special_id'][-1][1] = "looped_cat"
+    if in_node[2] in special_info['loopable_cats']: #flag this
+        special_info['special_id'][-1][alias_id][1] = "looped_cat"
+    print "Special ids now " + `special_info['special_id']`
     outstring = traverse_ast(in_node[3])
     return outstring
 
@@ -559,3 +586,7 @@ def add_indent(text,n=4):
     """Indent text by n spaces"""
     return re.sub("\n","\n"+4*" ",text)
  
+def getcatname(dataname):
+    """Return cat,name pair from dataname"""
+    cat,name= dataname.split(".")
+    return cat[1:],name
