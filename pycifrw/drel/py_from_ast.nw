@@ -66,7 +66,7 @@ def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=F
     indented = map(lambda a:" "*8 + a +"\n",noindent)  #indent dREL body
     postamble = ""
     postamble += " "*8 + "return __dreltarget"
-    final = preamble + "".join(indented) + postamble
+    final = preamble + "".join(indented) + postamble + end_body
     if not depends:
         return final
     else: return final, dependencies
@@ -84,17 +84,19 @@ calculation on a single packet or on the whole category.
     one_pack_names = [a+"[packet_no]" for a in actual_names]
     one_packet_each = ",".join(one_pack_names)
     preamble = "def %s(self,ciffile,packet_no=-1):\n" % (func_name)
-    preamble += "    if packet_no < 0:   #map\n"""
-    preamble  +="        return map(lambda %s: drel_func(self,ciffile,%s),%s)\n" % (dummy_vars,dummy_vars,map_names)
-    preamble  +="    else:\n"
-    preamble  +="        return drel_func(self,ciffile,%s)\n" % one_packet_each
-    preamble  +="    def drel_func(dic,cifdata,%s):\n" % dummy_vars
+    preamble +="    def drel_func(dic,cifdata,%s):\n" % dummy_vars
+    # the actual function gets inserted here
+    end_body=  "\n    if packet_no < 0:   #map\n"""
+    end_body+= "        return map(lambda %s: drel_func(self,ciffile,%s),%s)\n" % (dummy_vars,dummy_vars,map_names)
+    end_body+= "    else:\n"
+    end_body+= "        return drel_func(self,ciffile,%s)\n" % one_packet_each
 
 @ Un'with'ed data can simply be called with the dictionary and ciffile, with no
 need for any extra variables
 
 <<Create function header for unlooped data>>=
     preamble = "def %s(self,ciffile):\n" % func_name
+    end_body = ""
 
 @ The AST traverser is a recursive function which is passed a node.
 It returns a string.  We define it inside an external function so that
@@ -114,6 +116,12 @@ category.
 The final boolean entry determines whether the second entry is for looping (True) or
 not (False).
 
+At the beginning of the traverse we initialise special_id with the explicit
+category name if we are in a loopable category, so that any references to items
+in this category will be dealt with as for explicit with statements.  Note that
+we append a single underscore to the alias to allow it to be picked up when
+the search for special ids is undertaken e.g. in the ATTRIBUTE case.
+
 <<AST traverser>>=
 def start_traverse(in_node,target_id=None,loopable=[],cat_meth=False,debug=None):
   special_info = {"special_id":[{}],"target_id":target_id,"withtable":{},"sub_subject":"",
@@ -121,9 +129,9 @@ def start_traverse(in_node,target_id=None,loopable=[],cat_meth=False,debug=None)
   # create an virtual enclosing 'with' statement
   if target_id is not None:
       cat,name = getcatname(target_id)
-      special_info["special_id"][-1].update({cat:[cat,"",False]})
+      special_info["special_id"][-1].update({"_"+cat:[cat,"",False]})
       if cat in special_info["loopable_cats"]:    #
-          special_info["special_id"][-1][cat][1] = "looped_cat"
+          special_info["special_id"][-1]["_"+cat][1] = "looped_cat"
   <<Maths operator conversion table>>
   def traverse_ast(in_node,debug=debug):
     if isinstance(in_node,basestring):

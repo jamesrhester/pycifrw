@@ -406,14 +406,16 @@ class MoreComplexTestCase(unittest.TestCase):
 
 class WithDictTestCase(unittest.TestCase):
    """Now test flow control which requires a dictionary present"""
+   #Dictionaries are required whenever a calculation is performed on a
+   #datafile-derived object in order to use the correct types.
    def setUp(self):
        #create our lexer and parser
        self.lexer = drel_lex.lexer
        self.parser = drel_ast_yacc.parser
        self.parser.lineno = 0
-       #use a simple dictionary
-       self.testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
+       #use
        self.testblock = CifFile.CifFile("nick1.cif",grammar="DDLm")["saly2_all_aniso"]
+       self.testdic = testdic
        #create the global namespace
        self.namespace = self.testblock.keys()
        self.namespace = dict(map(None,self.namespace,self.namespace))
@@ -463,7 +465,7 @@ class WithDictTestCase(unittest.TestCase):
        exec realfunc
        # attach dictionary  
        self.testblock.assign_dictionary(self.testdic)
-       newmeth = myfunc(self.testdic,self.testblock)
+       newmeth = myfunc(None,self.testblock)
        print 'exptl method now %s' % newmeth 
        self.failUnless(newmeth == "single-crystal diffraction")
 
@@ -476,6 +478,25 @@ class WithDictTestCase(unittest.TestCase):
        }
        """
        loopable_cats = ['atom_type']   #
+       ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.test",loopable=loopable_cats)
+       print "With statement for looped category -> \n" + realfunc
+       exec realfunc
+       #  
+       # testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
+       # attach dictionary to testblock, which will trigger conversion of
+       # string values to numeric values...
+       self.testblock.assign_dictionary(self.testdic)
+       atmass = myfunc(None,self.testblock)
+       print 'test value now %s' % `atmass`  
+       self.failUnless(atmass == [120,280,240])
+       
+   def test_loop_with_stmt_2(self):
+       """Test with statement on a looped category, no aliasing"""
+       teststrg = """ 
+       _atom_type.test = _atom_type.number_in_cell * 10
+       """
+       loopable_cats = ['atom_type']   #
        ast = self.parser.parse(teststrg+"\n",debug=True,lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.test",loopable=loopable_cats)
        print "With statement for looped category -> \n" + realfunc
@@ -485,10 +506,10 @@ class WithDictTestCase(unittest.TestCase):
        # attach dictionary to testblock, which will trigger conversion of
        # string values to numeric values...
        self.testblock.assign_dictionary(self.testdic)
-       atmass = myfunc(self.testdic,self.testblock)
-       print 'test value now %f' % atmass  
-       self.failUnless(atmass == [10,20,30])
-       
+       atmass = myfunc(None,self.testblock)
+       print 'test value now %s' % `atmass`  
+       self.failUnless(atmass == [120,280,240])
+
    def test_subscription(self):
        """Test proper list of dependencies is returned"""
        teststrg = """
@@ -520,7 +541,7 @@ class WithDictTestCase(unittest.TestCase):
        # attach dictionary to testblock, which will trigger conversion of
        # string values to numeric values...
        self.testblock.assign_dictionary(self.testdic)
-       atmass = myfunc(self.testdic,self.testblock)
+       atmass = myfunc(None,self.testblock)
        print 'atomic mass now %f' % atmass  
        self.failUnless(atmass == 552.488)
        
@@ -552,41 +573,10 @@ class WithDictTestCase(unittest.TestCase):
        print "Incoming AST: " + `ast`
        print "F_complex statement -> \n" + realfunc
        exec realfunc
-       #  
-
-   def test_attributes(self):
-       """Test that attributes of complex expressions come out OK"""
-       # We need to do a scary funky attribute of a key lookup 
-       # This is not a proper test as it does not return any value that
-       # can be tested.  It is purely a test of the grammar
-       ourdic = CifFile.CifDic("testdic2",grammar="DDLm")
-       testblock = CifFile.CifFile("test_data.cif",grammar="DDLm")["testdata"]
-       loopable_cats = ['geom','position'] #
-       teststrg = """
-       LineList = []
-       _PointList = []
-       With p as position
-       Loop g as geom {
-       If (g.type == "point") {
-             _PointList += [g.vertex1_id,p[g.vertex1_id].vector_xyz]
-       }
-       #Else if (g.type == "line") {
-       #      LineList ++= Tuple(Tuple(g.vertex1_id, g.vertex2_id),
-       #                            Tuple(p[g.vertex1_id].vector_xyz,
-       #                                    p[g.vertex2_id].vector_xyz))
-       #}
-       }
-       """
-       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","_PointList",loopable=loopable_cats)
-       print "Function -> \n" + realfunc
-       exec realfunc
-       retval = myfunc(ourdic,testblock)
-       #print "testdic2 return value" + `retval`
-       #print "Value for comparison with docs: %s" % `retval[0]`
-
        
 if __name__=='__main__':
+    global testdic
+    testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
     #maindic = CifFile.CifDic("testing/cif_core.dic",grammar="DDLm",do_minimum=True)
     #unittest.main()
     suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
