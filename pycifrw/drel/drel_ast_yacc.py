@@ -209,17 +209,11 @@ def p_power(p):
 
 def p_primary(p):
     '''primary : atom
-                | primary_att
+                | attributeref
                 | subscription
                 | slicing
                 | call'''
     # print 'Primary -> %s' % repr(p[1])
-    p[0] = p[1]
-
-# Separated out so that we can re-initialise subscription category
-def p_primary_att(p):
-    '''primary_att : attributeref'''
-    p.parser.sub_subject = ""
     p[0] = p[1]
 
 def p_atom(p):
@@ -389,49 +383,21 @@ def p_argument_list(p):
 def p_func_arg(p):
     '''func_arg : expression '''
     p[0] = p[1]
-                 
-#def p_augmented_assignment_stmt(p):
-#    '''augmented_assignment_stmt : target_list AUGOP testlist_star_expr'''
-#    if p[2] == "++=":          #append to list
-#        p[0] = ["CONCAT",p[1],p[3]]
-#    else:
-#        p[0] = ["ASSIGN",p[1],p[2],p[3]]
-
-# We simultaneously create multiple results for a single category.  In 
-# this case __dreltarget is a dictionary with keys for each category
-# entry.
 
 def p_fancy_drel_assignment_stmt(p):
     '''fancy_drel_assignment_stmt : ID OPEN_PAREN dotlist CLOSE_PAREN ''' 
     p[0] = ["FANCY_ASSIGN",p[1],p[3]]
 #    print "Fancy assignment -> " + `p[0]`
 
-# Something made up specially for drel.  We accumulate results for a series of
-# items in a dictionary which is returned.  A newline is OK between assignments
+# Something made up specially for drel.  A newline is OK between assignments
 
 def p_dotlist(p):
     '''dotlist : "." ID "=" expression
                | dotlist "," "." ID "=" expression '''               
     if len(p) <= 5:   #first element of dotlist
         p[0] = [[p[2],p[4]]]
-    #    p.parser.fancy_drel_id = p[-2]
-    #    if p[-2] == p.parser.target_id:      #we will return the results
-    #        realid = p[-2]+"."+p[2]
-    #        p[0] = "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (realid,realid,p[4])
-    #    else:
-    #        p[0] = p[-2] + "".join(p[1:]) + "\n"
-    #    print 'Fancy id is ' + `p[-2]`
     else:              #append to previous elements
          p[0] = p[1] + [[p[4],p[6]]]
-    #    if p.parser.fancy_drel_id == p.parser.target_id:
-    #        realid = p.parser.fancy_drel_id + "." + p[4]
-    #        p[0] = p[1] + "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (realid,realid,p[6])
-    #    else:
-    #        p[0] =  p[1] + p.parser.fancy_drel_id + "".join(p[3:]) + "\n"
-
-#def p_assignment_stmt(p):
-#    '''assignment_stmt : target_list "=" testlist_star_expr '''
-#    p[0] = ["ASSIGN", p[1],"=",p[3]]
 
 def p_exprlist(p):
     ''' exprlist : a_expr
@@ -545,31 +511,9 @@ def p_repeat_stmt(p):
 def p_with_stmt(p):
     '''with_stmt : with_head maybe_nline suite'''
     p[0] = p[1]+[p[3]] 
-    #outgoing = p.parser.special_id.pop()
-    #outindents = filter(lambda a:a[2],outgoing.values())
-    #p.parser.indent = p.parser.indent[:len(p.parser.indent)-4*len(outindents)]
 
-# Done here to capture the id before processing the suite
-# A with statement doesn't need any indenting...
-# We assume a variable 'loopable_cats' is available to us
-# We have a somewhat complex structure to allow for multiple simultaneous
-# with statements, although that is not in the standard.  We could
-# probably assume a single packet variable per with statement and
-# simplify the special_id structure a bit
-
-# Note that we allow multiple with statements grouped together (as long
-# as nothing else separates them)
 def p_with_head(p):
     '''with_head : WITH ID AS ID'''
-    # p[0] = "__pycitems = self.names_in_cat('%s')" % p[4]
-    # p.parser.special_id.append({p[2]: [p[4],"",False]})
-    # if p[4] in p.parser.loopable_cats:
-    #    tb_length = len(p.parser.withtable)  #generate unique id
-    #    p.parser.withtable.update({p[4]:"__pi%d" % tb_length})
-    #    p.parser.special_id[-1][p[2]][1] = p.parser.withtable[p[4]]
-    #print "%s means %s" % (p[2],p.parser.special_id[-1][p[2]][0])
-    #if p.parser.special_id[-1][p[2]][1]:
-    #    print "%s looped using %s" % (p[2],p.parser.special_id[-1][p[2]][1])
     p[0] = ["WITH",p[2],p[4]]
 
 def p_funcdef(p):
@@ -603,54 +547,5 @@ def p_error(p):
     print 'Surrounding text: ' + p.lexer.lexdata[max(p.lexpos - 100,0): p.lexpos] + "*" + \
        p.lexer.lexdata[p.lexpos:min(p.lexpos + 100,len(p.lexer.lexdata))]
     raise SyntaxError, 'Syntax error at token %s, value %s' % (p.type,p.value)
- 
-# The following function creates a function. The function
-# modifies the 'ciffile' argument in place.  The pi argument is a 
-# packet index for when we are accessing looped data using a
-# 'with' statement.  Returnname is the variable name for returned
-# data, and for looped data this should always be "__dreltarget".
-# See the test file for ways of using this
-#
-# The parser data is a two-element list with the first element the text of
-# the function, and the second element a table of looped values
-#
-# Normally this function is called in a context where 'self' is a CifDic
-# object; for the purposes of testing, we want to be able to remove any
-# references to dictionary methods and so include the have_sn flag.
-
-def make_func(parser_data,funcname,returnname,cat_meth = False,have_sn=True):
-    import re
-    if not returnname: returnname = "__dreltarget"
-    func_text = parser_data[0]
-    # now indent the string
-    noindent = func_text.splitlines()
-    # get the minimum indent and remove empty lines
-    noindent = filter(lambda a:a,noindent)
-    no_spaces = map(lambda a:re.match(r' *',a),noindent)
-    no_spaces = map(lambda a:a.end(),no_spaces)
-    min_spaces = min(no_spaces)+4   # because we add 4 ourselves to everything
-    with_indices = parser_data[1].values()
-    w_i_list = ",".join(with_indices)
-    preamble = "def %s(self,ciffile,%s):\n" % (funcname,w_i_list)
-    preamble += min_spaces*" " + "import StarFile\n"
-    preamble += min_spaces*" " + "import math\n"
-    preamble += min_spaces*" " + "import numpy\n"
-    if have_sn:
-        preamble += min_spaces*" " + "self.switch_numpy(True)\n"
-    if cat_meth:
-        preamble += min_spaces*" " + "%s = {}\n" % returnname
-    indented = map(lambda a:"    " + a+"\n",noindent)  
-    postamble = ""
-    if have_sn:
-        postamble = " "*min_spaces + "self.switch_numpy(False)\n"
-    postamble += " "*min_spaces + "return %s" % returnname
-    final = preamble + "".join(indented) + postamble
-    return final
 
 parser = yacc.yacc()    
-parser.indent = ""
-parser.special_id=[{}]
-parser.looped_value = False    #Determines with statement construction 
-parser.target_id = None
-parser.withtable = {}          #Table of 'with' packet access info
-parser.sub_subject=""

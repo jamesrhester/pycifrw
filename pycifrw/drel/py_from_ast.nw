@@ -27,9 +27,12 @@ a single value, by setting keyword argument ``packet_no'' to the required packet
 -1.  If the 'depends' keyword is True, a list of datanames that this function depends
 upon is returned as a second item.
 
+The 'loopable' argument is a table of categories that are loopable, with the values
+being (key_id, datanames).  This is all the information that the generator needs.
+
 <<AST builder>>=
 def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=False, 
-                         func_def = False, have_sn=True,loopable=[],debug=None,depends=False):
+                         func_def = False, have_sn=True,loopable={},debug=None,depends=False):
     """Convert in_ast to python code"""
     if debug is not None:
         print "incoming AST:"
@@ -122,15 +125,20 @@ in this category will be dealt with as for explicit with statements.  Note that
 we append a single underscore to the alias to allow it to be picked up when
 the search for special ids is undertaken e.g. in the ATTRIBUTE case.
 
+The [[packet_vars]] entry is a table of packets that have been assigned to a
+variable name.  We need to keep this around in order to properly manage them
+when their attributes are accessed, as this access will be by simple name,
+without the category ID.
+
 <<AST traverser>>=
-def start_traverse(in_node,target_id=None,loopable=[],cat_meth=False,debug=None):
+def start_traverse(in_node,target_id=None,loopable={},cat_meth=False,debug=None):
   special_info = {"special_id":[{}],"target_id":target_id,"withtable":{},"sub_subject":"",
-                  "depends":set(),"loopable_cats":loopable}
+                  "depends":set(),"loopable_cats":loopable,"packet_vars":{}}
   # create an virtual enclosing 'with' statement
   if target_id is not None:
       cat,name = getcatname(target_id)
       special_info["special_id"][-1].update({"_"+cat:[cat,"",False]})
-      if cat in special_info["loopable_cats"]:    #
+      if cat in special_info["loopable_cats"].keys():    #
           special_info["special_id"][-1]["_"+cat][1] = "looped_cat"
   <<Maths operator conversion table>>
   def traverse_ast(in_node,debug=debug):
@@ -246,13 +254,13 @@ elif node_type == "SUBSCRIPTION":  # variable, single expression
         for idtable in special_info["special_id"]:
             newid = idtable.get(primary,0)
             if newid: break
-            if primary in special_info["loopable_cats"]:   #loop category used 
+            if primary in special_info["loopable_cats"].keys():   #loop category used 
                 newid = [primary,False,False]
                 break 
     if newid:
-        key_item = 'self["'+newid[0]+'"]["_category.key_id"]'
-        special_info["depends"].add(newid[0])
-        get_loop = "ciffile.GetLoop(%s).GetKeyedPacket(%s,%s)" % (key_item,key_item,traverse_ast(in_node[2]))
+        key_item = "_"+newid[0]+"."+special_info["loopable_cats"][newid[0]][0]   #key name
+        special_info["depends"].add(key_item)
+        get_loop = "ciffile.GetLoop('%s').GetKeyedPacket('%s',%s)" % (key_item,key_item,traverse_ast(in_node[2]))
         special_info["sub_subject"] = "_"+newid[0]+"."  #in case of attribute reference following
         print "Set sub_subject to %s" % special_info["sub_subject"]
         return get_loop
@@ -273,7 +281,9 @@ Furthermore, the square bracket syntax for keyed access to data packets requires
 that the result of the keyed access is accessed by attribute.  While dREL does not
 require the full dataname, PyCIFRW does, so we have to store the category that
 the keyed access comes from and add that back in - this is what 'sub_subject'
-contains.
+contains.  Note also that this access can be delayed by assigning to the
+packet (e.g. a = atom_site[label]; b = a.xyz), so we check the list of
+such assignments kept in special_info[``packet_vars''].
 
 In a further twist, when keyed access followed by attribute lookup is performed on a non-aliased category, that category should have an underscore as the final result will be a
 dataname.  So we need to check for this construction before deciding how
@@ -317,6 +327,8 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
             special_info["depends"].add(fullname)
             outstring = "ciffile['%s']" % fullname
     else: # default to Python attribute access
+        # check for packet variables
+        special_info["sub_subject"] = special_info["packet_vars"].get(primary,special_info["sub_subject"])
         outstring = "getattr(" + primary + ",'" + special_info['sub_subject'] + in_node[2] + "')"
         special_info['depends'].add(special_info['sub_subject'] + in_node[2])
         special_info['sub_subject'] = ""
@@ -389,7 +401,7 @@ elif node_type == "WITH": #new_id old_id suite
         del special_info['special_id'][-1][is_already_there[0]]
         print "Found explicit loop category alias: %s for %s" % (alias_id,cat_id) 
     special_info['special_id'][-1].update({alias_id:[cat_id,"",False]})
-    if in_node[2] in special_info['loopable_cats']: #flag this
+    if in_node[2] in special_info['loopable_cats'].keys(): #flag this
         special_info['special_id'][-1][alias_id][1] = "looped_cat"
     print "Special ids now " + `special_info['special_id']`
     outstring = traverse_ast(in_node[3])
@@ -403,8 +415,8 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     alias_id = in_node[1]
     cat_id = in_node[2]
     var_info = [cat_id,"",False]
-    if cat_id not in special_info['loopable_cats']:
-        message =  "%s is not a loopable category (must be one of:\n%s)" % (cat_id,special_info['loopable_cats'])
+    if cat_id not in special_info['loopable_cats'].keys():
+        message =  "%s is not a loopable category (must be one of:\n%s)" % (cat_id,special_info['loopable_cats'].keys())
         print message
         raise CifError, message
     #loop over some index
@@ -417,7 +429,9 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     var_info[2] = True
     special_info['special_id'][-1].update({alias_id:var_info})
     # now emit some text: first to find the length of the category
-    outstring = "__pycitems = self.names_in_cat('%s')" % cat_id
+    # loopable cats contains a list of names defined for the category
+    catnames = ["_"+cat_id + "." + a for a in special_info["loopable_cats"][cat_id][1]]
+    outstring = "__pycitems = " + repr(catnames)
     outstring += "\nprint 'names in cat = %s' % `__pycitems`"
     outstring += "\n" + "__pycitems = filter(lambda a:ciffile.has_key(a),__pycitems)"
     outstring += "\nprint 'names in cat -> %s' % `__pycitems`\n"
@@ -503,15 +517,28 @@ reimplement them, which we do by rewriting them in the form
 
 a = func(a,b)
 
+We also need to catch packet assignments (e.g. a = atom_site[label])
+so that we can properly rewrite the attribute access later on, thus
+we keep a track of all values and the final value of sub_subject.
+Note that we are assuming that only one packet subscription
+takes place per expression, which is reasonable given that 
+mathematical manipulations are not defined for packets.
+
 <<Assignment statements>>=
 elif node_type == "ASSIGN":  #Target_list ,assigner, expression list
     outstring = ""
+    lhs_values = []
     for target_value in in_node[1]:
-        outstring = outstring + traverse_ast(target_value)+","
+        one_value = traverse_ast(target_value)
+        outstring = outstring + one_value +","
+        lhs_values.append(one_value)
     lhs = outstring[:-1]
     rhs = ""
-    for expression in in_node[3]:
+    for order,expression in enumerate(in_node[3]):
         rhs += traverse_ast(expression)+","
+        if special_info["sub_subject"] != "":   #a full packet
+            special_info["packet_vars"].update({lhs_values[order]:special_info["sub_subject"]})
+            special_info["sub_subject"] = ""
     if in_node[2] != "=":
         outstring = "%s = %s(%s,%s)" % (lhs, aug_assign_table[in_node[2]],lhs,rhs[:-1])
     else:

@@ -419,9 +419,11 @@ class WithDictTestCase(unittest.TestCase):
      }
      _a.b = atomlist
 """    
+       loop_cats = {"atom_site":["label",["fract_xyz","type_symbol","label"]],
+                    "atom_type":["id",["id","radius_bond","radius_contact"]]}
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc,dependencies = py_from_ast.make_python_function(res,"myfunc","_a.b",cat_meth=True,
-                   loopable=['atom_site'],have_sn=False,depends=True)
+                   loopable=loop_cats,have_sn=False,depends=True)
        print 'Simple function becomes:'
        print realfunc
        print 'Depends on: ' + `dependencies`
@@ -441,7 +443,7 @@ class WithDictTestCase(unittest.TestCase):
            px = c.a
            _exptl.method = "single-crystal diffraction"
            }"""
-       self.parser.loopable_cats = []   #none looped
+       loopable_cats = {}   #none looped
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_exptl.method")
        print "With statement -> \n" + realfunc
@@ -460,7 +462,7 @@ class WithDictTestCase(unittest.TestCase):
        t.test = t.number_in_cell * 10
        }
        """
-       loopable_cats = ['atom_type']   #
+       loopable_cats = {'atom_type':["id",["id","number_in_cell"]]}   #
        ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.test",loopable=loopable_cats)
        print "With statement for looped category -> \n" + realfunc
@@ -479,8 +481,8 @@ class WithDictTestCase(unittest.TestCase):
        teststrg = """ 
        _atom_type.test = _atom_type.number_in_cell * 10
        """
-       loopable_cats = ['atom_type']   #
-       ast = self.parser.parse(teststrg+"\n",debug=True,lexer=self.lexer)
+       loopable_cats = {'atom_type':["id",["id",'number_in_cell','test']]}   #
+       ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.test",loopable=loopable_cats)
        print "With statement for looped category -> \n" + realfunc
        exec realfunc
@@ -498,10 +500,11 @@ class WithDictTestCase(unittest.TestCase):
        teststrg = """
        _model_site.symop = _model_site.id [1]
        """
-       self.parser.loopable_cats = []   #none looped
+       loopable_cats = {"model_site":["id",["id","symop"]]}
        res = self.parser.parse(teststrg,lexer=self.lexer)
        print `res`
-       realfunc,dependencies = py_from_ast.make_python_function(res,"myfunc","_model_site.symop",depends=True)
+       realfunc,dependencies = py_from_ast.make_python_function(res,"myfunc","_model_site.symop",
+                                                                loopable=loopable_cats,depends=True)
        print realfunc, `dependencies`
        self.failUnless(dependencies == set(['_model_site.id']))
 
@@ -514,7 +517,7 @@ class WithDictTestCase(unittest.TestCase):
        }
        _cell.atomic_mass = mass
             """
-       loopable_cats = ['atom_type']   #
+       loopable_cats = {'atom_type':["id",['number_in_cell','atomic_mass']]}   #
        ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_cell.atomic_mass",loopable=loopable_cats)
        print "Loop statement -> \n" + realfunc
@@ -550,7 +553,11 @@ class WithDictTestCase(unittest.TestCase):
    }  }
           _refln.F_complex  =   fc / _symmetry.multiplicity
        """
-       loopable_cats = ['symmetry_equiv','atom_site']   #
+       loopable_cats = {'symmetry_equiv':["id",["id","R","RT","T"]],
+                        'atom_site':["id",["id","type_symbol","occupancy","site_symmetry_multiplicity",
+                                           "tensor_beta","fract_xyz"]],
+                        'atom_type_scat':["id",["id","dispersion"]],
+                        'refln':["hkl",["hkl","form_factor_table"]]}   #
        ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_refln.F_complex",loopable=loopable_cats)
        print "Incoming AST: " + `ast`
@@ -566,15 +573,17 @@ class WithDictTestCase(unittest.TestCase):
      s = symmetry_equiv[SymKey(symop)]
  
      _model_site.adp_matrix_beta =  s.R * a.tensor_beta * s.RT"""
-     
+       loopable = {"model_site":["id",["id"]],
+                   "atom_site":["label",["tensor_beta","label"]],
+                   "symmetry_equiv":["id",["id","RT","R"]]}
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_model_site.adp_matrix_beta",
                                                    depends = True,have_sn=False,
-                                                        loopable=['model_site','atom_site','symmetry_equiv'])
+                                                        loopable=loopable)
        print 'model_site.adp_matrix_beta becomes...'
        print realfunc
        print deps
-       self.failUnless('RT' not in deps)
+       self.failUnless('_symmetry_equiv.RT' in deps)
 
 if __name__=='__main__':
     global testdic
