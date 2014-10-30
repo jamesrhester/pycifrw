@@ -228,6 +228,9 @@ value within the square brackets e.g. p[m.symop].  If we find the primary is som
 we are looping or withing, we immediately adopt the keyed lookup.  If the
 primary is an item tag, then we can deduce that a keyed lookup follows as there is no other
 function for an item tag without accompanying attribute to make a full dataname.
+It is also possible for a delayed attribute lookup to occur, for example,
+a = atom_site[label] and later b = a.position, so we catch any subscriptions applied to
+loop category names.
 
 In all other cases we have a plain subscription as for normal Python.  
 
@@ -243,6 +246,9 @@ elif node_type == "SUBSCRIPTION":  # variable, single expression
         for idtable in special_info["special_id"]:
             newid = idtable.get(primary,0)
             if newid: break
+            if primary in special_info["loopable_cats"]:   #loop category used 
+                newid = [primary,False,False]
+                break 
     if newid:
         key_item = 'self["'+newid[0]+'"]["_category.key_id"]'
         special_info["depends"].add(newid[0])

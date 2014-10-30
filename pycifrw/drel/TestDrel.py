@@ -365,23 +365,6 @@ class MoreComplexTestCase(unittest.TestCase):
        print "if returns " + `b` 
        self.failUnless(b==('B', 'Possible mismatch between cell angles and cell setting'))
 
-# This one also doesn't return anything sensible yet, just a generation check
-   def test_fancy_packets(self):
-       """Test that full packets can be dealt with properly"""
-       teststrg = """[label,symop] =   _model_site.id
- 
-     a = atom_site[label]
-     s = symmetry_equiv[SymKey(symop)]
- 
-     _model_site.adp_matrix_beta =  s.R * a.tensor_beta * s.RT"""
-     
-       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
-       realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_model_site.adp_matrix_beta",
-                                                   depends = True,have_sn=False)
-       print 'model_site.adp_matrix_beta becomes...'
-       print realfunc
-       print deps
-       self.failUnless('RT' not in deps)
 
 # We don't test the return value until we have a way to actually access it!
    def test_fancy_assign(self):
@@ -573,7 +556,26 @@ class WithDictTestCase(unittest.TestCase):
        print "Incoming AST: " + `ast`
        print "F_complex statement -> \n" + realfunc
        exec realfunc
-       
+
+       # This one also doesn't return anything sensible yet, just a generation check
+   def test_fancy_packets(self):
+       """Test that full packets can be dealt with properly"""
+       teststrg = """[label,symop] =   _model_site.id
+ 
+     a = atom_site[label]
+     s = symmetry_equiv[SymKey(symop)]
+ 
+     _model_site.adp_matrix_beta =  s.R * a.tensor_beta * s.RT"""
+     
+       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_model_site.adp_matrix_beta",
+                                                   depends = True,have_sn=False,
+                                                        loopable=['model_site','atom_site','symmetry_equiv'])
+       print 'model_site.adp_matrix_beta becomes...'
+       print realfunc
+       print deps
+       self.failUnless('RT' not in deps)
+
 if __name__=='__main__':
     global testdic
     testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
