@@ -599,6 +599,24 @@ class FileWriteTestCase(unittest.TestCase):
        jj = self.ef.first_block()
        self.failUnless(jj==self.df)
 
+   def testWrongLoop(self):
+       """Test derived from error observed during dREL testing"""
+       teststrg = """data_test
+loop_
+_atom_type.symbol
+_atom_type.oxidation_number
+_atom_type.atomic_mass
+_atom_type.number_in_cell
+  O    ?   15.999   12 
+  C    ?   12.011   28
+  H    ?   1.008    24
+       """
+       q = open("test2.cif","w")
+       q.write(teststrg)
+       q.close()
+       testcif = CifFile.CifFile("test2.cif").first_block()
+       self.failUnless(testcif['_atom_type.symbol']==['O','C','H'])
+
    def testDupName(self):
        """Test that duplicate blocknames are allowed in non-standard mode"""
        outstr = """data_block1 _data_1 b save_ab1 _data_2 c
@@ -1198,7 +1216,7 @@ class DicMergeTestCase(unittest.TestCase):
         pass
 
 if __name__=='__main__':
-#     suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
-#     unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
+     unittest.TextTestRunner(verbosity=2).run(suite)
+#     unittest.main()
 

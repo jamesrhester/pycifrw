@@ -37,7 +37,7 @@ def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=F
     if debug is not None:
         print "incoming AST:"
         print `in_ast`
-    func_text,withtable,dependencies = start_traverse(in_ast,target_id=targetname,cat_meth=cat_meth,loopable=loopable,debug=debug)
+    func_text,withtable,dependencies,cur_row = start_traverse(in_ast,target_id=targetname,cat_meth=cat_meth,loopable=loopable,debug=debug)
     if debug is not None:
         print 'Start========'
         print func_text
@@ -51,7 +51,7 @@ def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=F
     # get the minimum indent and remove empty lines
     no_spaces = [re.match(r' *',a).end() for a in noindent if a] #drop empty lines
     min_spaces = min(no_spaces)+4   # because we add 4 ourselves to everything
-    if len(withtable) > 0:  # a loop method
+    if len(withtable) > 0 or cur_row:  # a loop method
         <<Create function header for loop>>
     else:
         <<Create function header for unlooped data>>
@@ -76,23 +76,40 @@ def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=F
 
 @  Creating functions for looped categories.  We provide a shell function which
 internally calls the transformed function with the option of performing the
-calculation on a single packet or on the whole category.
+calculation on a single packet or on the whole category.  The existence of the
+"current_row" functionality means that we have to cover the situation where no
+other items in a category are referred to and so we need to work out the total
+number of packets during execution of the method.
 
 <<Create function header for loop>>=
-    dummy_vars = [a[1][0] for a in withtable.items()]
-    dummy_vars = ",".join(dummy_vars)
+    d_vars = [a[1][0] for a in withtable.items()]
+    if cur_row:
+        d_vars = d_vars + ['__current_row']
+    dummy_vars = ",".join(d_vars)
     actual_names = [k for k in withtable.keys()]
     actual_names = ["ciffile["+repr(a)+"]" for a in actual_names]
+    if cur_row:
+        actual_names+=['__row_id']
     map_names = ",".join(actual_names)
     one_pack_names = [a+"[packet_no]" for a in actual_names]
     one_packet_each = ",".join(one_pack_names)
     preamble = "def %s(self,ciffile,packet_no=-1):\n" % (func_name)
     preamble +="    def drel_func(dic,cifdata,%s):\n" % dummy_vars
     # the actual function gets inserted here
-    end_body=  "\n    if packet_no < 0:   #map\n"""
-    end_body+= "        return map(lambda %s: drel_func(self,ciffile,%s),%s)\n" % (dummy_vars,dummy_vars,map_names)
-    end_body+= "    else:\n"
-    end_body+= "        return drel_func(self,ciffile,%s)\n" % one_packet_each
+    end_body=      "\n    if packet_no < 0:   #map\n"
+    if cur_row and len(actual_names) > 1:    #i.e. have real names from category
+        end_body +="        __row_id = range(len(%s))\n" % actual_names[0]
+    elif cur_row and len(actual_names)==1:
+        end_body += "       cat_names = self.names_in_cat('%s')\n" % getcatname(targetname)[0]
+        end_body += "       have_name = [a for a in cat_names if ciffile.has_key(a)]\n"
+        end_body += "       if len(have_name)>0:\n"
+        end_body += "           full_length = len(ciffile[have_name[0]])\n"
+        end_body += "           __row_id = range(full_length)\n"
+        end_body += "       else:\n"
+        end_body += "           return []\n"
+    end_body+=      "       return map(lambda %s: drel_func(self,ciffile,%s),%s)\n" % (dummy_vars,dummy_vars,map_names)
+    end_body+=     "    else:\n"
+    end_body+=     "        return drel_func(self,ciffile,%s)\n" % one_packet_each
 
 @ Un'with'ed data can simply be called with the dictionary and ciffile, with no
 need for any extra variables
@@ -130,16 +147,22 @@ variable name.  We need to keep this around in order to properly manage them
 when their attributes are accessed, as this access will be by simple name,
 without the category ID.
 
+The [[need_current_row]] entry is fed back from the traverse and indicates that
+the current function will require access to the current packet.
+
 <<AST traverser>>=
 def start_traverse(in_node,target_id=None,loopable={},cat_meth=False,debug=None):
   special_info = {"special_id":[{}],"target_id":target_id,"withtable":{},"sub_subject":"",
-                  "depends":set(),"loopable_cats":loopable,"packet_vars":{}}
+                  "depends":set(),"loopable_cats":loopable,"packet_vars":{},
+                  "need_current_row":False}
   # create an virtual enclosing 'with' statement
-  if target_id is not None:
+  if target_id is not None and not cat_meth:
       cat,name = getcatname(target_id)
       special_info["special_id"][-1].update({"_"+cat:[cat,"",False]})
       if cat in special_info["loopable_cats"].keys():    #
           special_info["special_id"][-1]["_"+cat][1] = "looped_cat"
+  elif cat_meth:
+      print "Category method %s may not work"
   <<Maths operator conversion table>>
   def traverse_ast(in_node,debug=debug):
     if isinstance(in_node,basestring):
@@ -161,7 +184,7 @@ def start_traverse(in_node,target_id=None,loopable={},cat_meth=False,debug=None)
   result = traverse_ast(in_node)
   # remove target id from dependencies
   special_info["depends"].discard(special_info["target_id"])
-  return result,special_info["withtable"],special_info["depends"]
+  return result,special_info["withtable"],special_info["depends"],special_info["need_current_row"]
 
 @  These are the simple constants that we have detected.
 
@@ -206,12 +229,16 @@ mentioned so that we can create a dependency tree.
     <<Process subscriptions>>
     <<Process attribute reference>>
     elif node_type == "FUNC_CALL":
+        if in_node[1] == "Current_Row":  #not a function but a keyword really
+            outstring = "__current_row"
+            special_info["need_current_row"]=True
+        else:
             func_name,arg_prefix,postfix = get_function_name(in_node[1])
             outstring = func_name + "( "
             for argument in in_node[2]:
                 outstring = outstring + arg_prefix + traverse_ast(argument) + ","
             outstring = outstring[:-1] + ")" + postfix
-            return outstring
+        return outstring
     elif node_type == "SLICE":  # primary [[start,finish,step],[...]
         outstring = traverse_ast(in_node[1]) + "["
         slice_list = in_node[2]
@@ -319,7 +346,6 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
             special_info["depends"].add(var_name)
     elif in_node[1][0] == "ATOM" and primary[0] == "_":   # a plain item name 
         fullname = primary + "." + in_node[2]
-        print "Found simple item name %s" % fullname
         # a simple cat.obj dataname from the dictionary
         if special_info.get("target_id","") == fullname:
             outstring = "__dreltarget"
@@ -403,7 +429,6 @@ elif node_type == "WITH": #new_id old_id suite
     special_info['special_id'][-1].update({alias_id:[cat_id,"",False]})
     if in_node[2] in special_info['loopable_cats'].keys(): #flag this
         special_info['special_id'][-1][alias_id][1] = "looped_cat"
-    print "Special ids now " + `special_info['special_id']`
     outstring = traverse_ast(in_node[3])
     return outstring
 
@@ -435,6 +460,7 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     outstring += "\nprint 'names in cat = %s' % `__pycitems`"
     outstring += "\n" + "__pycitems = filter(lambda a:ciffile.has_key(a),__pycitems)"
     outstring += "\nprint 'names in cat -> %s' % `__pycitems`\n"
+    special_info["depends"].add("_"+cat_id+"."+special_info["loopable_cats"][cat_id][0])  #add key as a dependency
     if var_info[2] == True:
         outstring += "\n" + "__loop_range%d = range(len(ciffile[__pycitems[0]]))" % loop_num
     else:
@@ -606,7 +632,9 @@ def get_function_name(in_name):
     if target_name is not None:
         return target_name,"",""
     if test_name in ['sind','cosd','tand']:
-        return "math."+test_name[:3],"math.radians*",""
+        return "math."+test_name[:-1],"math.radians(",")"
+    if test_name in ['acosd','asind','atand']:
+        return "math.degrees(math."+test_name[:-1],"",")"
     if test_name in ['array']:
         return "numpy.array","",""
     if test_name == "mod":

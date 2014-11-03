@@ -398,6 +398,7 @@ class WithDictTestCase(unittest.TestCase):
        self.parser.lineno = 0
        #use
        self.testblock = CifFile.CifFile("nick1.cif",grammar="DDLm")["saly2_all_aniso"]
+       self.testblock.assign_dictionary(testdic)
        self.testdic = testdic
        #create the global namespace
        self.namespace = self.testblock.keys()
@@ -428,7 +429,7 @@ class WithDictTestCase(unittest.TestCase):
        print realfunc
        print 'Depends on: ' + `dependencies`
        exec realfunc
-       b = myfunc(self,self)
+       b = myfunc(self,self.testblock)
        print "subscription returns " + `b` 
 
    def test_with_stmt(self):
@@ -468,10 +469,6 @@ class WithDictTestCase(unittest.TestCase):
        print "With statement for looped category -> \n" + realfunc
        exec realfunc
        #  
-       # testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
-       # attach dictionary to testblock, which will trigger conversion of
-       # string values to numeric values...
-       self.testblock.assign_dictionary(self.testdic)
        atmass = myfunc(None,self.testblock)
        print 'test value now %s' % `atmass`  
        self.failUnless(atmass == [120,280,240])
@@ -486,11 +483,6 @@ class WithDictTestCase(unittest.TestCase):
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.test",loopable=loopable_cats)
        print "With statement for looped category -> \n" + realfunc
        exec realfunc
-       #  
-       # testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
-       # attach dictionary to testblock, which will trigger conversion of
-       # string values to numeric values...
-       self.testblock.assign_dictionary(self.testdic)
        atmass = myfunc(None,self.testblock)
        print 'test value now %s' % `atmass`  
        self.failUnless(atmass == [120,280,240])
@@ -508,6 +500,20 @@ class WithDictTestCase(unittest.TestCase):
        print realfunc, `dependencies`
        self.failUnless(dependencies == set(['_model_site.id']))
 
+   def test_current_row(self):
+       """Test that methods using Current_Row work properly"""
+       teststrg = """
+       _atom_type.num = Current_Row() + 1
+       """
+       loopable_cats = {'atom_type':["id",['number_in_cell','atomic_mass','num']]}   #
+       ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.num",loopable=loopable_cats)
+       print "Current row statement -> \n" + realfunc
+       exec realfunc
+       rownums = myfunc(testdic,self.testblock)
+       print 'row id now %s' % `rownums`
+       self.failUnless(rownums == [1,2,3])
+ 
    def test_loop_statement(self):
        """Test proper processing of loop statements"""
        teststrg = """
@@ -522,11 +528,6 @@ class WithDictTestCase(unittest.TestCase):
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_cell.atomic_mass",loopable=loopable_cats)
        print "Loop statement -> \n" + realfunc
        exec realfunc
-       #  
-       # testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
-       # attach dictionary to testblock, which will trigger conversion of
-       # string values to numeric values...
-       self.testblock.assign_dictionary(self.testdic)
        atmass = myfunc(None,self.testblock)
        print 'atomic mass now %f' % atmass  
        self.failUnless(atmass == 552.488)

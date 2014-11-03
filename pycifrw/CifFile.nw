@@ -1114,15 +1114,17 @@ category_ids = [self[a]["_definition.id"] for a in categories]
 
 @ This method was added to facilitate running dREL scripts, which treat
 certain variables as having attributes which all belong to a single category.
-We may have to improve this routine later to allow for hierarchical
-resolution of datanames.  We return only the extension in keeping with
-dREL syntax.
+We return only the extension in keeping with dREL syntax.  If [[names_only]]
+is true, we return only the object part of the dataname.
 
 <<List all items in a category>>=
-def names_in_cat(self,cat):
+def names_in_cat(self,cat,names_only=False):
     nameblocks = filter(lambda a:self[a].get("_name.category_id","").lower()
                          ==cat.lower(),self.keys())
-    return map(lambda a:"_" + self[a]["_name.category_id"]+"." + self[a]["_name.object_id"],nameblocks)
+    if not names_only:
+        return map(lambda a:"_" + self[a]["_name.category_id"]+"." + self[a]["_name.object_id"],nameblocks)
+    else:
+        return map(lambda a:self[a]["_name.object_id"],nameblocks)
     
 @ This method was added for DDLm support.  We are passed a category and a
 value, and must find a packet which has a matching key.  We use the keyname
@@ -2215,6 +2217,7 @@ should still have no Numpy dependence for non DDLm cases
 <<Convert string to appropriate type>>=
 def change_type(self,itemname,inval):
     import numpy
+    if inval == "?": return inval
     change_function = convert_type(self[itemname])
     if isinstance(inval,list) and not isinstance(inval,StarFile.StarList):   #from a loop
         newval = map(change_function,inval)
