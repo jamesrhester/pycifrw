@@ -2860,18 +2860,19 @@ an integer.  We are therefore assuming that the value has been validated.
 
 @  Instead of returning a value, we return a function that can be used
 to convert the values. This saves time reconstructing the conversion
-function for every value in a loop.  
+function for every value in a loop.
 
 <<Overall conversion>>=
 def convert_type(definition):
     """Convert value to have the type given by definition"""
     #extract the actual required type information
     container = definition['_type.container']
+    dimension = definition.get('_type.dimension',"")
     structure = interpret_structure(definition['_type.contents'])
     if container == 'Single':   #a single value to convert
         return convert_single_value(structure)
     elif container == 'List':   #lots of the same value
-        return convert_list_values(structure)
+        return convert_list_values(structure,dimension)
     elif container == 'Multiple': #no idea 
         return None
     elif container in ('Array','Matrix'): #numpy array
@@ -2893,14 +2894,19 @@ def convert_single_value(type_spec):
     
 @ Convert a whole DDLm list.  A 'List' type implies a repetition of
 the types given in the 'type.contents' entry.  We get all fancy and
-build a function to decode each entry in our input list.  This function
-is then mapped over the List, and in the case of looped List values,
-it can be mapped over the dataname value as well.  TODO: Note that we do not
-yet handle the case that we are supposed to convert to a Matrix, rather
-than a list.
+build a function to decode each entry in our input list.  This
+function is then mapped over the List, and in the case of looped List
+values, it can be mapped over the dataname value as well.  However, in
+the case of a single repetition, files are allowed to drop one level
+of enclosing brackets.  We account for that here by detecting a
+one-element list and *not* mapping the conversion function.  TODO:
+Note that we do not yet handle the case that we are supposed to
+convert to a Matrix, rather than a list. TODO: handle arbitrary
+dimension lists, rather than special-casing the character sequence
+'[1]'.
 
 <<Convert a list value>>=
-def convert_list_values(structure):
+def convert_list_values(structure,dimension):
     """Convert the values according to the element
        structure given in [[structure]]"""
     if isinstance(structure,basestring):   #simple repetition
@@ -2927,7 +2933,9 @@ def convert_list_values(structure):
         func_def +=      "   return final_val\n"
     print func_def
     exec func_def in globals() #(re)defines element_convert in global namespace
-    return lambda a: map(element_convert,a)
+    if int(dimension[0]) != 1:
+        return lambda a: map(element_convert,a)
+    else: return element_convert
 
 <<Convert a matrix value>>=
 def convert_matrix_values(valtype):

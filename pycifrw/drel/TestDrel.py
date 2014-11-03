@@ -586,9 +586,28 @@ class WithDictTestCase(unittest.TestCase):
        print deps
        self.failUnless('_symmetry_equiv.RT' in deps)
 
+   def test_array_access(self):
+       """Test that arrays are converted and returned correctly"""
+       teststrg = """
+      _model_site.symop = _model_site.id[1]
+      """
+       loopable = {"model_site":["id",["id","symop","adp_eigen_system"]],
+                   "atom_site":["label",["tensor_beta","label"]],
+                   "symmetry_equiv":["id",["id","RT","R"]]}
+       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_model_site.symop",
+                                                   depends = True,have_sn=False,
+                                                        loopable=loopable)
+       print realfunc
+       exec realfunc
+       self.testblock.assign_dictionary(testdic)
+       b = myfunc(testdic,self.testblock)
+       print 'symops are now ' + `b`
+       self.failUnless(b[1] == '1_555')
+      
 if __name__=='__main__':
     global testdic
-    testdic = CifFile.CifDic("testdic",grammar="DDLm",do_minimum=True)
+    testdic = CifFile.CifDic("testing/cif_core.dic",grammar="DDLm",do_minimum=True)
     #maindic = CifFile.CifDic("testing/cif_core.dic",grammar="DDLm",do_minimum=True)
     #unittest.main()
     suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
