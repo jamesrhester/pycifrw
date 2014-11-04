@@ -183,7 +183,7 @@ def start_traverse(in_node,target_id=None,loopable={},cat_meth=False,debug=None)
        return "Not found: %s" % `in_node`
   result = traverse_ast(in_node)
   # remove target id from dependencies
-  special_info["depends"].discard(special_info["target_id"])
+  special_info["depends"].discard(special_info["target_id"].lower())
   return result,special_info["withtable"],special_info["depends"],special_info["need_current_row"]
 
 @  These are the simple constants that we have detected.
@@ -225,7 +225,7 @@ mentioned so that we can create a dependency tree.
         outstring = "["
         for list_elem in in_node[1:]:
             outstring = outstring + traverse_ast(list_elem) + ","
-        return outstring + "]"
+        return outstring[:-1] + "]"
     <<Process subscriptions>>
     <<Process attribute reference>>
     elif node_type == "FUNC_CALL":
@@ -286,7 +286,7 @@ elif node_type == "SUBSCRIPTION":  # variable, single expression
                 break 
     if newid:
         key_item = "_"+newid[0]+"."+special_info["loopable_cats"][newid[0]][0]   #key name
-        special_info["depends"].add(key_item)
+        special_info["depends"].add(key_item.lower())
         get_loop = "ciffile.GetLoop('%s').GetKeyedPacket('%s',%s)" % (key_item,key_item,traverse_ast(in_node[2]))
         special_info["sub_subject"] = "_"+newid[0]+"."  #in case of attribute reference following
         print "Set sub_subject to %s" % special_info["sub_subject"]
@@ -327,8 +327,8 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
         if newid: break
     if newid:
         #catch our output name
-        var_name = "_" + newid[0]+"." + in_node[2]
-        if var_name == special_info.get("target_id",""):
+        var_name = "_" + newid[0].lower()+"." + in_node[2].lower()
+        if var_name == special_info.get("target_id","").lower():
                 outstring = "__dreltarget"
         # if we are looping, we add a loop prefix. If we are withing an
         # unlooped category, we put the full name back.
@@ -343,11 +343,11 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
                 new_var = "__w%d" % position
                 special_info["withtable"][var_name] = (new_var,position)
             outstring += special_info["withtable"][var_name][0]
-            special_info["depends"].add(var_name)
+            special_info["depends"].add(var_name.lower())
     elif in_node[1][0] == "ATOM" and primary[0] == "_":   # a plain item name 
-        fullname = primary + "." + in_node[2]
+        fullname = (primary + "." + in_node[2]).lower()
         # a simple cat.obj dataname from the dictionary
-        if special_info.get("target_id","") == fullname:
+        if special_info.get("target_id","").lower() == fullname:
             outstring = "__dreltarget"
         else:
             special_info["depends"].add(fullname)
@@ -460,7 +460,7 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     outstring += "\nprint 'names in cat = %s' % `__pycitems`"
     outstring += "\n" + "__pycitems = filter(lambda a:ciffile.has_key(a),__pycitems)"
     outstring += "\nprint 'names in cat -> %s' % `__pycitems`\n"
-    special_info["depends"].add("_"+cat_id+"."+special_info["loopable_cats"][cat_id][0])  #add key as a dependency
+    special_info["depends"].add("_"+cat_id+"."+special_info["loopable_cats"][cat_id][0].lower())  #add key as a dependency
     if var_info[2] == True:
         outstring += "\n" + "__loop_range%d = range(len(ciffile[__pycitems[0]]))" % loop_num
     else:
@@ -486,7 +486,9 @@ elif node_type == "FUNCTION":   #FUNCTION ID ARGLIST SUITE
     for one_arg in in_node[2]:
         outstring += one_arg[0] + ","
     outstring = outstring[:-1] + "):"
-    outstring = outstring + add_indent("\n" + traverse_ast(in_node[3])+"\nreturn %s" % func_name)
+    # imports
+    import_lines = "import numpy\nfrom drel_runtime import aug_add,aug_sub,aug_append,aug_remove\n"
+    outstring = outstring + add_indent("\n" + import_lines + traverse_ast(in_node[3])+"\nreturn %s" % func_name)
     return outstring
 
 @  \section{Top level constructions}. 
@@ -626,7 +628,11 @@ def get_function_name(in_name):
                 "table":"dict",
                 "int":"int",
                 "len":"len",
-                "abs":"abs"}
+                "abs":"abs",
+                "atoi":"int",
+                "float":"float",
+                "matrix":"numpy.array",
+                "array":"numpy.array"}
     test_name = in_name.lower()
     target_name = builtins.get(test_name,None)
     if target_name is not None:

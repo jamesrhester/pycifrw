@@ -2146,7 +2146,7 @@ def derive_item(self,key,cifdata,store_value = False):
     # store any default value in case we have a problem
     def_val = self[key].get("_enumeration.default","")
     def_index_val = self[key].get("_enumeration.def_index_id","")
-    the_func = self[key].get('_method.expression',"")
+    the_func = self[key].get('_method.py_expression',"")
     if def_val and not the_func : return def_val
     if def_index_val and not the_func:            #derive a default value
         index_vals = self[key]["_enumeration_default.index"]
