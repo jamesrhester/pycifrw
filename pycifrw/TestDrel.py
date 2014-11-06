@@ -2,15 +2,12 @@
 #
 
 import unittest
-import drel_lex
-import drel_ast_yacc
-import py_from_ast
-import drel_runtime
+from drel import drel_lex,drel_ast_yacc,py_from_ast,drel_runtime
 import numpy
 import CifFile
 from CifFile import StarFile
 
-class AugOpTestCase(unittest.TestCase):
+class dRELRuntimeTestCase(unittest.TestCase):
     def setUp(self):
         pass
 
@@ -47,6 +44,29 @@ class AugOpTestCase(unittest.TestCase):
         self.failUnless((c == numpy.array([[0,0],[-4,-2]])).all())
         self.failUnless((b == numpy.array([[0,1],[2,3]])).all())
         self.failUnless(d == 3)
+
+    def testDotProduct(self):
+        """Test that multiplication works correctly"""
+        a = numpy.array([1,2,3])
+        b = numpy.array([4,5,6])
+        d = drel_runtime.drel_dot(a,b)
+        self.failUnless(d == 32)
+
+    def testMatrixMultiply(self):
+        """Test that matrix * matrix works"""
+        a = numpy.matrix([[1,0,0],[0,1,0],[0,0,1]])
+        b = numpy.matrix([[3,4,5],[6,7,8],[9,10,11]])
+        c = drel_runtime.drel_dot(a,b)
+        self.failUnless((c == numpy.matrix([[3,4,5],[6,7,8],[9,10,11]])).any())
+
+    def testMatVecMultiply(self):
+        """Test that matrix * vec works"""
+        a = numpy.array([0,1,0])
+        b = numpy.matrix([[3,4,5],[6,7,8],[9,10,11]])
+        c = drel_runtime.drel_dot(a,b)
+        d = drel_runtime.drel_dot(b,a)
+        self.failUnless((d == numpy.matrix([4,7,10])).any())
+        self.failUnless((c == numpy.matrix([6,7,8])).any())
 
 # Test simple statements
 
@@ -95,7 +115,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
 
     def testcomplex(self):
         """test parsing a complex number"""
-        self.create_test('_a.b = 13.45j',13.45j,debug=True)
+        self.create_test('_a.b = 13.45j',13.45j)
 
     def testList(self):
         """test parsing a list over two lines"""
@@ -163,6 +183,11 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
         """Test that our slicing is parsed correctly"""
         test = "b = array([[1,2],[3,4],[5,6]]);_a.b=b[0,1]"
         self.create_test(test,2)
+
+    def test_slice_2(self):
+        """Test that first/last slicing works"""
+        test = "b = 'abcdef';_a.b=b[1:3]"
+        self.create_test(test,'bc',debug=True)
 
     def test_paren_balance(self):
         """Test that multi-line parentheses work """
@@ -607,13 +632,13 @@ class WithDictTestCase(unittest.TestCase):
       
 if __name__=='__main__':
     global testdic
-    testdic = CifFile.CifDic("testing/cif_core.dic",grammar="DDLm",do_minimum=True)
+    #testdic = CifFile.CifDic("testing/cif_core.dic",grammar="DDLm",do_minimum=True)
     #maindic = CifFile.CifDic("testing/cif_core.dic",grammar="DDLm",do_minimum=True)
     #unittest.main()
-    suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
+    #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
-    #suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
+    suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase) 
-    #suite = unittest.TestLoader().loadTestsFromTestCase(AugOpTestCase)
+    #suite = unittest.TestLoader().loadTestsFromTestCase(dRELRuntimeTestCase)
     unittest.TextTestRunner(verbosity=2).run(suite)
 

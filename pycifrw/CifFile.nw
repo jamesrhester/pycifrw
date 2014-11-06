@@ -2036,23 +2036,14 @@ def add_type_info(self):
 
 @ \section{Linkage to dREL}
 
-The drel_yacc package will create a python function for us.  We use
+The drel_ast_yacc package will generate an Abstract Syntax Tree, which
+we then convert to a Python function using [[py_from_ast.make_function]].  We use
 it during initialisation to transform all methods to python expressions,
 and then the [[derive_item]] method will use this to try to derive the
 expression.
 
-In order to correctly treat loops over items within drel, we make a list
-of all listable categories, and a list of all items which can be made into
-an arbitrary length list.  This latter method is very crude, as it
-simply searches for an asterisk in the dimension attribute.
-
-The parser will return a 2-element list [function text, looped categories].
-We capture the last element in order to properly loop when the function is
-called later.  Note that we generate the general-access functions separately.
-
-We cannot restrict ourselves to local values as the transformed functions
-are called elsewhere.  We could include assignments to these variable names
-within the generated functions.
+The [[make_function]] function requires dictionary information to be
+supplied regarding looped categories and keys.
 
 If we were really serious about dictionary-driven software, the attribute
 lookups that follow would not use get(), but square brackets and allow default
@@ -2065,18 +2056,23 @@ statement is the _enumeration.default specified in ddl.dic...
 def transform_drel(self):
     from drel import drel_ast_yacc
     from drel import py_from_ast
+    import traceback
     parser = drel_ast_yacc.parser
     my_namespace = self.keys()
     my_namespace = dict(map(None,my_namespace,my_namespace)) 
-    parser.loopable_cats = [self[a]["_definition.id"] for a in self.keys() if self[a].get("_definition.class","Datum")=="Loop"]
-    parser.listable_items = [a for a in self.keys() if "*" in self[a].get("_type.dimension","")] 
-    derivable_list = [a for a in self.keys() if self[a].has_key("_method.expression") and self[a].get("_definition.scope","")!='Category' and self[a].get("_name.category_id","")!= "function"]
+    # we provide a table of loopable categories {cat_name:(key,[item_name,...]),...})
+    loopable_cats = [a for a in self.keys() if self[a].get("_definition.class","Set")=="Loop"]
+    loop_keys = [self[a]["_category.key_id"].split(".")[1] for a in loopable_cats]
+    cat_names = [self.names_in_cat(a,names_only=True) for a in loopable_cats]
+    loop_info = dict(zip(loopable_cats,zip(loop_keys,cat_names)))
+    # parser.listable_items = [a for a in self.keys() if "*" in self[a].get("_type.dimension","")] 
+    derivable_list = [a for a in self.keys() if self[a].has_key("_method.expression") \
+                          and self[a].get("_definition.scope","")!='Category' \
+                          and self[a].get("_name.category_id","")!= "function"]
     for derivable in derivable_list:
         target_id = derivable
         # reset the list of visible names for parser
         special_ids = [dict(map(None,self.keys(),self.keys()))]
-        # reset list of looped with statements
-        withtable = {}
         print "Target id: %s" % derivable
         drel_expr = self[derivable]["_method.expression"]
         if isinstance(drel_expr,ListType):
@@ -2089,18 +2085,21 @@ def transform_drel(self):
         print "Transforming %s" % drel_expr
         # List categories are treated differently...
         try:
-            meth_ast = parser.parse(drel_expr,debug=True)
+            meth_ast = parser.parse(drel_expr+"\n")
         except:
             print 'Syntax error in method for %s; leaving as is' % derivable
+            a,b = sys.exc_info()[:2]
+            print `a`,`b`
+            print traceback.print_tb(sys.exc_info()[-1],None,sys.stdout)
             continue
         # Construct the python method
-        pyth_meth,withtable = py_from_ast.make_python_function(meth_ast,"pyfunc",target_id,special_ids=special_ids)
+        pyth_meth = py_from_ast.make_python_function(meth_ast,"pyfunc",target_id,
+                                                                   loopable=loop_info)
         save_overwrite = self[derivable].overwrite
         self[derivable].overwrite = True
-        self[derivable]["_map_categories"] = withtable.keys()
-        self[derivable]["_method.expression"] = pyth_meth  #NB we hereby unloop the method category
+        self[derivable]["_method.py_expression"] = pyth_meth
         self[derivable].overwrite = save_overwrite
-        print "Final result:\n " + self[derivable]["_method.expression"]
+        print "Final result:\n " + self[derivable]["_method.py_expression"]
 
 @ Drel functions are all stored in category 'functions' in our final dictionary.  We want to
 convert them to executable python code and store them in an appropriate namespace which we
@@ -2108,22 +2107,27 @@ can then pass to our individual item methods.
 
 <<Store dREL functions>>=
 def add_drel_funcs(self):
-    from drel import drel_yacc
+    from drel import drel_ast_yacc
+    from drel import py_from_ast
     funclist = [a for a in self.keys() if self[a].get("_name.category_id","")=='function']
     funcnames = [(self[a]["_name.object_id"],
                   getattr(self[a].GetKeyedPacket("_method.purpose","Evaluation"),"_method.expression")) for a in funclist]
     # create executable python code...
-    parser = drel_yacc.parser
+    parser = drel_ast_yacc.parser
+    # we provide a table of loopable categories {cat_name:(key,[item_name,...]),...})
+    loopable_cats = [a for a in self.keys() if self[a].get("_definition.class","Set")=="Loop"]
+    loop_keys = [self[a]["_category.key_id"].split(".")[1] for a in loopable_cats]
+    cat_names = [self.names_in_cat(a,names_only=True) for a in loopable_cats]
+    loop_info = dict(zip(loopable_cats,zip(loop_keys,cat_names)))
     for funcname,funcbody in funcnames:
         parser.target_id = funcname
-        parser.special_id = [{}]   #first element is always global namespace of dictionary
-        parser.withtable = {}
-        res,ww = parser.parse(funcbody)
-        print 'dREL library function ->\n' + res
+        res_ast = parser.parse(funcbody)
+        py_function = py_from_ast.make_python_function(res_ast,None,targetname=funcname,func_def=True,loopable=loop_info)
+        print 'dREL library function ->\n' + py_function
         global_table = globals()
-        global_table.update(self.ddlm_functions)
-        exec res in global_table    #add to namespace
-    print "All functions -> " + `self.ddlm_functions`
+        # global_table.update(self.ddlm_functions)
+        exec py_function in global_table    #add to namespace
+    #print "All functions -> " + `self.ddlm_functions`
 
 @ This is the corresponding method to call to find out the item information,
 assuming that the above method was called during initialisation.  For single-valued items, we
@@ -2165,35 +2169,25 @@ def derive_item(self,key,cifdata,store_value = False):
         raise KeyError, 'No way of deriving item %s' % key
     the_category = self[key]["_name.category_id"]
     the_type = self[the_category]["_definition.class"]
-    global_table = globals()
-    global_table.update(self.ddlm_functions)
-    print 'Executing following function'
+    #global_table = globals()
+    #global_table.update(self.ddlm_functions)
+    print 'Executing function for %s:' % key
     print the_func
-    exec the_func in global_table,locals() #will access dREL functions, puts "pyfunc" in scope
+    exec the_func in globals(),locals() #will access dREL functions, puts "pyfunc" in scope
     # print 'in following global environment: ' + `global_table`
-    map_categories = self[key].get("_map_categories","") 
-    if map_categories:
-        if len(map_categories > 1):
-            raise CifError, "Found method that operates on two loop categories at once!!"
-        loop_category = map_categories[0]
-        loop_names = self.names_in_cat(loop_category)
-        no_of_packs = len(cifdata[loop_names[0]])
-        packlist = []
-        for pack_index in range(no_of_packs):
-          packlist.append(pyfunc(self,cifdata,pack_index))
+    result = pyfunc(self,cifdata)
+    print "Function returned %s" % `result`
     # now try to insert the new information into the right place
     # find if items of this category already appear...
-    #  if store_value: 
-    #       cat_names = filter(lambda a:self[a].get["_name.category_id",None]==the_category,self.keys())
-    #       has_cat_names = filter(lambda a:cifdata.has_key(a),cat_names)
-    #       if len(has_cat_names)>0:
-    #          target_loop = cifdata.GetLoop(has_cat_names[0])
-    #          target_loop[key] = packlist      #lengths must match or else!!
-    #       else:
-    #          cifdata[key] = packlist  
-    #   return packlist
-    #else:              # No looped categories
-    return pyfunc(self,cifdata)
+    if store_value: 
+          cat_names = [a for a in self.keys() if self[a].get["_name.category_id",None]==the_category]
+          has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
+          if len(has_cat_names)>0:
+               target_loop = cifdata.GetLoop(has_cat_names[0])
+               target_loop[key] = result      #lengths must match or else!!
+          else:
+               cifdata[key] = result
+    return result
 
 @ In the single case of executing dREL methods, we wish to return numpy
 Arrays from our __getitem__ so that the mathematical operations proceed
@@ -2890,6 +2884,8 @@ def convert_single_value(type_spec):
         return complex
     if type_spec == 'Imag':
         return lambda a:complex(0,a)
+    if type_spec in ('Code','Name','Tag'):  #case-insensitive -> lowercase
+        return lambda a:a.lower()
     return lambda a:a   #can't do anything numeric
     
 @ Convert a whole DDLm list.  A 'List' type implies a repetition of
@@ -2925,10 +2921,14 @@ def convert_list_values(structure,dimension):
                 cf = 'complex('
             elif type_spec == 'Imag':
                 cf = 'complex(0,'
+            elif type_spec in ('Code','Name','Tag'):
+                cf = '('
             else: cf = ''
             func_def += cf
             func_def += "element[%d]" % pos_no
             if "(" in cf: func_def +=")"
+            if type_spec in ('Code','Name','Tag'):
+                func_def +="lower()"
             func_def +=")\n"  # close append
         func_def +=      "   return final_val\n"
     print func_def

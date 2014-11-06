@@ -9,7 +9,7 @@ from CifFile import CifError
 <<AST builder>>
 <<AST traverser>>
 <<Function transformer>>
-<<With finder>>
+<<Mathematical operations>>
 <<Utility functions>>
 
 @  The AST builder puts the infrastructure around the AST statement list to turn it into a
@@ -37,7 +37,7 @@ def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=F
     if debug is not None:
         print "incoming AST:"
         print `in_ast`
-    func_text,withtable,dependencies,cur_row = start_traverse(in_ast,target_id=targetname,cat_meth=cat_meth,loopable=loopable,debug=debug)
+    func_text,withtable,dependencies,cur_row = start_traverse(in_ast,target_id=targetname,cat_meth=cat_meth,loopable=loopable,debug=debug,func=func_def)
     if debug is not None:
         print 'Start========'
         print func_text
@@ -58,7 +58,7 @@ def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=F
     if cat_meth:
         preamble += " "*8 + "__dreltarget = {}\n" # initialise
     num_header = """
-        from drel_runtime import aug_add,aug_sub,aug_append,aug_remove
+        from drel import drel_runtime
         import math
         try:
             import numpy
@@ -151,12 +151,12 @@ The [[need_current_row]] entry is fed back from the traverse and indicates that
 the current function will require access to the current packet.
 
 <<AST traverser>>=
-def start_traverse(in_node,target_id=None,loopable={},cat_meth=False,debug=None):
+def start_traverse(in_node,target_id=None,loopable={},cat_meth=False,debug=None, func=False):
   special_info = {"special_id":[{}],"target_id":target_id,"withtable":{},"sub_subject":"",
                   "depends":set(),"loopable_cats":loopable,"packet_vars":{},
                   "need_current_row":False}
   # create an virtual enclosing 'with' statement
-  if target_id is not None and not cat_meth:
+  if target_id is not None and not cat_meth and not func:
       cat,name = getcatname(target_id)
       special_info["special_id"][-1].update({"_"+cat:[cat,"",False]})
       if cat in special_info["loopable_cats"].keys():    #
@@ -246,13 +246,13 @@ mentioned so that we can create a dependency tree.
             if one_slice[0] == "EXPR":   #not a slice as such
                 outstring += traverse_ast(one_slice)
             elif len(one_slice) == 0:
-                outstring + ":"
+                outstring += ":"
             elif len(one_slice) >0:    # at least start
                 outstring += traverse_ast(one_slice[0]) + ":"
-            elif len(one_slice) >1:    #start,finish only
-                outstring += traverse_ast(one_slice[1])
-            elif len(one_slice) == 3:    #step as well
-                outstring += ":" + traverse_ast(one_slice[2])
+                if len(one_slice) >1:    #start,finish only
+                    outstring += traverse_ast(one_slice[1])
+                if len(one_slice) == 3:    #step as well
+                    outstring += ":" + traverse_ast(one_slice[2])
             outstring += ","
         outstring = outstring[:-1] + "]"
         return outstring
@@ -487,7 +487,7 @@ elif node_type == "FUNCTION":   #FUNCTION ID ARGLIST SUITE
         outstring += one_arg[0] + ","
     outstring = outstring[:-1] + "):"
     # imports
-    import_lines = "import numpy\nfrom drel_runtime import aug_add,aug_sub,aug_append,aug_remove\n"
+    import_lines = "import numpy\nfrom drel import drel_runtime\n"
     outstring = outstring + add_indent("\n" + import_lines + traverse_ast(in_node[3])+"\nreturn %s" % func_name)
     return outstring
 
@@ -590,7 +590,12 @@ dREL and python, so that the AST contains the textual form of the operator.
 <<Maths>>=
     elif node_type == "MATHOP":
         op = mathop_table[in_node[1]]
-        outstring = traverse_ast(in_node[2]) + op + traverse_ast(in_node[3])
+        first_arg = traverse_ast(in_node[2])
+        second_arg = traverse_ast(in_node[3])
+        if op is not None:    #simple operation
+            outstring = first_arg + op + second_arg
+        else:
+            outstring = fix_mathops(in_node[1],first_arg,second_arg)
         return outstring
     elif node_type == "SIGN":
         outstring = in_node[1] + traverse_ast(in_node[2])
@@ -605,20 +610,21 @@ language targets.  The augmented assignment table gives the function name
 to use as we need to cover array structures as well.
 
 <<Maths operator conversion table>>=
-mathop_table = {"+":"+", "-":"-", "<":"<", "*":"*", "/":"/",
+mathop_table = {"+":None, "-":None, "<":"<", "*":None, "/":None,
                 ">":">", "<=":"<=", ">=":">=", "!=":"!=",
                 "or":" or ", "and":" and ",
                 "==":"==", "in":" in ", "not in":" not in ",
-                "^":"^","**":"**"}
+                "^":None,"**":"**"}
 
-aug_assign_table = {"++=":"aug_append",
-                    "+=":"aug_add",
-                    "-=":"aug_sub",
-                    "--=":"aug_remove"}
+aug_assign_table = {"++=":"drel_runtime.aug_append",
+                    "+=":"drel_runtime.aug_add",
+                    "-=":"drel_runtime.aug_sub",
+                    "--=":"drel_runtime.aug_remove"}
 
 @ To avoid cluttering up the main switch statement, we call out to this function
 in order to find out what the Python name of the given function is.  Where we have
-to provide our own function, that is also listed.
+to provide our own function, that is also listed.  Note that this only works for
+unary functions.
   
 <<Function transformer>>=
 def get_function_name(in_name):
@@ -631,8 +637,10 @@ def get_function_name(in_name):
                 "abs":"abs",
                 "atoi":"int",
                 "float":"float",
-                "matrix":"numpy.array",
-                "array":"numpy.array"}
+                "matrix":"numpy.matrix",
+                "array":"numpy.array",
+                "norm":"numpy.linalg.norm",
+                "sqrt":"math.sqrt"}
     test_name = in_name.lower()
     target_name = builtins.get(test_name,None)
     if target_name is not None:
@@ -645,16 +653,30 @@ def get_function_name(in_name):
         return "numpy.array","",""
     if test_name == "mod":
         return "divmod","","[1]"
+    if test_name == "upper":
+        return "","",".upper()"
     return in_name,"",""   #no idea
  
-@  We keep a track of any categories that are aliased by the method so that
-we can explicitly pass those categories as an argument of the function. The
-following method traverses the AST to pick up all such aliases.
+@  Mathematical operations in dREL are complicated by the need to handle matrix
+operations transparently.  The two operators that are affected are "^" (cross
+product) and "*" (matrix multiplication). 
 
-<<With finder>>=
-def find_withs(in_ast):
-    """Return all loop categories that are aliased with with statements"""
-    pass
+<<Mathematical operations>>=
+def fix_mathops(op,first_arg,second_arg):
+    """Return a string that will carry out the requested operation"""
+    if op == "^":
+        return "numpy.cross(%s,%s)" % (first_arg,second_arg)
+    elif op == "*":  #could be matrix multiplication
+        return "drel_runtime.drel_dot(%s,%s)" % (first_arg,second_arg)
+    elif op == "+":
+        return "drel_runtime.drel_add(%s,%s)" % (first_arg, second_arg)
+    elif op == "-":
+        return "numpy.subtract(%s,%s)" % (first_arg, second_arg)
+    # beware integer division on this one...
+    elif op == "/":
+        return "numpy.true_divide(%s,%s)" % (first_arg, second_arg)  
+
+@  We have a few simple utility functions for commonly-required operations.
 
 <<Utility functions>>=
 def add_indent(text,n=4):
@@ -663,5 +685,8 @@ def add_indent(text,n=4):
  
 def getcatname(dataname):
     """Return cat,name pair from dataname"""
-    cat,name= dataname.split(".")
+    try:
+        cat,name = dataname.split(".")
+    except ValueError:        #no period in name
+        return cat,None
     return cat[1:],name

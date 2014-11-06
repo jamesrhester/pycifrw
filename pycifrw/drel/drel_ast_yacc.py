@@ -1,22 +1,18 @@
 # A dREL grammar written for python-ply
 #
-# The output should be an AST that represents a function that will
-# be called with a PyCIFRW CifBlock object as a single argument
-# "cfdata".
+# The output is an Abstract Syntax Tree that represents a
+# function fragment that needs to be wrapped with information
+# appropriate to the target language.
 
-# The object so defined will be transformable into a Python method of 
-# the dictionary object, taking
-# arguments self,cfdata.  Therefore dictionary information is accessed
-# through "self", and data through "cfdata".
+# The grammar is based on the Python 2.7 grammar, in
+# consultation with Doug du Boulay's JsCifBrowser
+# grammar (also derived from a Python grammar).
 
 import drel_lex
 import ply.yacc as yacc
 tokens = drel_lex.tokens
 
 # Overall translation unit
-# We return the text of the function, as well as a table of 'with' packets 
-# and corresponding index names
-# 
 
 # Our input is a sequence of statements
 def p_input(p):
@@ -104,17 +100,6 @@ def p_testlist_star_expr(p):  # list of expressions in fact
     else:
        p[0] = p[1] + [p[4]]
 
-# note do not accept trailing commas
-
-#def p_expression_list(p):
-#    '''expression_list : expression
-#                        | expression_list "," expression '''
-#
-#    if len(p) == 2: p[0] = [p[1]]
-#    else: 
-#        p[0] = p[1] + [p[3]]
-
-
 # Simplified from the python 2.5 version due to apparent conflict with
 # the other type of IF expression...
 #
@@ -124,7 +109,7 @@ def p_expression(p):
 
 # This is too generous, as it allows a function call on the
 # LHS to be assigned to.  This will cause a syntax error on
-# execution we hope.
+# execution.
 
 def p_or_test(p):
     ''' or_test : and_test
@@ -442,14 +427,12 @@ def p_if_stmt(p):
        p[0][3].append([p[4],p[7]])
 
 # Note the dREL divergence from Python here: we allow compound
-# statements to follow without a separate block (like C etc.)
-# For simplicity we indent consistently (further up). Where
-# we have a single statement immediately following we have
-# to make the statement block.  A small_stmt will be a single
-# production, so must be put into a list in order to match
-# the 'statements' structure (i.e. 2nd element is a list of
-# statements).  A compound_stmt is thus forced to be also a
-# non-listed object.
+# statements to follow without a separate block (like C etc.)  Where
+# we have a single statement immediately following we have to make the
+# statement block.  A small_stmt will be a single production, so must
+# be put into a list in order to match the 'statements' structure
+# (i.e. 2nd element is a list of statements).  A compound_stmt is thus
+# forced to be also a non-listed object.
 
 def p_suite(p):
     '''suite : statement
@@ -462,11 +445,6 @@ def p_suite(p):
 def p_for_stmt(p):
     '''for_stmt : FOR exprlist IN testlist_star_expr suite'''
     p[0] = ["FOR", p[2], p[4], p[5]]
-
-# We split the loop statement into parts so that we can capture the
-# ID before the suite is processed.  Note that we should record that
-# we have an extra indent due to the loop test and remove it at the
-# end, but we haven't done this yet.
 
 def p_loop_stmt(p):
     '''loop_stmt : loop_head suite '''
@@ -526,6 +504,8 @@ def p_arglist(p):
     if len(p) == 4: p[0] = [(p[1],p[2])]
     else: p[0] = p[1] + [(p[3],p[5])]
 
+# This production allows us to insert optional newlines
+
 def p_maybe_nline(p):
     ''' maybe_nline : newlines
                     | empty '''
@@ -533,6 +513,7 @@ def p_maybe_nline(p):
 
 # We need to allow multiple newlines here and not just in the lexer as
 # an intervening comment can cause multiple newline tokens to appear
+
 def p_newlines(p):
     ''' newlines : NEWLINE
                  | newlines NEWLINE '''
@@ -543,9 +524,12 @@ def p_empty(p):
     pass
 
 def p_error(p):
-    print 'Syntax error at position %d, line %d token %s, value %s' % (p.lexpos,p.lineno,p.type,p.value)
-    print 'Surrounding text: ' + p.lexer.lexdata[max(p.lexpos - 100,0): p.lexpos] + "*" + \
-       p.lexer.lexdata[p.lexpos:min(p.lexpos + 100,len(p.lexer.lexdata))]
-    raise SyntaxError, 'Syntax error at token %s, value %s' % (p.type,p.value)
+    try:
+        print 'Syntax error at position %d, line %d token %s, value %s' % (p.lexpos,p.lineno,p.type,p.value)
+        print 'Surrounding text: ' + p.lexer.lexdata[max(p.lexpos - 100,0): p.lexpos] + "*" + \
+           p.lexer.lexdata[p.lexpos:min(p.lexpos + 100,len(p.lexer.lexdata))]
+    except:
+        pass
+    raise SyntaxError
 
 parser = yacc.yacc()    

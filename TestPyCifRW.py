@@ -1215,8 +1215,35 @@ class DicMergeTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
+class DicEvalTestCase(unittest.TestCase):
+    def setUp(self):
+        cc = CifFile.CifFile("pycifrw/drel/testing/data/nick2.cif",grammar="DDLm")
+        self.fb = cc.first_block()
+        self.fb.assign_dictionary(testdic)
+        
+    def check_value(self,dataname):
+        """Generic check of value"""
+        target = self.fb[dataname]
+        del self.fb[dataname]
+        result = self.fb[dataname]
+        self.assertEqual(target,result,"Target = %s, Result = %s" % (target,result))
+
+    def testCellVolume(self):
+        self.check_value('_cell.volume')
+
+    def testNoInCell(self):
+        self.check_value('_atom_type.number_in_cell')
+
+    def testDensity(self):
+        self.check_value('_exptl_crystal.density_diffrn')
+
+    def testReflnF(self):
+        self.check_value('_refln.F_calc')
+
 if __name__=='__main__':
-     suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
+     global testdic
+     testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")
+     suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      unittest.TextTestRunner(verbosity=2).run(suite)
 #     unittest.main()
 
