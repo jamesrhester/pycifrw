@@ -360,6 +360,7 @@ class CifDic(StarFile.BlockCollection):
     <<Normalise DDLm save frame names>>
     <<Parse DDLm validity information>>
     <<Perform DDLm imports>>
+    <<Create alias table>>
     <<Load categories with DDL2-type information>>
     <<Add type information>>
     <<Add category information>>
@@ -429,6 +430,7 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
         self.scoping = 'dictionary'   #expose all save frames
         self.ddlm_normalise()
         self.ddlm_import()      #recursively calls this routine
+        self.create_alias_table()
         if not self.do_minimum:
             print "Doing full dictionary initialisation" 
             self.ddlm_parse_valid() #extract validity information from data block
@@ -934,6 +936,16 @@ def ddlm_normalise(self):
            if real_name.lower() != key.lower():
               self.rename(key,real_name)
     
+@  A dataname can appear in a file under a different name if it has been aliased. We create
+an alias table to speed up lookup.  The table is indexed by true name, with a list of 
+alternatives.
+
+<<Create alias table>>=
+def create_alias_table(self):
+    """Populate an alias table that we can look up when searching for a dataname"""
+    all_aliases = [a for a in self.keys() if self[a].has_key('_alias.definition_id')]
+    self.alias_table = dict([[a,self[a]['_alias.definition_id']] for a in all_aliases])
+
 @ DDLm introduces validity information in the enclosing datablock.  It is a loop of scope,
 attribute values where the scope is one of dictionary (everywhere), category (whole
 category) and item (just the single definition).  Validity can be [[+]] (mandatory), 
@@ -2129,14 +2141,19 @@ def add_drel_funcs(self):
         exec py_function in global_table    #add to namespace
     #print "All functions -> " + `self.ddlm_functions`
 
-@ This is the corresponding method to call to find out the item information,
-assuming that the above method was called during initialisation.  For single-valued items, we
-call the method directly.  For non-single-valued items, we need to call repeatedly to build up
-a complete packet.  We make use of our list of listable categories etc.
+@ When a dictionary is available during CIF file access, we can resolve a missing dataname in
+three ways: (1) check if it is defined under an alias; (2) use a dREL method to calculate the
+value; (3) use default values if defined.  We resolve in this order.
 
-If we are building a List rather than a loop, we simply assign the value.  In
-a later incarnation, this software should conduct a conformance check on values
-which are thus inserted.
+We could be passed either the dictionary defined dataname, or any of its previous names. We
+have stored our aliases as a table indexed by dictionary-defined dataname in order to
+potentially translate from old to new datanames (not yet implemented).  Once we find a 
+dataname that is present in the datafile, we return it.  Note that we have two types of
+check: in one we are given an old-style dataname, and have to find the new or other old
+version (in which case we have to check the key of the table) and in the other check we
+are given the latest version of the dataname and have to check for older names in the
+datafile - this latter is the dREL situation so we have optimised for it be checking that
+first and making the modern datanames the table keys.
 
 We also check out any default values which we could return in case of error.  Note that ddlm
 adds the '_enumerations.def_index_id' as an alternative way to derive a value from a table.
@@ -2146,7 +2163,24 @@ be propagated so that we can see anything that might be wrong.
 The store_value flag asks us to update the ciffile object with the new value. 
 
 <<Derive item information>>=
-def derive_item(self,key,cifdata,store_value = False):
+def derive_item(self,start_key,cifdata,store_value = False):
+    key = start_key   #starting value
+    # check for aliases
+    # check for an older form of a new value
+    found_it = [k for k in self.alias_table.get(key,[]) if cifdata.has_key(k)]
+    if len(found_it)>0:
+        return cifdata[found_it[0]]
+    # now do the reverse check - any alternative form
+    alias_name = [a for a in self.alias_table.items() if key in a[1]]
+    print 'Aliases for %s: %s' % (key,`alias_name`)
+    if len(alias_name)==1:
+        key = alias_name[0][0]   #actual definition name
+        if cifdata.has_key(key): return cifdata[key]
+        found_it = [k for k in alias_name[0][1] if cifdata.has_key(k)]
+        if len(found_it)>0:
+            return cifdata[found_it[0]]
+    elif len(alias_name)>1:
+        raise CifError, 'Dictionary error: dataname alias appears in different definitions: ' + `alias_name`
     # store any default value in case we have a problem
     def_val = self[key].get("_enumeration.default","")
     def_index_val = self[key].get("_enumeration.def_index_id","")
@@ -2172,11 +2206,11 @@ def derive_item(self,key,cifdata,store_value = False):
     #global_table = globals()
     #global_table.update(self.ddlm_functions)
     print 'Executing function for %s:' % key
-    print the_func
+    #print the_func
     exec the_func in globals(),locals() #will access dREL functions, puts "pyfunc" in scope
     # print 'in following global environment: ' + `global_table`
     result = pyfunc(self,cifdata)
-    print "Function returned %s" % `result`
+    #print "Function returned %s" % `result`
     # now try to insert the new information into the right place
     # find if items of this category already appear...
     if store_value: 

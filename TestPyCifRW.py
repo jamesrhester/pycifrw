@@ -1239,6 +1239,20 @@ class DicEvalTestCase(unittest.TestCase):
 
     def testReflnF(self):
         self.check_value('_refln.F_calc')
+   
+    def testOldAlias(self):
+        """Test finding an older form of a new dataname"""
+        self.failUnless(self.fb['_symmetry.space_group_name_H_M']=='P_1_21/a_1')
+
+    def testNewAlias(self):
+        """Test finding a newer form of an old dataname"""
+        self.failUnless(self.fb['_symmetry_space_group_name_Hall']=='-p_2yab')
+
+    def testCalcOldAlias(self):
+        """Test that a calculation is performed for an old dataname"""
+        target = self.fb['_cell.volume']
+        del self.fb['_cell.volume']
+        self.assertEqual(self.fb['_cell_volume'],target)
 
 if __name__=='__main__':
      global testdic
