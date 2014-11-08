@@ -361,6 +361,7 @@ class CifDic(StarFile.BlockCollection):
     <<Parse DDLm validity information>>
     <<Perform DDLm imports>>
     <<Create alias table>>
+    <<Create category/object table>>
     <<Load categories with DDL2-type information>>
     <<Add type information>>
     <<Add category information>>
@@ -433,6 +434,7 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
         self.create_alias_table()
         if not self.do_minimum:
             print "Doing full dictionary initialisation" 
+            self.create_cat_obj_table()
             self.ddlm_parse_valid() #extract validity information from data block
             self.transform_drel()   #parse the drel functions
             self.add_drel_funcs()   #put the drel functions into the namespace
@@ -946,6 +948,51 @@ def create_alias_table(self):
     all_aliases = [a for a in self.keys() if self[a].has_key('_alias.definition_id')]
     self.alias_table = dict([[a,self[a]['_alias.definition_id']] for a in all_aliases])
 
+@ DDLm internally refers to data items by the category.object notation, with the twist
+that child categories of loops can have their objects appear in the parent category. So
+this table prepares a complete list of (cat,obj):dataname correspondences, as the
+implementation of parent-child requires looking up a table each time searching for
+children.
+
+The [[base_table]] creation line at the beginning will include the datablock within which
+all the save frames appear; there may be a better alternative e.g. removing access to this
+block altogether.
+
+The recursive [[expand_base_table]] function returns a dictionary of (name,definition_id) pairs
+indexing the corresponding datanames.
+
+<<Create category/object table>>=
+def create_cat_obj_table(self):
+    """Populate a table indexed by (cat,obj) and returning the correct dataname"""
+    base_table = dict([((self[a].get('_name.category_id',''),self[a].get('_name.object_id','')),self[a].get('_definition.id','')) \
+                       for a in self.keys() if self[a].get('_definition.scope','Item')=='Item'])
+    loopable_cats = [a.lower() for a in self.keys() if self[a].get('_definition.class','')=='Loop']
+    loopers = [self.get_immediate_children(a) for a in loopable_cats]
+    loop_children = [[b[0] for b in a if b[0].lower() in loopable_cats ] for a in loopers]
+    expand_list = dict([(a,b) for a,b in zip(loopable_cats,loop_children) if len(b)>0])
+    print "Expansion list:" + `expand_list`
+    extra_table = {}   #for debugging we keep it separate from base_table until the ned
+    def expand_base_table(parent_cat,child_cats):
+        extra_names = []
+        # first deal with all the child categories
+        for child_cat in child_cats:
+          nn = []
+          if expand_list.has_key(child_cat):  # a nested category: grab its names
+            nn = expand_base_table(child_cat,expand_list[child_cat])
+            # store child names
+            extra_names += nn
+          # add all child names to the table
+          child_names = [(self[n]['_name.object_id'],self[n]['_definition.id']) for n in self.names_in_cat(child_cat) if self[n].get('_definition.scope','Item')=='Item']
+          child_names += extra_names
+          extra_table.update(dict([((parent_cat,obj),name) for obj,name in child_names]))
+        # and finally, add our own names to the return list
+        child_names += [(self[n]['_name.object_id'],self[n]['_definition.id']) for n in self.names_in_cat(parent_cat) if self[n].get('_definition.scope','Item')=='Item']
+        return child_names
+    [expand_base_table(parent,child) for parent,child in expand_list.items()]
+    print 'Expansion cat/obj values: ' + `extra_table`
+    base_table.update(extra_table)
+    self.cat_obj_lookup_table = base_table
+    
 @ DDLm introduces validity information in the enclosing datablock.  It is a loop of scope,
 attribute values where the scope is one of dictionary (everywhere), category (whole
 category) and item (just the single definition).  Validity can be [[+]] (mandatory), 
@@ -967,11 +1014,17 @@ def ddlm_parse_valid(self):
                self.scopes_naughty[scope.lower()].append(valid_info[i+1].lower())
 
 @  These methods were added when developing interactive editing tools, which allow
-shifting categories around.  Changing a category name involves changing the [[_name.category_id]]
+shifting categories around. 
+
+<<Category manipulation methods>>=
+<<Changing and updating categories>>
+<<Getting category information>>
+
+@  Changing a category name involves changing the [[_name.category_id]]
 in all children as well as the category definition itself and datablock names, then updating our internal
 structures.
 
-<<Category manipulation methods>>=
+<<Changing and updating categories>>=
 def change_category_name(self,oldname,newname):
     self.unlock()
     """Change the category name from [[oldname]] to [[newname]]"""
@@ -1002,11 +1055,6 @@ def create_catobj_name(self,cat,obj):
     """Combine category and object in approved fashion to create id"""
     return ('_'+cat+'.'+obj)
 
-def get_cat_obj(self,name):
-    """Return (cat,obj) tuple. [[name]] must contain only a single period"""
-    cat,obj = name.split('.')
-    return (cat.strip('_'),obj)
-    
 def change_category(self,itemname,catname):
     """Move itemname into catname"""
     defid = self[itemname]
@@ -1094,6 +1142,35 @@ def remove_definition(self,defname):
         for cc in child_cats: del self.cat_map[cc]
     del self[defname]
 
+@ The DDLm architecture identifies a data definition by (category,object) and by
+the actual textual dataname which appears in the data file.  Because of category
+joins when nested categories are looped, a single dataname may be referred to
+by several different category identifiers.  The [[get_name_by_cat_obj]] routine
+will search all loop categories within the given category's hierarchy until
+it finds the appropriate one.
+
+<<Getting category information>>=
+def get_cat_obj(self,name):
+    """Return (cat,obj) tuple. [[name]] must contain only a single period"""
+    cat,obj = name.split('.')
+    return (cat.strip('_'),obj)
+    
+def get_name_by_cat_obj(self,category,object):
+    """Return the dataname corresponding to the given category and object"""
+    if self[category].get('_definition.class',"Set")!="Loop":
+        return '_'+category+'.'+object
+    child_list = self.get_child_list(category)
+    real_children = ['_'+a+"."+object for a in child_list if self[a].get('_definition.class','Set')=="Loop"]
+    real_dataname = [a for a in real_children if self.has_key(a)]
+    if len(real_dataname)==1:
+        return real_dataname[0]
+    elif len(real_dataname)>1:
+        print "Unable to unambiguously identify name %s.%s" % (category,object)
+        return None
+    else:
+        print "No such dataname: %s.%s" % (category,object) 
+        return None
+
 @ Dictionaries have the category-wide information in the category
 definition area.  We create a map from data block / save frame header to
 category id.  For DDL1 the block name has square brackets appended. For DDL2
@@ -1134,7 +1211,7 @@ def names_in_cat(self,cat,names_only=False):
     nameblocks = filter(lambda a:self[a].get("_name.category_id","").lower()
                          ==cat.lower(),self.keys())
     if not names_only:
-        return map(lambda a:"_" + self[a]["_name.category_id"]+"." + self[a]["_name.object_id"],nameblocks)
+        return ["_" + self[a]["_name.category_id"]+"." + self[a]["_name.object_id"] for a in nameblocks if self[a].get('_definition.scope','Item')=='Item']
     else:
         return map(lambda a:self[a]["_name.object_id"],nameblocks)
     
@@ -2094,7 +2171,7 @@ def transform_drel(self):
            except KeyError:
                 print 'No evaluation method found, skipping' 
                 continue
-        print "Transforming %s" % drel_expr
+        # print "Transforming %s" % drel_expr
         # List categories are treated differently...
         try:
             meth_ast = parser.parse(drel_expr+"\n")
@@ -2111,7 +2188,7 @@ def transform_drel(self):
         self[derivable].overwrite = True
         self[derivable]["_method.py_expression"] = pyth_meth
         self[derivable].overwrite = save_overwrite
-        print "Final result:\n " + self[derivable]["_method.py_expression"]
+        #print "Final result:\n " + self[derivable]["_method.py_expression"]
 
 @ Drel functions are all stored in category 'functions' in our final dictionary.  We want to
 convert them to executable python code and store them in an appropriate namespace which we

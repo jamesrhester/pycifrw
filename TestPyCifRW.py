@@ -1254,6 +1254,13 @@ class DicEvalTestCase(unittest.TestCase):
         del self.fb['_cell.volume']
         self.assertEqual(self.fb['_cell_volume'],target)
 
+    def testCatObj(self):
+        """Test that we can obtain a name by category/object specification"""
+        target = testdic.get_name_by_cat_obj('atom_type','Cromer_Mann_coeffs')
+        self.assertEqual(target,'_atom_type_scat.Cromer_Mann_coeffs')
+        target = testdic.get_name_by_cat_obj('cell','volume')
+        self.assertEqual(target,'_cell.volume')
+
 if __name__=='__main__':
      global testdic
      testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")

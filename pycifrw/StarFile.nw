@@ -367,6 +367,11 @@ def get_immediate_children(self,parentname):
     child_handles = [a for a in self.child_table.items() if a[1].parent == parentname.lower()]
     return child_handles
 
+def get_child_list(self,parentname):
+    """Get a list of all child categories"""
+    child_handles = [a[0] for a in self.child_table.items() if self.is_child_of_parent(parentname.lower(),a[0])]
+    return child_handles
+
 def is_child_of_parent(self,parentname,blockname):
     """Recursively search for children of blockname, case is important for now"""
     checkname = parentname.lower()
