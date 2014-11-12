@@ -28,7 +28,7 @@ a single value, by setting keyword argument ``packet_no'' to the required packet
 upon is returned as a second item.
 
 The 'loopable' argument is a table of categories that are loopable, with the values
-being (key_id, datanames).  This is all the information that the generator needs.
+being (key_id, datanames). 
 
 <<AST builder>>=
 def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=False, 
@@ -315,6 +315,9 @@ such assignments kept in special_info[``packet_vars''].
 In a further twist, when keyed access followed by attribute lookup is performed on a non-aliased category, that category should have an underscore as the final result will be a
 dataname.  So we need to check for this construction before deciding how
 to translate the 'primary' part of the construction to Python.
+
+Note also that we should not assume that a dataname is constructed as ``_category.object''.
+Rather, we should look up the correct form of the dataname using the provided dictionary.
 
 <<Process attribute reference>>=
 elif node_type == "ATTRIBUTE":  # id/tag , att

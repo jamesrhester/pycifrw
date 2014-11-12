@@ -967,10 +967,7 @@ class LoopBlock(object):
     <<Check data item for STAR conformance>>
     <<Regularise data values>>
     <<Get complete looped data>>
-    <<Get nth loop packet>>
-    <<Add a packet>>
-    <<Remove a packet>>
-    <<Get packet by key>>
+    <<Packet handling methods>>
     <<Get item order>>
     <<Change data item order>>
     <<Return position of data item>>
@@ -1393,8 +1390,16 @@ def GetLoopItem(self,itemname):
         raise KeyError, 'Item %s not in block' % itemname
     return self.block[real_keys[k_index]]
 
-@ This function returns the particular loop block containing the
-specified dataname, so that we can manipulate its contents directly.
+@ Loops.  We should distinguish two loop structures: the loop
+structures provided by the syntax, and the loop structures defined by
+the dictionary ('semantic' loops).  The members of these loops do not
+coincide for 'joined' categories, where datanames may appear in either
+separate loops, or within one loop.  Until we have a dictionary, we
+have no way to find the semantic loops. 
+
+The first function below returns the particular loop block containing
+the specified dataname, so that we can manipulate its contents
+directly, and therefore refers to a syntactic loop.
 
 <<Get complete looped data>>=
 def GetLoop(self,keyname):
@@ -1407,25 +1412,45 @@ def GetLoop(self,keyname):
             pass
     raise KeyError, 'Item %s does not exist' % keyname
 
+@  Packets.  We store columns, so extracting packets is a much
+slower task.
+
+<<Packet handling methods>>=
+<<Get nth loop packet>>
+<<Add a packet>>
+<<Remove a packet>>
+<<Get packet by key>>
+<<Get semantic packet by key>>
+
 @ Get nth looped packet.  This returns a packet of data, including any
 nested loops.  For a nested loop, we want the set of packets corresponding
 to the nth outer packet; so after picking out the appropriate elements, we
 have to transpose so that we have a packet.
 
 We return a StarPacket object, which looks very much like a list, in order
-to support the proposed DDLm semantics of allowing a particular value to
-be accessed by attribute.
+to support the DDLm semantics of allowing a particular value to
+be accessed by attribute.  DDLm also allows merged categories, which means
+that a packet can contain datanames from the appropriate sub-categories.
 
 <<Star packet class>>=
 class StarPacket(list):
-    pass
+    def merge_packet(self,incoming):
+        """Merge contents of incoming packet with this packet"""
+        new_attrs = [a for a in dir(incoming) if a[0] == '_' and a[1] != "_"]
+        self.append(incoming)
+        for na in new_attrs:
+            setattr(self,na,getattr(incoming,na))
+
+    def __getattr__(self,dataname):
+        """Get a missing attribute"""
+        pass
 
 <<Get nth loop packet>>=
 def GetPacket(self,index):
     thispack = StarPacket([])
     for myitem in self.item_order:
         if isinstance(myitem,LoopBlock):
-            pack_list = map(lambda b:myitem[b][index],myitem.item_order)
+            pack_list = [myitem[b][index] for b in myitem.item_order]
             # print 'Pack_list -> %s' % `pack_list`
             thispack.append(pack_list)
         elif self.dimension==0:
@@ -1450,19 +1475,20 @@ def AddPacket(self,packet):
     self.no_packets +=1 
         # print "%s now %s" % (myitem,`self[myitem]`)
     
-@ The draft DDLm specification uses square brackets next to a
+@ 
+The draft DDLm specification uses square brackets next to a
 pre-specified identifier to mean "the packet containing this key
 item".  As the meaning of such square brackets in PyCIFRW is always
 that of simple dictionary access, we instead implement a function
-which fullfils this role and pre-process the DRel script to
-remove the square brackets where necessary.  At the LoopBlock level we
-have no idea as to which data name is the key, so that is passed to us
-from the dictionary processing layer.  Note we assume a single key
-rather than multiple keys for this call, and let the calling layer
-handle multiple or missing packets.
+which fullfils this role and pre-process the DRel script to remove the
+square brackets where necessary.  At the LoopBlock level we have no
+idea as to which data name is the key, so that is passed to us from
+the dictionary processing layer.  Note we assume a single key rather
+than multiple keys for this call, and let the calling layer handle
+multiple or missing packets.
 
-We guarantee to return a single packet, even if multiple packets match.
-Perhaps we should raise an error in this case.
+We guarantee to return a single packet, even if multiple packets
+match.  Perhaps we should raise an error in this case.
 
 <<Get packet by key>>=
 def GetKeyedPacket(self,keyname,keyvalue):
@@ -1474,6 +1500,32 @@ def GetKeyedPacket(self,keyname,keyvalue):
         raise KeyError, "Bad packet key %s = %s: returned %d packets" % (keyname,keyvalue,len(one_pack))
     #print "Keyed packet: %s" % one_pack[0]
     return one_pack[0]
+
+@  Semantic loops.  These are loops defined by a dictionary,
+as opposed to the syntax.  dREL requires us to be able to
+extract a packet by key, and then attributes of this packet
+are the individual objects that are found in that category,
+regardless of whether they co-occur in one loop or child
+loops.
+
+We use the dictionary ``cat_key_table'' to give us a list
+of keys for each category.  We find the corresponding loops, extract
+any packets meeting the key requirements, and merge these
+packets.  TODO: auto-calculate any missing values
+
+<<Get semantic packet by key>>=
+def GetKeyedSemanticPacket(self,keyvalue,cat_id):
+    """Return a complete packet for category cat_id"""
+    target_keys = self.dictionary.cat_key_table[cat_id]
+    p = StarPacket()
+    for cat_key in target_keys:
+        try:
+            extra_packet = self.GetKeyedPacket(cat_key,keyvalue)
+        except KeyError:        #try to create the key
+            key_vals = self[cat_key]   #will create a key column
+            key_pos = key_vals.index(keyvalue)
+        p.merge_packet(self.GetKeyedPacket(cat_key,keyvalue))
+    return p
 
 @ We might also want to remove a packet by key.  We operate on the data
 in place.

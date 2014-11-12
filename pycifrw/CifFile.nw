@@ -435,6 +435,7 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
         if not self.do_minimum:
             print "Doing full dictionary initialisation" 
             self.create_cat_obj_table()
+            self.create_cat_key_table()
             self.ddlm_parse_valid() #extract validity information from data block
             self.transform_drel()   #parse the drel functions
             self.add_drel_funcs()   #put the drel functions into the namespace
@@ -961,17 +962,21 @@ block altogether.
 The recursive [[expand_base_table]] function returns a dictionary of (name,definition_id) pairs
 indexing the corresponding datanames.
 
+The create_nested_key_table stores information about which keys index child categories. This
+way applications can search for any loops containing these keys and expand packets for dREL
+accordingly.
+
 <<Create category/object table>>=
 def create_cat_obj_table(self):
     """Populate a table indexed by (cat,obj) and returning the correct dataname"""
     base_table = dict([((self[a].get('_name.category_id',''),self[a].get('_name.object_id','')),self[a].get('_definition.id','')) \
                        for a in self.keys() if self[a].get('_definition.scope','Item')=='Item'])
-    loopable_cats = [a.lower() for a in self.keys() if self[a].get('_definition.class','')=='Loop']
-    loopers = [self.get_immediate_children(a) for a in loopable_cats]
-    loop_children = [[b[0] for b in a if b[0].lower() in loopable_cats ] for a in loopers]
-    expand_list = dict([(a,b) for a,b in zip(loopable_cats,loop_children) if len(b)>0])
+    self.loopable_cats = [a.lower() for a in self.keys() if self[a].get('_definition.class','')=='Loop']
+    loopers = [self.get_immediate_children(a) for a in self.loopable_cats]
+    loop_children = [[b[0] for b in a if b[0].lower() in self.loopable_cats ] for a in loopers]
+    expand_list = dict([(a,b) for a,b in zip(self.loopable_cats,loop_children) if len(b)>0])
     print "Expansion list:" + `expand_list`
-    extra_table = {}   #for debugging we keep it separate from base_table until the ned
+    extra_table = {}   #for debugging we keep it separate from base_table until the end
     def expand_base_table(parent_cat,child_cats):
         extra_names = []
         # first deal with all the child categories
@@ -992,7 +997,24 @@ def create_cat_obj_table(self):
     print 'Expansion cat/obj values: ' + `extra_table`
     base_table.update(extra_table)
     self.cat_obj_lookup_table = base_table
+    self.loop_expand_list = expand_list
     
+def create_cat_key_table(self):
+    """Create a utility table with a list of keys applicable to each category"""
+    self.cat_key_table = dict([(c,[self[c]["_category.key_id"]]) for c in self.loopable_cats])
+    def collect_keys(parent_cat,child_cats):
+            kk = []
+            for child_cat in child_cats:
+                if self.loop_expand_list.has_key(child_cat):
+                    kk += collect_keys(child_cat)
+                # add these keys to our list
+                kk += [self[child_cat]['_category.key_id']]
+            self.cat_key_table[parent_cat] = self.cat_key_table[parent_cat] + kk
+            return kk
+    for k,v in self.loop_expand_list.items():
+        collect_keys(k,v)
+    print 'Keys for categories' + `self.cat_key_table`
+
 @ DDLm introduces validity information in the enclosing datablock.  It is a loop of scope,
 attribute values where the scope is one of dictionary (everywhere), category (whole
 category) and item (just the single definition).  Validity can be [[+]] (mandatory), 

@@ -352,6 +352,16 @@ class BlockChangeTestCase(unittest.TestCase):
        testpack = testloop.GetKeyedPacket("_item_name_1",2)
        self.assertEqual("good_bye",getattr(testpack,"_item_name#2"))
 
+   def testPacketMerge(self):
+       """Test that a packet can be merged with another packet"""
+       bigcf = CifFile.CifFile("pycifrw/tests/C13H22O3.cif")
+       bigcf = bigcf["II"]
+       testpack = bigcf.GetKeyedPacket("_atom_site_label","C4A")
+       newpack = bigcf.GetKeyedPacket("_atom_site_aniso_label","C4A")
+       testpack.merge_packet(newpack)
+       self.assertEqual(getattr(testpack,'_atom_site_aniso_U_22'),'0.0312(15)')
+       self.assertEqual(getattr(testpack,'_atom_site_fract_x'),'0.7192(3)')
+       
    def testRemovePacket(self):
        """Test that removing a packet works properly"""
        print 'Before packet removal'
@@ -1239,7 +1249,20 @@ class DicEvalTestCase(unittest.TestCase):
 
     def testReflnF(self):
         self.check_value('_refln.F_calc')
-   
+
+    def testCalcOldAlias(self):
+        """Test that a calculation is performed for an old dataname"""
+        target = self.fb['_cell.volume']
+        del self.fb['_cell.volume']
+        self.assertEqual(self.fb['_cell_volume'],target)
+
+class DicStructureTestCase(unittest.TestCase):
+    """Tests use of dictionary semantic information for item lookup"""
+    def setUp(self):
+        cc = CifFile.CifFile("pycifrw/drel/testing/data/nick2.cif",grammar="DDLm")
+        self.fb = cc.first_block()
+        self.fb.assign_dictionary(testdic)
+
     def testOldAlias(self):
         """Test finding an older form of a new dataname"""
         self.failUnless(self.fb['_symmetry.space_group_name_H_M']=='P_1_21/a_1')
@@ -1248,12 +1271,6 @@ class DicEvalTestCase(unittest.TestCase):
         """Test finding a newer form of an old dataname"""
         self.failUnless(self.fb['_symmetry_space_group_name_Hall']=='-p_2yab')
 
-    def testCalcOldAlias(self):
-        """Test that a calculation is performed for an old dataname"""
-        target = self.fb['_cell.volume']
-        del self.fb['_cell.volume']
-        self.assertEqual(self.fb['_cell_volume'],target)
-
     def testCatObj(self):
         """Test that we can obtain a name by category/object specification"""
         target = testdic.get_name_by_cat_obj('atom_type','Cromer_Mann_coeffs')
@@ -1261,10 +1278,23 @@ class DicEvalTestCase(unittest.TestCase):
         target = testdic.get_name_by_cat_obj('cell','volume')
         self.assertEqual(target,'_cell.volume')
 
+    def testCatKey(self):
+        """Test that we get a complete list of keys for child categories"""
+        target = testdic.cat_key_table
+        self.assertEqual(target['atom_site'],['_atom_site.key','_atom_site_aniso.key'])
+
+    def testChildPacket(self):
+        """Test that a child packet is included in attributes of parent category"""
+        target = self.fb.GetKeyedSemanticPacket("o2",'atom_site')
+        self.failUnless(has_attr(target,'_atom_site_aniso.U_23'))
+        self.assertEqual(getattr(target,'_atom_site_aniso.U_33'),0.040)
+
 if __name__=='__main__':
      global testdic
      testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")
-     suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
+     suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)
      unittest.TextTestRunner(verbosity=2).run(suite)
 #     unittest.main()
 
