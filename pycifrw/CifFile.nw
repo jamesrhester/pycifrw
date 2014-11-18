@@ -2234,7 +2234,7 @@ def add_drel_funcs(self):
         parser.target_id = funcname
         res_ast = parser.parse(funcbody)
         py_function = py_from_ast.make_python_function(res_ast,None,targetname=funcname,func_def=True,loopable=loop_info)
-        print 'dREL library function ->\n' + py_function
+        #print 'dREL library function ->\n' + py_function
         global_table = globals()
         # global_table.update(self.ddlm_functions)
         exec py_function in global_table    #add to namespace
@@ -2313,7 +2313,7 @@ def derive_item(self,start_key,cifdata,store_value = False):
     # now try to insert the new information into the right place
     # find if items of this category already appear...
     if store_value: 
-          cat_names = [a for a in self.keys() if self[a].get["_name.category_id",None]==the_category]
+          cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
           has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
           if len(has_cat_names)>0:
                target_loop = cifdata.GetLoop(has_cat_names[0])

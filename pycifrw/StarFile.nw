@@ -1092,9 +1092,8 @@ the enclosing block collection (e.g. CIF or STAR file object)""")
     except KeyError:
        if self.dictionary:
            # send the dictionary the required key and a pointer to us
-           new_value = self.dictionary.derive_item(key,self)
-           print 'Setting %s to derived value %s' % (key, `new_value`)
-           self[key] = new_value    #cache value in value entry
+           new_value = self.dictionary.derive_item(key,self,store_value=True)
+           print 'Set %s to derived value %s' % (key, `new_value`)
            return new_value 
        else:
            raise KeyError, 'No such item: %s' % key
@@ -1421,7 +1420,9 @@ directly, and therefore refers to a syntactic loop.
 
 <<Get complete looped data>>=
 def GetLoop(self,keyname):
-    if keyname in self.block:        #python 2.2 or above
+    if not self.has_key(keyname):
+        raise KeyError, 'Item %s does not exist' % keyname
+    if keyname.lower() in self.lower_keys:        #python 2.2 or above
         return self
     for aloop in self.loops:
         try: 

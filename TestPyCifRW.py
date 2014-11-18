@@ -239,6 +239,11 @@ class BlockChangeTestCase(unittest.TestCase):
 	    self.failUnless(key in self.names[0])
 	    self.failUnless(tuple(results[key]) == self.values[0][list(self.names[0]).index(key)])
 	
+   def testGetLoopCase(self):
+       """Check that getloop works for any case"""
+       results = self.cf.GetLoop('_Item_Name_1')
+       self.assertEqual(results['_item_name_1'][1],2)
+
    def testSimpleRemove(self):
        """Check item deletion outside loop"""
        self.cf.RemoveCifItem('_non_loop_item')
@@ -1299,7 +1304,8 @@ class DicStructureTestCase(unittest.TestCase):
         """Test that a child packet is included in attributes of parent category"""
         target = self.fb.GetKeyedSemanticPacket("o2",'atom_site')
         self.failUnless(hasattr(target,'_atom_site_aniso.U_23'))
-        self.assertEqual(getattr(target,'_atom_site_aniso.U_33'),0.040)
+        self.assertEqual(getattr(target,'_atom_site_aniso.U_33'),'.040(3)')
+        print str(self.fb)
 
 if __name__=='__main__':
      global testdic
