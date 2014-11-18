@@ -115,6 +115,16 @@ class BasicUtilitiesTestCase(unittest.TestCase):
         print "%s -> %s -> %s -> %s -> %s" % (`test_string`,`outstring`,`indoutstring`,`newoutstring`,`newtest_string`)
         self.failUnless(newtest_string == test_string)
 
+    def testStringiness(self):
+        """Check that we can detect string-valued items correctly"""
+        import numpy
+        self.assertEqual(CifFile.check_stringiness(['1','2','3']),True)
+        self.assertEqual(CifFile.check_stringiness([1,2,'3']),False)
+        self.assertEqual(CifFile.check_stringiness(['1',['2',['3',4,'5'],'6','7'],'8']),False)
+        self.assertEqual(CifFile.check_stringiness(['1',['2',['3','4','5'],'6','7'],'8']),True)
+        p = numpy.array([[1,2,3],[4,5,6]])
+        self.assertEqual(CifFile.check_stringiness(p),False)
+        
 # Test basic setting and reading of the CifBlock
 
 class BlockRWTestCase(unittest.TestCase):
@@ -368,6 +378,8 @@ class BlockChangeTestCase(unittest.TestCase):
        print str(self.cf)
        testloop = self.cf.GetLoop("_item_name_1")
        testloop.RemoveKeyedPacket("_item_name_1",3)
+       print 'After packet 3 removal:'
+       print `self.cf.loops[0].block`
        jj = testloop.GetKeyedPacket("_item_name_1",2)
        kk = testloop.GetKeyedPacket("_item_name_1",4)
        self.assertEqual(getattr(jj,"_item_name#2"),"good_bye")
@@ -921,7 +933,7 @@ class DDLmImportCase(unittest.TestCase):
 # Test dictionary type
 #
 ##############################################################
-ddl1dic = CifFile.CifDic("pycifrw/dictionaries/cif_core.dic",scantype="flex",do_minimum=True)
+#ddl1dic = CifFile.CifDic("pycifrw/dictionaries/cif_core.dic",scantype="flex",do_minimum=True)
 
 class DictTestCase(unittest.TestCase):
     def setUp(self):
@@ -1082,7 +1094,7 @@ class DDL1TestCase(unittest.TestCase):
         #         ("_atom_site_adp_type","Umpe"),
 	#	 ("_this_is_not_in_dict","not here"))
 	bl = CifFile.CifBlock()
-	self.cf = CifFile.ValidCifFile(dic=ddl1dic)
+	self.cf = CifFile.ValidCifFile(dic=testdic)
 	self.cf["test_block"] = bl
 	self.cf["test_block"].AddCifItem(("_atom_site_label",
 	      ["C1","Cr2","H3","U4"]))	
@@ -1161,7 +1173,7 @@ class DDL1TestCase(unittest.TestCase):
 	#       [["C","C","N"],["C1","C2","N1"]]))
 
     def testReport(self):
-        CifFile.validate_report(CifFile.validate("pycifrw/tests/C13H2203_with_errors.cif",dic=ddl1dic))
+        CifFile.validate_report(CifFile.validate("pycifrw/tests/C13H2203_with_errors.cif",dic=testdic))
 
 class FakeDicTestCase(unittest.TestCase):
 # we test stuff that hasn't been used in official dictionaries to date.
@@ -1286,15 +1298,17 @@ class DicStructureTestCase(unittest.TestCase):
     def testChildPacket(self):
         """Test that a child packet is included in attributes of parent category"""
         target = self.fb.GetKeyedSemanticPacket("o2",'atom_site')
-        self.failUnless(has_attr(target,'_atom_site_aniso.U_23'))
+        self.failUnless(hasattr(target,'_atom_site_aniso.U_23'))
         self.assertEqual(getattr(target,'_atom_site_aniso.U_33'),0.040)
 
 if __name__=='__main__':
      global testdic
      testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
-     suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)
-     unittest.TextTestRunner(verbosity=2).run(suite)
-#     unittest.main()
+     #unittest.TextTestRunner(verbosity=2).run(suite)
+     unittest.main()
 

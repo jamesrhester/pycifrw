@@ -135,8 +135,9 @@ def makeloop(loopstructure,itemlists):
 	   except StopIteration:
 	       print "StopIter at %s/%s" % (datavalue,datalist)
 	       raise StopIteration
-           # print 'Got %s %s ->' % (`nowloop`,`target`),
-	   target.append(datavalue)
+           #print 'Got %s %s ->' % (`nowloop`,`target`),
+	   target[0].append(datavalue)
+           target[1].append(None)
            # print '%s' % `target`
        # the end of each list is the same as a stop_ token
        # print 'Saw end of list'
