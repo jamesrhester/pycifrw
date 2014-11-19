@@ -183,7 +183,8 @@ def start_traverse(in_node,target_id=None,loopable={},cat_meth=False,debug=None,
        return "Not found: %s" % `in_node`
   result = traverse_ast(in_node)
   # remove target id from dependencies
-  special_info["depends"].discard(special_info["target_id"].lower())
+  if special_info["target_id"] is not None:
+      special_info["depends"].discard(special_info["target_id"].lower())
   return result,special_info["withtable"],special_info["depends"],special_info["need_current_row"]
 
 @  These are the simple constants that we have detected.
@@ -287,7 +288,7 @@ elif node_type == "SUBSCRIPTION":  # variable, single expression
     if newid:
         key_item = "_"+newid[0]+"."+special_info["loopable_cats"][newid[0]][0]   #key name
         special_info["depends"].add(key_item.lower())
-        get_loop = "ciffile.GetLoop('%s').GetKeyedPacket('%s',%s)" % (key_item,key_item,traverse_ast(in_node[2]))
+        get_loop = "ciffile.GetKeyedSemanticPacket(%s,'%s')" % (traverse_ast(in_node[2]),newid[0])
         special_info["sub_subject"] = "_"+newid[0]+"."  #in case of attribute reference following
         print "Set sub_subject to %s" % special_info["sub_subject"]
         return get_loop

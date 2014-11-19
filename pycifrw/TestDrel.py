@@ -422,7 +422,7 @@ class WithDictTestCase(unittest.TestCase):
        self.parser = drel_ast_yacc.parser
        self.parser.lineno = 0
        #use
-       self.testblock = CifFile.CifFile("nick1.cif",grammar="DDLm")["saly2_all_aniso"]
+       self.testblock = CifFile.CifFile("drel/nick1.cif",grammar="DDLm")["saly2_all_aniso"]
        self.testblock.assign_dictionary(testdic)
        self.testdic = testdic
        #create the global namespace
@@ -454,7 +454,9 @@ class WithDictTestCase(unittest.TestCase):
        print realfunc
        print 'Depends on: ' + `dependencies`
        exec realfunc
-       b = myfunc(self,self.testblock)
+       # Add drel functions for deriving items
+       testdic.initialise_drel()
+       b = myfunc(testdic,self.testblock)
        print "subscription returns " + `b` 
 
    def test_with_stmt(self):
@@ -632,12 +634,11 @@ class WithDictTestCase(unittest.TestCase):
       
 if __name__=='__main__':
     global testdic
-    #testdic = CifFile.CifDic("testing/cif_core.dic",grammar="DDLm",do_minimum=True)
-    #maindic = CifFile.CifDic("testing/cif_core.dic",grammar="DDLm",do_minimum=True)
+    testdic = CifFile.CifDic("drel/testing/cif_core.dic",grammar="DDLm",do_minimum=True)
     #unittest.main()
-    #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
+    suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
-    suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
+    #suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase) 
     #suite = unittest.TestLoader().loadTestsFromTestCase(dRELRuntimeTestCase)
     unittest.TextTestRunner(verbosity=2).run(suite)

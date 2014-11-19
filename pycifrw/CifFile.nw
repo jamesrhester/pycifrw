@@ -370,6 +370,7 @@ class CifDic(StarFile.BlockCollection):
     <<Return a single packet by key>>
     <<Extract number and esd>>
     <<Analyse range>>
+    <<Initialise dREL functions>>
     <<Transform drel to python>>
     <<Store dREL functions>> 
     <<Switch on numpy arrays>>
@@ -434,11 +435,7 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
         self.create_alias_table()
         if not self.do_minimum:
             print "Doing full dictionary initialisation" 
-            self.create_cat_obj_table()
-            self.create_cat_key_table()
-            self.ddlm_parse_valid() #extract validity information from data block
-            self.transform_drel()   #parse the drel functions
-            self.add_drel_funcs()   #put the drel functions into the namespace
+            self.initialise_drel()
     self.add_category_info()
     # initialise type information
     self.typedic={}
@@ -479,6 +476,18 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
     # j = open("dic_debug","w")
     # j.write(self.__str__())
     # j.close()
+
+@ Full initialisation. This can take some time so we optionally skip it, but can
+call this function separately at a later stage if needed.
+
+<<Initialise dREL functions>>=
+def initialise_drel(self):
+    """Parse drel functions and prepare data structures in dictionary"""
+    self.create_cat_obj_table()
+    self.create_cat_key_table()
+    self.ddlm_parse_valid() #extract validity information from data block
+    self.transform_drel()   #parse the drel functions
+    self.add_drel_funcs()   #put the drel functions into the namespace
 
 @ This function determines whether we have a DDLm, DDL2 or DDL1 dictionary.  We are
 passed a [[CifFile]] object.   The current method looks for an
@@ -2288,11 +2297,18 @@ def derive_item(self,start_key,cifdata,store_value = False):
     if def_index_val and not the_func:            #derive a default value
         index_vals = self[key]["_enumeration_default.index"]
         val_to_index = cifdata[def_index_val]     #what we are keying on
+        if self[def_index_val]['_type.contents'] in ['Code','Name','Tag']:
+            lcase_comp = True
+            index_vals = [a.lower() for a in index_vals]
         # Handle loops
         if isinstance(val_to_index,ListType):
-            keypos = map(lambda a:index_vals.index(a),val_to_index)
+            if lcase_comp:
+                val_to_index = [a.lower() for a in val_to_index]
+            keypos = [index_vals.index(a) for a in val_to_index]
             result = map(lambda a:self[key]["_enumeration_default.value"][a] ,keypos)
         else:
+            if lcase_comp:
+                val_to_index = val_to_index.lower()
             keypos = index_vals.index(val_to_index)   #value error if no such value available
             result = self[key]["_enumeration_default.value"][keypos] 
         print "Indexed on %s to get %s for %s" % (def_index_val,`result`,`val_to_index`)
@@ -2994,7 +3010,7 @@ def convert_type(definition):
     """Convert value to have the type given by definition"""
     #extract the actual required type information
     container = definition['_type.container']
-    dimension = definition.get('_type.dimension',"")
+    dimension = definition.get('_type.dimension',StarFile.StarList([]))
     structure = interpret_structure(definition['_type.contents'])
     if container == 'Single':   #a single value to convert
         return convert_single_value(structure)
@@ -3061,12 +3077,12 @@ def convert_list_values(structure,dimension):
             func_def += "element[%d]" % pos_no
             if "(" in cf: func_def +=")"
             if type_spec in ('Code','Name','Tag'):
-                func_def +="lower()"
+                func_def +=".lower()"
             func_def +=")\n"  # close append
         func_def +=      "   return final_val\n"
     print func_def
     exec func_def in globals() #(re)defines element_convert in global namespace
-    if int(dimension[0]) != 1:
+    if len(dimension)> 0 and int(dimension[0]) != 1:
         return lambda a: map(element_convert,a)
     else: return element_convert
 

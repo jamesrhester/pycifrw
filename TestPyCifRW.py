@@ -933,6 +933,13 @@ class DDLmImportCase(unittest.TestCase):
     def setUp(self):
         pass
 
+    def testEnumImport(self):
+        """Test that enumerated types were imported correctly"""
+        pp = testdic['_atom_type.radius_bond']
+        self.failUnless(pp.has_key('_enumeration_default.index'))
+        c_pos = pp['_enumeration_default.index'].index('C')
+        self.assertEqual(pp['_enumeration_default.value'][c_pos],'0.77')
+
 ##############################################################
 #
 # Test dictionary type
@@ -1061,6 +1068,7 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
         namedef = CifFile.CifBlock()
         namedef['_type.container'] = 'List'
         namedef['_type.contents'] = 'List(Text,Real)'
+        namedef['_type.dimension'] = CifFile.StarList([3])
         result = CifFile.convert_type(namedef)(self.testblock['_list2.value'])
         print 'Result: ' + `result`
         self.failUnless(result ==  [['i',4.2],['j',1.5],['lmnop',-4.5]])
@@ -1069,8 +1077,9 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
         namedef = CifFile.CifBlock()
         namedef['_type.container'] = 'List'
         namedef['_type.contents'] = 'Real'
+        namedef['_type.dimension'] = CifFile.StarList([3])
         result = CifFile.convert_type(namedef)(self.testblock['_list1.value'])
-        self.failUnless(result ==  [1.2, 2.3, 4.5])
+        self.assertEqual(result,  [1.2, 2.3, 4.5])
 
     def testMatrixConversion(self):
         namedef = CifFile.CifBlock()
@@ -1093,13 +1102,13 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
 class DDL1TestCase(unittest.TestCase):
 
     def setUp(self):
-	# self.ddl1dic = CifFile.CifFile("pycifrw/dictionaries/cif_core.dic")
+	self.ddl1dic = CifFile.CifDic("pycifrw/dictionaries/cif_core.dic")
 	#items = (("_atom_site_label","S1"),
 	#	 ("_atom_site_fract_x","0.74799(9)"),
         #         ("_atom_site_adp_type","Umpe"),
 	#	 ("_this_is_not_in_dict","not here"))
 	bl = CifFile.CifBlock()
-	self.cf = CifFile.ValidCifFile(dic=testdic)
+	self.cf = CifFile.ValidCifFile(dic=self.ddl1dic)
 	self.cf["test_block"] = bl
 	self.cf["test_block"].AddCifItem(("_atom_site_label",
 	      ["C1","Cr2","H3","U4"]))	
@@ -1248,30 +1257,34 @@ class DicEvalTestCase(unittest.TestCase):
         self.fb = cc.first_block()
         self.fb.assign_dictionary(testdic)
         
-    def check_value(self,dataname):
+    def check_value(self,dataname,scalar=True):
         """Generic check of value"""
         target = self.fb[dataname]
         del self.fb[dataname]
         result = self.fb[dataname]
-        self.assertEqual(target,result,"Target = %s, Result = %s" % (target,result))
+        if scalar:
+            print 'Target: %d  Result %d' % (target,result)
+            self.failUnless(abs(target-result)<0.01)
+        else:
+            self.assertEqual(target,result,"Target = %s, Result = %s" % (target,result))
 
     def testCellVolume(self):
         self.check_value('_cell.volume')
 
-    def testNoInCell(self):
-        self.check_value('_atom_type.number_in_cell')
+    def testNoInCell(self,scalar=False):
+        self.check_value('_atom_type.number_in_cell',scalar=False)
 
     def testDensity(self):
         self.check_value('_exptl_crystal.density_diffrn')
 
-    def testReflnF(self):
+    def testReflnF(self,scalar=False):
         self.check_value('_refln.F_calc')
 
     def testCalcOldAlias(self):
         """Test that a calculation is performed for an old dataname"""
         target = self.fb['_cell.volume']
         del self.fb['_cell.volume']
-        self.assertEqual(self.fb['_cell_volume'],target)
+        self.failUnless(abs(self.fb['_cell_volume']-target)<0.01)
 
 class DicStructureTestCase(unittest.TestCase):
     """Tests use of dictionary semantic information for item lookup"""
@@ -1307,14 +1320,21 @@ class DicStructureTestCase(unittest.TestCase):
         self.assertEqual(getattr(target,'_atom_site_aniso.U_33'),'.040(3)')
         print str(self.fb)
 
+    def testEnumDefault(self):
+        """Test that we can obtain enumerated values"""
+        target = self.fb['_atom_type.radius_bond']
+        self.failUnless('0.77' in target)
+
 if __name__=='__main__':
      global testdic
      testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
-     #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
+     suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)
-     #unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase) 
+     #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmImportCase)
+     unittest.TextTestRunner(verbosity=2).run(suite)
+     #unittest.main()
 
