@@ -1088,7 +1088,7 @@ def __getitem__(self,key):
         raise StarError("""The saves key is deprecated. Access the save block from
 the enclosing block collection (e.g. CIF or STAR file object)""") 
     try:
-       rawitem = self.GetLoopItem(key)
+       rawitem,is_value = self.GetLoopItemValue(key)
     except KeyError:
        if self.dictionary:
            # send the dictionary the required key and a pointer to us
@@ -1098,7 +1098,7 @@ the enclosing block collection (e.g. CIF or STAR file object)""")
        else:
            raise KeyError, 'No such item: %s' % key
     # we now have an item, we can try to convert it to a number if that is appropriate
-    if not self.dictionary or not self.dictionary.has_key(key): return rawitem
+    if not self.dictionary or not self.dictionary.has_key(key) or is_value: return rawitem
     return self.dictionary.change_type(key,rawitem)
       
 def __delitem__(self,key):
@@ -1376,18 +1376,27 @@ initially assume that the key we have been passed is the right
 key (i.e. case is the same) and only check for case if this
 fails.
 
+We define an alternative call that returns both the stored value
+and whether or not it is a non-string value.  This saves other
+routines performing the same check.
+
 <<Return value of item>>=
 def GetLoopItem(self,itemname):
+    """Return value of itemname in this loop block"""
+    return self.GetLoopItemValue(itemname)[0]
+
+def GetLoopItemValue(self,itemname):
+    """Return value of itemname and whether or not it is a native value"""
     # assume case is correct first
     try:
 	s,v = self.block[itemname]
     except KeyError:
 	for loop in self.loops:
 	    try:
-		return loop[itemname]
+		return loop.GetLoopItemValue(itemname)
 	    except KeyError:
 		pass
-    if itemname.lower() in self.lower_keys:
+        if itemname.lower() in self.lower_keys:
            # it is there somewhere, now we need to find it
            real_keys = self.block.keys()
            lower_keys = map(lambda a:a.lower(),self.block.keys()) 
@@ -1396,16 +1405,16 @@ def GetLoopItem(self,itemname):
            except ValueError:   #should never happen!!
               raise KeyError, 'Bug: Item %s unexpectedly not in block' % itemname
            s,v = self.block[real_keys[k_index]]
-    else:
-         raise KeyError, 'Item %s not in block' % itemname
+        else:
+           raise KeyError, 'Item %s not in block' % itemname
     # prefer string value unless all are None
     if self.dimension == 0:
         if s is not None: 
-            return s
+            return s,False
         else:
-            return v
-    elif None not in s: return s
-    else: return v
+            return v,True
+    elif None not in s: return s,False
+    else: return v,True
 
 @ Loops.  We should distinguish two loop structures: the loop
 structures provided by the syntax, and the loop structures defined by
@@ -1451,6 +1460,9 @@ to support the DDLm semantics of allowing a particular value to
 be accessed by attribute.  DDLm also allows merged categories, which means
 that a packet can contain datanames from the appropriate sub-categories.
 
+Furthermore, a StarPacket can derive missing values by calling the appropriate
+dREL function.  To do this, we store the key name used to create the packet.
+
 <<Star packet class>>=
 class StarPacket(list):
     def merge_packet(self,incoming):
@@ -1460,6 +1472,22 @@ class StarPacket(list):
         for na in new_attrs:
             setattr(self,na,getattr(incoming,na))
 
+    def __getattr__(self,att_name):
+        """Derive a missing attribute"""
+        if att_name in ('cif_dictionary','fulldata','key'):
+            raise AttributeError, 'Programming error: cannot compute value of %s' % att_name
+        d = self.cif_dictionary
+        c = self.fulldata
+        k = self.key
+        d.derive_item(att_name,c,store_value=True)
+        # 
+        # now pick out the new value
+        keyval = getattr(self,k)
+        full_pack = c.GetKeyedPacket(k,keyval)
+        return getattr(full_pack,att_name)
+        # and convert if necessary to actual type
+        
+        
 <<Get nth loop packet>>=
 def GetPacket(self,index):
     thispack = StarPacket([])
@@ -1505,14 +1533,20 @@ multiple or missing packets.
 We guarantee to return a single packet, even if multiple packets
 match.  Perhaps we should raise an error in this case.
 
+This is a dictionary-agnostic routine, so will not be able to determine
+if a case-insensitive match is appropriate.
+
 <<Get packet by key>>=
-def GetKeyedPacket(self,keyname,keyvalue):
-    """Return the loop packet where [[keyname]] has value [[keyvalue]]"""
+def GetKeyedPacket(self,keyname,keyvalue,no_case=False):
+    """Return the loop packet where [[keyname]] has value [[keyvalue]]. Ignore case if no_case is true"""
     #print "Looking for %s in %s" % (keyvalue, self[keyname])
     my_loop = self.GetLoop(keyname)
-    one_pack= [a for a in my_loop if getattr(a,keyname)==keyvalue]
+    if no_case:
+       one_pack= [a for a in my_loop if getattr(a,keyname).lower()==keyvalue.lower()]
+    else:
+       one_pack= [a for a in my_loop if getattr(a,keyname)==keyvalue]
     if len(one_pack)!=1:
-        raise KeyError, "Bad packet key %s = %s: returned %d packets" % (keyname,keyvalue,len(one_pack))
+        raise ValueError, "Bad packet key %s = %s: returned %d packets" % (keyname,keyvalue,len(one_pack))
     #print "Keyed packet: %s" % one_pack[0]
     return one_pack[0]
 
@@ -1526,20 +1560,33 @@ loops.
 We use the dictionary ``cat_key_table'' to give us a list
 of keys for each category.  We find the corresponding loops, extract
 any packets meeting the key requirements, and merge these
-packets.  TODO: auto-calculate any missing values
+packets.  
+
+A packet for dREL use will need to be able to derive further
+values using the dictionary, e.g. when an attribute of that
+packet is requested.  In order to do this derivation, we need
+to store the key name and value, so that the __getattr__ method
+of the packet can properly derive the needed value.
 
 <<Get semantic packet by key>>=
 def GetKeyedSemanticPacket(self,keyvalue,cat_id):
     """Return a complete packet for category cat_id"""
     target_keys = self.dictionary.cat_key_table[cat_id]
     p = StarPacket()
+    # set case-sensitivity flag
+    lcase = False
+    if self.dictionary[target_keys[0]]['_type.contents'] in ['Code','Tag','Name']:
+        lcase = True
     for cat_key in target_keys:
         try:
-            extra_packet = self.GetKeyedPacket(cat_key,keyvalue)
+            extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
         except KeyError:        #try to create the key
             key_vals = self[cat_key]   #will create a key column
-            key_pos = key_vals.index(keyvalue)
-        p.merge_packet(self.GetKeyedPacket(cat_key,keyvalue))
+        p.merge_packet(self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase))
+    # the following attributes used to calculate missing values
+    p.key = target_keys[0]
+    p.cif_dictionary = self.dictionary
+    p.fulldata = self
     return p
 
 @ We might also want to remove a packet by key.  We operate on the data

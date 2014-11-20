@@ -1320,16 +1320,22 @@ class DicStructureTestCase(unittest.TestCase):
         self.assertEqual(getattr(target,'_atom_site_aniso.U_33'),'.040(3)')
         print str(self.fb)
 
+    def testPacketCalcs(self):
+        """Test that a star packet can calculate missing values"""
+        target = self.fb.GetKeyedSemanticPacket("O",'atom_type')
+        rad = getattr(target,'_atom_type.radius_bond')
+        self.assertEqual(rad,0.74)
+        
     def testEnumDefault(self):
         """Test that we can obtain enumerated values"""
         target = self.fb['_atom_type.radius_bond']
-        self.failUnless('0.77' in target)
+        self.failUnless(0.77 in target)
 
 if __name__=='__main__':
      global testdic
      testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")
-     #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
-     suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
+     suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)

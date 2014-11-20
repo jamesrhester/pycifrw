@@ -2199,7 +2199,7 @@ def transform_drel(self):
            try:
                 drel_expr = self[derivable].GetKeyedPacket("_method.purpose","Evaluation")
                 drel_expr = getattr(drel_expr,'_method.expression')
-           except KeyError:
+           except (KeyError,ValueError):
                 print 'No evaluation method found, skipping' 
                 continue
         # print "Transforming %s" % drel_expr
@@ -2251,92 +2251,130 @@ def add_drel_funcs(self):
 
 @ When a dictionary is available during CIF file access, we can resolve a missing dataname in
 three ways: (1) check if it is defined under an alias; (2) use a dREL method to calculate the
-value; (3) use default values if defined.  We resolve in this order.
+value; (3) use default values if defined.  We resolve in this priority.  Note that we also
+convert to the appropriate type.
 
-We could be passed either the dictionary defined dataname, or any of its previous names. We
-have stored our aliases as a table indexed by dictionary-defined dataname in order to
-potentially translate from old to new datanames (not yet implemented).  Once we find a 
-dataname that is present in the datafile, we return it.  Note that we have two types of
-check: in one we are given an old-style dataname, and have to find the new or other old
-version (in which case we have to check the key of the table) and in the other check we
-are given the latest version of the dataname and have to check for older names in the
-datafile - this latter is the dREL situation so we have optimised for it be checking that
-first and making the modern datanames the table keys.
-
-We also check out any default values which we could return in case of error.  Note that ddlm
-adds the '_enumerations.def_index_id' as an alternative way to derive a value from a table.
-During development, we deliberately allow errors arising from the method to
-be propagated so that we can see anything that might be wrong.
-
-The store_value flag asks us to update the ciffile object with the new value. 
+The store_value flag asks us to update the ciffile object with the new value.  We remove any
+numpy dependencies before doing this.
 
 <<Derive item information>>=
 def derive_item(self,start_key,cifdata,store_value = False):
     key = start_key   #starting value
-    # check for aliases
-    # check for an older form of a new value
-    found_it = [k for k in self.alias_table.get(key,[]) if cifdata.has_key(k)]
-    if len(found_it)>0:
-        return cifdata[found_it[0]]
-    # now do the reverse check - any alternative form
-    alias_name = [a for a in self.alias_table.items() if key in a[1]]
-    print 'Aliases for %s: %s' % (key,`alias_name`)
-    if len(alias_name)==1:
-        key = alias_name[0][0]   #actual definition name
-        if cifdata.has_key(key): return cifdata[key]
-        found_it = [k for k in alias_name[0][1] if cifdata.has_key(k)]
-        if len(found_it)>0:
-            return cifdata[found_it[0]]
-    elif len(alias_name)>1:
-        raise CifError, 'Dictionary error: dataname alias appears in different definitions: ' + `alias_name`
+    result = None     #success is a non-None value
+    <<Resolve using aliases>>
     # store any default value in case we have a problem
     def_val = self[key].get("_enumeration.default","")
     def_index_val = self[key].get("_enumeration.def_index_id","")
     the_func = self[key].get('_method.py_expression',"")
-    if def_val and not the_func : return def_val
-    if def_index_val and not the_func:            #derive a default value
-        index_vals = self[key]["_enumeration_default.index"]
-        val_to_index = cifdata[def_index_val]     #what we are keying on
-        if self[def_index_val]['_type.contents'] in ['Code','Name','Tag']:
-            lcase_comp = True
-            index_vals = [a.lower() for a in index_vals]
-        # Handle loops
-        if isinstance(val_to_index,ListType):
-            if lcase_comp:
-                val_to_index = [a.lower() for a in val_to_index]
-            keypos = [index_vals.index(a) for a in val_to_index]
-            result = map(lambda a:self[key]["_enumeration_default.value"][a] ,keypos)
-        else:
-            if lcase_comp:
-                val_to_index = val_to_index.lower()
-            keypos = index_vals.index(val_to_index)   #value error if no such value available
-            result = self[key]["_enumeration_default.value"][keypos] 
-        print "Indexed on %s to get %s for %s" % (def_index_val,`result`,`val_to_index`)
-        return result
+    if the_func:   #attempt to calculate it
+        <<Execute pythonised dREL method>>
+    if result is None:   # try defaults
+        <<Work out default value of dataname>>
     # read it in
-    if not the_func:   #can't do anything else
+    if result is None:   #can't do anything else
         raise KeyError, 'No way of deriving item %s' % key
-    the_category = self[key]["_name.category_id"]
-    the_type = self[the_category]["_definition.class"]
-    #global_table = globals()
-    #global_table.update(self.ddlm_functions)
-    print 'Executing function for %s:' % key
-    #print the_func
-    exec the_func in globals(),locals() #will access dREL functions, puts "pyfunc" in scope
-    # print 'in following global environment: ' + `global_table`
-    result = pyfunc(self,cifdata)
-    #print "Function returned %s" % `result`
     # now try to insert the new information into the right place
     # find if items of this category already appear...
     if store_value: 
-          cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
-          has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
-          if len(has_cat_names)>0:
-               target_loop = cifdata.GetLoop(has_cat_names[0])
-               target_loop[key] = result      #lengths must match or else!!
-          else:
-               cifdata[key] = result
+          # try to change any matrices etc. to lists
+          the_category = self[key]["_name.category_id"]
+          if self[the_category].get('_definition.class','Set')=='Loop':
+              # our result is looped, this only gets the simple structures
+              if hasattr(result[0],'dtype'):    #numpy object
+                  out_result = [a.tolist() for a in result]
+              else:
+                  out_result = result
+              cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
+              has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
+              if len(has_cat_names)>0:
+                  target_loop = cifdata.GetLoop(has_cat_names[0])
+                  target_loop[key] = out_result      #lengths must match or else!!
+              else:
+                  cifdata[key] = out_result
+          else: 
+              if hasattr(result,'dtype'):
+                  if result.size > 1:
+                      cifdata[key] = StarFile.StarList(result.tolist())
+                  else:
+                      cifdata[key] = result.item(0)
+              else:
+                  cifdata[key] = result
     return result
+
+@ Executing a dREL method.  The execution defines a function, 'pyfunc' which is
+then itself executed in global scope.
+
+<<Execute pythonised dREL method>>=
+#global_table = globals()
+#global_table.update(self.ddlm_functions)
+print 'Executing function for %s:' % key
+#print the_func
+exec the_func in globals(),locals() #will access dREL functions, puts "pyfunc" in scope
+# print 'in following global environment: ' + `global_table`
+result = pyfunc(self,cifdata)
+#print "Function returned %s" % `result`
+
+@ Aliases.  If we have this item under a different name, find it and
+return it immediately after putting it into the correct type. We could
+be passed either the dictionary defined dataname, or any of its
+previous names. We have stored our aliases as a table indexed by
+dictionary-defined dataname in order to potentially translate from old
+to new datanames (not yet implemented).  Once we find a dataname that
+is present in the datafile, we return it.  Note that we have two types
+of check: in one we are given an old-style dataname, and have to find
+the new or other old version (in which case we have to check the key
+of the table) and in the other check we are given the latest version
+of the dataname and have to check for older names in the datafile -
+this latter is the dREL situation so we have optimised for it be
+checking that first and making the modern datanames the table keys.
+
+<<Resolve using aliases>>=
+# check for aliases
+# check for an older form of a new value
+found_it = [k for k in self.alias_table.get(key,[]) if cifdata.has_key(k)]
+if len(found_it)>0:
+    corrected_type = self.change_type(key,cifdata[found_it[0]])
+    return corrected_type
+# now do the reverse check - any alternative form
+alias_name = [a for a in self.alias_table.items() if key in a[1]]
+print 'Aliases for %s: %s' % (key,`alias_name`)
+if len(alias_name)==1:
+    key = alias_name[0][0]   #actual definition name
+    if cifdata.has_key(key): return self.change_type(key,cifdata[key])
+    found_it = [k for k in alias_name[0][1] if cifdata.has_key(k)]
+    if len(found_it)>0:
+        return self.change_type(key,cifdata[found_it[0]])
+elif len(alias_name)>1:
+    raise CifError, 'Dictionary error: dataname alias appears in different definitions: ' + `alias_name`
+
+@ Using the defaults system. We also check out any default values
+which we could return in case of error.  Note that ddlm adds the
+'_enumerations.def_index_id' as an alternative way to derive a value
+from a table.  During development, we deliberately allow errors
+arising from the method to be propagated so that we can see anything
+that might be wrong.
+
+<<Work out default value of dataname>>=
+if def_val: return self.change_type(key,def_val)
+if def_index_val:            #derive a default value
+    index_vals = self[key]["_enumeration_default.index"]
+    val_to_index = cifdata[def_index_val]     #what we are keying on
+    if self[def_index_val]['_type.contents'] in ['Code','Name','Tag']:
+        lcase_comp = True
+        index_vals = [a.lower() for a in index_vals]
+    # Handle loops
+    if isinstance(val_to_index,ListType):
+        if lcase_comp:
+            val_to_index = [a.lower() for a in val_to_index]
+        keypos = [index_vals.index(a) for a in val_to_index]
+        result = map(lambda a:self[key]["_enumeration_default.value"][a] ,keypos)
+    else:
+        if lcase_comp:
+            val_to_index = val_to_index.lower()
+        keypos = index_vals.index(val_to_index)   #value error if no such value available
+        result = self[key]["_enumeration_default.value"][keypos]
+    result = self.change_type(key,result)
+    print "Indexed on %s to get %s for %s" % (def_index_val,`result`,`val_to_index`)
 
 @ In the single case of executing dREL methods, we wish to return numpy
 Arrays from our __getitem__ so that the mathematical operations proceed
@@ -2356,6 +2394,11 @@ handle the various processing tasks.  This routine is the one that will
 create the arrays from the StarList types, so needs access to numpy.  However,
 this routine is only called if a DDLm dictionary has been provided, so we
 should still have no Numpy dependence for non DDLm cases
+
+For safety, we check that our object is really string-valued.  In practice,
+this means that it is either a string, a list of strings, or a list of
+StarLists as these are the only datastructures that an as-parsed file will
+contain.
 
 <<Convert string to appropriate type>>=
 def change_type(self,itemname,inval):
