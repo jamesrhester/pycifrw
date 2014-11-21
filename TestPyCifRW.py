@@ -1263,7 +1263,7 @@ class DicEvalTestCase(unittest.TestCase):
         del self.fb[dataname]
         result = self.fb[dataname]
         if scalar:
-            print 'Target: %d  Result %d' % (target,result)
+            print 'Target: %f  Result %f' % (target,result)
             self.failUnless(abs(target-result)<0.01)
         else:
             self.assertEqual(target,result,"Target = %s, Result = %s" % (target,result))
@@ -1334,8 +1334,8 @@ class DicStructureTestCase(unittest.TestCase):
 if __name__=='__main__':
      global testdic
      testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")
-     suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
-     #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
+     suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)

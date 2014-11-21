@@ -31,13 +31,13 @@ The 'loopable' argument is a table of categories that are loopable, with the val
 being (key_id, datanames). 
 
 <<AST builder>>=
-def make_python_function(in_ast,func_name,targetname,special_ids=[{}],cat_meth=False, 
+def make_python_function(in_ast,func_name,targetname, special_ids=[{}],cif_dic=None,cat_meth=False, 
                          func_def = False, have_sn=True,loopable={},debug=None,depends=False):
     """Convert in_ast to python code"""
     if debug is not None:
         print "incoming AST:"
         print `in_ast`
-    func_text,withtable,dependencies,cur_row = start_traverse(in_ast,target_id=targetname,cat_meth=cat_meth,loopable=loopable,debug=debug,func=func_def)
+    func_text,withtable,dependencies,cur_row = start_traverse(in_ast,target_id=targetname,cat_meth=cat_meth,loopable=loopable,debug=debug,func=func_def,cif_dic=cif_dic)
     if debug is not None:
         print 'Start========'
         print func_text
@@ -93,29 +93,30 @@ number of packets during execution of the method.
     map_names = ",".join(actual_names)
     one_pack_names = [a+"[packet_no]" for a in actual_names]
     one_packet_each = ",".join(one_pack_names)
-    preamble = "def %s(self,ciffile,packet_no=-1):\n" % (func_name)
-    preamble +="    def drel_func(dic,cifdata,%s):\n" % dummy_vars
+    preamble = "def %s(ciffile,packet_no=-1):\n" % (func_name)
+    preamble +="    def drel_func(cifdata,%s):\n" % dummy_vars
     # the actual function gets inserted here
     end_body=      "\n    if packet_no < 0:   #map\n"
     if cur_row and len(actual_names) > 1:    #i.e. have real names from category
         end_body +="        __row_id = range(len(%s))\n" % actual_names[0]
-    elif cur_row and len(actual_names)==1:
-        end_body += "       cat_names = self.names_in_cat('%s')\n" % getcatname(targetname)[0]
+    elif cur_row and len(actual_names)==1:   #so no actual names available
+        
+        end_body += "       cat_names = ciffile.dictionary.names_in_cat('%s')\n" % getcatname(targetname)[0]
         end_body += "       have_name = [a for a in cat_names if ciffile.has_key(a)]\n"
         end_body += "       if len(have_name)>0:\n"
         end_body += "           full_length = len(ciffile[have_name[0]])\n"
         end_body += "           __row_id = range(full_length)\n"
         end_body += "       else:\n"
         end_body += "           return []\n"
-    end_body+=      "       return map(lambda %s: drel_func(self,ciffile,%s),%s)\n" % (dummy_vars,dummy_vars,map_names)
+    end_body+=      "       return map(lambda %s: drel_func(ciffile,%s),%s)\n" % (dummy_vars,dummy_vars,map_names)
     end_body+=     "    else:\n"
-    end_body+=     "        return drel_func(self,ciffile,%s)\n" % one_packet_each
+    end_body+=     "        return drel_func(ciffile,%s)\n" % one_packet_each
 
 @ Un'with'ed data can simply be called with the dictionary and ciffile, with no
 need for any extra variables
 
 <<Create function header for unlooped data>>=
-    preamble = "def %s(self,ciffile):\n" % func_name
+    preamble = "def %s(ciffile):\n" % func_name
     end_body = ""
 
 @ The AST traverser is a recursive function which is passed a node.
@@ -151,11 +152,12 @@ The [[need_current_row]] entry is fed back from the traverse and indicates that
 the current function will require access to the current packet.
 
 <<AST traverser>>=
-def start_traverse(in_node,target_id=None,loopable={},cat_meth=False,debug=None, func=False):
+def start_traverse(in_node,target_id=None,loopable={},cat_meth=False,debug=None, func=False,
+                  cif_dic=None):
   special_info = {"special_id":[{}],"target_id":target_id,"withtable":{},"sub_subject":"",
                   "depends":set(),"loopable_cats":loopable,"packet_vars":{},
                   "need_current_row":False}
-  # create an virtual enclosing 'with' statement
+  # create a virtual enclosing 'with' statement
   if target_id is not None and not cat_meth and not func:
       cat,name = getcatname(target_id)
       special_info["special_id"][-1].update({"_"+cat:[cat,"",False]})
@@ -185,6 +187,9 @@ def start_traverse(in_node,target_id=None,loopable={},cat_meth=False,debug=None,
   # remove target id from dependencies
   if special_info["target_id"] is not None:
       special_info["depends"].discard(special_info["target_id"].lower())
+  if not special_info.get("have_drel_target",False):
+      print 'WARNING: no assignment to __dreltarget in %s (this is OK for category methods)' % `target_id`
+      print result
   return result,special_info["withtable"],special_info["depends"],special_info["need_current_row"]
 
 @  These are the simple constants that we have detected.
@@ -289,7 +294,7 @@ elif node_type == "SUBSCRIPTION":  # variable, single expression
         key_item = "_"+newid[0]+"."+special_info["loopable_cats"][newid[0]][0]   #key name
         special_info["depends"].add(key_item.lower())
         get_loop = "ciffile.GetKeyedSemanticPacket(%s,'%s')" % (traverse_ast(in_node[2]),newid[0])
-        special_info["sub_subject"] = "_"+newid[0]+"."  #in case of attribute reference following
+        special_info["sub_subject"] = newid[0]  #in case of attribute reference following
         print "Set sub_subject to %s" % special_info["sub_subject"]
         return get_loop
     else:
@@ -300,7 +305,7 @@ elif node_type == "SUBSCRIPTION":  # variable, single expression
 @  Attribute references.  We need to catch all attribute references to special
 variables (those defined by loop or with statements).  For ``with'' variables, we
 create a dummy variable for every attribute reference, keyed by the actual
-dataname formed from the variable.object syntax.  We store the order that
+dataname looked up via the (cat,obj) tuple.  We store the order that
 it appears in the function call that is created, so that we can include the function
 within a 'map' statement and give the correct order of items.  So the withtable
 has syntax {``dataname'':(dummyname,dummyorder)}.
@@ -313,12 +318,16 @@ contains.  Note also that this access can be delayed by assigning to the
 packet (e.g. a = atom_site[label]; b = a.xyz), so we check the list of
 such assignments kept in special_info[``packet_vars''].
 
-In a further twist, when keyed access followed by attribute lookup is performed on a non-aliased category, that category should have an underscore as the final result will be a
-dataname.  So we need to check for this construction before deciding how
-to translate the 'primary' part of the construction to Python.
+In a further twist, when keyed access followed directly by attribute
+lookup in a single primary is performed on an explicit category, that
+category should have an underscore prepended on the principle the
+final result will be a dataname.  So we need to check for this
+construction before deciding how to translate the 'primary' part of
+the construction to Python.
 
-Note also that we should not assume that a dataname is constructed as ``_category.object''.
-Rather, we should look up the correct form of the dataname using the provided dictionary.
+Note also that we should not assume that a dataname is constructed as
+``_category.object''.  Rather, we should look up the correct form of
+the dataname using the provided dictionary.
 
 <<Process attribute reference>>=
 elif node_type == "ATTRIBUTE":  # id/tag , att
@@ -331,36 +340,46 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
         if newid: break
     if newid:
         #catch our output name
-        var_name = "_" + newid[0].lower()+"." + in_node[2].lower()
-        if var_name == special_info.get("target_id","").lower():
+        true_name = cif_dic.get_name_by_cat_obj(newid[0].lower(),in_node[2].lower()).lower()
+        if true_name == special_info.get("target_id","").lower():
                 outstring = "__dreltarget"
+                special_info["have_drel_target"] = True
         # if we are looping, we add a loop prefix. If we are withing an
         # unlooped category, we put the full name back.
         elif newid[2] or (not newid[2] and not newid[1]):   # looping or simple with
-            outstring = "ciffile[" + '"' +var_name +'"]'
-            special_info["depends"].add(var_name)
+            outstring = "ciffile[" + '"' +true_name +'"]'
+            special_info["depends"].add(true_name)
             if newid[1]:  # a loop statement requires an index
                 outstring += "[" + newid[1]+ "]"
         else:   # a with statement; capture the name and create a dummy variable        
-            if not special_info["withtable"].has_key(var_name):  #new
+            if not special_info["withtable"].has_key(true_name):  #new
                 position = len(special_info["withtable"])
                 new_var = "__w%d" % position
-                special_info["withtable"][var_name] = (new_var,position)
-            outstring += special_info["withtable"][var_name][0]
-            special_info["depends"].add(var_name.lower())
-    elif in_node[1][0] == "ATOM" and primary[0] == "_":   # a plain item name 
-        fullname = (primary + "." + in_node[2]).lower()
+                special_info["withtable"][true_name] = (new_var,position)
+            outstring += special_info["withtable"][true_name][0]
+            special_info["depends"].add(true_name)
+    elif in_node[1][0] == "ATOM" and primary[0] == "_":   # a cat/obj name
+        fullname = cif_dic.get_name_by_cat_obj(primary,in_node[2]).lower()
         # a simple cat.obj dataname from the dictionary
         if special_info.get("target_id","").lower() == fullname:
             outstring = "__dreltarget"
+            special_info["have_drel_target"] = True
         else:
             special_info["depends"].add(fullname)
             outstring = "ciffile['%s']" % fullname
     else: # default to Python attribute access
         # check for packet variables
-        special_info["sub_subject"] = special_info["packet_vars"].get(primary,special_info["sub_subject"])
-        outstring = "getattr(" + primary + ",'" + special_info['sub_subject'] + in_node[2] + "')"
-        special_info['depends'].add(special_info['sub_subject'] + in_node[2])
+        if special_info["packet_vars"].has_key(primary):
+            real_cat = special_info["packet_vars"][primary]
+            fullname = cif_dic.get_name_by_cat_obj(real_cat,in_node[2])
+            special_info['depends'].add(fullname)
+        elif special_info["sub_subject"]:
+            fullname = cif_dic.get_name_by_cat_obj(special_info["sub_subject"],in_node[2])
+            special_info['depends'].add(fullname)
+        else:  # not anything special
+            fullname = in_node[2]
+        outstring = "getattr(" + primary + ",'" + fullname + "')"
+        # sub_subject no longer relevant after attribute resolution
         special_info['sub_subject'] = ""
     return outstring
 
@@ -459,12 +478,13 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     special_info['special_id'][-1].update({alias_id:var_info})
     # now emit some text: first to find the length of the category
     # loopable cats contains a list of names defined for the category
-    catnames = ["_"+cat_id + "." + a for a in special_info["loopable_cats"][cat_id][1]]
+    catnames = set([a[1] for a in cif_dic.cat_obj_lookup_table.items() if a[0][0]==cat_id.lower()])
     outstring = "__pycitems = " + repr(catnames)
     outstring += "\nprint 'names in cat = %s' % `__pycitems`"
     outstring += "\n" + "__pycitems = filter(lambda a:ciffile.has_key(a),__pycitems)"
     outstring += "\nprint 'names in cat -> %s' % `__pycitems`\n"
-    special_info["depends"].add("_"+cat_id+"."+special_info["loopable_cats"][cat_id][0].lower())  #add key as a dependency
+    cat_key = cif_dic[cat_id]['_category.key_id']   #take official key
+    special_info["depends"].add(cat_key)  #add key as a dependency
     if var_info[2] == True:
         outstring += "\n" + "__loop_range%d = range(len(ciffile[__pycitems[0]]))" % loop_num
     else:
@@ -580,7 +600,7 @@ elif node_type == "FANCY_ASSIGN":  # [1] is cat name, [2] is list of objects
     catname = in_node[1]
     outstring = ""
     for obj,value in in_node[2]:
-        real_id = "_" + catname + "." + obj
+        real_id = cif_dic.get_name_by_cat_obj(catname, obj)
         newvalue = traverse_ast(value)
         outstring = outstring + "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (real_id,real_id,newvalue)
     return outstring 

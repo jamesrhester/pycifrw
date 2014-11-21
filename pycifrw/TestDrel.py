@@ -85,7 +85,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
         realfunc = py_from_ast.make_python_function(res,"myfunc",'_a.b',have_sn=False)
         if debug: print "-> %s" % realfunc
         exec realfunc
-        answer = myfunc(self,self)
+        answer = myfunc(self)
         if debug: print " -> %s" % `answer`
         if not array:
             self.failUnless(answer == right_value)
@@ -247,7 +247,7 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        realfunc = py_from_ast.make_python_function(res,"myfunc",varname,have_sn=False)
        if debug: print "-> %s" % realfunc
        exec realfunc
-       self.failUnless(myfunc(self,self) == right_value)
+       self.failUnless(myfunc(self) == right_value)
 
    def test_do_stmt(self):
        """Test how a do statement comes out"""
@@ -361,7 +361,7 @@ class MoreComplexTestCase(unittest.TestCase):
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_othertotal.a",have_sn=False)
        exec realfunc
-       othertotal = myfunc(self,self)
+       othertotal = myfunc(self)
        self.failUnless(othertotal==55)
 
    def test_complex_if(self):
@@ -386,7 +386,7 @@ class MoreComplexTestCase(unittest.TestCase):
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_res.a",have_sn=False)
        exec realfunc
-       b = myfunc(self,self)
+       b = myfunc(self)
        print "if returns " + `b` 
        self.failUnless(b==('B', 'Possible mismatch between cell angles and cell setting'))
 
@@ -408,7 +408,7 @@ class MoreComplexTestCase(unittest.TestCase):
        realfunc = py_from_ast.make_python_function(res,"myfunc","geom_angle",cat_meth = True,have_sn=False)
        print "Fancy assign: %s" % res[0]
        exec realfunc
-       b = myfunc(self,self)
+       b = myfunc(self)
        print "Geom_angle.angle = %s" % b['_geom_angle.value']
        self.failUnless(b['_geom_angle.value']==[1,2,3,4,5])
 
@@ -443,20 +443,20 @@ class WithDictTestCase(unittest.TestCase):
         ls         =   List ( a.label, "1_555" )
         atomlist ++=   [ls, axyz, cxyz, radb, radc, 0]
      }
-     _a.b = atomlist
+     _geom_bond.id = atomlist
 """    
        loop_cats = {"atom_site":["label",["fract_xyz","type_symbol","label"]],
                     "atom_type":["id",["id","radius_bond","radius_contact"]]}
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
-       realfunc,dependencies = py_from_ast.make_python_function(res,"myfunc","_a.b",cat_meth=True,
-                   loopable=loop_cats,have_sn=False,depends=True)
+       realfunc,dependencies = py_from_ast.make_python_function(res,"myfunc","_geom_bond.id",cat_meth=True,
+                   loopable=loop_cats,have_sn=False,depends=True,cif_dic=testdic)
        print 'Simple function becomes:'
        print realfunc
        print 'Depends on: ' + `dependencies`
        exec realfunc
        # Add drel functions for deriving items
        testdic.initialise_drel()
-       b = myfunc(testdic,self.testblock)
+       b = myfunc(self.testblock)
        print "subscription returns " + `b` 
 
    def test_with_stmt(self):
@@ -473,12 +473,12 @@ class WithDictTestCase(unittest.TestCase):
            }"""
        loopable_cats = {}   #none looped
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","_exptl.method")
+       realfunc = py_from_ast.make_python_function(res,"myfunc","_exptl.method",cif_dic=testdic)
        print "With statement -> \n" + realfunc
        exec realfunc
        # attach dictionary  
        self.testblock.assign_dictionary(self.testdic)
-       newmeth = myfunc(None,self.testblock)
+       newmeth = myfunc(self.testblock)
        print 'exptl method now %s' % newmeth 
        self.failUnless(newmeth == "single-crystal diffraction")
 
@@ -487,30 +487,33 @@ class WithDictTestCase(unittest.TestCase):
        teststrg = """ 
        with t as atom_type
        {
-       t.test = t.number_in_cell * 10
+       t.analytical_mass_percent = t.number_in_cell * 10
        }
        """
        loopable_cats = {'atom_type':["id",["id","number_in_cell"]]}   #
        ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.test",loopable=loopable_cats)
+       realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.analytical_mass_percent",
+                                                   cif_dic=testdic,loopable=loopable_cats)
        print "With statement for looped category -> \n" + realfunc
        exec realfunc
        #  
-       atmass = myfunc(None,self.testblock)
+       atmass = myfunc(self.testblock)
        print 'test value now %s' % `atmass`  
        self.failUnless(atmass == [120,280,240])
        
    def test_loop_with_stmt_2(self):
        """Test with statement on a looped category, no aliasing"""
        teststrg = """ 
-       _atom_type.test = _atom_type.number_in_cell * 10
+       _atom_type.analytical_mass_percent = _atom_type.number_in_cell * 10
        """
        loopable_cats = {'atom_type':["id",["id",'number_in_cell','test']]}   #
        ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.test",loopable=loopable_cats)
+       realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.analytical_mass_percent",
+                                                   loopable=loopable_cats,
+                                                   cif_dic=testdic)
        print "With statement for looped category -> \n" + realfunc
        exec realfunc
-       atmass = myfunc(None,self.testblock)
+       atmass = myfunc(self.testblock)
        print 'test value now %s' % `atmass`  
        self.failUnless(atmass == [120,280,240])
 
@@ -523,21 +526,23 @@ class WithDictTestCase(unittest.TestCase):
        res = self.parser.parse(teststrg,lexer=self.lexer)
        print `res`
        realfunc,dependencies = py_from_ast.make_python_function(res,"myfunc","_model_site.symop",
-                                                                loopable=loopable_cats,depends=True)
+                                                                loopable=loopable_cats,depends=True,
+                                                                cif_dic=testdic)
        print realfunc, `dependencies`
        self.failUnless(dependencies == set(['_model_site.id']))
 
    def test_current_row(self):
        """Test that methods using Current_Row work properly"""
        teststrg = """
-       _atom_type.num = Current_Row() + 1
+       _atom_type.description = Current_Row() + 1
        """
        loopable_cats = {'atom_type':["id",['number_in_cell','atomic_mass','num']]}   #
        ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.num",loopable=loopable_cats)
+       realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.description",loopable=loopable_cats,
+                                                   cif_dic=testdic)
        print "Current row statement -> \n" + realfunc
        exec realfunc
-       rownums = myfunc(testdic,self.testblock)
+       rownums = myfunc(self.testblock)
        print 'row id now %s' % `rownums`
        self.failUnless(rownums == [1,2,3])
  
@@ -552,10 +557,11 @@ class WithDictTestCase(unittest.TestCase):
             """
        loopable_cats = {'atom_type':["id",['number_in_cell','atomic_mass']]}   #
        ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(ast,"myfunc","_cell.atomic_mass",loopable=loopable_cats)
+       realfunc = py_from_ast.make_python_function(ast,"myfunc","_cell.atomic_mass",loopable=loopable_cats,
+                                                   cif_dic=testdic)
        print "Loop statement -> \n" + realfunc
        exec realfunc
-       atmass = myfunc(None,self.testblock)
+       atmass = myfunc(self.testblock)
        print 'atomic mass now %f' % atmass  
        self.failUnless(atmass == 552.488)
        
@@ -587,7 +593,8 @@ class WithDictTestCase(unittest.TestCase):
                         'atom_type_scat':["id",["id","dispersion"]],
                         'refln':["hkl",["hkl","form_factor_table"]]}   #
        ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(ast,"myfunc","_refln.F_complex",loopable=loopable_cats)
+       realfunc = py_from_ast.make_python_function(ast,"myfunc","_refln.F_complex",loopable=loopable_cats,
+                                                   cif_dic=testdic)
        print "Incoming AST: " + `ast`
        print "F_complex statement -> \n" + realfunc
        exec realfunc
@@ -607,7 +614,7 @@ class WithDictTestCase(unittest.TestCase):
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_model_site.adp_matrix_beta",
                                                    depends = True,have_sn=False,
-                                                        loopable=loopable)
+                                                        loopable=loopable,cif_dic=testdic)
        print 'model_site.adp_matrix_beta becomes...'
        print realfunc
        print deps
@@ -624,11 +631,11 @@ class WithDictTestCase(unittest.TestCase):
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_model_site.symop",
                                                    depends = True,have_sn=False,
-                                                        loopable=loopable)
+                                                        loopable=loopable,cif_dic=testdic)
        print realfunc
        exec realfunc
        self.testblock.assign_dictionary(testdic)
-       b = myfunc(testdic,self.testblock)
+       b = myfunc(self.testblock)
        print 'symops are now ' + `b`
        self.failUnless(b[1] == '1_555')
       

@@ -433,6 +433,8 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
         self.ddlm_normalise()
         self.ddlm_import()      #recursively calls this routine
         self.create_alias_table()
+        self.create_cat_obj_table()
+        self.create_cat_key_table()
         if not self.do_minimum:
             print "Doing full dictionary initialisation" 
             self.initialise_drel()
@@ -483,8 +485,6 @@ call this function separately at a later stage if needed.
 <<Initialise dREL functions>>=
 def initialise_drel(self):
     """Parse drel functions and prepare data structures in dictionary"""
-    self.create_cat_obj_table()
-    self.create_cat_key_table()
     self.ddlm_parse_valid() #extract validity information from data block
     self.transform_drel()   #parse the drel functions
     self.add_drel_funcs()   #put the drel functions into the namespace
@@ -978,7 +978,7 @@ accordingly.
 <<Create category/object table>>=
 def create_cat_obj_table(self):
     """Populate a table indexed by (cat,obj) and returning the correct dataname"""
-    base_table = dict([((self[a].get('_name.category_id',''),self[a].get('_name.object_id','')),self[a].get('_definition.id','')) \
+    base_table = dict([((self[a].get('_name.category_id','').lower(),self[a].get('_name.object_id','').lower()),self[a].get('_definition.id','')) \
                        for a in self.keys() if self[a].get('_definition.scope','Item')=='Item'])
     self.loopable_cats = [a.lower() for a in self.keys() if self[a].get('_definition.class','')=='Loop']
     loopers = [self.get_immediate_children(a) for a in self.loopable_cats]
@@ -996,11 +996,11 @@ def create_cat_obj_table(self):
             # store child names
             extra_names += nn
           # add all child names to the table
-          child_names = [(self[n]['_name.object_id'],self[n]['_definition.id']) for n in self.names_in_cat(child_cat) if self[n].get('_definition.scope','Item')=='Item']
+          child_names = [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) for n in self.names_in_cat(child_cat) if self[n].get('_definition.scope','Item')=='Item']
           child_names += extra_names
           extra_table.update(dict([((parent_cat,obj),name) for obj,name in child_names]))
         # and finally, add our own names to the return list
-        child_names += [(self[n]['_name.object_id'],self[n]['_definition.id']) for n in self.names_in_cat(parent_cat) if self[n].get('_definition.scope','Item')=='Item']
+        child_names += [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) for n in self.names_in_cat(parent_cat) if self[n].get('_definition.scope','Item')=='Item']
         return child_names
     [expand_base_table(parent,child) for parent,child in expand_list.items()]
     print 'Expansion cat/obj values: ' + `extra_table`
@@ -1173,12 +1173,18 @@ def remove_definition(self,defname):
         for cc in child_cats: del self.cat_map[cc]
     del self[defname]
 
-@ The DDLm architecture identifies a data definition by (category,object) and by
-the actual textual dataname which appears in the data file.  Because of category
+@ The DDLm architecture identifies a data definition by (category,object) which
+identifies a unique textual dataname appearing in the data file.  Because of category
 joins when nested categories are looped, a single dataname may be referred to
 by several different category identifiers.  The [[get_name_by_cat_obj]] routine
 will search all loop categories within the given category's hierarchy until
 it finds the appropriate one.
+
+If [[give_default]] is True, the default construction '_catid.objid'
+is returned if nothin is found in the dictionary.  This should only be
+used during testing as the lack of a corresponding definition in the
+dictionary means that it is unlikely that anything sensible will
+result.
 
 <<Getting category information>>=
 def get_cat_obj(self,name):
@@ -1186,21 +1192,18 @@ def get_cat_obj(self,name):
     cat,obj = name.split('.')
     return (cat.strip('_'),obj)
     
-def get_name_by_cat_obj(self,category,object):
+def get_name_by_cat_obj(self,category,object,give_default=False):
     """Return the dataname corresponding to the given category and object"""
-    if self[category].get('_definition.class',"Set")!="Loop":
-        return '_'+category+'.'+object
-    child_list = self.get_child_list(category)
-    real_children = ['_'+a+"."+object for a in child_list if self[a].get('_definition.class','Set')=="Loop"]
-    real_dataname = [a for a in real_children if self.has_key(a)]
-    if len(real_dataname)==1:
-        return real_dataname[0]
-    elif len(real_dataname)>1:
-        print "Unable to unambiguously identify name %s.%s" % (category,object)
-        return None
+    if category[0] == '_':    #accidentally left in
+       true_cat = category[1:].lower()
     else:
-        print "No such dataname: %s.%s" % (category,object) 
-        return None
+       true_cat = category.lower()
+    try:
+        return self.cat_obj_lookup_table[(true_cat,object.lower())]
+    except KeyError:
+        if give_default:
+           return '_'+true_cat+'.'+object
+    raise KeyError, 'No such category,object in the dictionary: %s %s' % (true_cat,object)
 
 @ Dictionaries have the category-wide information in the category
 definition area.  We create a map from data block / save frame header to
@@ -2214,7 +2217,8 @@ def transform_drel(self):
             continue
         # Construct the python method
         pyth_meth = py_from_ast.make_python_function(meth_ast,"pyfunc",target_id,
-                                                                   loopable=loop_info)
+                                                                   loopable=loop_info,
+                                                     cif_dic = self)
         save_overwrite = self[derivable].overwrite
         self[derivable].overwrite = True
         self[derivable]["_method.py_expression"] = pyth_meth
@@ -2242,7 +2246,7 @@ def add_drel_funcs(self):
     for funcname,funcbody in funcnames:
         parser.target_id = funcname
         res_ast = parser.parse(funcbody)
-        py_function = py_from_ast.make_python_function(res_ast,None,targetname=funcname,func_def=True,loopable=loop_info)
+        py_function = py_from_ast.make_python_function(res_ast,None,targetname=funcname,func_def=True,loopable=loop_info,cif_dic = self)
         #print 'dREL library function ->\n' + py_function
         global_table = globals()
         # global_table.update(self.ddlm_functions)
@@ -2311,7 +2315,7 @@ print 'Executing function for %s:' % key
 #print the_func
 exec the_func in globals(),locals() #will access dREL functions, puts "pyfunc" in scope
 # print 'in following global environment: ' + `global_table`
-result = pyfunc(self,cifdata)
+result = pyfunc(cifdata)
 #print "Function returned %s" % `result`
 
 @ Aliases.  If we have this item under a different name, find it and
