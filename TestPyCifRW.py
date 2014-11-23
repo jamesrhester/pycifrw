@@ -1331,6 +1331,10 @@ class DicStructureTestCase(unittest.TestCase):
         target = self.fb['_atom_type.radius_bond']
         self.failUnless(0.77 in target)
 
+    def testCatObjKey(self):
+        """Test that keys are correctly handled by the cat/obj table"""
+        self.assertEqual(testdic.get_name_by_cat_obj('atom_site','key'),"_atom_site.key")
+
 if __name__=='__main__':
      global testdic
      testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")

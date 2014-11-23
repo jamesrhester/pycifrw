@@ -75,6 +75,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
         #create our lexer and parser
         self.lexer = drel_lex.lexer
         self.parser = drel_ast_yacc.parser
+        self.dic = CifFile.CifDic("dic_for_tests.dic",grammar="DDLm")
 
     def create_test(self,instring,right_value,debug=False,array=False):
         """Given a string, create and call a function then check result"""
@@ -82,7 +83,8 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
            instring += '\n'
         res = self.parser.parse(instring,debug=debug,lexer=self.lexer)
         if debug: print "%s\n -> \n%s \n" % (instring,`res`)
-        realfunc = py_from_ast.make_python_function(res,"myfunc",'_a.b',have_sn=False)
+        realfunc = py_from_ast.make_python_function(res,"myfunc",'_a.b',have_sn=False,
+                                                    cif_dic=self.dic)
         if debug: print "-> %s" % realfunc
         exec realfunc
         answer = myfunc(self)
@@ -199,6 +201,11 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
                      ,7)\n _a.b=b[0][2][0]"""
         self.create_test(test,3)
     
+    def test_list_constructor(self):
+        """Test that the list constructor works"""
+        test = """_a.b = List(1,2)"""
+        self.create_test(test,[1,2])
+
     def test_non_python_ops(self):
         """Test operators that have no direct Python equivalents"""
         test_expr = (("b = [1,2]; _a.b = [3,4]; _a.b++=b",[3,4,1,2]),
@@ -211,16 +218,17 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
     def test_tables(self):
        """Test that tables are parsed correctly"""
        teststrg = """
-       a = Table()
-       a['bx'] = 25
-       _jk.b = a
+       c = Table()
+       c['bx'] = 25
+       _a.b = c
        """
        print "Table test:"
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","_jk.b",have_sn=False)
+       realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
+                                                   cif_dic=self.dic)
        print realfunc
        exec realfunc
-       b = myfunc(self,self)
+       b = myfunc(self)
        self.failUnless(b['bx']==25)
 
     def test_subscription(self):
@@ -643,9 +651,9 @@ if __name__=='__main__':
     global testdic
     testdic = CifFile.CifDic("drel/testing/cif_core.dic",grammar="DDLm",do_minimum=True)
     #unittest.main()
-    suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
+    #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
-    #suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
+    suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase) 
     #suite = unittest.TestLoader().loadTestsFromTestCase(dRELRuntimeTestCase)
     unittest.TextTestRunner(verbosity=2).run(suite)

@@ -969,7 +969,9 @@ all the save frames appear; there may be a better alternative e.g. removing acce
 block altogether.
 
 The recursive [[expand_base_table]] function returns a dictionary of (name,definition_id) pairs
-indexing the corresponding datanames.
+indexing the corresponding datanames.  We must catch any keys and exclude them from this
+process, as they are allowed to have the same [[object_id]] as their parent key in the
+enclosing datablock and will overwrite the entry for the parent key if left in.
 
 The create_nested_key_table stores information about which keys index child categories. This
 way applications can search for any loops containing these keys and expand packets for dREL
@@ -996,11 +998,13 @@ def create_cat_obj_table(self):
             # store child names
             extra_names += nn
           # add all child names to the table
-          child_names = [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) for n in self.names_in_cat(child_cat) if self[n].get('_definition.scope','Item')=='Item']
+          child_names = [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) for n in self.names_in_cat(child_cat) if self[n].get('_definition.scope','Item')=='Item' and \
+                             self[n].get('_type.purpose','') != 'Key']
           child_names += extra_names
           extra_table.update(dict([((parent_cat,obj),name) for obj,name in child_names]))
         # and finally, add our own names to the return list
-        child_names += [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) for n in self.names_in_cat(parent_cat) if self[n].get('_definition.scope','Item')=='Item']
+        child_names += [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) for n in self.names_in_cat(parent_cat) if self[n].get('_definition.scope','Item')=='Item' and \
+                            self[n].get('_type.purpose','')!='Key']
         return child_names
     [expand_base_table(parent,child) for parent,child in expand_list.items()]
     print 'Expansion cat/obj values: ' + `extra_table`

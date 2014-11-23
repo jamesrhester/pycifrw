@@ -234,17 +234,7 @@ mentioned so that we can create a dependency tree.
         return outstring[:-1] + "]"
     <<Process subscriptions>>
     <<Process attribute reference>>
-    elif node_type == "FUNC_CALL":
-        if in_node[1] == "Current_Row":  #not a function but a keyword really
-            outstring = "__current_row"
-            special_info["need_current_row"]=True
-        else:
-            func_name,arg_prefix,postfix = get_function_name(in_node[1])
-            outstring = func_name + "( "
-            for argument in in_node[2]:
-                outstring = outstring + arg_prefix + traverse_ast(argument) + ","
-            outstring = outstring[:-1] + ")" + postfix
-        return outstring
+    <<Process function call>>
     elif node_type == "SLICE":  # primary [[start,finish,step],[...]
         outstring = traverse_ast(in_node[1]) + "["
         slice_list = in_node[2]
@@ -381,6 +371,31 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
         outstring = "getattr(" + primary + ",'" + fullname + "')"
         # sub_subject no longer relevant after attribute resolution
         special_info['sub_subject'] = ""
+    return outstring
+
+@  Function calls. We catch two special cases.  If 'Current_Row'' is called
+we set a flag to ask the calling environment to provide us with a row
+number, as the generated function is always row-independent.  
+
+The List constructor in dREL will convert a single argument into a list, or
+else multiple arguments are bundled into a list.
+
+<<Process function call>>=
+elif node_type == "FUNC_CALL":
+    if in_node[1] == "Current_Row":  #not a function but a keyword really
+        outstring = "__current_row"
+        special_info["need_current_row"]=True
+    else:
+        func_name,every_arg_prefix,postfix = get_function_name(in_node[1])
+        outstring = func_name + "( "
+        if func_name == "list" and len(in_node[2])>1:   #special case
+            outstring = outstring + "["
+        for argument in in_node[2]:
+            outstring = outstring + every_arg_prefix + traverse_ast(argument) + ","
+        outstring = outstring[:-1]
+        if func_name == "list" and len(in_node[2])>1:
+            outstring = outstring + "]"
+        outstring = outstring + ")" + postfix
     return outstring
 
 @  Compound statements
@@ -654,8 +669,8 @@ unary functions.
 def get_function_name(in_name):
     """Return the Python name of the dREL function, an argument prefix,
        and anything to be appended to the end"""
-    builtins = {"list":"list",
-                "table":"dict",
+    builtins = {"table":"dict",
+                "list":"list",
                 "int":"int",
                 "len":"len",
                 "abs":"abs",
