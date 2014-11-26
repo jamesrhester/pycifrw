@@ -59,7 +59,7 @@ def make_python_function(in_ast,func_name,targetname, special_ids=[{}],cif_dic=N
         preamble += " "*8 + "__dreltarget = {}\n" # initialise
     num_header = """
         from drel import drel_runtime
-        import math
+        import math,cmath
         try:
             import numpy
         except:
@@ -126,13 +126,16 @@ enclosing function. Variable [[special_info.[special_id] ]] is a list
 of scopes, each containing a table of variables that need to be
 specially handled, either because they correspond to datanames (first
 entry in list) or to variables that have been aliased to categories
-via loop or with statements.  A variable defined in a loop statement
-will also have a loop index that needs to be incremented and used to
-index a packet; this is the second entry in the list indexed by the
-variable alias. The second entry is also used to hold the dummy
-variable for the 'with' statement.  The generated function can thus be mapped
-across the keys of the with table to calculate the whole column of a
-category.
+via loop or with statements.  The scoping is not used particularly
+often in the following code as the example methods don't really test
+out the scoping.
+
+A variable defined in a loop statement will also have a loop index
+that needs to be incremented and used to index a packet; this is the
+second entry in the list indexed by the variable alias. The second
+entry is also used to hold the dummy variable for the 'with'
+statement.  The generated function can thus be mapped across the keys
+of the with table to calculate the whole column of a category.
 
 The final boolean entry determines whether the second entry is for looping (True) or
 not (False).
@@ -151,12 +154,16 @@ without the category ID.
 The [[need_current_row]] entry is fed back from the traverse and indicates that
 the current function will require access to the current packet.
 
+The [[rhs]] is an entry to indicate whether or not we are dealing with the rhs
+of an assignment. If False, then we are dealing with the lhs, and if None, then
+we are not in an assignment.
+
 <<AST traverser>>=
 def start_traverse(in_node,target_id=None,loopable={},cat_meth=False,debug=None, func=False,
                   cif_dic=None):
   special_info = {"special_id":[{}],"target_id":target_id,"withtable":{},"sub_subject":"",
                   "depends":set(),"loopable_cats":loopable,"packet_vars":{},
-                  "need_current_row":False}
+                  "need_current_row":False,"rhs":None}
   # create a virtual enclosing 'with' statement
   if target_id is not None and not cat_meth and not func:
       cat,name = getcatname(target_id)
@@ -218,7 +225,13 @@ mentioned so that we can create a dependency tree.
 <<Other primaries>>=
     elif node_type == "ATOM":
         if isinstance(in_node[1],basestring):
-            return in_node[1]
+            # pick up built-in literals
+            if in_node[1].lower() == 'twopi':
+                return "(2.0 * math.pi)"
+            if in_node[1].lower() == 'pi':
+                return "math.pi"
+            else:
+                return in_node[1]
         else:
             return traverse_ast(in_node[1])
     elif node_type == "ITEM_TAG":
@@ -227,11 +240,17 @@ mentioned so that we can create a dependency tree.
         return in_node[1]
     elif node_type == "LIST":
         if len(in_node)==1:  #empty list
-           return "[]"
-        outstring = "["
+           return "StarFile.StarList([])"
+        if special_info["rhs"] == True:
+            outstring = "StarFile.StarList(["
+        else:
+            outstring = ""
         for list_elem in in_node[1:]:
             outstring = outstring + traverse_ast(list_elem) + ","
-        return outstring[:-1] + "]"
+        if special_info["rhs"] == True:
+            return outstring[:-1] + "])"
+        else:
+            return outstring[:-1]
     <<Process subscriptions>>
     <<Process attribute reference>>
     <<Process function call>>
@@ -433,8 +452,10 @@ elif node_type == "FUNC_CALL":
         for express in in_node[1]:
             outstring = outstring + traverse_ast(express) + ","
         outstring = outstring[:-1] + " in "
+        special_info["rhs"] = True
         for target in in_node[2]:
             outstring += traverse_ast(target) + ","
+        special_info["rhs"] = None
         outstring = outstring[:-1] + ":" + add_indent("\n" + traverse_ast(in_node[3]))
         return outstring
     elif node_type == "REPEAT": #REPEAT suite
@@ -493,7 +514,8 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     special_info['special_id'][-1].update({alias_id:var_info})
     # now emit some text: first to find the length of the category
     # loopable cats contains a list of names defined for the category
-    catnames = set([a[1] for a in cif_dic.cat_obj_lookup_table.items() if a[0][0]==cat_id.lower()])
+    # this might not be robust as we ignore alternative resolutions of the (cat,name) pair
+    catnames = set([a[1][0] for a in cif_dic.cat_obj_lookup_table.items() if a[0][0]==cat_id.lower()])
     outstring = "__pycitems = " + repr(catnames)
     outstring += "\nprint 'names in cat = %s' % `__pycitems`"
     outstring += "\n" + "__pycitems = filter(lambda a:ciffile.has_key(a),__pycitems)"
@@ -591,16 +613,21 @@ Note that we are assuming that only one packet subscription
 takes place per expression, which is reasonable given that 
 mathematical manipulations are not defined for packets.
 
+We also set the 'rhs' flag to allow us to construct lists as
+StarLists when on the lhs, but not the rhs.
+
 <<Assignment statements>>=
 elif node_type == "ASSIGN":  #Target_list ,assigner, expression list
     outstring = ""
     lhs_values = []
+    special_info["rhs"] = False
     for target_value in in_node[1]:
         one_value = traverse_ast(target_value)
         outstring = outstring + one_value +","
         lhs_values.append(one_value)
     lhs = outstring[:-1]
     rhs = ""
+    special_info["rhs"] = True
     for order,expression in enumerate(in_node[3]):
         rhs += traverse_ast(expression)+","
         if special_info["sub_subject"] != "":   #a full packet
@@ -610,6 +637,7 @@ elif node_type == "ASSIGN":  #Target_list ,assigner, expression list
         outstring = "%s = %s(%s,%s)" % (lhs, aug_assign_table[in_node[2]],lhs,rhs[:-1])
     else:
         outstring = "%s = %s" % (lhs,rhs[:-1])
+    special_info["rhs"] = None
     return outstring
 elif node_type == "FANCY_ASSIGN":  # [1] is cat name, [2] is list of objects
     catname = in_node[1]
@@ -619,7 +647,6 @@ elif node_type == "FANCY_ASSIGN":  # [1] is cat name, [2] is list of objects
         newvalue = traverse_ast(value)
         outstring = outstring + "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (real_id,real_id,newvalue)
     return outstring 
-
 
 @  Maths.  We have to catch vector and matrix operations and farm them out
 to numpy. Not implemented yet.  A binary maths operation is 'mathop'.  We
@@ -637,7 +664,7 @@ dREL and python, so that the AST contains the textual form of the operator.
             outstring = fix_mathops(in_node[1],first_arg,second_arg)
         return outstring
     elif node_type == "SIGN":
-        outstring = in_node[1] + traverse_ast(in_node[2])
+        outstring = "drel_runtime.drel_dot(" + in_node[1] + "1," + traverse_ast(in_node[2])+")"
         return outstring
     elif node_type == "UNARY":
         outstring = in_node[1] + " " + traverse_ast(in_node[2])
@@ -674,12 +701,15 @@ def get_function_name(in_name):
                 "int":"int",
                 "len":"len",
                 "abs":"abs",
+                "magn":"abs",
                 "atoi":"int",
                 "float":"float",
                 "matrix":"numpy.matrix",
                 "array":"numpy.array",
                 "norm":"numpy.linalg.norm",
-                "sqrt":"math.sqrt"}
+                "sqrt":"math.sqrt",
+                "exp":"math.exp",
+                "complex":"complex"}
     test_name = in_name.lower()
     target_name = builtins.get(test_name,None)
     if target_name is not None:
@@ -694,6 +724,12 @@ def get_function_name(in_name):
         return "divmod","","[1]"
     if test_name == "upper":
         return "","",".upper()"
+    if test_name == "transpose":
+        return "","",".T"
+    if test_name == 'expimag':
+        return "cmath.exp","1j*(",")"
+    if test_name in ['real','imag']:
+        return "","","." + test_name
     return in_name,"",""   #no idea
  
 @  Mathematical operations in dREL are complicated by the need to handle matrix

@@ -68,6 +68,16 @@ class dRELRuntimeTestCase(unittest.TestCase):
         self.failUnless((d == numpy.matrix([4,7,10])).any())
         self.failUnless((c == numpy.matrix([6,7,8])).any())
 
+    def testScalarVecMult(self):
+        """Test that multiplying by a scalar works"""
+        a = [1,2,3]
+        b = 4
+        c = drel_runtime.drel_dot(b,a)
+        d = drel_runtime.drel_dot(a,b)
+        self.failUnless((c == numpy.matrix([4,8,12])).any())
+        self.failUnless((d == numpy.matrix([4,8,12])).any())
+
+
 # Test simple statements
 
 class SingleSimpleStatementTestCase(unittest.TestCase):
@@ -121,7 +131,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
 
     def testList(self):
         """test parsing a list over two lines"""
-        self.create_test('_a.b = [1,2,\n 3,4,\n 5,6]',[1,2,3,4,5,6])
+        self.create_test('_a.b = [1,2,\n 3,4,\n 5,6]',StarFile.StarList([1,2,3,4,5,6]),debug=True)
 
     def testparenth(self):
         """test parsing a parenthesis over two lines"""
@@ -169,7 +179,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
     def testlists(self):
         """test list parsing"""
         test = "_a.b = ['once', 'upon', 6,7j +.5e2]"
-        self.create_test(test,['once' , 'upon' , 6 , 7j + .5e2 ])
+        self.create_test(test,StarFile.StarList(['once' , 'upon' , 6 , 7j + .5e2 ]))
 
     def test_multistatements(self):
         """test multiple statements"""
@@ -189,7 +199,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
     def test_slice_2(self):
         """Test that first/last slicing works"""
         test = "b = 'abcdef';_a.b=b[1:3]"
-        self.create_test(test,'bc',debug=True)
+        self.create_test(test,'bc')
 
     def test_paren_balance(self):
         """Test that multi-line parentheses work """
@@ -208,12 +218,12 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
 
     def test_non_python_ops(self):
         """Test operators that have no direct Python equivalents"""
-        test_expr = (("b = [1,2]; _a.b = [3,4]; _a.b++=b",[3,4,1,2]),
+        test_expr = (("b = [1,2]; _a.b = [3,4]; _a.b++=b",StarFile.StarList([3,4,1,2])),
         ("b = [1,2]; _a.b = [3,4]; _a.b+=b",[4,6]),
         ("b = 3; _a.b = [3,4]; _a.b-=b",[0,1]),
         ("b = [1,2]; _a.b = [[1,2],[3,4]]; _a.b--=b",[[3,4]]))
         for one_expr in test_expr:
-            self.create_test(one_expr[0],one_expr[1],debug=True,array=True)
+            self.create_test(one_expr[0],one_expr[1],array=True)
 
     def test_tables(self):
        """Test that tables are parsed correctly"""
@@ -245,6 +255,7 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        self.lexer = drel_lex.lexer
        self.lexer.lineno = 0
        self.parser = drel_ast_yacc.parser
+       self.dic = CifFile.CifDic("dic_for_tests.dic",grammar="DDLm")
 
    def create_test(self,instring,right_value,varname="_a.b",debug=False):
        """Given a string, create and call a function then check result"""
@@ -252,7 +263,8 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
            instring += "\n"   # correct termination
        res = self.parser.parse(instring,debug=debug,lexer=self.lexer)
        if debug: print "%s\n -> \n%s \n" % (instring,`res`)
-       realfunc = py_from_ast.make_python_function(res,"myfunc",varname,have_sn=False)
+       realfunc = py_from_ast.make_python_function(res,"myfunc",varname,have_sn=False,
+                                                   cif_dic=self.dic)
        if debug: print "-> %s" % realfunc
        exec realfunc
        self.failUnless(myfunc(self) == right_value)
@@ -260,32 +272,32 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
    def test_do_stmt(self):
        """Test how a do statement comes out"""
        teststrg = """
-       _total.a = 0
+       _a.b = 0
        dummy = 1
        do jkl = 0,20,2 {
           if (dummy == 1) print 'dummy is 1'
-          _total.a = _total.a + jkl
+          _a.b = _a.b + jkl
           }
        do emm = 1,5 {
-          _total.a = _total.a + emm
+          _a.b = _a.b + emm
           }
        """
-       self.create_test(teststrg,125,varname='_total.a')
+       self.create_test(teststrg,125)
 
    def test_do_stmt_2(self):
        """Test how another do statement comes out with long suite"""
        teststrg = """
-       _pp.p = 0
+       _a.b = 0
        geom_hbond = [(1,2),(2,3),(3,4)]
        do i= 0,1 {
           l,s = geom_hbond [i] 
           a = 'hello'
           c = int(4.5)
           bb = [1,c,a]
-          _pp.p += s
+          _a.b += s
           }
        """
-       self.create_test(teststrg,5,varname="_pp.p")
+       self.create_test(teststrg,5)
 
    def test_if_stmt(self):
        """test parsing of if statement"""
@@ -294,9 +306,9 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        d1 = 4.0
        rad1 = 2.2
        radius_bond = 2.0
-       If (d1<dmin or d1>(rad1+radius_bond)) _b.b = 5 
+       If (d1<dmin or d1>(rad1+radius_bond)) _a.b = 5 
        """
-       self.create_test(teststrg,5,varname="_b.b")
+       self.create_test(teststrg,5)
 
    def test_double_if_stmt(self):
        """test parsing of if statement"""
@@ -305,29 +317,29 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        d1 = 4.0
        rad1 = 2.2
        radius_bond = 2.0
-       If (d1<dmin or d1>(rad1+radius_bond)) _b.b = 5 
+       If (d1<dmin or d1>(rad1+radius_bond)) _a.b = 5 
 
-       if (d1>dmin or d1<(rad1+radius_bond)) _b.b = 11
-       if (5 > 6 and 6 < 4) _b = -2
+       if (d1>dmin or d1<(rad1+radius_bond)) _a.b = 11
+       if (5 > 6 and 6 < 4) _a.b = -2
        """
-       self.create_test(teststrg,11,varname="_b.b")
+       self.create_test(teststrg,11)
 
    def test_if_else(self):
        """Test that else is properly handled"""
        teststrg = """drp = 'electron'
-                     If (drp == "neutron")  _uc.u =  "femtometres"
-                     Else If (drp == "electron") _uc.u =  "volts"
-                     Else      _uc.u =  "electrons" """
-       self.create_test(teststrg,'volts',varname="_uc.u",debug=True)
+                     If (drp == "neutron")  _a.b =  "femtometres"
+                     Else If (drp == "electron") _a.b =  "volts"
+                     Else      _a.b =  "electrons" """
+       self.create_test(teststrg,'volts')
 
    def test_for_statement(self):
        """Test for statement with list"""
        teststrg = """
-       _total.a = 0
-       for [a,b] in [[1,2],[3,4],[5,6]] {
-           _total.a += a + 2*b
+       _a.b = 0
+       for [c,d] in [[1,2],[3,4],[5,6]] {
+           _a.b += c + 2*d
        }"""
-       self.create_test(teststrg,33,varname="_total.a")
+       self.create_test(teststrg,33)
 
    def test_funcdef(self):
        """Test function conversion"""
@@ -346,7 +358,7 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        exec realfunc
        retval = Closest(0.2,0.8)
        print 'Closest 0.2,0.8 returns ' + ",".join([`retval[0]`,`retval[1]`])
-       self.failUnless(retval == [1.2,1])
+       self.failUnless(retval == StarFile.StarList([1.2,1]))
 
 class MoreComplexTestCase(unittest.TestCase):
    def setUp(self):
@@ -354,20 +366,22 @@ class MoreComplexTestCase(unittest.TestCase):
        self.lexer = drel_lex.lexer
        self.lexer.lineno = 0
        self.parser = drel_ast_yacc.parser
-    
+       self.dic = CifFile.CifDic("dic_for_tests.dic",grammar="DDLm")
+
    def test_nested_stmt(self):
        """Test how a nested do statement executes"""
        teststrg = """
        total = 0
-       _othertotal.a = 0
+       _a.b = 0
        do jkl = 0,20,2 { total = total + jkl 
-          do emm = 1,5 { _othertotal.a = _othertotal.a + 1
+          do emm = 1,5 { _a.b = _a.b + 1
           } 
           }
        end_of_loop = -25.6
        """
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","_othertotal.a",have_sn=False)
+       realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
+                                                   cif_dic = self.dic)
        exec realfunc
        othertotal = myfunc(self)
        self.failUnless(othertotal==55)
@@ -387,12 +401,13 @@ class MoreComplexTestCase(unittest.TestCase):
        warn_ang = 'Possible mismatch between cell angles and cell setting'
  
        If(setting == 'triclinic') {
-         If( Abs(a-b)<d || Abs(a-c)<d || Abs(b-c)<d )          _res.a = ('B', warn_len)
-         If( Abs(alp-90)<d || Abs(bet-90)<d || Abs(gam-90)<d ) _res.a = ('B', warn_ang)
-       } else _res.a = ('None',"")
+         If( Abs(a-b)<d || Abs(a-c)<d || Abs(b-c)<d )          _a.b = ('B', warn_len)
+         If( Abs(alp-90)<d || Abs(bet-90)<d || Abs(gam-90)<d ) _a.b = ('B', warn_ang)
+       } else _a.b = ('None',"")
        """
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","_res.a",have_sn=False)
+       realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
+                                                   cif_dic = self.dic)
        exec realfunc
        b = myfunc(self)
        print "if returns " + `b` 
@@ -413,7 +428,8 @@ class MoreComplexTestCase(unittest.TestCase):
                       }
        """
        res = self.parser.parse(teststrg + "\n", lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","geom_angle",cat_meth = True,have_sn=False)
+       realfunc = py_from_ast.make_python_function(res,"myfunc","geom_angle",cat_meth = True,have_sn=False,
+                                                   cif_dic = testdic)
        print "Fancy assign: %s" % res[0]
        exec realfunc
        b = myfunc(self)
@@ -650,11 +666,11 @@ class WithDictTestCase(unittest.TestCase):
 if __name__=='__main__':
     global testdic
     testdic = CifFile.CifDic("drel/testing/cif_core.dic",grammar="DDLm",do_minimum=True)
-    #unittest.main()
+    unittest.main()
     #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
-    suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
+    #suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase) 
     #suite = unittest.TestLoader().loadTestsFromTestCase(dRELRuntimeTestCase)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    #unittest.TextTestRunner(verbosity=2).run(suite)
 

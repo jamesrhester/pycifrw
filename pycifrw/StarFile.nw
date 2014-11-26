@@ -1098,6 +1098,7 @@ the enclosing block collection (e.g. CIF or STAR file object)""")
        else:
            raise KeyError, 'No such item: %s' % key
     # we now have an item, we can try to convert it to a number if that is appropriate
+    # note numpy values are never stored but are converted to lists
     if not self.dictionary or not self.dictionary.has_key(key) or is_value: return rawitem
     return self.dictionary.change_type(key,rawitem)
       
@@ -1378,7 +1379,10 @@ fails.
 
 We define an alternative call that returns both the stored value
 and whether or not it is a non-string value.  This saves other
-routines performing the same check.
+routines performing the same check.  But any StarLists are
+considered to be unready for use as values as they may in
+fact be Arrays or Matrices and therefore require their
+type to be changed.
 
 <<Return value of item>>=
 def GetLoopItem(self,itemname):
@@ -1412,9 +1416,12 @@ def GetLoopItemValue(self,itemname):
         if s is not None: 
             return s,False
         else:
-            return v,True
+            return v,not isinstance(v,StarList)
     elif None not in s: return s,False
-    else: return v,True
+    else: 
+        if len(v)>0:
+            return v,not isinstance(v[0],StarList)
+        return v,True
 
 @ Loops.  We should distinguish two loop structures: the loop
 structures provided by the syntax, and the loop structures defined by
@@ -1961,6 +1968,7 @@ def check_stringiness(data):
        from numbers import Number
        if isinstance(data,Number): return False
        elif isinstance(data,basestring): return True
+       elif data is None:return False  #should be data are None
        else:
            for one_item in data:
                if not check_stringiness(one_item): return False

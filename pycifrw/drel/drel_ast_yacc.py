@@ -391,6 +391,16 @@ def p_exprlist(p):
         p[0] = [p[1]]
     else: p[0] = p[1] + [p[3]]
 
+# a (potentially enclosed) list of ids
+def p_id_list(p):
+    ''' id_list : ID
+                | id_list "," ID '''
+                
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = p[1] + [p[3]]
+
 # now for the compound statements. We prepare them as a "STATEMENT"
 # list for smooth processing in the simple_stmt production
 
@@ -443,8 +453,12 @@ def p_suite(p):
         p[0] = p[3]  #already have a statement block
 
 def p_for_stmt(p):
-    '''for_stmt : FOR exprlist IN testlist_star_expr suite'''
-    p[0] = ["FOR", p[2], p[4], p[5]]
+    '''for_stmt : FOR id_list IN testlist_star_expr suite
+                | FOR "[" id_list "]" IN testlist_star_expr suite '''
+    if len(p)==6:
+        p[0] = ["FOR", p[2], p[4], p[5]]
+    else:
+        p[0] = ["FOR", p[3], p[6], p[7]]
 
 def p_loop_stmt(p):
     '''loop_stmt : loop_head suite '''

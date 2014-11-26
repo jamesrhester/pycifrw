@@ -1277,8 +1277,8 @@ class DicEvalTestCase(unittest.TestCase):
     def testDensity(self):
         self.check_value('_exptl_crystal.density_diffrn')
 
-    def testReflnF(self,scalar=False):
-        self.check_value('_refln.F_calc')
+    def testReflnF(self):
+        self.check_value('_refln.F_calc',scalar=False)
 
     def testCalcOldAlias(self):
         """Test that a calculation is performed for an old dataname"""
@@ -1338,8 +1338,8 @@ class DicStructureTestCase(unittest.TestCase):
 if __name__=='__main__':
      global testdic
      testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")
-     #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
-     suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
+     suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)

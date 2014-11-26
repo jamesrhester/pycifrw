@@ -971,7 +971,10 @@ block altogether.
 The recursive [[expand_base_table]] function returns a dictionary of (name,definition_id) pairs
 indexing the corresponding datanames.  We must catch any keys and exclude them from this
 process, as they are allowed to have the same [[object_id]] as their parent key in the
-enclosing datablock and will overwrite the entry for the parent key if left in.
+enclosing datablock and will overwrite the entry for the parent key if left in. We also
+note that the example dictionary allows these types of name collisions if an item is
+intended to be identical (e.g. _atom_site_aniso.type_symbol and atom_site.type_symbol),
+so we create a short list of possible alternative names for each (cat,obj) pair.
 
 The create_nested_key_table stores information about which keys index child categories. This
 way applications can search for any loops containing these keys and expand packets for dREL
@@ -980,7 +983,7 @@ accordingly.
 <<Create category/object table>>=
 def create_cat_obj_table(self):
     """Populate a table indexed by (cat,obj) and returning the correct dataname"""
-    base_table = dict([((self[a].get('_name.category_id','').lower(),self[a].get('_name.object_id','').lower()),self[a].get('_definition.id','')) \
+    base_table = dict([((self[a].get('_name.category_id','').lower(),self[a].get('_name.object_id','').lower()),[self[a].get('_definition.id','')]) \
                        for a in self.keys() if self[a].get('_definition.scope','Item')=='Item'])
     self.loopable_cats = [a.lower() for a in self.keys() if self[a].get('_definition.class','')=='Loop']
     loopers = [self.get_immediate_children(a) for a in self.loopable_cats]
@@ -1001,7 +1004,11 @@ def create_cat_obj_table(self):
           child_names = [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) for n in self.names_in_cat(child_cat) if self[n].get('_definition.scope','Item')=='Item' and \
                              self[n].get('_type.purpose','') != 'Key']
           child_names += extra_names
-          extra_table.update(dict([((parent_cat,obj),name) for obj,name in child_names]))
+          extra_table.update(dict([((parent_cat,obj),[name]) for obj,name in child_names if (parent_cat,name) not in extra_table]))
+        # and the repeated ones get appended instead
+        repeats = [a for a in child_names if a in extra_table]
+        for obj,name in repeats:
+            extra_table[(parent_cat,obj)] += [name] 
         # and finally, add our own names to the return list
         child_names += [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) for n in self.names_in_cat(parent_cat) if self[n].get('_definition.scope','Item')=='Item' and \
                             self[n].get('_type.purpose','')!='Key']
@@ -1203,7 +1210,7 @@ def get_name_by_cat_obj(self,category,object,give_default=False):
     else:
        true_cat = category.lower()
     try:
-        return self.cat_obj_lookup_table[(true_cat,object.lower())]
+        return self.cat_obj_lookup_table[(true_cat,object.lower())][0]
     except KeyError:
         if give_default:
            return '_'+true_cat+'.'+object
@@ -2263,7 +2270,8 @@ value; (3) use default values if defined.  We resolve in this priority.  Note th
 convert to the appropriate type.
 
 The store_value flag asks us to update the ciffile object with the new value.  We remove any
-numpy dependencies before doing this.
+numpy dependencies before doing this, which means that we must recreate the numpy type
+when returning it.
 
 <<Derive item information>>=
 def derive_item(self,start_key,cifdata,store_value = False):
@@ -2280,7 +2288,7 @@ def derive_item(self,start_key,cifdata,store_value = False):
         <<Work out default value of dataname>>
     # read it in
     if result is None:   #can't do anything else
-        raise KeyError, 'No way of deriving item %s' % key
+        print 'Warning: no way of deriving item %s' % key
     # now try to insert the new information into the right place
     # find if items of this category already appear...
     if store_value: 
@@ -2288,21 +2296,34 @@ def derive_item(self,start_key,cifdata,store_value = False):
           the_category = self[key]["_name.category_id"]
           if self[the_category].get('_definition.class','Set')=='Loop':
               # our result is looped, this only gets the simple structures
-              if hasattr(result[0],'dtype'):    #numpy object
-                  out_result = [a.tolist() for a in result]
+              if result is not None and hasattr(result[0],'dtype'):    #numpy object
+                  if result[0].size > 1:
+                      out_result = [StarFile.StarList(a.tolist()) for a in result]
+                  else:
+                      def conv_from_numpy(maybe_numpy):
+                          try:
+                              return maybe_numpy.item(0)
+                          except:
+                              return maybe_numpy
+                      out_result = [conv_from_numpy(a) for a in result]
               else:
                   out_result = result
               cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
               has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
               if len(has_cat_names)>0:
                   target_loop = cifdata.GetLoop(has_cat_names[0])
+                  if out_result is None:
+                      loop_len = len(target_loop[target_loop.keys()[0]])
+                      out_result = [None]*loop_len
+                      result = out_result
                   target_loop[key] = out_result      #lengths must match or else!!
               else:
                   cifdata[key] = out_result
           else: 
-              if hasattr(result,'dtype'):
+              if result is not None and hasattr(result,'dtype'):
                   if result.size > 1:
-                      cifdata[key] = StarFile.StarList(result.tolist())
+                      out_result = StarFile.StarList(result.tolist())
+                      cifdata[key] = out_result
                   else:
                       cifdata[key] = result.item(0)
               else:
@@ -3137,9 +3158,14 @@ def convert_list_values(structure,dimension):
         return lambda a: map(element_convert,a)
     else: return element_convert
 
+@  When storing a matrix/array value as a result of a calculation, we remove the
+numpy information and instead store as a StarList.  The following routine will
+work transparently for either string or number-valued Star Lists, so we don't 
+have to worry.
+
 <<Convert a matrix value>>=
 def convert_matrix_values(valtype):
-    """Convert a dREL String-valued List structure to a numpy matrix structure"""
+    """Convert a dREL String or Float valued List structure to a numpy matrix structure"""
     # first convert to numpy array, then let numpy do the work
     try: import numpy
     except:
