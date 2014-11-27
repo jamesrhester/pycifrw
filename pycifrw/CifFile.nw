@@ -3092,7 +3092,7 @@ def convert_type(definition):
         return None
     elif container in ('Array','Matrix'): #numpy array
         return convert_matrix_values(structure)
-    return value    #unable to convert
+    return lambda a:a    #unable to convert
 
 <<Convert a single value>>=
 def convert_single_value(type_spec):

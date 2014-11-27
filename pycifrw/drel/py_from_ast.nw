@@ -691,6 +691,10 @@ aug_assign_table = {"++=":"drel_runtime.aug_append",
 in order to find out what the Python name of the given function is.  Where we have
 to provide our own function, that is also listed.  Note that this only works for
 unary functions.
+
+We force all matrices to be 64-bit floats.  If you check SeitzFromJones, you will
+find a matrix that defaults to integer type, meaning that any assignments of float
+values are rounded, thus the need for explicitly working with floats.
   
 <<Function transformer>>=
 def get_function_name(in_name):
@@ -704,7 +708,6 @@ def get_function_name(in_name):
                 "magn":"abs",
                 "atoi":"int",
                 "float":"float",
-                "matrix":"numpy.matrix",
                 "array":"numpy.array",
                 "norm":"numpy.linalg.norm",
                 "sqrt":"math.sqrt",
@@ -716,7 +719,7 @@ def get_function_name(in_name):
         return target_name,"",""
     if test_name in ['sind','cosd','tand']:
         return "math."+test_name[:-1],"math.radians(",")"
-    if test_name in ['acosd','asind','atand']:
+    if test_name in ['acosd','asind','atand','atan2d']:
         return "math.degrees(math."+test_name[:-1],"",")"
     if test_name in ['array']:
         return "numpy.array","",""
@@ -730,6 +733,8 @@ def get_function_name(in_name):
         return "cmath.exp","1j*(",")"
     if test_name in ['real','imag']:
         return "","","." + test_name
+    if test_name == 'matrix':
+        return "numpy.matrix","",".astype('float64')"
     return in_name,"",""   #no idea
  
 @  Mathematical operations in dREL are complicated by the need to handle matrix
