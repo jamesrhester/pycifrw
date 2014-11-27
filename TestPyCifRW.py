@@ -389,7 +389,7 @@ class BlockChangeTestCase(unittest.TestCase):
        kk = testloop.GetKeyedPacket("_item_name_1",4)
        self.assertEqual(getattr(jj,"_item_name#2"),"good_bye")
        self.assertEqual(getattr(kk,"_item_name#2"),"# 4")
-       self.assertRaises(KeyError,testloop.GetKeyedPacket,"_item_name_1",3)
+       self.assertRaises(ValueError,testloop.GetKeyedPacket,"_item_name_1",3)
        print 'After packet removal:'
        print str(self.cf)
 
@@ -398,12 +398,12 @@ class BlockChangeTestCase(unittest.TestCase):
        import copy
        testloop = self.cf.GetLoop("_item_name_1")
        workingpacket = copy.copy(testloop.GetPacket(0))
-       workingpacket._item_name_1 = 5
+       workingpacket._item_name_1 = '5'
        workingpacket.__setattr__("_item_name#2", 'new' )
        testloop.AddPacket(workingpacket)
        # note we assume that this adds on to the end, which is not 
        # a CIF requirement
-       self.assertEqual(testloop["_item_name_1"][4],5)
+       self.assertEqual(testloop["_item_name_1"][4],'5')
        self.assertEqual(testloop["_item_name#2"][4],'new')
 
 #
@@ -1253,7 +1253,7 @@ class DicMergeTestCase(unittest.TestCase):
 
 class DicEvalTestCase(unittest.TestCase):
     def setUp(self):
-        cc = CifFile.CifFile("pycifrw/drel/testing/data/nick2.cif",grammar="DDLm")
+        cc = CifFile.CifFile("pycifrw/drel/testing/data/nick.cif",grammar="DDLm")
         self.fb = cc.first_block()
         self.fb.assign_dictionary(testdic)
         
@@ -1289,7 +1289,7 @@ class DicEvalTestCase(unittest.TestCase):
 class DicStructureTestCase(unittest.TestCase):
     """Tests use of dictionary semantic information for item lookup"""
     def setUp(self):
-        cc = CifFile.CifFile("pycifrw/drel/testing/data/nick2.cif",grammar="DDLm")
+        cc = CifFile.CifFile("pycifrw/drel/testing/data/nick.cif",grammar="DDLm")
         self.fb = cc.first_block()
         self.fb.assign_dictionary(testdic)
 
@@ -1335,16 +1335,21 @@ class DicStructureTestCase(unittest.TestCase):
         """Test that keys are correctly handled by the cat/obj table"""
         self.assertEqual(testdic.get_name_by_cat_obj('atom_site','key'),"_atom_site.key")
 
+    def testRepeatedName(self):
+        """Test that a repeated object_id is handled correctly"""
+        self.assertEqual(testdic.cat_obj_lookup_table[('atom_site','type_symbol')],
+                         ['_atom_site.type_symbol','_atom_site_aniso.type_symbol'])
+
 if __name__=='__main__':
      global testdic
      testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")
-     suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase) 
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmImportCase)
-     unittest.TextTestRunner(verbosity=2).run(suite)
-     #unittest.main()
+     #unittest.TextTestRunner(verbosity=2).run(suite)
+     unittest.main()
 

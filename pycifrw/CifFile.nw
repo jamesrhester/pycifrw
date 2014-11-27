@@ -1015,7 +1015,12 @@ def create_cat_obj_table(self):
         return child_names
     [expand_base_table(parent,child) for parent,child in expand_list.items()]
     print 'Expansion cat/obj values: ' + `extra_table`
-    base_table.update(extra_table)
+    # append repeated ones
+    non_repeats = dict([a for a in extra_table.items() if a[0] not in base_table])
+    repeats = [a for a in extra_table.keys() if a in base_table]
+    base_table.update(non_repeats)
+    for k in repeats:
+        base_table[k] += extra_table[k]
     self.cat_obj_lookup_table = base_table
     self.loop_expand_list = expand_list
     
