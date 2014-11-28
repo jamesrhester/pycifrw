@@ -1,0 +1,111 @@
+@ Runtime functions for dREL.
+
+dREL defines some original semantics for vector and matrix appending and removing.  We implement
+the necessary functions here.
+
+<<*>>=
+import numpy
+<<Augmented assignments>>
+<<Mathematical operators>>
+
+@ Augmented assignments.  ++= is a typical append operation and does not need numpy support,
+but plain += does. 
+
+<<Augmented assignments>>=
+def aug_append(current,extra):
+    """Add the contents of extra to current"""
+    have_list = isinstance(current,list)
+    if have_list:
+        if isinstance(extra, (float,int,complex)):
+            #append a single element
+            return current + [extra]
+        elif isinstance(extra,list):
+            return current + extra
+    else:
+        raise ValueError, "Cannot append %s to %s" % (`extra`,`current`)
+
+def aug_add(current,extra):
+    """Sum the contents of extra to current"""
+    have_list = isinstance(current,list)
+    if have_list:
+        if isinstance(extra, (float,int)):
+           # requires numpy 
+           return numpy.array(current) + extra
+        elif isinstance(extra, list):
+           return numpy.array(current) + numpy.array(extra)
+    else:
+        return current + extra
+
+def aug_sub(current,extra):
+   have_list = isinstance(current,(list,numpy.ndarray))
+   if have_list:
+        if isinstance(extra, (float,int)):
+           # requires numpy 
+           return numpy.array(current) - extra
+        elif isinstance(extra, (list,numpy.ndarray)):
+           return numpy.array(current) - numpy.array(extra)
+   else:
+        return current - extra
+
+def aug_remove(current,extra):
+    """Remove extra from current. Not in formal
+       specifications"""
+    have_list = isinstance(current,list)
+    if have_list:
+        if extra in current:
+            # not efficient as we modify in place here
+            current.remove(extra)
+            return current
+    else:
+        raise ValueError, "Cannot remove %s from %s" % (`extra`,`current`)
+
+@ Multiplication requires some intelligence.  The rules of dREL are as follows:
+(1) mat * mat, vec*mat is ordinary matrix multiplication 
+(2) vec * vec is a dot product (i.e. second vector is column)
+(3) mat * vec is matrix multiplication with vec as a column vector
+
+dREL has 'Array' and 'Matrix' containers.  An array container only allows
+element-wise operations, whereas matrix containers (implicitly 2-dimensional)
+have matrix multiplication defined for them.
+
+While the dREL specs are not explicit about this, matrix multiplication only
+makes sense for 2-dimensional objects, although the DDLm type known as 'matrix' 
+describes arbitrary tensors (ddl.dic).  We explicitly check that the objects
+that are passed to this routine satisfy the requirements, i.e. any dimension
+three or more object does not have multiplication defined except by a scalar.
+
+As numpy will always return a 2-dim matrix as a result, even if it is a 
+scalar, we detect scalars and return them as such.  We leave row and column
+vectors alone.
+
+<<Mathematical operators>>=
+def drel_dot(first_arg,second_arg):
+    """Perform a multiplication on two unknown types"""
+    print "Multiply %s and %s" % (`first_arg`,`second_arg`)
+    def make_numpy(input_arg):
+        if hasattr(input_arg,'__iter__'):
+            try:
+                return numpy.matrix(input_arg),True
+            except ValueError:
+                raise ValueError, 'Attempt to multiply non-matrix object %s' % (`input_arg`)
+        return input_arg,False
+    fa,first_matrix = make_numpy(first_arg)
+    sa,second_matrix = make_numpy(second_arg)
+    if first_matrix and second_matrix:  #mult of 2 non-scalars
+        if sa.shape[0] == 1:  #is a row vector
+           as_column = sa.T
+           result = (fa * as_column).T
+        else:
+           result = fa * sa
+       # detect scalars
+        if result.size == 1:
+            return result.item(0)
+        else: return result   #leave column/row vectors alone for now
+    return fa * sa
+
+def drel_add(first_arg,second_arg):
+    """Separate string addition from the rest"""
+    if isinstance(first_arg,basestring) and isinstance(second_arg,basestring):
+        return first_arg+second_arg
+    else:
+        return numpy.add(first_arg,second_arg)

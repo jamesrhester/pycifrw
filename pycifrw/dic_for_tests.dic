@@ -1,0 +1,34 @@
+#CIF2.0
+
+data_TEST_DIC
+    _dictionary.title     TEST_DIC
+    _dictionary.class     Instance
+    _dictionary.version   0.1
+    _dictionary.ddl_conformance   3.11.04
+    _description.text     'For use in automated tests'
+    
+save_test
+    _definition.id  test 
+    _definition.scope Category
+    _definition.class Head
+    _description.text  'Dummy head category, must be edited'
+
+save_a
+	_definition.id a
+	_definition.scope Category
+	_definition.class Set
+	_description.text 'Simple category'
+	_name.object_id a
+	_name.category_id test
+save_a.b
+	_definition.id '_a.b'
+	_definition.scope Item
+	_definition.class Item
+	_description.text 'Simple item'
+	_name.object_id b
+	_name.category_id a
+save_
+save_    #end of a
+save_    #end of head
+
+    

@@ -949,7 +949,7 @@ class DDLmImportCase(unittest.TestCase):
 
 class DictTestCase(unittest.TestCase):
     def setUp(self):
-	self.ddldic = CifFile.CifDic("pycifrw/tests/ddl.dic",grammar='DDLm',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
+	self.ddldic = CifFile.CifDic("pycifrw/dictionaries/ddl.dic",grammar='DDLm',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
     
     def tearDown(self):
 	pass
