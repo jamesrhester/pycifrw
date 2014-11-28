@@ -1,0 +1,934 @@
+##############################################################################
+#                                                                            #
+#              TEMPLATE DEFINITION ATTRIBUTES DICTIONARY                     #
+#                                                                            #
+##############################################################################
+ 
+data_TEMPL_ATTR
+ 
+    _dictionary.title            TEMPL_ATTR
+    _dictionary.class            Template
+    _dictionary.version          1.4.08 
+    _dictionary.date             2014-06-27
+    _dictionary.uri              www.iucr.org/cif/dic/com_att.dic
+    _dictionary.ddl_conformance  3.11.04
+    _description.text
+;
+     This dictionary contains definition attribute sets that are common
+     to other CIF dictionaries and is imported by them.
+;
+
+#---------------------------------------------------------------------------
+
+save_atom_site_label
+
+    _definition.update           2012-10-16
+    _description.text
+;
+     This label is a unique identifier for a particular site in the
+     asymmetric unit of the crystal unit cell. It is made up of
+     components, _atom_site.label_component_0 to *_6, which may be
+     specified as separate data items. Component 0 usually matches one
+     of the specified _atom_type.symbol codes. This is not mandatory
+     if an _atom_site.type_symbol item is included in the atom site
+     list. The _atom_site.type_symbol always takes precedence over
+     an _atom_site.label in the identification of the atom type. The
+     label components 1 to 6 are optional, and normally only
+     components 0 and 1 are used. Note that components 0 and 1 are
+     concatenated, while all other components, if specified, are
+     separated by an underline character. Underline separators are
+     only used if higher-order components exist. If an intermediate
+     component is not used it may be omitted provided the underline
+     separators are inserted. For example the label 'C233__ggg' is
+     acceptable and represents the components C, 233, '', and ggg.
+     Each label may have a different number of components.
+;
+    _name.linked_item_id       '_atom_site.label'  
+    _type.purpose                Encode
+    _type.source                 Assigned
+    _type.container              Single
+    _type.contents               Code
+     loop_
+    _description_example.case   C12     Ca3g28     Fe3+17     H*251
+                                C_a_phe_83_a_0  Zn_Zn_301_A_0
+     save_
+
+
+save_restr_label
+
+    _definition.update           2014-06-29
+    _description.text
+;
+      Labels of atom sites subtending distance or angle. Atom 2 is apex.
+;
+    _name.linked_item_id       '_atom_site.label'
+    _type.purpose                Encode
+    _type.source                 Assigned
+    _type.container              Single
+    _type.contents               Code
+     save_
+
+
+save_atom_site_id
+
+    _definition.update           2014-06-16
+    _description.text
+;
+     This label is a unique identifier for a particular site in the
+     asymmetric unit of the crystal unit cell.
+;
+    _name.linked_item_id       '_atom_site.label'
+    _type.purpose                Encode
+    _type.source                 Assigned
+    _type.container              Single
+    _type.contents               Code
+     save_
+
+
+save_rho_coeff
+
+    _definition.update           2014-06-20
+    _description.text
+;
+     Specifies a multipole population coefficientxs P(l,m) for
+     the atom identified in atom_rho_multipole.atom_label.
+;
+    _type.purpose                Measurand
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+     save_
+
+
+save_rho_kappa
+
+    _definition.update           2014-06-20
+    _description.text
+;
+      A radial function expansion-contraction coefficient
+      (kappa    = atom_rho_multipole_kappa.base and
+      kappa'(l) = atom_rho_multipole_kappa.prime[l])
+      for the atom specified in atom_rho_multipole.atom_label.
+;
+    _type.purpose                Measurand
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+     save_
+
+
+save_rho_slater
+
+    _definition.update           2014-06-20
+    _description.text
+;
+      Items used when the radial dependence of the valence
+      electron  density, R(kappa'(l),l,r), of the atom specified in
+      atom_rho_multipole.atom_label is expressed as a Slater-type
+      function [Hansen & Coppens (1978), equation (3)]
+;
+    _type.purpose                Measurand
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+     save_
+
+
+save_matrix_pdb
+
+    _definition.update           2014-07-02
+    _description.text
+;
+     Element of the PDM ORIGX matrix or vector.
+;
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+    _enumeration.default         1.0
+     save_
+
+
+save_matrix_w
+
+    _definition.update           2014-06-27
+    _description.text
+;
+     Element of the matrix W defined by van Smaalen (1991); (1995)
+;
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+    _name.category_id            cell_subsystem_matrix_W
+     save_
+
+
+save_ms_index
+
+    _definition.update           2014-06-27
+    _description.text
+;
+     Additional Miller indices needed to write the reciprocal vector
+     in the definition of _diffrn_refln_index.m_list,
+     _diffrn_standard_refln.index_m_list, _exptl_crystal_face.index_m_list.
+;
+    _type.purpose                Number
+    _type.source                 Recorded
+    _type.container              Single
+    _type.contents               Integer
+    _name.category_id            diffrn_refln
+     save_
+
+
+save_index_limit_max
+
+    _definition.update           2014-06-27
+    _description.text
+;
+     Maximum value of the additional Miller indices appearing in 
+     _diffrn_reflns.index_m_* and _reflns.index_m_*.
+;
+    _type.purpose                Number
+    _type.source                 Recorded
+    _type.container              Single
+    _type.contents               Integer
+    _name.category_id            diffrn_reflns
+     save_
+
+
+save_index_limit_min
+
+    _definition.update           2014-06-27
+    _description.text
+;
+     Minimum value of the additional Miller indices appearing in 
+     _diffrn_reflns.index_m_* and _reflns.index_m_*.
+;
+    _type.purpose                Number
+    _type.source                 Recorded
+    _type.container              Single
+    _type.contents               Integer
+    _name.category_id            diffrn_reflns
+     save_
+
+
+save_cell_angle
+
+    _definition.update           2014-06-08
+    _description.text
+;
+     The angle between the bounding cell axes.
+;
+    _type.purpose                Measurand
+    _type.source                 Recorded
+    _type.container              Single
+    _type.contents               Real
+    _enumeration.range           0.0:180.0
+    _enumeration.default         90.0
+    _units.code                  degrees
+     save_
+
+
+save_cell_angle_su
+
+    _definition.update           2014-06-08
+    _description.text
+;
+     Standard uncertainty of the angle between the bounding cell axes.
+;
+    _type.purpose                SU
+    _type.source                 Recorded
+    _type.container              Single
+    _type.contents               Real
+    _enumeration.range           0.0:180.0
+    _enumeration.default         90.0
+    _units.code                  degrees
+     save_
+
+ 
+save_cell_length
+
+    _definition.update           2014-06-08
+    _description.text
+;
+     The length of each cell axis.
+;
+    _type.purpose                Measurand
+    _type.source                 Recorded
+    _type.container              Single
+    _type.contents               Real
+    _enumeration.range           1.:
+    _units.code                  angstroms
+     save_
+
+
+save_cell_length_su
+
+    _definition.update           2014-06-08
+    _description.text
+;
+     Standard uncertainty of the length of each cell axis.
+;
+    _type.purpose                SU
+    _type.source                 Recorded
+    _type.container              Single
+    _type.contents               Real
+    _enumeration.range           0.:
+    _enumeration.default         0.0
+    _units.code                  angstroms
+     save_
+ 
+
+save_site_symmetry
+
+    _definition.update           2014-06-29
+    _description.text
+;
+     The set of data items which specify the symmetry operation codes
+     which must be applied to the atom sites involved in the geometry angle.
+
+     The symmetry code of each atom site as the symmetry-equivalent position
+     number 'n' and the cell translation number 'klm'. These numbers are
+     combined to form the code 'n klm' or n_klm.
+
+     The character string n_klm is composed as follows:
+
+         n refers to the symmetry operation that is applied to the
+         coordinates stored in _atom_site.fract_xyz. It must match a
+         number given in _symmetry_equiv.pos_site_id.
+
+         k, l and m refer to the translations that are subsequently
+         applied to the symmetry transformed coordinates to generate
+         the atom used in calculating the angle. These translations
+         (x,y,z) are related to (k,l,m) by the relations
+              k = 5 + x
+              l = 5 + y
+              m = 5 + z
+;
+    _type.purpose                Composite 
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Symop
+     loop_
+    _description_example.case
+    _description_example.detail '4'     '4th symmetry operation applied'
+                                '7_645' '7th symm. posn.; +a on x; -b on y'
+                                '.'     'no symmetry or translation to site'
+    _enumeration.default        '1_555'
+     save_
+ 
+
+save_Cartn_coord   
+
+    _definition.update           2012-05-07
+    _description.text
+;
+     The atom site coordinates in angstroms specified according to a
+     set of orthogonal Cartesian axes related to the cell axes as
+     specified by the _atom_sites_Cartn_transform.axes description.
+;
+    _type.purpose                Measurand
+    _type.source                 Derived 
+    _type.container              Single 
+    _type.contents               Real
+    _enumeration.range           -1000.:1000.
+    _units.code                  angstroms
+     save_
+
+
+save_Cartn_coord_su
+
+    _definition.update           2014-06-08
+    _description.text
+;
+     Standard uncertainty values of the atom site coordinates 
+     in angstroms specified according to a
+     set of orthogonal Cartesian axes related to the cell axes as
+     specified by the _atom_sites_Cartn_transform.axes description.
+;
+    _type.purpose                SU
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+    _enumeration.range           -1000.:1000.
+    _units.code                  angstroms
+     save_
+
+
+save_fract_coord   
+
+    _definition.update           2012-05-07
+    _description.text
+;
+     Atom site coordinates as fractions of the cell length values.
+;
+    _type.purpose                Measurand
+    _type.source                 Derived 
+    _type.container              Single 
+    _type.contents               Real
+    _enumeration.range           -1.:1.
+    _units.code                  none
+     save_
+
+
+save_fract_coord_su
+
+    _definition.update           2014-06-08
+    _description.text
+;
+     Standard uncertainty value of the atom site coordinates 
+     as fractions of the cell length values.
+;
+    _type.purpose                SU
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+    _enumeration.range           -1.:1.
+    _units.code                  none
+     save_
+
+
+save_label_component
+
+    _definition.update           2012-05-07
+    _description.text
+;
+     Component_0 is normally a code which matches identically with
+     one of the _atom_type.symbol codes. If this is the case then the
+     rules governing the _atom_type.symbol code apply. If, however,
+     the data item _atom_site.type_symbol is also specified in the
+     atom site list, component 0 need not match this symbol or adhere
+     to any of the _atom_type.symbol rules.
+     Component_1 is referred to as the "atom number". When component 0
+     is the atom type code, it is used to number the sites with the
+     same atom type. This component code must start with at least one
+     digit which is not followed by a + or - sign (to distinguish it
+     from the component 0 rules).
+     Components_2 to 6 contain the identifier, residue, sequence,
+     asymmetry identifier and alternate codes, respectively. These
+     codes may be composed of any characters except an underline.
+;
+    _type.purpose                Encode
+    _type.source                 Assigned
+    _type.container              Single 
+    _type.contents               Code 
+     save_
+
+
+save_label_comp
+
+    _definition.update           2012-05-07
+    _description.text
+;
+     See label_component_0 description.
+;
+    _type.purpose                Encode
+    _type.source                 Assigned
+    _type.container              Single
+    _type.contents               Code
+     save_
+
+
+save_Cartn_matrix
+
+    _definition.update           2012-12-11
+    _description.text
+;
+     Matrix used to transform fractional coordinates in the ATOM_SITE
+     category to Cartesian  coordinates. The axial alignments of this
+     transformation are described in _atom_sites_Cartn_transform.axes.
+     The 3x1 translation is defined in _atom_sites_Cartn_transform.vector.
+
+       x'                  |11 12 13|     x                  | 1 |
+     ( y' )Cartesian  = mat|21 22 23| * ( y )fractional + vec| 2 |
+       z'                  |31 32 33|     z                  | 3 |
+
+     The default transformation matrix uses Rollet's axial
+     assignments with cell vectors a,b,c aligned with orthogonal
+     axes X,Y,Z so that c||Z and b in plane YZ.
+;
+    _type.purpose                Measurand
+    _type.source                 Derived 
+    _type.container              Single 
+    _type.contents               Real 
+    _enumeration.default         ?       
+    _units.code                  reciprocal_angstroms
+     save_
+
+
+save_ncs_matrix_IJ      
+
+    _definition.update          2014-06-12
+    _description.text
+;
+     The [I][J] element of the 3x3 matrix component of a
+     non-crystallographic symmetry operation.
+;
+    _type.purpose               Number
+    _type.source                Derived
+    _type.container             Single
+    _type.contents              Real
+     save_
+
+
+save_rot_matrix_IJ
+
+    _definition.update          2014-06-12
+    _description.text
+;
+     The [I][J] element of the matrix used to rotate the subset of the
+     Cartesian coordinates in the ATOM_SITE category identified in the
+     STRUCT_BIOL_GEN category to give a view useful for describing the
+     structure. The conventions used in the rotation are described in
+     _struct_biol_view.details.
+
+     |x'|                         |11 12 13| |x|
+     |y'|~reoriented Cartesian~ = |21 22 23| |y|~Cartesian~
+     |z'|                         |31 32 33| |z|
+;
+    _type.purpose               Number
+    _type.source                Derived
+    _type.container             Single
+    _type.contents              Real
+     save_
+
+
+save_fract_matrix
+
+    _definition.update           2012-12-11
+    _description.text
+;
+     Matrix used to transform Cartesian coordinates in the ATOM_SITE
+     category to fractional coordinates. The axial alignments of this
+     transformation are described in _atom_sites_fract_transform.axes.
+     The 3x1 translation is defined in _atom_sites_fract_transform.vector.
+
+       x'                  |11 12 13|     x                  | 1 |
+     ( y' )fractional = mat|21 22 23| * ( y )Cartesian +  vec| 2 |
+       z'                  |31 32 33|     z                  | 3 |
+
+     The default transformation matrix uses Rollet's axial
+     assignments with cell vectors a,b,c aligned with orthogonal
+     axes X,Y,Z so that c||Z and b in plane YZ.
+;
+    _type.purpose                Measurand
+    _type.source                 Derived 
+    _type.container              Single 
+    _type.contents               Real 
+    _enumeration.default         ?       
+    _units.code                  none
+     save_
+
+
+save_aniso_BIJ
+
+    _definition.update           2013-03-08
+    _description.text
+;
+     These are the standard anisotropic atomic displacement components
+     in angstroms squared which appear in the structure factor term:
+
+         T = exp{-1/4 sum~i~ [ sum~j~ (B^ij^ h~i~ h~j~ a*~i~ a*~j~) ] }
+
+     h = the Miller indices
+     a* = the reciprocal-space cell lengths
+     The unique elements of the real symmetric matrix are entered by row.
+
+     The IUCr Commission on Nomenclature recommends against the use
+     of B for reporting atomic displacement parameters. U, being
+     directly proportional to B, is preferred.
+;
+    _type.purpose                Measurand
+    _type.source                 Derived 
+    _type.container              Single 
+    _type.contents               Real 
+    _enumeration.default         ?       
+    _units.code                  angstrom_squared
+     save_
+
+
+save_aniso_BIJ2
+
+    _definition.update          2014-06-12
+    _description.text
+;
+     The [I][J] tdf elements define the overall anisotropic 
+     displacement model if one was refined for this structure.
+;
+    _type.purpose               Number
+    _type.source                Derived
+    _type.container             Single
+    _type.contents              Real
+    _enumeration.default        ?
+    _units.code                 angstrom_squared
+     save_
+
+
+save_aniso_BIJ_su
+
+    _definition.update           2014-06-08
+    _description.text
+;
+     These are the standard uncertainty values (SU) for the standard 
+     form of the Bij anisotropic atomic displacement components (see 
+     _aniso_BIJ. Because these values are TYPE measurand, the su values
+     may in practice be auto generated as part of the Bij calculation.
+;
+    _type.purpose                SU
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+    _enumeration.default         ?
+    _units.code                  angstrom_squared
+     save_
+
+
+save_aniso_UIJ
+
+    _definition.update           2013-03-08
+    _description.text
+;
+     These are the standard anisotropic atomic displacement
+     components in angstroms squared which appear in the
+     structure factor term:
+     
+        T = exp{-2pi^2^ sum~i~ [sum~j~ (U^ij^ h~i~ h~j~ a*~i~ a*~j~) ] }
+        
+     h = the Miller indices
+     a* = the reciprocal-space cell lengths
+
+     The unique elements of the real symmetric matrix are entered by row.
+;
+    _type.purpose                Measurand 
+    _type.source                 Derived 
+    _type.container              Single 
+    _type.contents               Real 
+    _enumeration.default         ?       
+    _units.code                  angstrom_squared
+     save_
+
+
+save_aniso_UIJ_su
+
+    _definition.update           2014-06-08
+    _description.text
+;
+     These are the standard uncertainty values (SU) for the standard 
+     form of the Uij anisotropic atomic displacement components (see 
+     _aniso_UIJ. Because these values are TYPE measurand, the su values
+     may in practice be auto generated as part of the Uij calculation.
+;
+    _type.purpose                SU
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+    _enumeration.default         ?
+    _units.code                  angstrom_squared
+     save_
+
+
+save_Cromer_Mann_coeff
+
+    _definition.update           2012-11-29
+    _description.text
+;
+     The set of data items used to define Cromer-Mann coefficients
+     for generation of X-ray scattering factors.
+
+        Ref: International Tables for X-ray Crystallography, Vol. IV
+             (1974) Table 2.2B
+        or   International Tables for Crystallography, Vol. C
+             (1991) Tables 6.1.1.4 and 6.1.1.5
+;
+    _type.purpose                Number
+    _type.source                 Assigned
+    _type.container              Single 
+    _type.contents               Real 
+    _enumeration.def_index_id  '_atom_type.symbol'
+    _units.code                  none
+     save_
+
+
+save_hi_ang_Fox_coeffs
+
+    _definition.update           2012-11-29
+    _description.text
+;
+    The set of data items used to define Fox et al.  coefficients
+     for generation of high angle (s >2.0) X-ray scattering factors.
+
+        Ref: International Tables for Crystallography, Vol. C
+             (1991) Table 6.1.1.5
+;
+    _type.purpose                Number
+    _type.source                 Assigned
+    _type.container              Single 
+    _type.contents               Real 
+    _enumeration.def_index_id  '_atom_type.symbol'
+    _units.code                  none
+     save_
+
+
+save_Miller_index
+
+    _definition.update           2013-04-16
+    _description.text
+;
+     The index of a reciprocal space vector.
+;
+    _type.purpose                Number
+    _type.source                 Recorded
+    _type.container              Single 
+    _type.contents               Integer
+    _enumeration.range           -1000:1000
+    _units.code                  none
+     save_
+
+
+save_orient_matrix
+
+    _definition.update           2012-05-07
+    _description.text
+;
+     The set of data items which specify the elements of the matrix of
+     the orientation of the crystal axes to the diffractometer goniometer.
+;
+    _type.purpose                Number
+    _type.source                 Recorded
+    _type.container              Single 
+    _type.contents               Real 
+    _enumeration.default         ?       
+    _units.code                  none
+     save_
+
+
+save_transf_matrix
+
+    _definition.update           2012-05-07
+    _description.text
+;
+     The set of data items which specify the elements of the matrix
+     used to transform the reflection indices _diffrn_refln.hkl
+     into _refln.hkl.
+;
+    _type.purpose                Number
+    _type.source                 Recorded 
+    _type.container              Single 
+    _type.contents               Real 
+    _enumeration.default         ?       
+    _units.code                  none
+     save_
+
+
+save_face_angle
+
+    _definition.update           2013-04-15
+    _description.text
+;
+    Diffractometer angle setting when the perpendicular to the specified 
+    crystal face is aligned along a specified direction (e.g. the 
+    bisector of the incident and reflected beams in an optical goniometer.
+;
+    _type.purpose                Measurand
+    _type.source                 Recorded
+    _type.container              Single 
+    _type.contents               Real 
+    _enumeration.range           -180.:180.
+    _units.code                  degrees
+     save_
+
+
+save_orient_angle
+
+    _definition.update           2013-04-15
+    _description.text
+;
+     Diffractometer angle of a reflection measured at the centre of the
+     diffraction peak and used to determine _diffrn_orient_matrix.UBIJ.
+;
+    _type.purpose                Measurand
+    _type.source                 Recorded
+    _type.container              Single 
+    _type.contents               Real 
+    _enumeration.range           -180.:180.
+    _units.code                  degrees
+     save_
+
+
+save_diffr_angle
+
+    _definition.update           2013-04-15
+    _description.text
+;
+     Diffractometer angle at which the intensity is measured. This was 
+     calculated from the specified  orientation matrix and the original 
+     measured cell dimensions before any subsequent transformations.
+;
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single 
+    _type.contents               Real 
+    _enumeration.range           -180.:180.
+    _units.code                  degrees
+     save_
+
+
+save_diffr_counts
+
+    _definition.update           2012-10-16
+    _description.text
+;
+     The set of data items which specify the diffractometer counts.
+     Background counts before the peak, background after the peak,
+     net counts after background removed, counts for peak scan or position,
+     and the total counts (background plus peak).
+;
+    _type.purpose                Measurand
+    _type.source                 Recorded
+    _type.container              Single 
+    _type.contents               Count 
+    _enumeration.range           0:
+    _units.code                  none
+     save_
+
+
+save_display_colour
+
+    _definition.update           2012-10-16
+    _description.text
+;
+     Integer value between 0 and 255 giving the intensity of a
+     specific colour component (red, green or blue) for the RBG
+     display colour code.
+
+;
+    _type.purpose                Number
+    _type.source                 Recorded
+    _type.container              Single 
+    _type.contents               Index
+    _enumeration.range           0:255
+    _units.code                  none
+     save_
+
+
+
+#=============================================================================
+#  The dictionary's attribute creation history.
+#============================================================================
+ 
+     loop_
+    _dictionary_audit.version
+    _dictionary_audit.date
+    _dictionary_audit.revision
+ 
+      1.0.0   2005-12-12
+;
+   Initial version of the TEMPLATES dictionary created from the 
+   definitions used in CORE_3 dictionary version 3.5.02
+;
+      1.0.1   2006-02-12
+;
+   Remove dictionary attributes from a save frame.
+   Change category core_templates to template
+;
+      1.2.01  2006-02-21
+;
+   File structure to conform with prototype version dictionaries.
+;
+      1.2.02  2006-03-07
+;
+   Added the template _template.relational_id for the ddl3 dictionary.
+;
+      1.2.03  2006-06-17
+;
+   Apply DDL 3.6.01 changes
+;
+      1.2.04  2006-06-29
+;
+   Remove "_template" from the definition names.
+   Apply DDL 3.6.05 changes.
+   Change file name from templates.dic to com_att.dic
+;
+      1.2.05  2006-09-07
+;
+   Apply DDL 3.6.08 changes
+;
+      1.2.06  2006-11-13
+;
+   Apply DDL 3.6.10 changes
+;
+      1.2.07  2006-12-14
+;
+   Apply DDL 3.7.01 changes
+;
+      1.2.08  2008-06-18
+;
+   Change _type.purpose for Miller_index from Observed to Identify
+;
+      1.3.01  2011-08-03
+;
+     Remove definition.id lines in keeping with nested imports.       
+;
+      1.3.02  2011-12-01
+;
+  Update the DDL version. No Matrix types present.
+;
+      1.3.03  2012-05-07
+;
+  Apply changes of 3.10.01 DDL version.
+;
+      1.3.04  2012-10-16
+;
+  Apply changes of 3.10.02 DDL version. "Label" becomes "Code".
+;
+      1.3.05  2012-11-29
+;
+  Add    "_enumeration.def_index_id  '_atom_type.symbol' "
+  to Cromer_Mann_coeff and hi_ang_Fox_coeffs.
+;
+      1.3.06  2012-12-11
+;
+  Add the templates Cartn_matrix and fract_matrix
+;
+      1.4.01  2013-03-08
+;
+  Changes arising from alerts issued by ALIGN.
+;
+      1.4.02  2013-04-15
+;
+   Removed desription.common from all defs; inconsistent invocations
+   Changed types for 'diffrn_angle'
+   Added new frame for 'orient_angle'
+;
+      1.4.03  2013-04-16
+;
+   Changed type.source 'Measured' to 'Recorded'
+   Changed type.source 'Assigned' to 'Recorded' in Miller_index
+;
+      1.4.04  2013-04-17
+;
+   Changed type.source 'Quantity' to 'Number' or 'Encode'
+;
+      1.4.05  2014-06-08
+;
+   Added aniso_BIJ_su and aniso_UIJ_su
+   Added atom_site_fract_su and atom_site_cartn_su
+;
+      1.4.06  2014-06-09
+;
+   dummy top line added to all frames; this is skipped on import.
+;
+      1.4.07  2014-06-12
+;
+   Added attribute save frame "aniso_BIJ2"
+   Added attribute save frame "rot_matrix_IJ"
+   Added attribute save frame "ncs_matrix_IJ"
+   Added attribute save frame "atom_site_id"
+   Added attribute save frame "label_comp"
+;
+      1.4.08  2014-06-27
+;
+   Added attribute save frame "ms_index"
+   Added attribute save frame "matrix_w"
+;

@@ -1,0 +1,16 @@
+data_on_this_dictionary
+    _dictionary_version 0.1
+    _dictionary_name test
+
+data_cell_volume
+    _name                      '_cell_volume'
+    _category                    cell
+    _type                        numb
+    _type_conditions             esd
+    _enumeration_range           0.0:
+    _units                       A^3^
+    _units_detail              'cubic angstroms'
+    _definition
+;              Cell volume V in angstroms cubed.
+;
+
