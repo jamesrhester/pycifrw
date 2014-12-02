@@ -11,8 +11,11 @@ only worked for text strings less than about 9000 characters in length.
 For further information about Yapps2, see 
 http://theory.stanford.edu/~amitp/Yapps/
 
-Note there are three targets here: 1.0, 1.1 and DDLm syntax, which differ
-in their treatment of unquoted data values beginning with brackets.
+Several standards are available, of which three are implemented: 1.0,
+1.1 and STAR2.  CIF2 differs from STAR2 in that lists have comma
+separators and no nested save frames are allowed.  Note that 1.0,1.1
+and STAR2 differ in their treatment of unquoted data values beginning
+with brackets.
 
 <<1.0_syntax>>=
 from StarFile import *
@@ -108,44 +111,23 @@ def striptriple(value):
             return value[3:-3]
     return value
 
-# helper function to populate a nested LoopBlock structure given an
-# empty structure together with listed values.   The values are 
-# organised into a list of lists, where each time 'stop' was
-# encountered one list terminates and a new one starts. 
-# For a correctly constructed loop, the final 'popout' will pop out
-# of the iteration completely and raise a StopIteration error.
+# helper function to populate a StarBlock given a list of names
+# and values .   
 #
 # Note that there may be an empty list at the very end of our itemlists,
 # so we remove that if necessary.
 #
-# We optimise for CIF files by loading differently if we have a flat loop
 
-def makeloop(loopstructure,itemlists):
+def makeloop(target_block,loopdata):
+    loop_seq,itemlists = loopdata
     if itemlists[-1] == []: itemlists.pop(-1)
     # print 'Making loop with %s' % `itemlists`
-    if loopstructure.dimension == 1 and loopstructure.loops == []:
-        storage_iter = loopstructure.fast_load_iter()
-    else:
-        storage_iter = loopstructure.load_iter()
-    nowloop = loopstructure
-    for datalist in itemlists:
-       for datavalue in datalist:
-	   try:
-               nowloop,target = storage_iter.next()
-	   except StopIteration:
-	       print "StopIter at %s/%s" % (datavalue,datalist)
-	       raise StopIteration
-           #print 'Got %s %s ->' % (`nowloop`,`target`),
-	   target[0].append(datavalue)
-           target[1].append(None)
-           # print '%s' % `target`
-       # the end of each list is the same as a stop_ token
-       # print 'Saw end of list'
-       nowloop.popout = True
-       nowloop,blank = storage_iter.next()  #execute the pop
-       # print 'discarding %s/%s' % (`nowloop`,`blank`)
-    # print 'Makeloop returning %s' % `loopstructure`
-    return loopstructure
+    step_size = len(loop_seq)
+    for col_no in range(step_size):
+       target_block.AddItem(loop_seq[col_no], itemlists[col_no::step_size],precheck=True)
+    # print 'Makeloop constructed %s' % `loopstructure`
+    # now construct the loop
+    target_block.CreateLoop(loop_seq)
 
 # return an object with the appropriate amount of nesting
 def make_empty(nestlevel):
@@ -340,9 +322,9 @@ rule input@<<prepared>>: ( ((
                        data@<<starblock>>
                        )*                         
 
-     rule data@<<currentblock>>:        top_loop      {{currentblock.insert_loop(top_loop,audit=False)}} 
+     rule data@<<currentblock>>:        top_loop      {{makeloop(currentblock,top_loop)}} 
                                         | 
-		                        datakvpair    {{currentblock.AddLoopItem(datakvpair[:2],precheck=False)}} #kv pair
+		                        datakvpair    {{currentblock.AddItem(datakvpair[0],datakvpair[1],precheck=False)}} #kv pair
 
      rule datakvpair: data_name data_value {{return [data_name,data_value]}} # name-value
 
@@ -393,28 +375,21 @@ rule input@<<prepared>>: ( ((
 # due to the inability of the parser to backtrack, we contruct our loops in helper functions,
 # and simply collect data during parsing proper.
 
-     rule top_loop: LBLOCK loopfield loopvalues {{return makeloop(loopfield,loopvalues)}}
+     rule top_loop: LBLOCK loopfield loopvalues {{return loopfield,loopvalues}}
 
-# OK: a loopfield is either a sequence of dataname*,loopfield with stop
-# or else dataname,loopfield without stop
+# OK: a loopfield is either a sequence of datanames
 
-     rule loopfield: (            {{toploop=LoopBlock(dimension=1,overwrite=False,characterset='unicode');curloop=toploop;poploop=None;dim=1}}
+     rule loopfield: (            {{loop_seq=[] }}
                      (
-                                  ( data_name  )  {{curloop[data_name]=[]}}
-                                  |
-                                  ( LBLOCK   )   {{dim=dim+1;newloop=LoopBlock(dimension=dim,overwrite=False,characterset='unicode');poploop=curloop;curloop.insert_loop(newloop,audit=False);curloop=newloop}}
-                                  |
-                                  ( STOP   )     {{curloop=poploop;dim=dim-1}}
+                                  ( data_name  )  {{loop_seq.append(data_name)}}
                       )*
-                      )                        {{return toploop}} # sequence of data names 
+                      )                        {{return loop_seq}} # sequence of data names 
                          
 
      rule loopvalues: ( 
-                       (data_value   ) {{dataloop=[[data_value]]}}
+                       (data_value   ) {{dataloop=[data_value]}}
 		       ( 
-                       (data_value  ) {{dataloop[-1].append(monitor('loopval',data_value))}}
-		       |
-		       (STOP        )  {{dataloop.append([])}} 
+                       (data_value  ) {{dataloop.append(monitor('loopval',data_value))}} 
                        )*             
 		       )	      {{return dataloop}}
 
@@ -459,9 +434,9 @@ rule input@<<prepared>>: ( ((
                        data@<<starblock>>
                        )*                         
 
-     rule data@<<currentblock>>:        top_loop      {{currentblock.insert_loop(top_loop,audit=False)}} 
+     rule data@<<currentblock>>:        top_loop      {{makeloop(currentblock,top_loop)}} 
                                         | 
-		                        datakvpair    {{currentblock.AddLoopItem(datakvpair[:2],precheck=True)}} #kv pair
+		                        datakvpair    {{currentblock.AddItem(datakvpair[0],datakvpair[1],precheck=True)}} #kv pair
 
      rule datakvpair: data_name data_value {{return [data_name,data_value]}} # name-value
 
@@ -479,28 +454,22 @@ rule input@<<prepared>>: ( ((
 # due to the inability of the parser to backtrack, we contruct our loops in helper functions,
 # and simply collect data during parsing proper.
 
-     rule top_loop: LBLOCK loopfield loopvalues {{return makeloop(loopfield,loopvalues)}}
+     rule top_loop: LBLOCK loopfield loopvalues {{return loopfield,loopvalues}}
 
 # OK: a loopfield is either a sequence of dataname*,loopfield with stop
 # or else dataname,loopfield without stop
 
-     rule loopfield: (            {{toploop=LoopBlock(dimension=1,overwrite=False);curloop=toploop;poploop=None;dim=1}}
+     rule loopfield: (            {{toploop=[]}}
                      (
-                                  ( data_name  )  {{curloop[data_name]=[]}}
-                                  |
-                                  ( LBLOCK   )   {{dim=dim+1;newloop=LoopBlock(dimension=dim,overwrite=False);poploop=curloop;curloop.insert_loop(newloop,audit=False);curloop=newloop}}
-                                  |
-                                  ( STOP   )     {{curloop=poploop;dim=dim-1}}
+                                  ( data_name  )  {{toploop.append(data_name)}}
                       )*
                       )                        {{return toploop}} # sequence of data names 
                          
 
      rule loopvalues: ( 
-                       (data_value   ) {{dataloop=[[data_value]]}}
+                       (data_value   ) {{dataloop=[data_value]}}
 		       ( 
-                       (data_value  ) {{dataloop[-1].append(monitor('loopval',data_value))}}
-		       |
-		       (STOP        )  {{dataloop.append([])}} 
+                       (data_value  ) {{dataloop.append(monitor('loopval',data_value))}}
                        )*             
 		       )	      {{return dataloop}}
 

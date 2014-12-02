@@ -131,7 +131,8 @@ class BlockRWTestCase(unittest.TestCase):
     def setUp(self):
     	# we want to get a datablock ready so that the test
 	# case will be able to write a single item
-	self.cf = CifFile.CifBlock()
+	# self.cf_old = CifFile.CifBlock(compat_mode=True)
+        self.cf = CifFile.CifBlock()
 
     def tearDown(self):
         # get rid of our test object
@@ -144,7 +145,7 @@ class BlockRWTestCase(unittest.TestCase):
 	     self.cf['_test_tuple']))== [11,13.5,-5.6]
 
     def testTupleComplexSet(self):
-        """Test setting multiple names in loop"""
+        """DEPRECATED: Test setting multiple names in loop"""
 	names = (('_item_name_1','_item_name#2','_item_%$#3'),)
 	values = (((1,2,3,4),('hello','good_bye','a space','# 4'),
 	          (15.462, -99.34,10804,0.0001)),)
@@ -201,12 +202,6 @@ class BlockRWTestCase(unittest.TestCase):
     def testEmptyString(self):
         """An empty string is, in fact, legal"""
         self.cf['_an_empty_string'] = ''
-        
-    def testStarList(self):
-        """Test that a StarList is treated as a primitive item"""
-        self.cf['_a_star_list'] = CifFile.StarList([1,2,3,4])
-        jj = self.cf.GetLoop('_a_star_list')
-        self.failUnless(jj.dimension==0)
        
 # Now test operations which require a preexisting block
 #
@@ -949,7 +944,7 @@ class DDLmImportCase(unittest.TestCase):
 
 class DictTestCase(unittest.TestCase):
     def setUp(self):
-	self.ddldic = CifFile.CifDic("pycifrw/dictionaries/ddl.dic",grammar='DDLm',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
+	self.ddldic = CifFile.CifDic("pycifrw/tests/ddl.dic",grammar='DDLm',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
     
     def tearDown(self):
 	pass
@@ -1341,15 +1336,15 @@ class DicStructureTestCase(unittest.TestCase):
                          ['_atom_site.type_symbol','_atom_site_aniso.type_symbol'])
 
 if __name__=='__main__':
-     global testdic
-     testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")
+     #global testdic
+     #testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
-     #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
+     suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase) 
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmImportCase)
-     #unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     unittest.TextTestRunner(verbosity=2).run(suite)
+     #unittest.main()
 

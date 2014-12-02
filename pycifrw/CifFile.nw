@@ -194,63 +194,48 @@ class CifLoopBlock(StarFile.LoopBlock):
 @ \section{Cif Block class}
 
 The basic building block of a Cif File is the CifBlock, which we
-subclass from a CifLoopBlock.  
-When initialising, we allow either a set of tuples, suitable for input
-to AddCifItem, or a complete block, suitable when copying. 
+subclass from a StarBlock.  When initialising, we allow either a set
+of tuples, suitable for input to AddCifItem, or a complete block,
+suitable when copying.
 
 <<CifBlock class>>=
-class CifBlock(CifLoopBlock):
+class CifBlock(StarFile.StarBlock):
     <<Initialise Cif Block>>
     <<Adjust emulation of a mapping type>>
     <<Add a data item>>
     <<Return all looped names>>
 
-@ We include the dimension argument in initialisation, as the initialisation
-method could be
-invoked from the StarFile.LoopBlock copy method, which constructs a new
-object, passing the [[dimension]] argument.  This method ignores this.
+@ A CifBlock is a StarBlock with a very few restrictions.
 
 <<Initialise Cif Block>>=
-def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80,overwrite=True,dimension=0):
+def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80,overwrite=True,
+             compat_mode = False):
     if strict: maxnamelength=75
     else:
        maxnamelength=-1
-    super(CifBlock,self).__init__(data=data,dimension=0,maxoutlength=maxoutlength,wraplength=wraplength,
+    super(CifBlock,self).__init__(data=data,maxoutlength=maxoutlength,wraplength=wraplength,
                                         overwrite=overwrite)
-
     self.dictionary = None   #DDL dictionary referring to this block
+    self.compat_mode = compat_mode   #old-style behaviour of setitem
 
 def RemoveCifItem(self,itemname): 
-    CifLoopBlock.RemoveLoopItem(self,itemname)
+    self.RemoveLoopItem(itemname)
 
-@ Just as for star blocks, we add in the save frame key.  If the
-dictionary as supplied doesn't have the item we want, we call the
-dictionary method to try to fix the situation.   Once we have a
-dictionary supplied, we are able to determine the type of the returned
-object, and make the appropriate changes.
+@ The second line in the copy method switches the class of the
+returned object to be a CifBlock. It may not be necessary.
 
 <<Adjust emulation of a mapping type>>=
 def __setitem__(self,key,value):
-    if key == "saves":
-        raise CifError('Access to save frames via "save" key has been removed. Use enclosing CIF/STAR file instead')
-    else:
-        self.AddCifItem((key,value))
+    super(CifBlock,self).AddItem(key,value,maxlength=75)
+    # for backwards compatibility make a single-element loop
+    if self.compat_mode:
+        if isinstance(value,(tuple,list)) and not isinstance(value,StarFile.StarList):
+             # single element loop
+             self.CreateLoop([key])
 
 def copy(self):
-    newblock = CifLoopBlock.copy(self)
+    newblock = super(CifBlock,self).copy()
     return self.copy.im_class(newblock)   #catch inheritance
-
-# this is not appropriate for save blocks.  Instead, the save block
-# should be accessed directly for update
- 
-def update(self,adict):
-    loopdone = []
-    if not isinstance(adict,CifBlock):
-        raise TypeError
-    for key in adict.block.keys():
-        self.AddCifItem((key,adict[key]))
-    for aloop in adict.loops:
-        self.insert_loop(aloop,audit=True)
 
 @ This function was added for the dictionary validation routines.  It
 will return a list where each member is itself a list of item names,
@@ -258,14 +243,13 @@ corresponding to the names in each loop of the file.
 
 <<Return all looped names>>=
 def loopnames(self):
-    return map(lambda a:a.keys(),self.loops)
+    return [self.loops[a] for a in self.loops]
                           
-@ Adding a data item.  We are passed a tuple with the (set) of data
+@ Adding a data item.  In the old, deprecated method We are passed a tuple with the (set) of data
 names at the beginning, and a (set) of values for them following. 
 
-If an item is already stored, it will be silently replaced; if it earlier
-lived in a loop, it will be removed from the loop, and the loop itself
-removed if it is now zero length.
+We implement this behaviour by looping over the input datanames, and adding them 
+to the set of keys.  When we have finished, we create the loop.
 
 We check the length of the name, and give an error if the name is
 greater than 75 characters, which is the CIF 1.1 maximum length.
@@ -288,17 +272,20 @@ def AddCifItem(self,data):
               raise TypeError, 'Cif datanames are either a string, tuple or list'
     # single items passed straight through to underlying routine
     # we catch single item loops as well...
-    if isinstance(data[0],StringTypes):
-        if isinstance(data[1],(TupleType,ListType)) and not isinstance(data[1],StarFile.StarList):
-            CifLoopBlock.AddLoopItem(self,((data[0],),((data[1],))))
-        else:
-            CifLoopBlock.AddLoopItem(self,data)
+    if isinstance(data[0],basestring):
+        self.AddSingleCifItem(data[0][0],list(data[1][0]),maxlength=75)
+        if isinstance(data[1],(tuple,list)) and not isinstance(data[1],StarFile.StarList):  # a single element loop
+            self.CreateLoop(data[0])
         return
-    # otherwise, we unpack one level and send along.  This is different
-    # to the StarBlock behaviour, which assumes that any tuples imply an
-    # inner loop.
-    keyvals = zip(data[0],data[1])
-    map(lambda a:CifLoopBlock.AddLoopItem(self,a),keyvals)
+    # otherwise, we loop over the datanames
+    keyvals = zip(data[0][0],[list(a) for a in data[1][0]])
+    [self.AddSingleCifItem(a,b) for a,b in keyvals]
+    # and create the loop
+    self.CreateLoop(data[0][0])
+
+def AddSingleCifItem(self,key,value):
+    """Add a single data item. If it is part of a loop, a separate call should be made"""
+    self.AddItem(key,value,maxlength=75)
 
 @ Reading in a file.  We use the STAR grammar parser.  Note that the blocks returned
 will be locked for changing ([[overwrite=False]]) and can be unlocked by setting

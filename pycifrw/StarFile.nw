@@ -877,11 +877,6 @@ def ReadStar(filename,prepared = StarFile(),maxlength=2048,scantype='standard',g
         raise StarError( errorstring)
     # set visibility correctly
     proto_star.scoping = 'dictionary'
-    # duplication check on all blocks
-    audit_result = map(lambda a:(a,proto_star[a].audit()),proto_star.keys())
-    audit_result = filter(lambda a:len(a[1])>0,audit_result)
-    if audit_result:
-        raise StarError( 'Duplicate keys as follows: %s' % `audit_result`)
     proto_star.set_uri(my_uri)
     proto_star.scoping = save_scoping
     return proto_star
@@ -936,20 +931,12 @@ class StarDict(dict):
 
 @ \section{Loop Block class}
 
-This is the fundamental building block of a StarFile.  We abstract a
-loop to mean a collection of tag value pairs and a collection of 
-zero or more loop blocks (recursive definition).  The values have a
-dimension that increases by one with each embedding. In practice we
-expect only a single level of embedding, i.e. dimension 1 or 0, but
-the original STAR standard allows multiple levels of loop
-block nesting so we can handle more.
-
-A CifBlock inherits from a CifLoopBlock which inherits from a Star
-Block which inherits from this LoopBlock class.
- 
-We store the dimension in the class for convenience.
-
-A Star Block is simply a Loop block with dimension zero.
+A LoopBlock is provided as a row-based interface to a collection of
+columns, so that iteration over packets is possible.  It is
+initialised with a StarBlock object and dataname and returns an object
+that accesses the loop containing the dataname.  Datavalues is not
+copied, meaning that changes to the data (e.g. appending a packet)
+will be apparent in the StarBlock parent.
 
 <<LoopBlock class>>=
 class LoopBlock(object):
@@ -960,224 +947,28 @@ class LoopBlock(object):
     <<Remove a nested loop>>
     <<Add a comment>>
     <<Remove a comment>>
-    <<Return value of item>>
+    <<Return value of loop item>>
     <<Remove a data item>>
-    <<Add a data item>>
-    <<Check data name for STAR conformance>>
-    <<Check data item for STAR conformance>>
-    <<Regularise data values>>
     <<Get complete looped data>>
     <<Packet handling methods>>
     <<Get item order>>
     <<Change data item order>>
     <<Return position of data item>>
     <<Collapse to nth packet>>
-    <<Audit for repeated names>>
     <<Get co-looped names>>
     <<Add to looped data>>
     <<Transform a group of tags to a subgroup>>
-    <<Functions for printing out>>
 
-@ If given non-zero data to initialise the block with, we either
-copy (if it is a dictionary) or else initialise each key-value
-pair separately (if tuples).  We take care to include our special
-"loop" key if it is not in the supplied dictionary, but apart from
-this we make no check of the actual conformance of the dictionary
-items. 
-
-The dimension parameter refers to the number of dimenstions of the
-value; zero would be a single value, 1 is a 1-dimensional array, etc.
-
-To manage case insensitivity while preserving the case of items
-that we are passed, we store a list of lower-case keys so that we
-are not constantly calling the [[lower()]] method of the strings.  This
-list applies only to the items in the body of the loop, not to any
-items in nested loops.  However, when searching for items and returning
-items, nested loops are searched.
-
-The [[overwrite]] argument allows values to be silently replaced, as per a
-normal python dictionary.  However, when reading in from a file, we want to
-detect duplicated values, so we set this to false.  As DDLm introduces the 
-unicode character set, we need to indicate which character set we are
-prepared to accept.
-
-We store the data in [[self.block]]. Each entry in this table is a tuple
-with first element the string value, and second element the corresponding
-calculated or actual value.  We use a tuple to emphasise that both values
-need to be changed together.
-
-Formatting hints are used on output to suggest column positions for
-looped datanames and delimiters. In practice these are used only for
-dictionaries where fine-tuned layout is helpful for human readers.
+@ Initialising: We do not check conformance to standards here: it assumed that
+this has been done by the creating routine.
 
 <<Initialise Loop Block>>=
-def __init__(self,data = (), dimension = 0, maxoutlength=2048, wraplength=80, overwrite=True,
-             characterset='ascii'):
-    # print 'Creating new loop block, dimension %d' % dimension
-    self.block = {}
-    self.loops = []
-    self.no_packets = 0
-    self.item_order = []
-    self.formatting_hints = {}
-    self.lower_keys = []    #for efficiency
-    self.value_switch = False #prefer string version always
-    self.comment_list = {}
-    self.dimension = dimension
-    self.dictionary = None      #DDLm dictionary
-    self.popout = False         #used during load iteration
-    self.curitem = -1           #used during iteration
-    self.maxoutlength = maxoutlength
-    self.wraplength = wraplength
-    self.overwrite = overwrite
-    self.characterset = characterset
-    if not hasattr(self,'loopclass'):  #in case are derived class
-        self.loopclass = LoopBlock  #when making new loops
-    if self.characterset == 'ascii':
-        self.char_check = re.compile("[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+",re.M)
-    elif self.characterset == 'unicode':
-        self.char_check = re.compile(u"[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\u00A0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFFD\U00010000-\U0010FFFD-]+",re.M)
-    else:
-        raise StarError("No character set specified")
-    if isinstance(data,(TupleType,ListType)):
-        for item in data:
-            self.AddLoopItem(item)
-    elif isinstance(data,LoopBlock):
-        self.block = data.block.copy() 
-        self.item_order = data.item_order[:]
-        self.lower_keys = data.lower_keys[:]
-	self.comment_list = data.comment_list.copy()
-        self.dimension = data.dimension
-        # loops as well
-        for loopno in range(len(data.loops)):
-            try:
-                placeholder = self.item_order.index(data.loops[loopno])
-            except ValueError:
-                print "Warning: loop %s (%s) in loops, but not in item_order (%s)" % (`data.loops[loopno]`,str(data.loops[loopno]),`self.item_order`)
-                placeholder = -1
-            self.item_order.remove(data.loops[loopno])   #gone
-            # newobject = self.loopclass(data.loops[loopno])
-            # print "Recasting and adding loop %s -> %s" % (`data.loops[loopno]`,`newobject`)
-            self.insert_loop(data.loops[loopno],position=placeholder)
-
-@ Adding emulation of a mapping type.  We add any of the other
-functions we'd like to emulate.   [[__len__]] returns the number
-of items in this block, either in a loop or not.  So it is
-not the simple length of the dictionary.
-
-A Star Block is a Loop Block which can hold save frames in the outermost
-loop.   From version 4.05 we do not allow save frames to be set from within
-the block; rather, an enclosing block collection should be created (e.g. a
-Star File) and the save frame added to that block collection with the
-'enclosing' StarBlock set as its parent. We catch the saves key and
-print an error message to show deprecation.
+def __init__(self,parent_block,dataname):
+    loop_no = parent_block.FindLoop(dataname)
+    self.datanames = parent_block.loops[loop_no]
 
 <<Add emulation of a mapping type>>=
-def __str__(self):
-    return self.printsection()
-
-def __setitem__(self,key,value):
-    if key == "saves":
-        raise StarError("""Setting the saves key is deprecated. Add the save block to
-an enclosing block collection (e.g. CIF or STAR file) with this block as child""")
-    self.AddLoopItem((key,value))
-
-def __getitem__(self,key):
-    if isinstance(key,IntType):   #return a packet!!
-        return self.GetPacket(key) 
-    if key == "saves":
-        raise StarError("""The saves key is deprecated. Access the save block from
-the enclosing block collection (e.g. CIF or STAR file object)""") 
-    try:
-       rawitem,is_value = self.GetLoopItemValue(key)
-    except KeyError:
-       if self.dictionary:
-           # send the dictionary the required key and a pointer to us
-           new_value = self.dictionary.derive_item(key,self,store_value=True)
-           print 'Set %s to derived value %s' % (key, `new_value`)
-           return new_value 
-       else:
-           raise KeyError, 'No such item: %s' % key
-    # we now have an item, we can try to convert it to a number if that is appropriate
-    # note numpy values are never stored but are converted to lists
-    if not self.dictionary or not self.dictionary.has_key(key) or is_value: return rawitem
-    return self.dictionary.change_type(key,rawitem)
-      
-def __delitem__(self,key):
-    self.RemoveLoopItem(key)
-
-def __len__(self):
-    blen = len(self.block)
-    for aloop in self.loops:
-        # print 'Aloop is %s' % `aloop`
-        blen = blen + len(aloop)  # also a LoopBlock
-    return blen    
-
-def __nonzero__(self):
-    if self.__len__() > 0: return 1
-    return 0
-
-# keys returns all internal keys
-def keys(self):
-    thesekeys = self.block.keys()
-    for aloop in self.loops:
-        thesekeys.extend(aloop.keys())
-    return thesekeys
-
-def values(self):
-    ourkeys = self.keys()
-    return map(lambda a:self[a],ourkeys)
-
-def items(self):
-    ourkeys = self.keys()
-    return map(lambda a,b:(a,b),self.keys(),self.values())
-
-def has_key(self,key):
-    if isinstance(key,StringTypes) and key.lower() in self.lower_keys:
-        return 1
-    for aloop in self.loops:
-        if aloop.has_key(key): return 1
-    return 0
-
-def get(self,key,default=None):
-    if self.has_key(key):
-        retval = self.GetLoopItem(key)
-    else:
-        retval = default
-    return retval
-
-def clear(self):
-    self.block = {}
-    self.loops = []
-    self.item_order = []
-    self.lower_keys = []
-    self.no_packets = 0
-
-# doesn't appear to work
-def copy(self):
-    newcopy = LoopBlock(dimension = self.dimension)
-    newcopy.block = self.block.copy()
-    newcopy.loops = []
-    newcopy.no_packets = self.no_packets
-    newcopy.item_order = self.item_order[:]
-    newcopy.lower_keys = self.lower_keys[:]
-    for loop in self.loops:
-        try:
-            placeholder = self.item_order.index(loop)
-        except ValueError:
-            print "Warning: loop %s (%s) in loops, but not in item_order (%s)" % (`loop`,str(loop),`self.item_order`)
-            placeholder = -1
-        newcopy.item_order.remove(loop)   #gone
-        newobject = loop.copy()
-        # print "Adding loop %s -> %s" % (`loop`,`newobject`)
-        newcopy.insert_loop(newobject,position=placeholder)
-    return newcopy
-
-# this is not appropriate for subloops.  Instead, the loop block
-# should be accessed directly for update
- 
-def update(self,adict):
-    for key in adict.keys():
-        self.AddLoopItem((key,adict[key]))
+pass
 
 @ There are two potential ways of running over the data in a LoopBlock: we
 could loop over the set of values in the non-nested values, and return the
@@ -1186,166 +977,16 @@ in which case the calling program decides whether or not it wants to
 dig deeper; or we could recursively expand and loop over all nested loops
 as well.  We set the default behaviour on initialisation to be one-level.
  
-<<Selection of iterators>>=
-<<A load iterator>>
-<<A recursive iterator>>
-<<A one-level iterator>>
-
-@ When loading values, we want to iterate over the items until
-a "stop_" token is found - this is communicated via the "popout"
-attribute changing to True.  We save the __iter__ method for
-iterating over packets.  Also, when a new packet is begun, all
-subloops should be extended correspondingly.  We are in a special
-situation where we don't enforce length matching, as we assume
-that things will be loaded in as we go. 
-
-Each yield returns a list which should be appended to with a unitary
-item.  So, as the number of packets increases, we need to make sure
-that the lowest level lists are extended as needed with empty lists.
-
-<<A load iterator>>=
-def load_iter(self,coords=[]):
-    count = 0        #to create packet index 
-    while not self.popout:
-        # ok, we have a new packet:  append a list to our subloops
-        for aloop in self.loops:
-            aloop.new_enclosing_packet()
-        for iname in self.item_order:
-            if isinstance(iname,LoopBlock):       #into a nested loop
-	        for subitems in iname.load_iter(coords=coords+[count]):
-                    # print 'Yielding %s' % `subitems`
-	            yield subitems
-                # print 'End of internal loop'
-            else:
-                if self.dimension == 0:
-                    # print 'Yielding %s' % `self[iname]`
-      	            yield self,self[iname]
-                else:
-                    backval = self.block[iname]
-                    for i in range(len(coords)):
-                       # print 'backval, coords: %s, %s' % (`backval`,`coords`)
-                       backval = backval[coords[i]]
-                    yield self,backval
-        count = count + 1      # count packets
-    self.popout = False        # reinitialise
-    # print 'Finished iterating'
-    yield self,'###Blank###'     #this value should never be used
-
-# an experimental fast iterator for level-1 loops (ie CIF)
-def fast_load_iter(self):
-    targets = map(lambda a:self.block[a],self.item_order)
-    while targets:
-        for target in targets:
-            yield self,target
-
-# Add another list of the required shape to take into account a new outer packet
-def new_enclosing_packet(self):
-    if self.dimension > 1:      #otherwise have a top-level list
-        for iname in self.keys():  #includes lower levels
-            target_list = self[iname]
-            for i in range(3,self.dimension): #dim 2 upwards are lists of lists of... 
-                target_list = target_list[-1]
-            target_list.append([])
-            # print '%s now %s' % (iname,`self[iname]`)
-
-@ We recursively expand out all values in nested loops and return a 
-simple dictionary type.  Although it only seems to make sense to call
-this from a dimension 0 LoopBlock, if we are not a level 0 LoopBlock, 
-we drill down until we get a simple value to return, then start looping.
-
-We want to build up a return dictionary by adding keys from the deeper loops,
-but if we simply use the dictionary update method, we will find that we
-have stale keys from previous inner loops.  Therefore, we keep our values as
-(key,value) tuples which we turn into a Star packet at the last moment.
-
-This is now updated to return StarPackets, which are like lists
-except that they also have attributes set.
- 
-<<A recursive iterator>>=
-def recursive_iter(self,dict_so_far={},coord=[]):
-    # print "Recursive iter: coord %s, keys %s, dim %d" % (`coord`,`self.block.keys()`,self.dimension)
-    my_length = 0
-    top_items = self.block.items()
-    top_values = self.block.values()       #same order as items
-    drill_values = self.block.values()
-    for dimup in range(0,self.dimension):  #look higher in the tree
-        if len(drill_values)>0:            #this block has values
-            drill_values=drill_values[0]   #drill in
-        else:
-            raise StarError("Malformed loop packet %s" % `top_items[0]`)
-    my_length = len(drill_values[0])       #length of 'string' entry
-    if self.dimension == 0:                #top level
-        for aloop in self.loops:
-            for apacket in aloop.recursive_iter():
-                # print "Recursive yielding %s" % `dict(top_items + apacket.items())`
-                prep_yield = StarPacket(top_values+apacket.values())  #straight list
-                for name,value in top_items + apacket.items():
-                    setattr(prep_yield,name,value)
-                yield prep_yield
-    else:                                  #in some loop
-        for i in range(my_length):
-            kvpairs = map(lambda a:(a,self.coord_to_group(a,coord)[i]),self.block.keys())
-            kvvals = map(lambda a:a[1],kvpairs)   #just values
-            # print "Recursive kvpairs at %d: %s" % (i,`kvpairs`)
-            if self.loops:
-              for aloop in self.loops:
-                for apacket in aloop.recursive_iter(coord=coord+[i]):
-                    # print "Recursive yielding %s" % `dict(kvpairs + apacket.items())`
-                    prep_yield = StarPacket(kvvals+apacket.values())
-                    for name,value in kvpairs + apacket.items():
-                        setattr(prep_yield,name,value)
-                    yield prep_yield
-            else:           # we're at the bottom of the tree
-                # print "Recursive yielding %s" % `dict(kvpairs)`
-                prep_yield = StarPacket(kvvals)
-                for name,value in kvpairs:
-                    setattr(prep_yield,name,value)
-                yield prep_yield
-
-# small function to use the coordinates. 
-def coord_to_group(self,dataname,coords):
-      if not isinstance(dataname,StringTypes):
-         return dataname     # flag inner loop processing
-      newm = self[dataname]          # newm must be a list or tuple
-      for c in coords:
-          # print "Coord_to_group: %s ->" % (`newm`),
-          newm = newm[c]
-          # print `newm`
-      return newm 
-
-@ Return a series of LoopBlocks with the appropriate packet chosen. This
-does not loop over interior blocks, so called at the top level it just
-returns the whole star block.
-
-<<A one-level iterator>>=
-def flat_iterator(self):
-    if self.dimension == 0:   
-        yield copy.copy(self)
-    else:
-        my_length = 0
-        top_keys = self.block.keys()
-        if len(top_keys)>0:
-            my_length = len(self.block[top_keys[0]])
-        for pack_no in range(my_length):
-            yield(self.collapse(pack_no))
-        
 @ Insert a subloop.  Rather than a simple append, we need to register
 the order in which this loop appears, by putting its integer index
-into our item_order array.  We can optionally check for duplicate
-values, which is normally a good idea; however, if we are reading in 
-a file, for efficiency we only do this at the end of input.
+into our item_order array.  
 
 <<Insert a nested loop>>=
-def insert_loop(self,newloop,position=-1,audit=True):
+def insert_loop(self,newloop,position=-1):
     # check that new loop is kosher
     if newloop.dimension != self.dimension + 1:
         raise StarError( 'Insertion of loop of wrong nesting level %d, should be %d' % (newloop.dimension, self.dimension+1))
     self.loops.append(newloop)
-    if audit:
-        dupes = self.audit()
-        if dupes:
-            dupenames = map(lambda a:a[0],dupes)
-            raise StarError( 'Duplicate names: %s' % `dupenames`)
     if position >= 0:
         self.item_order.insert(position,newloop)
     else:
@@ -1384,7 +1025,7 @@ considered to be unready for use as values as they may in
 fact be Arrays or Matrices and therefore require their
 type to be changed.
 
-<<Return value of item>>=
+<<Return value of loop item>>=
 def GetLoopItem(self,itemname):
     """Return value of itemname in this loop block"""
     return self.GetLoopItemValue(itemname)[0]
@@ -1423,29 +1064,6 @@ def GetLoopItemValue(self,itemname):
             return v,not isinstance(v[0],StarList)
         return v,True
 
-@ Loops.  We should distinguish two loop structures: the loop
-structures provided by the syntax, and the loop structures defined by
-the dictionary ('semantic' loops).  The members of these loops do not
-coincide for 'joined' categories, where datanames may appear in either
-separate loops, or within one loop.  Until we have a dictionary, we
-have no way to find the semantic loops. 
-
-The first function below returns the particular loop block containing
-the specified dataname, so that we can manipulate its contents
-directly, and therefore refers to a syntactic loop.
-
-<<Get complete looped data>>=
-def GetLoop(self,keyname):
-    if not self.has_key(keyname):
-        raise KeyError, 'Item %s does not exist' % keyname
-    if keyname.lower() in self.lower_keys:        #python 2.2 or above
-        return self
-    for aloop in self.loops:
-        try: 
-            return aloop.GetLoop(keyname)
-        except KeyError:
-            pass
-    raise KeyError, 'Item %s does not exist' % keyname
 
 @  Packets.  We store columns, so extracting packets is a much
 slower task.
@@ -1629,25 +1247,6 @@ def ChangeItemOrder(self,itemname,newpos):
     # so we have an object ready for action
     self.item_order.insert(newpos,itemname)
 
-@ A utility function to get the numerical order in the printout
-of the given item.  We have the try: except: clauses in there as
-we may have Loop or Comment classes in our order list.
-
-<<Return position of data item>>=
-def GetItemPosition(self,itemname):
-    import string
-    def low_case(item):
-        try:
-            return string.lower(item)
-        except AttributeError:
-            return item
-    try:
-        testname = string.lower(itemname)
-    except AttributeError: 
-        testname = itemname
-    lowcase_order = map(low_case,self.item_order)
-    return lowcase_order.index(testname)
-
 @ This returns a copy, in theory independent (check that) with just
 the nth packet selected, and order preserved.
 
@@ -1663,21 +1262,6 @@ def collapse(self,packet_no):
             # print "Collapse: %s -> %s" % (one_item,`self[one_item][packet_no]`)
             newlb[one_item] = self[one_item][packet_no] 
     return newlb
-    
-@ This function is typically called once by the topmost loop after reading
-in a complete datablock; if it returns an empty list, that is a guarantee
-that no datanames are repeated within this loop and subloops.  We use the
-sets module for efficiency (when we go to 2.4 support we'll use the builtin
-as well).
-
-<<Audit for repeated names>>=
-def audit(self):
-    allkeys = self.keys()
-    uniquenames = set(allkeys)
-    if len(uniquenames) == len(allkeys): return []
-    else:              
-        keycount = map(lambda a:(a,allkeys.count(a)),uniquenames)
-        return filter(lambda a:a[1]>1,keycount)
     
 @ Get co-looped names.  Sometimes we just want names, and will get the
 values ourselves on a need-to-know basis. 
@@ -1722,52 +1306,210 @@ def Loopify(self,datanamelist):
             del self[name]
         self.insert_loop(newloop) 
  
-@ Removing a data item.  We delete the item, and if it is looped, and
-nothing is left in the loop, we remove that element of the list. 
+    
+@ \section{Star Block class}
 
-<<Remove a data item>>=
-def RemoveLoopItem(self,itemname):
-    if self.has_key(itemname):
-        testkey = itemname.lower()
-        real_keys = self.block.keys()
-        lower_keys = map(lambda a:a.lower(),real_keys)
-        try:
-            k_index = lower_keys.index(testkey)
-        except ValueError:    #must be in a lower loop
-            for aloop in self.loops:
-                if aloop.has_key(itemname):
-                    # print "Deleting %s (%s)" % (itemname,aloop[itemname])
-                    del aloop[itemname]
-                    if len(aloop)==0:  # all gone
-                       self.remove_loop(aloop)
-                    break
-        else:
-          del self.block[real_keys[k_index]]
-          self.lower_keys.remove(testkey)
-          # now remove the key in the order list
-          for i in range(len(self.item_order)):
-            if isinstance(self.item_order[i],StringTypes): #may be loop
-                if self.item_order[i].lower()==testkey:
-                    del self.item_order[i]
-                    break
-	if len(self.block)==0:    #no items in loop, length -> 0
-	    self.no_packets = 0
-	return        #no duplicates, no more checking needed
+A Star Block is no longer simply a LoopBlock. Historically it was distinguished
+by holding save frames, but this has been removed.  Development note:
+in the original implementation, a StarBlock was just a special type of
+LoopBlock.  In our new implementation, a LoopBlock is a simple
+structure that is created to access loops in a certain way.
 
-@ Adding a data item.  This routine adds a single data item to a
-pre-existing loop, checking both the dimension and length to make
-sure they match already-existing items.  We make a special exception
-for an empty list on the assumption that it is going to be filled
-manually (in particular, using load_iter during file reading).
+The other difference between LoopBlocks and StarBlocks is that the latter
+can have a dictionary attached, whereas inner LoopBlocks should not. 
 
-If an item is already stored, it will be silently replaced.  Note that
-we can only guarantee this behaviour, and that duplicate items are not
-present, if this is called in the top loop.  If it is called as a
-method of an inner loop, only subloops are visible for checking/
-replacing.  We could get around this restriction by being passed a
-function which would fix things up for us.
+<<StarBlock class>>=
+class StarBlock(object):
+    <<Initialise a StarBlock>>
+    <<Add StarBlock emulation of mapping type>>
+    <<Return position of data item>>
+    <<Add a data item>>
+    <<Check data name for STAR conformance>>
+    <<Check data item for STAR conformance>>
+    <<Regularise data values>>
+    <<Remove a data item>>
+    <<Return value of item>>
+    <<Dealing with loops>>
+    <<Functions for printing out>>
+    <<Merge with another block>>
+    <<Working with dictionaries>>
 
-We also check for consistency, by making sure the new item is
+@ Initialising a StarBlock. If given non-zero data to initialise the
+block with, we either copy (if it is a dictionary) or else initialise
+each key-value pair separately (if tuples).  We take care to include
+our special "loop" key if it is not in the supplied dictionary, but
+apart from this we make no check of the actual conformance of the
+dictionary items.
+
+To maximise efficiency, we store all keys as lower case, and keep
+a table of key vs the actual supplied capitalisation for printout.
+
+The [[overwrite]] argument allows values to be silently replaced, as per a
+normal python dictionary.  However, when reading in from a file, we want to
+detect duplicated values, so we set this to false.  As DDLm introduces the 
+unicode character set, we need to indicate which character set we are
+prepared to accept.
+
+We store the data in [[self.block]]. Each entry in this table is a tuple
+with first element the string value, and second element the corresponding
+calculated or actual value.  We use a tuple to emphasise that both values
+need to be changed together.
+
+Formatting hints are used on output to suggest column positions for
+looped datanames and delimiters. In practice these are used only for
+dictionaries where fine-tuned layout is helpful for human readers.
+
+<<Initialise a StarBlock>>=
+def __init__(self,data = (), maxoutlength=2048, wraplength=80, overwrite=True,
+             characterset='ascii'):
+    self.block = {}    #the actual data storage (lower case keys)
+    self.loops = {}    #each loop is indexed by a number and contains a list of datanames
+    self.item_order = []  #lower case, loops referenced by integer
+    self.formatting_hints = {}
+    self.true_case = {} #transform lower case to supplied case
+    self.value_switch = False   #prefer string version always
+    self.dictionary = None      #DDLm dictionary
+    self.popout = False         #used during load iteration
+    self.curitem = -1           #used during iteration
+    self.maxoutlength = maxoutlength
+    self.wraplength = wraplength
+    self.overwrite = overwrite
+    self.characterset = characterset
+    if self.characterset == 'ascii':
+        self.char_check = re.compile("[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+",re.M)
+    elif self.characterset == 'unicode':
+        self.char_check = re.compile(u"[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\u00A0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFFD\U00010000-\U0010FFFD-]+",re.M)
+    else:
+        raise StarError("No character set specified")
+    if isinstance(data,(TupleType,ListType)):
+        for item in data:
+            self.AddLoopItem(item)
+    elif isinstance(data,StarBlock):
+        self.block = data.block.copy() 
+        self.item_order = data.item_order[:]
+        self.true_case = data.true_case.copy()
+        # loops as well
+        self.loops = data.loops.copy()
+
+@ Adding emulation of a mapping type.  We add any of the other
+functions we'd like to emulate.   [[__len__]] returns the number
+of items in this block, either in a loop or not.  So it is
+not the simple length of the dictionary.
+
+A Star Block can hold save frames in the outermost loop.  From version
+4.05 we do not allow save frames to be set from within the block;
+rather, an enclosing block collection should be created (e.g. a Star
+File) and the save frame added to that block collection with the
+'enclosing' StarBlock set as its parent. We catch the saves key and
+print an error message to show deprecation.
+
+<<Add StarBlock emulation of mapping type>>=
+def __str__(self):
+    return self.printsection()
+
+def __setitem__(self,key,value):
+    if key == "saves":
+        raise StarError("""Setting the saves key is deprecated. Add the save block to
+an enclosing block collection (e.g. CIF or STAR file) with this block as child""")
+    self.AddItem(key,value)
+
+def __getitem__(self,key):
+    if key == "saves":
+        raise StarError("""The saves key is deprecated. Access the save block from
+the enclosing block collection (e.g. CIF or STAR file object)""") 
+    try:
+       rawitem,is_value = self.GetFullItemValue(key)
+    except KeyError:
+       if self.dictionary:
+           # send the dictionary the required key and a pointer to us
+           new_value = self.dictionary.derive_item(key,self,store_value=True)
+           print 'Set %s to derived value %s' % (key, `new_value`)
+           return new_value 
+       else:
+           raise KeyError, 'No such item: %s' % key
+    # we now have an item, we can try to convert it to a number if that is appropriate
+    # note numpy values are never stored but are converted to lists
+    if not self.dictionary or not self.dictionary.has_key(key) or is_value: return rawitem
+    return self.dictionary.change_type(key,rawitem)
+      
+def __delitem__(self,key):
+    self.RemoveItem(key)
+
+def __len__(self):
+    blen = len(self.block)
+    return blen    
+
+def __nonzero__(self):
+    if self.__len__() > 0: return 1
+    return 0
+
+# keys returns all internal keys
+def keys(self):
+    return self.block.keys()    #always lower case
+
+def values(self):
+    return [self[a] for a in self.keys()]
+
+def items(self):
+    return [a for a in zip(self.keys(),self.values())]
+
+def has_key(self,key):
+    if isinstance(key,StringTypes) and key.lower() in self.keys():
+        return 1
+    return 0
+
+def get(self,key,default=None):
+    if self.has_key(key):
+        retval = self.GetItem(key)
+    else:
+        retval = default
+    return retval
+
+def clear(self):
+    self.block = {}
+    self.loops = {}
+    self.item_order = []
+    self.true_case = {}
+
+# doesn't appear to work
+def copy(self):
+    newcopy = StarBlock()
+    newcopy.block = self.block.copy()
+    newcopy.loops = []
+    newcopy.item_order = self.item_order[:]
+    newcopy.true_case = self.true_case.copy()
+    newcopy.loops = self.loops.copy()
+#    return self.copy.im_class(newcopy)   #catch inheritance
+    return newcopy
+ 
+def update(self,adict):
+    for key in adict.keys():
+        self.AddItem(key,adict[key])
+
+@ A utility function to get the numerical order in the printout
+of the given item.  An item has coordinate (loop_no,pos) with
+the top level being loop_no of -1.  If an integer is passed to
+the routine then it will return the position of the loop
+referenced by that number.
+
+<<Return position of data item>>=
+def GetItemPosition(self,itemname):
+    import string
+    if isinstance(itemname,int):
+        # return loop position
+        return (-1, self.item_order.index(itemname))
+    if not self.has_key(itemname):
+        raise ValueError, 'No such dataname %s' % itemname
+    testname = itemname.lower()
+    if testname in self.item_order:
+        return (-1,self.item_order.index(testname))
+    loop_no = self.FindLoop(testname)
+    loop_pos = self.loops[loop_no].index(testname)
+    return loop_no,loop_pos
+
+@ Adding a data item. 
+
+We check for consistency, by making sure the new item is
 not in the block already.  If it is, we replace it (consistent with
 the meaning of square brackets in Python), unless [[self.overwrite]]  
 is False, in which case an error is raised.
@@ -1776,15 +1518,39 @@ We skip checking of data values if the [[precheck]] value is true- this
 is typically set if the item is being read from a file, and so is already
 checked.
 
-Note the confusing behaviour to allow recursive calls at any depth of loop (STAR
-has arbitrary depth).  If called with (string-valued key, value) then the
-structure is ultimately updated with key:value, where value must be of the
-appropriate dimension (0 for top-level).  If called with a compound
-key and compound value, then this routine is recursively called with
-zip(key,value).  As an exception, if called with a bare string key but a
-compound datavalue of length 1
-
 <<Add a data item>>=
+def AddItem(self,key,value,precheck=False,maxlength=-1):
+    if not isinstance(key,basestring):
+         raise TypeError, 'Star datanames are strings only (got %s)' % `key`
+    if not precheck:
+         self.check_data_name(key,maxlength)    # make sure no nasty characters   
+    # check for overwriting
+    if self.has_key(key):
+         if not self.overwrite:
+             raise StarError( 'Attempt to insert duplicate item name %s' % key)
+    # put the data in the right container
+    regval,empty_val = self.regularise_data(value)
+    # check for pure string data
+    pure_string = check_stringiness(regval)
+    if not precheck:
+        self.check_item_value(regval)
+    # update ancillary information first
+    lower_key = key.lower()
+    if not self.has_key(lower_key) and self.FindLoop(lower_key)<0:      #need to add to order
+        self.item_order.append(lower_key)
+    # always remove from our case table in case the case is different
+    else:
+        del self.true_case[lower_key]
+    self.true_case[lower_key] = key
+    if pure_string:
+        self.block.update({lower_key:[regval,empty_val]})
+    else:
+        self.block.update({lower_key:[empty_val,regval]})  
+        
+@  This is the original routine for adding a loop item, left in for consistency
+with old versions.  Do not use.
+
+<<Add a complete loop>>=
 def AddLoopItem(self,incomingdata,precheck=False,maxlength=-1):
     # print "Received data %s" % `incomingdata`
     # we accept tuples, strings, lists and dicts!!
@@ -1984,6 +1750,131 @@ def check_stringiness(data):
                if not check_stringiness(one_item): return False
            return True
 
+@ Removing a data item.  We delete the item, and if it is looped, and
+nothing is left in the loop, we remove the loop.
+
+<<Remove a data item>>=
+def RemoveItem(self,itemname):
+    # first check any loops
+    loop_no = self.FindLoop(itemname)
+    if self.has_key(itemname):
+        testkey = itemname.lower()
+        del self.block[testkey]
+        del self.true_case[testkey]
+    # now remove from loop
+    if loop_no >= 0:
+        self.loops[loop_no].remove(testkey)
+        if len(self.loops[loop_no])==0:
+            del self.loops[loop_no]
+            self.item_order.remove(loop_no)
+    else:  #will appear in order list
+            self.item_order.remove(testkey)
+ 
+@ Returning an item value.  Note that a looped block has little
+meaning without all the items in the loop.  Routine [[GetLoop]] is
+better in this case.  This is a real time-intensive loop, so we
+initially assume that the key we have been passed is the right
+key (i.e. case is the same) and only check for case if this
+fails.
+
+We define an alternative call that returns both the stored value
+and whether or not it is a non-string value.  This saves other
+routines performing the same check.  But any StarLists are
+considered to be unready for use as values as they may in
+fact be Arrays or Matrices and therefore require their
+type to be changed.
+
+<<Return value of item>>=
+def GetItemValue(self,itemname):
+    """Return value of itemname"""
+    return self.GetFullItemValue(itemname)[0]
+
+def GetFullItemValue(self,itemname):
+    """Return value of itemname and whether or not it is a native value"""
+    try:
+	s,v = self.block[itemname.lower()]
+    except KeyError:
+        raise KeyError, 'Itemname %s not in datablock' % itemname
+    # prefer string value unless all are None
+    # are we a looped value?
+    if not isinstance(s,(tuple,list)) or isinstance(s,StarList):
+        if s is not None or (isinstance(s,StarList) and None not in s): 
+            return s,False    #a string value
+        else:
+            return v,not isinstance(v,StarList)  #a StarList is not calculation-ready
+    elif None not in s: 
+        return s,False     #a list of string values
+    else: 
+        if len(v)>0:   
+            return v,not isinstance(v[0],StarList)
+        return v,True
+
+@ A StarBlock allows dealing with loops on a columnar level. For row-based
+operations, a LoopBlock can be created with GetLoop and iterated over.
+
+<<Dealing with loops>>=
+<<Create a loop>>
+<<Find a loop>>
+<<Get complete looped data>>
+
+@  Creating loops.  In the latest version of PyCIFRW, a loop is simply a collection
+of datanames that together make up the loop.  It is indexed by a number, which goes
+into the item_order array to produce the loop when printing out.  No check of
+dataname existence is done, so that a loop can be created before the datanames are
+provided.  In order to iterate over loop packets, a LoopBlock needs to be created
+subsequently.
+
+When we create the loop, we remove the datanames from the item order list to prevent
+them being output twice, and we also remove them from any other loop.  Thus, at
+any point in time, a dataname belongs to only one loop, but can be switched to
+another loop trivially.
+
+<<Create a loop>>=
+def CreateLoop(self,datanames,order=-1):
+       """[[datanames]] is a list of datanames that together form a loop.  They should
+       all contain the same number of elements (possibly 0). If [[order]] is given, the loop will
+       appear at this position in the block where a loop counts as a single position."""
+       if len(self.loops)>0:
+           loopno = max(self.loops.keys()) + 1
+       else:
+           loopno = 1
+       # remove these datanames from all other loops
+       [self.loops[a].remove(b) for a in self.loops for b in datanames if b in self.loops[a]]
+       self.loops[loopno] = list(datanames)
+       if order >= 0:
+           self.item_order.insert(order,loopno)
+       else:
+           self.item_order.append(loopno)
+       # remove these datanames from item ordering
+       self.item_order = [a for a in self.item_order if a not in datanames] 
+       
+@ Loops.  We should distinguish two loop structures: the loop
+structures provided by the syntax, and the loop structures defined by
+the dictionary ('semantic' loops).  The members of these loops do not
+coincide for 'joined' categories, where datanames may appear in either
+separate loops, or within one loop.  Until we have a dictionary, we
+have no way to find the semantic loops. 
+
+The first function below returns the particular loop block containing
+the specified dataname, so that we can manipulate its contents
+directly, and therefore refers to a syntactic loop.
+
+<<Get complete looped data>>=
+def GetLoop(self,keyname):
+    """Return a LoopBlock structure containing keyname"""
+    datanames = self.loops[self.FindLoop(keyname)]
+    return LoopBlock(self,datanames)
+
+<<Find a loop>>=
+def FindLoop(self,keyname):
+    """Find the loop that contains keyname and return its numerical index,-1 if not present"""
+    loop_no = [a for a in self.loops.keys() if keyname.lower() in self.loops[a]]
+    if len(loop_no)>0:
+        return loop_no[0]
+    else:
+        return -1
+
+
 @ \section{Output}
 
 The philosophy of outputting strings is to create a StringIO
@@ -1994,7 +1885,7 @@ and fiddle with the write method.
 
 <<Functions for printing out>>=
 <<Set the output length>>
-<<Print a loop block>>
+<<Print a complete block>>
 <<Format loop names>>
 <<Format loop packets>>
 <<Format a single packet item>>
@@ -2094,27 +1985,16 @@ def SetOutputLength(self,wraplength=80,maxoutlength=2048):
         raise StarError("Wrap length (requested %d) must be <= Maximum line length (requested %d)" % (wraplength,maxoutlength))
     self.wraplength = wraplength
     self.maxoutlength = maxoutlength
-    for loop in self.loops:
-        loop.SetOutputLength(wraplength,maxoutlength)
 
 @ Printing a section.  We allow an optional order list to be given, in
 case the caller wants to order things in some nice way.  By default, we
-use the item_order dictionary item.  Naturally, looped items are grouped
-together according to their relative order in the order list.
+use the item_order attribute.  Naturally, looped items are grouped
+together according to their order in the order list.
 
 Note that we must be careful to add spaces between data items, especially
 when formatting string loop data, where our string addition could get
 quite hairy.  As we are doing so much concatenation, we use a stringIO
 buffer to speed it up.
-
-Also, it is conceivable that we print an internal loop without the
-enclosing loop.  This means that we cannot assume that we find ourselves
-with a nice simple one-dimensional array after selecting out the matrix
-coordinate of our current packet.  Therefore, if we are not starting
-out with a zero-dimensional block, we use the contents of coord to make
-our choice for every non-specified dimension.
-
-This routine should not be called recursively.
 
 As an alternative, we may have formatting hints, perhaps from a template that
 we have input through 'process_template'.  The formatting hints specify a desired
@@ -2124,8 +2004,8 @@ but may have to fiddle with columns and delimiters depending on the datavalue co
 We attempt some nice formatting by printing non-packet items with an apparent
 tab stop at 40 characters.
 
-<<Print a loop block>>=
-def printsection(self,instring='',ordering=[],blockstart="",blockend="",indent=0,coord=[]):
+<<Print a complete block>>=
+def printsection(self,instring='',ordering=[],blockstart="",blockend="",indent=0):
     import string
     # first make an ordering
     self.create_ordering(ordering)
@@ -2134,12 +2014,6 @@ def printsection(self,instring='',ordering=[],blockstart="",blockend="",indent=0
         outstring = CIFStringIO(target_width=80)       # the returned string
     else:
         outstring = instring
-    if not coord:
-        coords = [0]*(self.dimension-1)
-    else:
-        coords = coord
-    if(len(coords)<self.dimension-1):
-        raise StarError("Not enough block packet coordinates to uniquely define data")
     # print loop delimiter
     outstring.write(blockstart,canbreak=True)
     while len(self.output_order)>0:
@@ -2151,26 +2025,20 @@ def printsection(self,instring='',ordering=[],blockstart="",blockend="",indent=0
        else:
            col_pos = -1
            item_spec = {}
-       if self.dimension == 0:            # ie value next to tag
-   	    if not isinstance(itemname,LoopBlock):  #no loop
+   	   if not isinstance(itemname,int):  #no loop
                if col_pos < 0: col_pos = 40
                outstring.set_tab(col_pos)
                itemvalue = self[itemname]
-               outstring.write(itemname,mustbreak=True,do_tab=False)
+               outstring.write(self.true_case[itemname],mustbreak=True,do_tab=False)
                outstring.write(' ',canbreak=True,do_tab=False)    #space after itemname
                self.format_value(itemvalue,outstring,hints=item_spec)
-            else:   # we are asked to print an internal loop block
+           else:   # we are asked to print a loop block
                 #first make sure we have sensible coords.  Length should be one
                 #less than the current dimension
                 outstring.set_tab(10)       #guess this is OK?
                 outstring.write(' '*indent,mustbreak=True,do_tab=False); outstring.write('loop_\n',do_tab=False)
-                itemname.format_names(outstring,indent+2)
-                itemname.format_packets(outstring,coords,indent+2)
-       else:   # we are a nested loop
-            outstring.write(' '*indent,mustbreak=True,do_tab=False); outstring.write('loop_\n',do_tab=False)
-	    self.format_names(outstring,indent+2)
-	    self.format_packets(outstring,coords,indent+2)
-    if instring: return   #inside a recursion
+                self.format_names(outstring,indent+2,loop_no=itemname)
+                self.format_packets(outstring,indent+2,loop_no=itemname)
     else:
         returnstring = outstring.getvalue()
     outstring.close()
@@ -2216,68 +2084,44 @@ and are expected to append a list of item names to the string indented by
 the indicated number of spaces.  If we have loops, we add those in too.
 
 <<Format loop names>>=
-def format_names(self,outstring,indent=0):
-    temp_order = self.item_order[:]
+def format_names(self,outstring,indent=0,loop_no=-1):
+    """Print datanames from [[loop_no]] one per line"""
+    temp_order = self.loops[loop_no][:]   #copy
     while len(temp_order)>0:
         itemname = temp_order.pop(0)
-        if isinstance(itemname,StringTypes):  #(not loop)
-            outstring.write(' ' * indent,do_tab=False) 
-            outstring.write(itemname,do_tab=False)
-            outstring.write("\n",do_tab=False)
-        else:                                # a loop
-            outstring.write(' ' * indent,do_tab=False) 
-            outstring.write("loop_\n",do_tab=False)
-            itemname.format_names(outstring,indent+2)
-            outstring.write(" stop_\n",do_tab=False)
+        outstring.write(' ' * indent,do_tab=False) 
+        outstring.write(self.true_case[itemname],do_tab=False)
+        outstring.write("\n",do_tab=False)
 
-@ Formatting a loop packet.  We are passed an array of coordinates into
-the required packet, of length dim - 1, and have to output the corresponding
-values.  Our final packet will involve collecting the ith value of each 
-item in our particular loop.  Note that we have to be careful with 
-indentation, as the <return>; digraph must be recognised.
+@ Formatting a loop packet.  Our final packet will involve collecting
+the ith value of each item in our particular loop.  Note that we have
+to be careful with indentation, as the <return>; digraph must be
+recognised.
 
 <<Format loop packets>>=
-def format_packets(self,outstring,coordinates,indent=0):
+def format_packets(self,outstring,indent=0,loop_no=-1):
    import cStringIO
    import string
-   # get our current group of data
-   # print 'Coords: %s' % `coordinates`
-   alldata = map(lambda a:self.coord_to_group(a,coordinates),self.item_order)
-   # print 'Alldata: %s' % `alldata`
+   alldata = [self[a] for a in self.loops[loop_no]]
+   print 'Alldata: %s' % `alldata`
    packet_data = apply(zip,alldata)
-   # print 'Packet data: %s' % `packet_data`
+   print 'Packet data: %s' % `packet_data`
    for position in range(len(packet_data)):
        for point in range(len(packet_data[position])):
            datapoint = packet_data[position][point]
            packstring = self.format_packet_item(datapoint,indent,outstring)
        outstring.write("\n",do_tab=False)
            
-@ Formatting a single packet item - could be a nested packet!  If we have a
-list of nested packets, we have to transpose first.  Note also that a nested
-packet implies a STAR file, which means there are no line length restrictions.
-We are therefore a bit sloppy with our checking against [[wraplength]] and
-[[maxoutlength]].
+@ Formatting a single packet item.
 
 <<Format a single packet item>>=
 def format_packet_item(self,pack_item,indent,outstring):
-    # print 'Formatting %s' % `pack_item`
-    if isinstance(pack_item,(StringType,UnicodeType,IntType,FloatType,LongType,StarList,StarDict)):
+       # print 'Formatting %s' % `pack_item`
        if isinstance(pack_item,StringTypes):
            outstring.write(self._formatstring(pack_item)) 
        else: 
            self.format_value(pack_item,outstring)
        outstring.write(' ',canbreak=True,do_tab=False)
-    # Now, for each nested loop we call ourselves again
-    else:               # a nested packet
-       if not isinstance(pack_item[0],(ListType,TupleType)):  #base packet
-           item_list = pack_item
-       else:
-           item_list = apply(zip,pack_item)
-       for sub_item in item_list:
-           outstring.write(' ' + self.format_packet_item(sub_item,indent,outstring),canbreak=True)
-       # stop_ is not issued at the end of each innermost packet
-       if isinstance(pack_item[0],(ListType,TupleType)):
-           outstring.write(' stop_ ',canbreak=True)
 
 @ Formatting a string.  We make sure that the length of the item value
 is less than [[self.maxoutlength]], or else we should split them, and so on. We check the
@@ -2534,8 +2378,7 @@ def process_template(self,template_string):
 @ Creating a proper ordering for output from the template information.  When we output,
 we expect the ordering to consist of a sequence of datanames or loop references.  Our
 templated ordering is essentially a list of datanames, so we now have to find which
-loops each dataname corresponds to and put the loop reference into the order list, 
-pushing down the information about ordering for the loop.
+loops each dataname corresponds to and adjust each loops ordering accordingly.
 
 <<Create a proper ordering>>=
 def create_ordering(self,order_dict):
@@ -2544,35 +2387,14 @@ def create_ordering(self,order_dict):
     new_order = []
     for item in requested_order:
        if isinstance(item,basestring) and item.lower() in self.item_order:
-           new_order.append(item)
+           new_order.append(item.lower())
        elif self.has_key(item):    #in a loop somewhere
-           target_loop = self.GetLoop(item)
-           target_loop.create_ordering(order_dict)
-           new_order.append(self.GetLoop(item))
+           target_loop = self.FindLoop(item)
+           if target_loop not in new_order:
+               new_order.append(target_loop)
     extras = [i for i in self.item_order if i not in new_order]
     self.output_order = new_order + extras
     print 'Final order: ' + `self.output_order`
-    
-@ \section{Star Block class}
-
-A Star Block is simply a LoopBlock. Historically it was distinguished by
-holding save frames, but this has been removed.
-
-<<StarBlock class>>=
-class StarBlock(LoopBlock):
-    <<Adjust emulation of mapping type>>
-    <<Merge with another block>>
-    <<Working with dictionaries>>
-
-@ 
-
-The other difference between LoopBlocks and StarBlocks is that the latter
-can have a dictionary attached, whereas inner LoopBlocks should not. 
-
-<<Adjust emulation of mapping type>>=
-def copy(self):
-    newblock = super(StarBlock,self).copy()
-    return self.copy.im_class(newblock)   #catch inheritance
 
 @ Merging.  Normally merging of dictionaries is done at the data file 
 level, i.e. a whole block is replaced or added.  However, in 'overlay'
@@ -2738,3 +2560,147 @@ def transpose(base_list):
        new_lofl.append(new_packet)
     return new_lofl
 
+
+<<Selection of iterators>>=
+<<A load iterator>>
+<<A recursive iterator>>
+<<A one-level iterator>>
+
+@ When loading values, we want to iterate over the items until
+a "stop_" token is found - this is communicated via the "popout"
+attribute changing to True.  We save the __iter__ method for
+iterating over packets.  Also, when a new packet is begun, all
+subloops should be extended correspondingly.  We are in a special
+situation where we don't enforce length matching, as we assume
+that things will be loaded in as we go. 
+
+Each yield returns a list which should be appended to with a unitary
+item.  So, as the number of packets increases, we need to make sure
+that the lowest level lists are extended as needed with empty lists.
+
+<<A load iterator>>=
+def load_iter(self,coords=[]):
+    count = 0        #to create packet index 
+    while not self.popout:
+        # ok, we have a new packet:  append a list to our subloops
+        for aloop in self.loops:
+            aloop.new_enclosing_packet()
+        for iname in self.item_order:
+            if isinstance(iname,LoopBlock):       #into a nested loop
+	        for subitems in iname.load_iter(coords=coords+[count]):
+                    # print 'Yielding %s' % `subitems`
+	            yield subitems
+                # print 'End of internal loop'
+            else:
+                if self.dimension == 0:
+                    # print 'Yielding %s' % `self[iname]`
+      	            yield self,self[iname]
+                else:
+                    backval = self.block[iname]
+                    for i in range(len(coords)):
+                       # print 'backval, coords: %s, %s' % (`backval`,`coords`)
+                       backval = backval[coords[i]]
+                    yield self,backval
+        count = count + 1      # count packets
+    self.popout = False        # reinitialise
+    # print 'Finished iterating'
+    yield self,'###Blank###'     #this value should never be used
+
+# an experimental fast iterator for level-1 loops (ie CIF)
+def fast_load_iter(self):
+    targets = map(lambda a:self.block[a],self.item_order)
+    while targets:
+        for target in targets:
+            yield self,target
+
+# Add another list of the required shape to take into account a new outer packet
+def new_enclosing_packet(self):
+    if self.dimension > 1:      #otherwise have a top-level list
+        for iname in self.keys():  #includes lower levels
+            target_list = self[iname]
+            for i in range(3,self.dimension): #dim 2 upwards are lists of lists of... 
+                target_list = target_list[-1]
+            target_list.append([])
+            # print '%s now %s' % (iname,`self[iname]`)
+
+@ We recursively expand out all values in nested loops and return a 
+simple dictionary type.  Although it only seems to make sense to call
+this from a dimension 0 LoopBlock, if we are not a level 0 LoopBlock, 
+we drill down until we get a simple value to return, then start looping.
+
+We want to build up a return dictionary by adding keys from the deeper loops,
+but if we simply use the dictionary update method, we will find that we
+have stale keys from previous inner loops.  Therefore, we keep our values as
+(key,value) tuples which we turn into a Star packet at the last moment.
+
+This is now updated to return StarPackets, which are like lists
+except that they also have attributes set.
+ 
+<<A recursive iterator>>=
+def recursive_iter(self,dict_so_far={},coord=[]):
+    # print "Recursive iter: coord %s, keys %s, dim %d" % (`coord`,`self.block.keys()`,self.dimension)
+    my_length = 0
+    top_items = self.block.items()
+    top_values = self.block.values()       #same order as items
+    drill_values = self.block.values()
+    for dimup in range(0,self.dimension):  #look higher in the tree
+        if len(drill_values)>0:            #this block has values
+            drill_values=drill_values[0]   #drill in
+        else:
+            raise StarError("Malformed loop packet %s" % `top_items[0]`)
+    my_length = len(drill_values[0])       #length of 'string' entry
+    if self.dimension == 0:                #top level
+        for aloop in self.loops:
+            for apacket in aloop.recursive_iter():
+                # print "Recursive yielding %s" % `dict(top_items + apacket.items())`
+                prep_yield = StarPacket(top_values+apacket.values())  #straight list
+                for name,value in top_items + apacket.items():
+                    setattr(prep_yield,name,value)
+                yield prep_yield
+    else:                                  #in some loop
+        for i in range(my_length):
+            kvpairs = map(lambda a:(a,self.coord_to_group(a,coord)[i]),self.block.keys())
+            kvvals = map(lambda a:a[1],kvpairs)   #just values
+            # print "Recursive kvpairs at %d: %s" % (i,`kvpairs`)
+            if self.loops:
+              for aloop in self.loops:
+                for apacket in aloop.recursive_iter(coord=coord+[i]):
+                    # print "Recursive yielding %s" % `dict(kvpairs + apacket.items())`
+                    prep_yield = StarPacket(kvvals+apacket.values())
+                    for name,value in kvpairs + apacket.items():
+                        setattr(prep_yield,name,value)
+                    yield prep_yield
+            else:           # we're at the bottom of the tree
+                # print "Recursive yielding %s" % `dict(kvpairs)`
+                prep_yield = StarPacket(kvvals)
+                for name,value in kvpairs:
+                    setattr(prep_yield,name,value)
+                yield prep_yield
+
+# small function to use the coordinates. 
+def coord_to_group(self,dataname,coords):
+      if not isinstance(dataname,StringTypes):
+         return dataname     # flag inner loop processing
+      newm = self[dataname]          # newm must be a list or tuple
+      for c in coords:
+          # print "Coord_to_group: %s ->" % (`newm`),
+          newm = newm[c]
+          # print `newm`
+      return newm 
+
+@ Return a series of LoopBlocks with the appropriate packet chosen. This
+does not loop over interior blocks, so called at the top level it just
+returns the whole star block.
+
+<<A one-level iterator>>=
+def flat_iterator(self):
+    if self.dimension == 0:   
+        yield copy.copy(self)
+    else:
+        my_length = 0
+        top_keys = self.block.keys()
+        if len(top_keys)>0:
+            my_length = len(self.block[top_keys[0]])
+        for pack_no in range(my_length):
+            yield(self.collapse(pack_no))
+        
