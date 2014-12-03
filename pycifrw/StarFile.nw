@@ -428,7 +428,6 @@ def NewBlock(self,blockname,blockcontents=None,fix=True,parent=None):
     if self.standard is not None:
        if self.standard == 'CIF':
           self.checknamelengths(blockcontents,maxlength=75)  #
-          self.checkloopnesting(blockcontents)
     if len(blockname)>75:
              raise StarError , 'Blockname %s is longer than 75 characters' % blockname
     if fix:
@@ -667,12 +666,6 @@ def checknamelengths(self,target_block,maxlength=-1):
     for it in toolong: outstring += "\n" + it
     if toolong:
        raise StarError( 'Following data names too long:' + outstring)
-
-def checkloopnesting(self,target_block):
-    """Check that block doesn't contain nested loops"""
-    for one_loop in target_block.loops:
-        if len(one_loop.loops) > 0:
-           raise StarError('Block contains nested loops')
 
 @ When validating DDL2-type dictionaries against the DDL spec file, we have
 to be able to see all values of parent data items across all save frames
@@ -1460,7 +1453,7 @@ def has_key(self,key):
 
 def get(self,key,default=None):
     if self.has_key(key):
-        retval = self.GetItem(key)
+        retval = self.__getitem__(key)
     else:
         retval = default
     return retval
@@ -1751,7 +1744,8 @@ def check_stringiness(data):
            return True
 
 @ Removing a data item.  We delete the item, and if it is looped, and
-nothing is left in the loop, we remove the loop.
+nothing is left in the loop, we remove the loop.  [[RemoveLoopItem]]
+is here for compatibility only.
 
 <<Remove a data item>>=
 def RemoveItem(self,itemname):
@@ -1770,6 +1764,9 @@ def RemoveItem(self,itemname):
     else:  #will appear in order list
             self.item_order.remove(testkey)
  
+def RemoveLoopItem(self,itemname):
+    self.RemoveItem(itemname)
+
 @ Returning an item value.  Note that a looped block has little
 meaning without all the items in the loop.  Routine [[GetLoop]] is
 better in this case.  This is a real time-intensive loop, so we
@@ -1816,6 +1813,8 @@ operations, a LoopBlock can be created with GetLoop and iterated over.
 <<Create a loop>>
 <<Find a loop>>
 <<Get complete looped data>>
+<<Get co-looped names>>
+<<Add to looped data>>
 
 @  Creating loops.  In the latest version of PyCIFRW, a loop is simply a collection
 of datanames that together make up the loop.  It is indexed by a number, which goes
@@ -1873,6 +1872,38 @@ def FindLoop(self,keyname):
         return loop_no[0]
     else:
         return -1
+
+@ Get co-looped names.  Sometimes we just want names, and will get the
+values ourselves on a need-to-know basis. 
+
+<<Get co-looped names>>=
+def GetLoopNames(self,keyname):
+    """Return all datanames appearing together with [[keyname]]"""
+    loop_no = self.FindLoop(keyname)
+    if loop_no >= 0:
+        return self.loops[loop_no]
+    else:
+        raise KeyError, '%s is not in any loop' % keyname
+
+@ Adding to a loop.  We find the loop containing the dataname that
+we have been passed, and then append all of the (key,values) pairs that we
+are passed in [[data]], which is a dictionary.  We expect that the data 
+have been sorted out for us, unlike when data are passed in [[AddLoopItem]], 
+when there can be both unlooped and looped data in one set.  The dataname 
+passed to this routine is simply a convenient way to refer to the
+loop, and has no other significance.
+
+<<Add to looped data>>=
+def AddToLoop(self,dataname,loopdata):
+    # check lengths
+    thisloop = self.FindLoop(dataname)
+    loop_len = len(self[dataname])
+    bad_vals = [a for a in loopdata.items() if len(a[1])!=loop_len]
+    if len(bad_vals)>0:
+       raise StarLengthError, "Number of values for looped datanames %s not equal to %d" \
+           % (`bad_vals`,loop_len)
+    self.update(loopdata)
+    self.loops[thisloop]+=loopdata.keys()
 
 
 @ \section{Output}

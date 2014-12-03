@@ -226,18 +226,8 @@ class BlockChangeTestCase(unittest.TestCase):
         """Test that we can use a CifBlock to set a CifBlock"""
         df = CifFile.CifFile()
         df.NewBlock('testname',self.cf)
-
-   def testLoop(self):
-        """Check GetLoop returns values and names in matching order"""
-   	results = self.cf.GetLoop(self.names[0][2])
-	for key in results.keys():
-	    self.failUnless(key in self.names[0])
-	    self.failUnless(tuple(results[key]) == self.values[0][list(self.names[0]).index(key)])
-	
-   def testGetLoopCase(self):
-       """Check that getloop works for any case"""
-       results = self.cf.GetLoop('_Item_Name_1')
-       self.assertEqual(results['_item_name_1'][1],2)
+        self.assertEqual(df['testname']['_planet'],'Saturn')
+        self.assertEqual(df['testname']['_item_name#2'],list(self.values[0][1]))
 
    def testSimpleRemove(self):
        """Check item deletion outside loop"""
@@ -272,9 +262,10 @@ class BlockChangeTestCase(unittest.TestCase):
        adddict = {'_address':['1 high street','2 high street','3 high street','4 high st'],
                   '_address2':['Ecuador','Bolivia','Colombia','Mehico']}
        self.cf.AddToLoop('_item_name#2',adddict)
-       newkeys = self.cf.GetLoop('_item_name#2').keys()
+       print self.cf
+       newkeys = self.cf.GetLoopNames('_item_name#2')
        self.failUnless(adddict.keys()[0] in newkeys)
-       self.failUnless(len(self.cf.GetLoop('_item_name#2'))==len(self.values[0])+2)
+       self.assertEqual(len(self.cf['_item_name#2']),len(self.values[0][0]))
        
    def testBadAddToLoop(self):
        """Test incorrect loop addition"""
@@ -297,23 +288,6 @@ class BlockChangeTestCase(unittest.TestCase):
        # deleted from that loop first
        self.cf["_item_name_1"] = (5,6,7,8)
 
-   def testLoopify(self):
-       """Test changing unlooped data to looped data"""
-       self.cf.Loopify(["_planet","_satellite","_rings"])
-       newloop = self.cf.GetLoop("_rings")
-       self.assertFalse(newloop.has_key("_number_item"))
-       
-   def testLoopifyCif(self):
-       """Test changing unlooped data to looped data does 
-          not touch already looped data for a CIF file"""
-#      from IPython.Debugger import Tracer; debug_here = Tracer()
-#      debug_here()
-       self.cf.Loopify(["_planet","_satellite","_rings"])
-       newloop = self.cf.GetLoop("_rings")
-       newloop.Loopify(["_planet","_rings"])
-       innerloop = newloop.GetLoop("_planet")
-       self.assertTrue(innerloop.has_key("_satellite"))
-       
 #
 #  Test the mapping type implementation
 #
@@ -331,6 +305,53 @@ class BlockChangeTestCase(unittest.TestCase):
        self.cf["_Item_NaMe_1"] = "the quick pewse fox"
        self.assertEqual(self.cf["_Item_NaMe_1"],self.cf["_item_name_1"])
 
+
+class LoopBlockTestCase(unittest.TestCase):
+   """Check operations on loop blocks"""
+   def setUp(self):
+        self.cf = CifFile.CifBlock()
+	self.names = (('_item_name_1','_item_name#2','_item_%$#3'),)
+	self.values = (((1,2,3,4),('hello','good_bye','a space','# 4'),
+	          (15.462, -99.34,10804,0.0001)),)
+        self.cf.AddCifItem((self.names,self.values))
+	self.cf['_non_loop_item'] = 'Non loop string item'
+	self.cf['_number_item'] = 15.65
+        self.cf['_planet'] = 'Saturn'
+        self.cf['_satellite'] = 'Titan'
+        self.cf['_rings']  = 'True'
+       
+   def tearDown(self):
+       del self.cf
+   
+   def testLoop(self):
+        """Check GetLoop returns values and names in matching order"""
+   	results = self.cf.GetLoop(self.names[0][2])
+	for key in results.keys():
+	    self.failUnless(key in self.names[0])
+	    self.failUnless(tuple(results[key]) == self.values[0][list(self.names[0]).index(key)])
+	
+   def testGetLoopCase(self):
+       """Check that getloop works for any case"""
+       results = self.cf.GetLoop('_Item_Name_1')
+       self.assertEqual(results['_item_name_1'][1],2)
+
+   def testLoopify(self):
+       """Test changing unlooped data to looped data"""
+       self.cf.Loopify(["_planet","_satellite","_rings"])
+       newloop = self.cf.GetLoop("_rings")
+       self.assertFalse(newloop.has_key("_number_item"))
+       
+   def testLoopifyCif(self):
+       """Test changing unlooped data to looped data does 
+          not touch already looped data for a CIF file"""
+#      from IPython.Debugger import Tracer; debug_here = Tracer()
+#      debug_here()
+       self.cf.Loopify(["_planet","_satellite","_rings"])
+       newloop = self.cf.GetLoop("_rings")
+       newloop.Loopify(["_planet","_rings"])
+       innerloop = newloop.GetLoop("_planet")
+       self.assertTrue(innerloop.has_key("_satellite"))
+       
 #  Test iteration
 #
    def testIteration(self):
@@ -414,7 +435,7 @@ class BlockChangeTestCase(unittest.TestCase):
        
    def testGetOrder(self):
        """Test that the correct order value is returned"""
-       self.assertEqual(self.cf.GetItemPosition("_Number_Item"),2)
+       self.assertEqual(self.cf.GetItemPosition("_Number_Item"),(-1,2))
 
    def testReplaceOrder(self):
        """Test that a replaced item is at the same position it
@@ -1341,8 +1362,8 @@ if __name__=='__main__':
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
-     suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
-     #suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
+     suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase) 
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmImportCase)
      unittest.TextTestRunner(verbosity=2).run(suite)
