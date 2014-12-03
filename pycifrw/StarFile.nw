@@ -929,134 +929,67 @@ columns, so that iteration over packets is possible.  It is
 initialised with a StarBlock object and dataname and returns an object
 that accesses the loop containing the dataname.  Datavalues is not
 copied, meaning that changes to the data (e.g. appending a packet)
-will be apparent in the StarBlock parent.
+will be apparent in the StarBlock parent (i.e the LoopBlock is like
+a view onto the parent).
 
 <<LoopBlock class>>=
 class LoopBlock(object):
     <<Initialise Loop Block>>
     <<Add emulation of a mapping type>>
     <<Selection of iterators>>
-    <<Insert a nested loop>>
-    <<Remove a nested loop>>
-    <<Add a comment>>
-    <<Remove a comment>>
-    <<Return value of loop item>>
     <<Remove a data item>>
     <<Get complete looped data>>
     <<Packet handling methods>>
     <<Get item order>>
     <<Change data item order>>
     <<Return position of data item>>
-    <<Collapse to nth packet>>
     <<Get co-looped names>>
     <<Add to looped data>>
-    <<Transform a group of tags to a subgroup>>
 
 @ Initialising: We do not check conformance to standards here: it assumed that
 this has been done by the creating routine.
 
 <<Initialise Loop Block>>=
 def __init__(self,parent_block,dataname):
-    loop_no = parent_block.FindLoop(dataname)
-    self.datanames = parent_block.loops[loop_no]
+    self.loop_no = parent_block.FindLoop(dataname)
+    if self.loop_no < 0:
+        raise ValueError, '%s is not in a loop structure' % dataname
+    self.parent_block = parent_block
 
 <<Add emulation of a mapping type>>=
-pass
+def keys(self):
+    return self.parent_block.loops[self.loop_no]
 
-@ There are two potential ways of running over the data in a LoopBlock: we
-could loop over the set of values in the non-nested values, and return the
-corresponding nested loop packets in a LoopBlock (a one level iterator),
-in which case the calling program decides whether or not it wants to
-dig deeper; or we could recursively expand and loop over all nested loops
-as well.  We set the default behaviour on initialisation to be one-level.
- 
-@ Insert a subloop.  Rather than a simple append, we need to register
-the order in which this loop appears, by putting its integer index
-into our item_order array.  
+def values(self):
+    return [self.parent_block[a] for a in self.keys()]
 
-<<Insert a nested loop>>=
-def insert_loop(self,newloop,position=-1):
-    # check that new loop is kosher
-    if newloop.dimension != self.dimension + 1:
-        raise StarError( 'Insertion of loop of wrong nesting level %d, should be %d' % (newloop.dimension, self.dimension+1))
-    self.loops.append(newloop)
-    if position >= 0:
-        self.item_order.insert(position,newloop)
+def __getitem__(self,dataname):
+    if isinstance(dataname,int):   #a packet request
+        return self.GetPacket(dataname)
+    if dataname in self.keys():
+        return self.parent_block[dataname]
     else:
-        self.item_order.append(newloop)
-    # print "Insert loop: item_order now" + `self.item_order`
+        raise KeyError, '%s not in loop block' % dataname
 
-<<Remove a nested loop>>=
-def remove_loop(self,oldloop):
-    # print "Removing %s: item_order %s" % (`oldloop`,self.item_order)
-    # print "Length %d" % len(oldloop)
-    self.item_order.remove(oldloop)
-    self.loops.remove(oldloop)
- 
-@ Dealing with comments.  Comments are attached to a data name, and
-will be printed on the line before that name appears.
+def __setitem__(self,dataname,value):
+    self.parent_block[dataname] = value
+    self.parent_block.AddLoopName(self.keys()[0],dataname)
 
-<<Add a comment>>=
-def AddComment(self,itemname,comment):
-    self.comment_list[itemname.lower()] = comment
+def has_key(self,key):
+    return key in self.parent_block.loops[self.loop_no]
 
-<<Remove a comment>>=
-def RemoveComment(self,itemname):
-    del self.comment_list[itemname.lower()]
+def __iter__(self):
+    packet_list = zip(*self.values())
+    names = self.keys()
+    for p in packet_list:
+        r = StarPacket(p)
+        for n in range(len(names)):
+            setattr(r,names[n],r[n])
+        yield r
 
-@ Returning an item value.  Note that a looped block has little
-meaning without all the items in the loop.  Routine [[GetLoop]] is
-better in this case.  This is a real time-intensive loop, so we
-initially assume that the key we have been passed is the right
-key (i.e. case is the same) and only check for case if this
-fails.
-
-We define an alternative call that returns both the stored value
-and whether or not it is a non-string value.  This saves other
-routines performing the same check.  But any StarLists are
-considered to be unready for use as values as they may in
-fact be Arrays or Matrices and therefore require their
-type to be changed.
-
-<<Return value of loop item>>=
-def GetLoopItem(self,itemname):
-    """Return value of itemname in this loop block"""
-    return self.GetLoopItemValue(itemname)[0]
-
-def GetLoopItemValue(self,itemname):
-    """Return value of itemname and whether or not it is a native value"""
-    # assume case is correct first
-    try:
-	s,v = self.block[itemname]
-    except KeyError:
-	for loop in self.loops:
-	    try:
-		return loop.GetLoopItemValue(itemname)
-	    except KeyError:
-		pass
-        if itemname.lower() in self.lower_keys:
-           # it is there somewhere, now we need to find it
-           real_keys = self.block.keys()
-           lower_keys = map(lambda a:a.lower(),self.block.keys()) 
-           try:
-              k_index = lower_keys.index(itemname.lower())
-           except ValueError:   #should never happen!!
-              raise KeyError, 'Bug: Item %s unexpectedly not in block' % itemname
-           s,v = self.block[real_keys[k_index]]
-        else:
-           raise KeyError, 'Item %s not in block' % itemname
-    # prefer string value unless all are None
-    if self.dimension == 0:
-        if s is not None: 
-            return s,False
-        else:
-            return v,not isinstance(v,StarList)
-    elif None not in s: return s,False
-    else: 
-        if len(v)>0:
-            return v,not isinstance(v[0],StarList)
-        return v,True
-
+# for compatibility
+def __getattr__(self,attname):
+    return getattr(self.parent_block,attname)
 
 @  Packets.  We store columns, so extracting packets is a much
 slower task.
@@ -1064,16 +997,9 @@ slower task.
 <<Packet handling methods>>=
 <<Get nth loop packet>>
 <<Add a packet>>
-<<Remove a packet>>
-<<Get packet by key>>
-<<Get semantic packet by key>>
+<<Get item order>>
 
-@ Get nth looped packet.  This returns a packet of data, including any
-nested loops.  For a nested loop, we want the set of packets corresponding
-to the nth outer packet; so after picking out the appropriate elements, we
-have to transpose so that we have a packet.
-
-We return a StarPacket object, which looks very much like a list, in order
+@ A StarPacket object  looks very much like a list, in order
 to support the DDLm semantics of allowing a particular value to
 be accessed by attribute.  DDLm also allows merged categories, which means
 that a packet can contain datanames from the appropriate sub-categories.
@@ -1106,127 +1032,33 @@ class StarPacket(list):
         # and convert if necessary to actual type
         
         
+@ Get nth looped packet.  This returns a packet of data.
+
 <<Get nth loop packet>>=
 def GetPacket(self,index):
     thispack = StarPacket([])
-    for myitem in self.item_order:
-        if isinstance(myitem,LoopBlock):
-            pack_list = [myitem[b][index] for b in myitem.item_order]
-            # print 'Pack_list -> %s' % `pack_list`
-            thispack.append(pack_list)
-        elif self.dimension==0:
-            thispack.append(self[myitem])
-        else:
-            thispack.append(self[myitem][index])
-            setattr(thispack,myitem,thispack[-1])
+    for myitem in self.parent_block.loops[self.loop_no]:
+        thispack.append(self[myitem][index])
+        setattr(thispack,myitem,thispack[-1])
     return thispack 
 
 @ Adding a packet.  We are passed a StarPacket object, which is just a list which is accessible by attribute.
 As I have not yet produced a proper __init__ or __new__ method to allow creation of a new StarPacket, it is
-advisable to create a new packet by copying an old packet.  This has not been written for nested loops, but
-only for a single-level Cif-style loop. 
+advisable to create a new packet by copying an old packet. 
 
 <<Add a packet>>=
 def AddPacket(self,packet):
-    if self.dimension==0:
-        raise StarError,"Attempt to add packet to top level block"
-    for myitem in self.item_order:
-        self[myitem] = list(self[myitem])   #in case we have stored a tuple
-        self[myitem].append(packet.__getattribute__(myitem))
-    self.no_packets +=1 
-        # print "%s now %s" % (myitem,`self[myitem]`)
+    for myitem in self.parent_block.loops[self.loop_no]:
+        old_values = self.parent_block[myitem]
+        old_values.append(packet.__getattribute__(myitem))
+        self.parent_block[myitem] = old_values
     
-@ 
-The draft DDLm specification uses square brackets next to a
-pre-specified identifier to mean "the packet containing this key
-item".  As the meaning of such square brackets in PyCIFRW is always
-that of simple dictionary access, we instead implement a function
-which fullfils this role and pre-process the DRel script to remove the
-square brackets where necessary.  At the LoopBlock level we have no
-idea as to which data name is the key, so that is passed to us from
-the dictionary processing layer.  Note we assume a single key rather
-than multiple keys for this call, and let the calling layer handle
-multiple or missing packets.
-
-We guarantee to return a single packet, even if multiple packets
-match.  Perhaps we should raise an error in this case.
-
-This is a dictionary-agnostic routine, so will not be able to determine
-if a case-insensitive match is appropriate.
-
-<<Get packet by key>>=
-def GetKeyedPacket(self,keyname,keyvalue,no_case=False):
-    """Return the loop packet where [[keyname]] has value [[keyvalue]]. Ignore case if no_case is true"""
-    #print "Looking for %s in %s" % (keyvalue, self[keyname])
-    my_loop = self.GetLoop(keyname)
-    if no_case:
-       one_pack= [a for a in my_loop if getattr(a,keyname).lower()==keyvalue.lower()]
-    else:
-       one_pack= [a for a in my_loop if getattr(a,keyname)==keyvalue]
-    if len(one_pack)!=1:
-        raise ValueError, "Bad packet key %s = %s: returned %d packets" % (keyname,keyvalue,len(one_pack))
-    #print "Keyed packet: %s" % one_pack[0]
-    return one_pack[0]
-
-@  Semantic loops.  These are loops defined by a dictionary,
-as opposed to the syntax.  dREL requires us to be able to
-extract a packet by key, and then attributes of this packet
-are the individual objects that are found in that category,
-regardless of whether they co-occur in one loop or child
-loops.
-
-We use the dictionary ``cat_key_table'' to give us a list
-of keys for each category.  We find the corresponding loops, extract
-any packets meeting the key requirements, and merge these
-packets.  
-
-A packet for dREL use will need to be able to derive further
-values using the dictionary, e.g. when an attribute of that
-packet is requested.  In order to do this derivation, we need
-to store the key name and value, so that the __getattr__ method
-of the packet can properly derive the needed value.
-
-<<Get semantic packet by key>>=
-def GetKeyedSemanticPacket(self,keyvalue,cat_id):
-    """Return a complete packet for category cat_id"""
-    target_keys = self.dictionary.cat_key_table[cat_id]
-    p = StarPacket()
-    # set case-sensitivity flag
-    lcase = False
-    if self.dictionary[target_keys[0]]['_type.contents'] in ['Code','Tag','Name']:
-        lcase = True
-    for cat_key in target_keys:
-        try:
-            extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
-        except KeyError:        #try to create the key
-            key_vals = self[cat_key]   #will create a key column
-        p.merge_packet(self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase))
-    # the following attributes used to calculate missing values
-    p.key = target_keys[0]
-    p.cif_dictionary = self.dictionary
-    p.fulldata = self
-    return p
-
-@ We might also want to remove a packet by key.  We operate on the data
-in place, and need access to the low-level information as we have to
-remove both the string and value elements.
-
-<<Remove a packet>>=
-def RemoveKeyedPacket(self,keyname,keyvalue):
-    packet_coord = list(self[keyname]).index(keyvalue)
-    loophandle = self.GetLoop(keyname)
-    for dataname in loophandle.item_order:
-        loophandle.block[dataname][0] = list(loophandle.block[dataname][0])
-        del loophandle.block[dataname][0][packet_coord]
-        loophandle.block[dataname][1] = list(loophandle.block[dataname][1])
-        del loophandle.block[dataname][1][packet_coord]
-    self.no_packets -= 1
-    
-@ Return order of items - this is just a copy of our item_order array.
+@ Return order of items - this is just a copy of the list of datanames
+making up this loop.
 
 <<Get item order>>=
 def GetItemOrder(self):
-    return self.item_order[:]
+    return self.parent_block.loops[self.loop_no][:]
 
 @ Move an item to a different position in the loop.  This only affects
 the printout order.  We allow different capitalisation and have to
@@ -1235,27 +1067,9 @@ passed a loop reference in the [[itemname]] argument.
 
 <<Change data item order>>=
 def ChangeItemOrder(self,itemname,newpos):
-    testpos = self.GetItemPosition(itemname)
-    del self.item_order[testpos]
-    # so we have an object ready for action
-    self.item_order.insert(newpos,itemname)
+    self.parent_block.loops[self.loop_no].remove(itemname.lower())
+    self.parent_block.loops[self.loop_no].insert(newpos,itemname.lower())
 
-@ This returns a copy, in theory independent (check that) with just
-the nth packet selected, and order preserved.
-
-<<Collapse to nth packet>>=
-def collapse(self,packet_no):
-    if self.dimension == 0:
-        raise StarError( "Attempt to select non-existent packet")
-    newlb = LoopBlock(dimension=self.dimension-1)
-    for one_item in self.item_order:
-        if isinstance(one_item,LoopBlock):
-            newlb.insert_loop(one_item.collapse(packet_no))
-        else:
-            # print "Collapse: %s -> %s" % (one_item,`self[one_item][packet_no]`)
-            newlb[one_item] = self[one_item][packet_no] 
-    return newlb
-    
 @ Get co-looped names.  Sometimes we just want names, and will get the
 values ourselves on a need-to-know basis. 
 
@@ -1282,23 +1096,7 @@ loop, and has no other significance.
 def AddToLoop(self,dataname,loopdata):
     thisloop = self.GetLoop(dataname)
     for itemname,itemvalue in loopdata.items():
-        thisloop[itemname] = itemvalue
-
-@ A single-valued set of tags at the top level is isomorphic to those tags
-placed in a loop with a single packet.  Likewise, looped data can be
-transferred to a star sub-loop.
-
-<<Transform a group of tags to a subgroup>>=
-def Loopify(self,datanamelist):
-    thisloop = self.GetLoop(datanamelist[0])
-    badmatch = filter(lambda a:a in datanamelist,thisloop.keys())
-    if len(badmatch)==len(datanamelist):    #all at same level so is OK
-        newloop = LoopBlock(dimension=self.dimension+1)
-        for name in datanamelist: 
-            newloop[name]=[self[name]]
-            del self[name]
-        self.insert_loop(newloop) 
- 
+        thisloop[itemname] = itemvalue 
     
 @ \section{Star Block class}
 
@@ -1316,6 +1114,8 @@ class StarBlock(object):
     <<Initialise a StarBlock>>
     <<Add StarBlock emulation of mapping type>>
     <<Return position of data item>>
+    <<Change order of data item>>
+    <<Return order of all data items>>
     <<Add a data item>>
     <<Check data name for STAR conformance>>
     <<Check data item for STAR conformance>>
@@ -1499,6 +1299,23 @@ def GetItemPosition(self,itemname):
     loop_no = self.FindLoop(testname)
     loop_pos = self.loops[loop_no].index(testname)
     return loop_no,loop_pos
+
+@  This routine moves around the order of objects in the top
+level.  
+
+<<Change order of data item>>=
+def ChangeItemOrder(self,itemname,newpos):
+    """Move itemname to newpos"""
+    if isinstance(itemname,basestring):
+        true_name = itemname.lower()
+    else:
+        true_name = itemname
+    self.item_order.remove(true_name)
+    self.item_order.insert(newpos,true_name)
+
+<<Return order of all data items>>=
+def GetItemOrder(self):
+    return self.item_order[:]
 
 @ Adding a data item. 
 
@@ -1811,10 +1628,16 @@ operations, a LoopBlock can be created with GetLoop and iterated over.
 
 <<Dealing with loops>>=
 <<Create a loop>>
+<<Add name to loop>>
 <<Find a loop>>
 <<Get complete looped data>>
 <<Get co-looped names>>
+<<Add name to loop>>
 <<Add to looped data>>
+<<Transform a group of tags to a loop>>
+<<Remove a packet>>
+<<Get packet by key>>
+<<Get semantic packet by key>>
 
 @  Creating loops.  In the latest version of PyCIFRW, a loop is simply a collection
 of datanames that together make up the loop.  It is indexed by a number, which goes
@@ -1832,7 +1655,15 @@ another loop trivially.
 def CreateLoop(self,datanames,order=-1):
        """[[datanames]] is a list of datanames that together form a loop.  They should
        all contain the same number of elements (possibly 0). If [[order]] is given, the loop will
-       appear at this position in the block where a loop counts as a single position."""
+       appear at this position in the block. A loop counts as a single position."""
+       # check lengths: these datanames should exist
+       listed_values = [a for a in datanames if isinstance(self[a],list) and not isinstance(self[a],StarList)]
+       if len(listed_values) == len(datanames):
+           len_set = set([len(self[a]) for a in datanames])
+           if len(len_set)>1:
+               raise ValueError, 'Request to loop datanames with different lengths: %s' % `len_set`
+       elif len(listed_values) != 0:
+           raise ValueError, 'Request to loop datanames where some are single values and some are not'
        if len(self.loops)>0:
            loopno = max(self.loops.keys()) + 1
        else:
@@ -1846,7 +1677,39 @@ def CreateLoop(self,datanames,order=-1):
            self.item_order.append(loopno)
        # remove these datanames from item ordering
        self.item_order = [a for a in self.item_order if a not in datanames] 
-       
+      
+@  Removing a loop. The looped names are not removed, but will cause chaos on output
+unless they are placed into a different loop or deleted.
+
+<<Remove a loop>>=
+def remove_loop(self,oldloop):
+    """Remove loop referenced by [[oldloop]]. Datanames remain in the
+    structure and should be removed separately if necessary"""
+    # print "Removing %s: item_order %s" % (`oldloop`,self.item_order)
+    # print "Length %d" % len(oldloop)
+    self.item_order.remove(oldloop)
+    self.loops.remove(oldloop)
+
+@ Adding a dataname that has already been set to a loop.  While relatively trivial, we still need
+to check that it does not exist in any other loops.
+
+<<Add name to loop>>=
+def AddLoopName(self,oldname, newname):
+    """Add [[newname]] to the loop containing [[oldname]]"""
+    loop_no = self.FindLoop(oldname)
+    if loop_no < 0:
+        raise KeyError, '%s not in loop' % oldname
+    if newname in self.loops[loop_no]:
+        return
+    # check length
+    loop_len = len(self[oldname])
+    if len(self[newname]) != loop_len:
+        raise ValueError, 'Mismatch of loop column lengths for %s: should be %d' % (newname,loop_len)
+    # remove from any other loops
+    [self.loops[a].remove(newname) for a in self.loops if newname in self.loops[a]]
+    # and add to this loop
+    self.loops[loop_no].append(newname)
+    
 @ Loops.  We should distinguish two loop structures: the loop
 structures provided by the syntax, and the loop structures defined by
 the dictionary ('semantic' loops).  The members of these loops do not
@@ -1860,9 +1723,8 @@ directly, and therefore refers to a syntactic loop.
 
 <<Get complete looped data>>=
 def GetLoop(self,keyname):
-    """Return a LoopBlock structure containing keyname"""
-    datanames = self.loops[self.FindLoop(keyname)]
-    return LoopBlock(self,datanames)
+    """Return a LoopBlock object containing keyname"""
+    return LoopBlock(self,keyname)
 
 <<Find a loop>>=
 def FindLoop(self,keyname):
@@ -1905,6 +1767,97 @@ def AddToLoop(self,dataname,loopdata):
     self.update(loopdata)
     self.loops[thisloop]+=loopdata.keys()
 
+@ A single-valued set of tags at the top level is isomorphic to those tags
+placed in a loop with a single packet. 
+
+<<Transform a group of tags to a loop>>=
+def Loopify(self,datanamelist):
+    self.CreateLoop(datanamelist)
+
+@ 
+The draft DDLm specification uses square brackets next to a
+pre-specified identifier to mean "the packet containing this key
+item".  As the meaning of such square brackets in PyCIFRW is always
+that of simple dictionary access, we instead implement a function
+which fullfils this role and pre-process the DRel script to remove the
+square brackets where necessary.  At the LoopBlock level we have no
+idea as to which data name is the key, so that is passed to us from
+the dictionary processing layer.  Note we assume a single key rather
+than multiple keys for this call, and let the calling layer handle
+multiple or missing packets.
+
+We guarantee to return a single packet, even if multiple packets
+match.  Perhaps we should raise an error in this case.
+
+This is a dictionary-agnostic routine, so will not be able to determine
+if a case-insensitive match is appropriate.
+
+<<Get packet by key>>=
+def GetKeyedPacket(self,keyname,keyvalue,no_case=False):
+    """Return the loop packet where [[keyname]] has value [[keyvalue]]. Ignore case if no_case is true"""
+    #print "Looking for %s in %s" % (keyvalue, self.parent_block[keyname])
+    my_loop = self.GetLoop(keyname)
+    if no_case:
+       one_pack= [a for a in my_loop if getattr(a,keyname).lower()==keyvalue.lower()]
+    else:
+       one_pack= [a for a in my_loop if getattr(a,keyname)==keyvalue]
+    if len(one_pack)!=1:
+        raise ValueError, "Bad packet key %s = %s: returned %d packets" % (keyname,keyvalue,len(one_pack))
+    #print "Keyed packet: %s" % one_pack[0]
+    return one_pack[0]
+
+@  Semantic loops.  These are loops defined by a dictionary,
+as opposed to the syntax.  dREL requires us to be able to
+extract a packet by key, and then attributes of this packet
+are the individual objects that are found in that category,
+regardless of whether they co-occur in one loop or child
+loops.
+
+We use the dictionary ``cat_key_table'' to give us a list
+of keys for each category.  We find the corresponding loops, extract
+any packets meeting the key requirements, and merge these
+packets.  
+
+A packet for dREL use will need to be able to derive further
+values using the dictionary, e.g. when an attribute of that
+packet is requested.  In order to do this derivation, we need
+to store the key name and value, so that the __getattr__ method
+of the packet can properly derive the needed value.
+
+<<Get semantic packet by key>>=
+def GetKeyedSemanticPacket(self,keyvalue,cat_id):
+    """Return a complete packet for category cat_id"""
+    target_keys = self.dictionary.cat_key_table[cat_id]
+    p = StarPacket()
+    # set case-sensitivity flag
+    lcase = False
+    if self.dictionary[target_keys[0]]['_type.contents'] in ['Code','Tag','Name']:
+        lcase = True
+    for cat_key in target_keys:
+        try:
+            extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
+        except KeyError:        #try to create the key
+            key_vals = self[cat_key]   #will create a key column
+        p.merge_packet(self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase))
+    # the following attributes used to calculate missing values
+    p.key = target_keys[0]
+    p.cif_dictionary = self.dictionary
+    p.fulldata = self
+    return p
+
+@ We might also want to remove a packet by key.  We operate on the data
+in place, and need access to the low-level information as we have to
+remove both the string and value elements.
+
+<<Remove a packet>>=
+def RemoveKeyedPacket(self,keyname,keyvalue):
+    packet_coord = list(self[keyname]).index(keyvalue)
+    loopnames = self.GetLoopNames(keyname)
+    for dataname in loopnames:
+        self.block[dataname][0] = list(self.block[dataname][0])
+        del self.block[dataname][0][packet_coord]
+        self.block[dataname][1] = list(self.block[dataname][1])
+        del self.block[dataname][1][packet_coord]
 
 @ \section{Output}
 
