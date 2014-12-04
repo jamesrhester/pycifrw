@@ -283,9 +283,7 @@ class BlockChangeTestCase(unittest.TestCase):
 
    def testChangeLoop(self):
        """Test changing pre-existing item in loop"""
-       # Items should be silently replaced, but if an
-       # item exists in a loop already, it should be
-       # deleted from that loop first
+       # Items should be silently replaced
        self.cf["_item_name_1"] = (5,6,7,8)
 
 #
@@ -304,7 +302,6 @@ class BlockChangeTestCase(unittest.TestCase):
        self.assertEqual(self.cf["_Item_Name_1"],self.cf["_item_name_1"])
        self.cf["_Item_NaMe_1"] = "the quick pewse fox"
        self.assertEqual(self.cf["_Item_NaMe_1"],self.cf["_item_name_1"])
-
 
 class LoopBlockTestCase(unittest.TestCase):
    """Check operations on loop blocks"""
@@ -348,9 +345,7 @@ class LoopBlockTestCase(unittest.TestCase):
 #      debug_here()
        self.cf.Loopify(["_planet","_satellite","_rings"])
        newloop = self.cf.GetLoop("_rings")
-       newloop.Loopify(["_planet","_rings"])
-       innerloop = newloop.GetLoop("_planet")
-       self.assertTrue(innerloop.has_key("_satellite"))
+       self.assertTrue(newloop.has_key('_planet'))
        
 #  Test iteration
 #
@@ -379,8 +374,7 @@ class LoopBlockTestCase(unittest.TestCase):
 
    def testKeyPacket(self):
        """Test that a packet can be returned by key value"""
-       testloop = self.cf.GetLoop("_item_name_1")
-       testpack = testloop.GetKeyedPacket("_item_name_1",2)
+       testpack = self.cf.GetKeyedPacket("_item_name_1",2)
        self.assertEqual("good_bye",getattr(testpack,"_item_name#2"))
 
    def testPacketMerge(self):
@@ -400,7 +394,6 @@ class LoopBlockTestCase(unittest.TestCase):
        testloop = self.cf.GetLoop("_item_name_1")
        testloop.RemoveKeyedPacket("_item_name_1",3)
        print 'After packet 3 removal:'
-       print `self.cf.loops[0].block`
        jj = testloop.GetKeyedPacket("_item_name_1",2)
        kk = testloop.GetKeyedPacket("_item_name_1",4)
        self.assertEqual(getattr(jj,"_item_name#2"),"good_bye")
@@ -430,8 +423,8 @@ class LoopBlockTestCase(unittest.TestCase):
        testloop = self.cf.GetLoop("_item_name_1")
        self.cf.ChangeItemOrder("_Number_Item",0)
        testloop.ChangeItemOrder("_Item_Name_1",2)
-       self.assertEqual(testloop.GetItemOrder()[2],"_Item_Name_1")
-       self.assertEqual(self.cf.GetItemOrder()[0],"_Number_Item")
+       self.assertEqual(testloop.GetItemOrder()[2],"_Item_Name_1".lower())
+       self.assertEqual(self.cf.GetItemOrder()[0],"_Number_Item".lower())
        
    def testGetOrder(self):
        """Test that the correct order value is returned"""
@@ -527,8 +520,6 @@ class FileWriteTestCase(unittest.TestCase):
        cif = CifFile.CifFile(scoping='dictionary')
        cif['Testblock'] = self.cf
        # Add some comments
-       self.cf.AddComment('_item_empty',"Test of an empty string")
-       self.cf.AddComment('_item_apost',"Test of a trailing apostrophe")
        self.save_block = CifFile.CifBlock(s_items)
        cif.NewBlock("test_Save_frame",self.save_block,parent='testblock')
        self.cfs = cif["test_save_frame"]
@@ -1139,6 +1130,7 @@ class DDL1TestCase(unittest.TestCase):
         try:
             self.cf["test_block"]["_diffrn_radiation_wavelength"] = "moly"
         except CifFile.ValidCifError: pass
+        else: self.fail()
 
     def testItemEsd(self):
         """Test that non-esd items are not allowed with esds"""
@@ -1146,6 +1138,7 @@ class DDL1TestCase(unittest.TestCase):
         try:
             self.cf["test_block"]["_chemical_melting_point_gt"] = "1325(6)"
         except CifFile.ValidCifError: pass
+        else: self.fail()
 
     def testItemEnum(self):
         """Test that enumerations are understood"""
@@ -1203,7 +1196,7 @@ class DDL1TestCase(unittest.TestCase):
 	#       [["C","C","N"],["C1","C2","N1"]]))
 
     def testReport(self):
-        CifFile.validate_report(CifFile.validate("pycifrw/tests/C13H2203_with_errors.cif",dic=testdic))
+        CifFile.validate_report(CifFile.validate("pycifrw/tests/C13H2203_with_errors.cif",dic=self.ddl1dic))
 
 class FakeDicTestCase(unittest.TestCase):
 # we test stuff that hasn't been used in official dictionaries to date.
@@ -1279,10 +1272,10 @@ class DicEvalTestCase(unittest.TestCase):
         del self.fb[dataname]
         result = self.fb[dataname]
         if scalar:
-            print 'Target: %f  Result %f' % (target,result)
-            self.failUnless(abs(target-result)<0.01)
+            print 'Target: %f  Result %f' % (float(target),float(result))
+            self.failUnless(abs(float(target)-float(result))<0.01)
         else:
-            self.assertEqual(target,result,"Target = %s, Result = %s" % (target,result))
+            self.assertEqual(target,result,"Target = %s, Result = %s" % (`target`,`result`))
 
     def testCellVolume(self):
         self.check_value('_cell.volume')
@@ -1300,7 +1293,7 @@ class DicEvalTestCase(unittest.TestCase):
         """Test that a calculation is performed for an old dataname"""
         target = self.fb['_cell.volume']
         del self.fb['_cell.volume']
-        self.failUnless(abs(self.fb['_cell_volume']-target)<0.01)
+        self.failUnless(abs(self.fb['_cell_volume']-float(target))<0.01)
 
 class DicStructureTestCase(unittest.TestCase):
     """Tests use of dictionary semantic information for item lookup"""
@@ -1330,11 +1323,10 @@ class DicStructureTestCase(unittest.TestCase):
         self.assertEqual(target['atom_site'],['_atom_site.key','_atom_site_aniso.key'])
 
     def testChildPacket(self):
-        """Test that a child packet is included in attributes of parent category"""
+        """Test that a case-insensitive child packet is included in attributes of parent category"""
         target = self.fb.GetKeyedSemanticPacket("o2",'atom_site')
-        self.failUnless(hasattr(target,'_atom_site_aniso.U_23'))
+        self.failUnless(hasattr(target,'_atom_site_aniso.u_23'))
         self.assertEqual(getattr(target,'_atom_site_aniso.U_33'),'.040(3)')
-        print str(self.fb)
 
     def testPacketCalcs(self):
         """Test that a star packet can calculate missing values"""
@@ -1356,16 +1348,23 @@ class DicStructureTestCase(unittest.TestCase):
         self.assertEqual(testdic.cat_obj_lookup_table[('atom_site','type_symbol')],
                          ['_atom_site.type_symbol','_atom_site_aniso.type_symbol'])
 
+    def testPrintOut(self):
+        """Test that a block with dictionary attached can print out string values"""
+        print self.fb
+
 if __name__=='__main__':
-     #global testdic
-     #testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")
+     global testdic
+     testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
-     suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(LoopBlockTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase) 
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmImportCase)
-     unittest.TextTestRunner(verbosity=2).run(suite)
-     #unittest.main()
+     #suite =  unittest.TestLoader().loadTestsFromTestCase(DDL1TestCase)
+     #unittest.TextTestRunner(verbosity=2).run(suite)
+     unittest.main()
 

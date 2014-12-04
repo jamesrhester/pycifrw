@@ -953,7 +953,7 @@ this has been done by the creating routine.
 def __init__(self,parent_block,dataname):
     self.loop_no = parent_block.FindLoop(dataname)
     if self.loop_no < 0:
-        raise ValueError, '%s is not in a loop structure' % dataname
+        raise KeyError, '%s is not in a loop structure' % dataname
     self.parent_block = parent_block
 
 <<Add emulation of a mapping type>>=
@@ -962,6 +962,9 @@ def keys(self):
 
 def values(self):
     return [self.parent_block[a] for a in self.keys()]
+
+def items(self):
+    return zip(self.keys(),self.values())
 
 def __getitem__(self,dataname):
     if isinstance(dataname,int):   #a packet request
@@ -984,7 +987,7 @@ def __iter__(self):
     for p in packet_list:
         r = StarPacket(p)
         for n in range(len(names)):
-            setattr(r,names[n],r[n])
+            setattr(r,names[n].lower(),r[n])
         yield r
 
 # for compatibility
@@ -1007,6 +1010,9 @@ that a packet can contain datanames from the appropriate sub-categories.
 Furthermore, a StarPacket can derive missing values by calling the appropriate
 dREL function.  To do this, we store the key name used to create the packet.
 
+Note that all attributes must be lower case in order to meet the caseless
+matching required by the STAR/CIF standards.
+
 <<Star packet class>>=
 class StarPacket(list):
     def merge_packet(self,incoming):
@@ -1018,6 +1024,8 @@ class StarPacket(list):
 
     def __getattr__(self,att_name):
         """Derive a missing attribute"""
+        if att_name.lower() in self.__dict__:
+            return getattr(self,att_name.lower())
         if att_name in ('cif_dictionary','fulldata','key'):
             raise AttributeError, 'Programming error: cannot compute value of %s' % att_name
         d = self.cif_dictionary
@@ -1029,8 +1037,6 @@ class StarPacket(list):
         keyval = getattr(self,k)
         full_pack = c.GetKeyedPacket(k,keyval)
         return getattr(full_pack,att_name)
-        # and convert if necessary to actual type
-        
         
 @ Get nth looped packet.  This returns a packet of data.
 
@@ -1117,6 +1123,7 @@ class StarBlock(object):
     <<Change order of data item>>
     <<Return order of all data items>>
     <<Add a data item>>
+    <<Old multi-item add routine>>
     <<Check data name for STAR conformance>>
     <<Check data item for STAR conformance>>
     <<Regularise data values>>
@@ -1160,7 +1167,7 @@ def __init__(self,data = (), maxoutlength=2048, wraplength=80, overwrite=True,
     self.item_order = []  #lower case, loops referenced by integer
     self.formatting_hints = {}
     self.true_case = {} #transform lower case to supplied case
-    self.value_switch = False   #prefer string version always
+    self.provide_value = False   #prefer string version always
     self.dictionary = None      #DDLm dictionary
     self.popout = False         #used during load iteration
     self.curitem = -1           #used during iteration
@@ -1217,14 +1224,23 @@ the enclosing block collection (e.g. CIF or STAR file object)""")
            # send the dictionary the required key and a pointer to us
            new_value = self.dictionary.derive_item(key,self,store_value=True)
            print 'Set %s to derived value %s' % (key, `new_value`)
-           return new_value 
+           return new_value
        else:
            raise KeyError, 'No such item: %s' % key
     # we now have an item, we can try to convert it to a number if that is appropriate
     # note numpy values are never stored but are converted to lists
-    if not self.dictionary or not self.dictionary.has_key(key) or is_value: return rawitem
-    return self.dictionary.change_type(key,rawitem)
-      
+    if not self.dictionary or not self.dictionary.has_key(key): return rawitem
+    print '%s: is_value %s provide_value %s value %s' % (key,`is_value`,`self.provide_value`,`rawitem`)
+    if is_value:
+        if self.provide_value: return rawitem
+        else:
+           print 'Turning %s into string' % `rawitem`
+           return self.convert_to_string(key)
+    else:    # a string
+        if self.provide_value and rawitem != '?' and rawitem != ".":
+            return self.dictionary.change_type(key,rawitem)
+        return rawitem   #can't do anything
+       
 def __delitem__(self,key):
     self.RemoveItem(key)
 
@@ -1360,71 +1376,22 @@ def AddItem(self,key,value,precheck=False,maxlength=-1):
 @  This is the original routine for adding a loop item, left in for consistency
 with old versions.  Do not use.
 
-<<Add a complete loop>>=
+<<Old multi-item add routine>>=
 def AddLoopItem(self,incomingdata,precheck=False,maxlength=-1):
     # print "Received data %s" % `incomingdata`
     # we accept tuples, strings, lists and dicts!!
     # Direct insertion: we have a string-valued key, with an array
     # of values -> single-item into our loop
     if isinstance(incomingdata[0],(TupleType,ListType)):
-       # internal loop
-       # first we remove any occurences of these datanames in
-       # other loops
-       for one_item in incomingdata[0]:
-	   if self.has_key(one_item):
-	       if not self.overwrite:
-                   raise StarError( 'Attempt to insert duplicate item name %s' % incomingdata[0])
-               else:
-		   del self[one_item]
-       newloop = self.loopclass(dimension = self.dimension+1,characterset=self.characterset)
-       keyvals = zip(incomingdata[0],incomingdata[1])
-       for key,val in keyvals:
-           newloop.AddLoopItem((key,val))
-       self.insert_loop(newloop)
-    elif not isinstance(incomingdata[0],StringTypes):
+       # a whole loop
+       keyvallist = zip(incomingdata[0],incomingdata[1])
+       for key,value in keyvallist:
+           self.AddItem(key,value)
+       self.CreateLoop(incomingdata[0])
+    elif not isinstance(incomingdata[0],basestring):
          raise TypeError, 'Star datanames are strings only (got %s)' % `incomingdata[0]`
     else:
-       data = list(incomingdata)  #copy
-       if data[1] == [] or get_dim(data[1])[0] == self.dimension:
-           if not precheck:
-               self.check_data_name(data[0],maxlength)    # make sure no nasty characters   
-           # check that we can replace data
-           if not self.overwrite:
-               if self.has_key(data[0]):
-                   raise StarError( 'Attempt to insert duplicate item name %s' % data[0])
-           # put the data in the right container
-           regval,empty_val = self.regularise_data(data[1])
-           # check for pure string data
-           pure_string = check_stringiness(regval)
-           if not precheck:
-               self.check_item_value(regval)
-           if self.dimension > 0:
-               if self.no_packets <= 0:
-                   self.no_packets = len(data[1])  #first item in this loop
-               if len(data[1]) != self.no_packets:
-                   raise StarLengthError, 'Not enough values supplied for %s' % (data[0])
-           try:
-               oldpos = self.GetItemPosition(data[0])
-           except ValueError:
-               oldpos = len(self.item_order)#end of list 
-           self.RemoveLoopItem(data[0])     # may be different case (upper/lower), so have to do this
-           if pure_string:
-               self.block.update({data[0]:[regval,empty_val]})  # trust the data is OK
-           else:
-               self.block.update({data[0]:[empty_val,regval]})
-           self.lower_keys.insert(oldpos,data[0].lower())
-           self.item_order.insert(oldpos,data[0])
-           #    self.lower_keys.append(data[0].lower())
-           #    self.item_order.append(data[0])
-            
-       else:            #dimension mismatch
-           # single-member lists could be seen as bare lists...
-           if isinstance(data[1],(TupleType,ListType)) and len(data[1])==1:
-               self.AddLoopItem(data[0],data[1][0])
-           # if that doesn't work, make the dataname list a compound item for inserting a loop
-           else:
-               self.AddLoopItem(((data[0],),(data[1],)))
-           # raise StarLengthError, "input data dim %d != required dim %d: %s %s" % (get_dim(data[1])[0],self.dimension,data[0],`data[1]`)
+        self.AddItem(incomingdata[0],incomingdata[1])
 
 @ Checking the data names.  The CIF 1.1 standard restricts characters in
 a data name to ASCII 33-126 and there should be a leading underscore.  Items
@@ -1544,7 +1511,7 @@ def check_stringiness(data):
        from numbers import Number
        if isinstance(data,Number): return False
        elif isinstance(data,basestring): return True
-       elif data is None:return False  #should be data are None
+       elif data is None:return False  #should be data are None :)
        else:
            for one_item in data:
                if not check_stringiness(one_item): return False
@@ -1568,17 +1535,17 @@ is here for compatibility only.
 def RemoveItem(self,itemname):
     # first check any loops
     loop_no = self.FindLoop(itemname)
-    if self.has_key(itemname):
-        testkey = itemname.lower()
+    testkey = itemname.lower()
+    if self.has_key(testkey):
         del self.block[testkey]
         del self.true_case[testkey]
-    # now remove from loop
-    if loop_no >= 0:
-        self.loops[loop_no].remove(testkey)
-        if len(self.loops[loop_no])==0:
-            del self.loops[loop_no]
-            self.item_order.remove(loop_no)
-    else:  #will appear in order list
+        # now remove from loop
+        if loop_no >= 0:
+            self.loops[loop_no].remove(testkey)
+            if len(self.loops[loop_no])==0:
+                del self.loops[loop_no]
+                self.item_order.remove(loop_no)
+        else:  #will appear in order list
             self.item_order.remove(testkey)
  
 def RemoveLoopItem(self,itemname):
@@ -1668,15 +1635,17 @@ def CreateLoop(self,datanames,order=-1):
            loopno = max(self.loops.keys()) + 1
        else:
            loopno = 1
+       # store as lower case
+       lc_datanames = [d.lower() for d in datanames]
        # remove these datanames from all other loops
-       [self.loops[a].remove(b) for a in self.loops for b in datanames if b in self.loops[a]]
-       self.loops[loopno] = list(datanames)
+       [self.loops[a].remove(b) for a in self.loops for b in lc_datanames if b in self.loops[a]]
+       self.loops[loopno] = list(lc_datanames)
        if order >= 0:
            self.item_order.insert(order,loopno)
        else:
            self.item_order.append(loopno)
        # remove these datanames from item ordering
-       self.item_order = [a for a in self.item_order if a not in datanames] 
+       self.item_order = [a for a in self.item_order if a not in lc_datanames] 
       
 @  Removing a loop. The looped names are not removed, but will cause chaos on output
 unless they are placed into a different loop or deleted.
@@ -1877,6 +1846,7 @@ and fiddle with the write method.
 <<Format a data value>>
 <<Input a guide template>>
 <<Create a proper ordering>>
+<<Convert value to string>>
 
 @ We adjust the write method to intelligently output lines, taking
 care with CIF/STAR rules for output.  We allow the caller to specify:
@@ -2181,6 +2151,21 @@ def _formatstring(self,instring,delimiter=None,standard='CIF1',indent=0,
             instring = instring[letter+1:]            
     return outstring
 
+@ Converting a value to a string.
+
+The canonical version of a value is its string representation.  This is different to its
+output format, which will have delimiters and various conventions applied (see below).
+
+<<Convert value to string>>=
+def convert_to_string(self,dataname):
+    """Convert values held in dataname value fork to string version"""
+    v,is_value = self.GetFullItemValue(dataname)
+    if not is_value:
+        return v
+    if check_stringiness(v): return v   #already strings
+    # TODO...something else
+    return v
+
 @ \subsection{Line folding protocol}
 
 The line folding protocol allows lines to be broken by appending a backslash as the last
@@ -2315,7 +2300,7 @@ def process_template(self,template_string):
     #template_full_lines = dict([(l.split()[0],l) for l in template_as_lines if len(l.split())>0])
     self.form_hints = []   #ordered array of hint dictionaries
     for item in template_as_cif.item_order:  #order of input
-        if not isinstance(item,LoopBlock):    #not nested
+        if not isinstance(item,int):    #not nested
             hint_dict = {"dataname":item}
             # find the line in the file
             start_pos = re.search("(^[ \t]*" + item + "[ \t\n]+)(?P<spec>([\S]+)|(^;))",template_string,re.I|re.M)
@@ -2329,9 +2314,11 @@ def process_template(self,template_string):
             print '%s: %s' % (item,`hint_dict`)
             self.form_hints.append(hint_dict)
         else:           #loop block
-            testname = item.item_order[0]
+            testnames = template_as_cif.loops[item]
+            total_items = len(template_as_cif.loops[item])
+            testname = testnames[0]
             #find the loop spec line in the file
-            loop_regex = "(^[ \t]*loop_[ \t\n\r]+" + testname + "([ \t\n\r]+_[\S]+){%d}[ \t]*$(?P<packet>(.(?!_loop|_[\S]+))*))" % (len(item.item_order) - 1)
+            loop_regex = "(^[ \t]*loop_[ \t\n\r]+" + testname + "([ \t\n\r]+_[\S]+){%d}[ \t]*$(?P<packet>(.(?!_loop|_[\S]+))*))" % (total_items - 1)
             loop_line = re.search(loop_regex,template_string,re.I|re.M|re.S)
             loop_so_far = loop_line.end()
             packet_text = loop_line.group('packet')
@@ -2340,7 +2327,7 @@ def process_template(self,template_string):
             line_end_pos = re.finditer("^",packet_text,re.M)
             next_end = line_end_pos.next().end()
             last_end = next_end
-            for loopname in item.item_order:
+            for loopname in testnames:
                 hint_dict = {"dataname":loopname}
                 thismatch = packet_pos.next()
                 while thismatch.start('all') > next_end:
@@ -2383,9 +2370,7 @@ def create_ordering(self,order_dict):
 @ Merging.  Normally merging of dictionaries is done at the data file 
 level, i.e. a whole block is replaced or added.  However, in 'overlay'
 mode, individual keys are added/replaced, which is a block level
-operation.  Furthermore, this routine is called when operating on
-DDL2 dictionaries as they use save frames, which are
-block internal, so all modes have to be supported.
+operation. 
 
 Looped item overlaps are tricky.  We distinguish two cases: at least
 one key in common, and all keys in common.  The latter implies 
@@ -2416,14 +2401,17 @@ not be added, but simply replaced.
 def merge(self,new_block,mode="strict",match_att=[],match_function=None,
                rel_keys = []):
     if mode == 'strict':
-       for key in new_block.item_order: 
+       for key in new_block.keys(): 
            if self.has_key(key) and key not in match_att:
               raise CifError( "Identical keys %s in strict merge mode" % key)
-           elif key not in match_att:           #no change otherwise
-              if isinstance(key,StringTypes):
-                  self[key] = new_block[key] 
-              else:
-                  self.insert_loop(key)
+           elif key not in match_att:           #a new dataname
+               self[key] = new_block[key]
+       # we get here if there are no keys in common, so we can now copy
+       # the loops and not worry about overlaps
+       for one_loop in new_block.loops.values():
+           self.CreateLoop(one_loop)
+       # we have lost case information
+       self.true_case.update(new_block.true_case)
     elif mode == 'replace':
        newkeys = new_block.keys()
        for ma in match_att:
@@ -2431,40 +2419,35 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
                newkeys.remove(ma)        #don't touch the special ones
           except ValueError:
                pass
-       for key in new_block.item_order: 
-              if isinstance(key,StringTypes):
+       for key in new_block.keys(): 
+              if isinstance(key,basestring):
                   self[key] = new_block[key] 
-              else:
-                  self.insert_loop(key)   #assume is a loop
+       # creating the loop will remove items from other loops
+       for one_loop in new_block.loops.values():
+           self.CreateLoop(one_loop)
+       # we have lost case information
+       self.true_case.update(new_block.true_case)
     elif mode == 'overlay':
        print 'Overlay mode, current overwrite is %s' % self.overwrite
+       raise StarError, 'Overlay block merge mode not implemented'
        save_overwrite = self.overwrite
        self.overwrite = True
        for attribute in new_block.keys():
            if attribute in match_att: continue      #ignore this one
            new_value = new_block[attribute]
            #non-looped items
-           if isinstance(new_value,StringTypes):
+           if new_block.FindLoop(attribute)<0:     #not looped
               self[attribute] = new_value 
-       these_atts = self.keys()
-       for newloop in new_block.loops:              
-           newkeys = newloop.keys()
-           # note that the following line determines packet item order
-           overlaps = filter(lambda a: a in these_atts,newkeys)
-           if len(overlaps)< len(newloop):#completely new loop
-              self.insert_loop(newloop)
-           elif len(overlaps)==len(newloop):
-              # appending packets 
-              # print "In overlay merge mode, found extra packet items:"
-              # print `overlaps`
-              # get key position
-              loop_keys = filter(lambda a:a in rel_keys,overlaps)
-              try:
-                 newkeypos = map(lambda a:newkeys.index(a),loop_keys)
-                 newkeypos = newkeypos[0]      #one key per loop for now
-                 loop_keys = loop_keys[0] 
-              except (ValueError,IndexError):
-                 newkeypos = []
+       my_loops = self.loops.values()
+       perfect_overlaps = [a for a in new_block.loops if a in my_loops]
+       for po in perfect_overlaps:
+          loop_keys = [a for a in po if a in rel_keys]  #do we have a key?
+          try:
+              newkeypos = map(lambda a:newkeys.index(a),loop_keys)
+              newkeypos = newkeypos[0]      #one key per loop for now
+              loop_keys = loop_keys[0] 
+          except (ValueError,IndexError):
+              newkeypos = []
               overlap_data = map(lambda a:listify(self[a]),overlaps) #old packet data
               new_data = map(lambda a:new_block[a],overlaps) #new packet data
               packet_data = transpose(overlap_data)

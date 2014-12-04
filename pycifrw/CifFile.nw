@@ -226,7 +226,7 @@ returned object to be a CifBlock. It may not be necessary.
 
 <<Adjust emulation of a mapping type>>=
 def __setitem__(self,key,value):
-    super(CifBlock,self).AddItem(key,value,maxlength=75)
+    self.AddItem(key,value,maxlength=75)
     # for backwards compatibility make a single-element loop
     if self.compat_mode:
         if isinstance(value,(tuple,list)) and not isinstance(value,StarFile.StarList):
@@ -270,12 +270,11 @@ def AddCifItem(self,data):
     # we accept only tuples, strings and lists!!
     if not (isinstance(data[0],(StringType,UnicodeType,TupleType,ListType))):
               raise TypeError, 'Cif datanames are either a string, tuple or list'
-    # single items passed straight through to underlying routine
     # we catch single item loops as well...
     if isinstance(data[0],basestring):
-        self.AddSingleCifItem(data[0][0],list(data[1][0]),maxlength=75)
+        self.AddSingleCifItem(data[0],list(data[1]))
         if isinstance(data[1],(tuple,list)) and not isinstance(data[1],StarFile.StarList):  # a single element loop
-            self.CreateLoop(data[0])
+            self.CreateLoop([data[0]])
         return
     # otherwise, we loop over the datanames
     keyvals = zip(data[0][0],[list(a) for a in data[1][0]])
@@ -1599,7 +1598,7 @@ def validate_item_enum(self,item_name,item_value):
     try: 
         enum_list = self[item_name][self.enum_spec][:]
     except KeyError:
-	return {"result":None}
+ 	return {"result":None}
     enum_list.append(".")   #default value
     enum_list.append("?")   #unknown
     item_values = listify(item_value)
@@ -2289,7 +2288,7 @@ def derive_item(self,start_key,cifdata,store_value = False):
           if self[the_category].get('_definition.class','Set')=='Loop':
               # our result is looped, this only gets the simple structures
               if result is not None and hasattr(result[0],'dtype'):    #numpy object
-                  if result[0].size > 1:
+                  if result[0].size > 1:   #so is not a float
                       out_result = [StarFile.StarList(a.tolist()) for a in result]
                   else:
                       def conv_from_numpy(maybe_numpy):
@@ -2300,18 +2299,19 @@ def derive_item(self,start_key,cifdata,store_value = False):
                       out_result = [conv_from_numpy(a) for a in result]
               else:
                   out_result = result
+              # so out_result now contains a value suitable for storage
               cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
               has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
-              if len(has_cat_names)>0:
-                  target_loop = cifdata.GetLoop(has_cat_names[0])
-                  if out_result is None:
-                      loop_len = len(target_loop[target_loop.keys()[0]])
+              print 'Found pre-existing names: ' + `has_cat_names`
+              if len(has_cat_names)>0:   #this category already exists
+                  if out_result is None: #need to create a list of Nones
+                      loop_len = len(cifdata[has_cat_names[0]])
                       out_result = [None]*loop_len
                       result = out_result
-                  target_loop[key] = out_result      #lengths must match or else!!
-              else:
-                  cifdata[key] = out_result
-          else: 
+              cifdata[key] = out_result      #lengths must match or else!!
+              print 'Loop info:' + `cifdata.loops`
+              cifdata.AddLoopName(has_cat_names[0],key)
+          else:    #not a looped category 
               if result is not None and hasattr(result,'dtype'):
                   if result.size > 1:
                       out_result = StarFile.StarList(result.tolist())
@@ -2332,7 +2332,10 @@ print 'Executing function for %s:' % key
 #print the_func
 exec the_func in globals(),locals() #will access dREL functions, puts "pyfunc" in scope
 # print 'in following global environment: ' + `global_table`
+stored_setting = cifdata.provide_value
+cifdata.provide_value = True
 result = pyfunc(cifdata)
+cifdata.provide_value = stored_setting
 #print "Function returned %s" % `result`
 
 @ Aliases.  If we have this item under a different name, find it and
@@ -2514,8 +2517,8 @@ def run_data_checks(self,verbose=False):
     for dataname in self.keys():
         update_value(self.v_result,self.fulldic.run_item_validation(dataname,self[dataname]))
         update_value(self.v_result,self.fulldic.run_global_validation(dataname,self[dataname],self))
-    for loop in self.loops:
-        update_value(self.v_result,self.fulldic.run_loop_validation(loop.keys()))
+    for loop_names in self.loops.values():
+        update_value(self.v_result,self.fulldic.run_loop_validation(loop_names))
     # now run block-level checks
     update_value(self.v_result,self.fulldic.run_block_validation(self))
     # return false and list of baddies if anything didn't match
@@ -2627,7 +2630,14 @@ def AddCifItem(self,data):
             valid,problems = self.global_item_check(name,value,prov_dict)
             prov_dict[name] = value  # add back in
             self.report_if_invalid(valid,problems,name)
-    CifBlock.AddCifItem(self,data)
+    super(ValidCifBlock,self).AddCifItem(data)
+
+def AddItem(self,key,value,**kwargs):
+    valid,problems = self.single_item_check(key,value)
+    self.report_if_invalid(valid,problems,key)
+    valid,problems = self.global_item_check(key,value)
+    self.report_if_invalid(valid,problems,key)
+    super(ValidCifBlock,self).AddItem(key,value,**kwargs)
 
 # utility function
 def report_if_invalid(self,valid,bad_list,data_name):
@@ -2991,8 +3001,8 @@ def run_data_checks(check_block,fulldic,globals={},fake_mand=False):
     for key in check_block.keys():
         update_value(v_result, fulldic.run_item_validation(key,check_block[key]))
         update_value(v_result, fulldic.run_global_validation(key,check_block[key],check_block,globals=globals))
-    for loop in check_block.loops:
-        update_value(v_result, fulldic.run_loop_validation(loop.keys()))
+    for loopnames in check_block.loops.values():
+        update_value(v_result, fulldic.run_loop_validation(loopnames))
     update_value(v_result,fulldic.run_block_validation(check_block,globals=globals,fake_mand=fake_mand))
     # return false and list of baddies if anything didn't match
     for test_key in v_result.keys():
