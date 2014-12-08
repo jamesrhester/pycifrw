@@ -162,7 +162,7 @@ these addresses to index into a table that contains the actual block
 name and the parent blockname. 
 
 <<Initialise BC data structures>>=
-def __init__(self,datasource=None,standard='CIF',
+def __init__(self,datasource=None,standard='CIF',blocktype = StarBlock,
              characterset='ascii',scoping='instance',parent_id=None,**kwargs):
     import collections
     self.dictionary = {}
@@ -175,6 +175,7 @@ def __init__(self,datasource=None,standard='CIF',
     self.visible_keys = []            # for efficiency
     self.parent_id = parent_id
     self.scoping = scoping  #will trigger setting of child table
+    self.blocktype = blocktype
     if isinstance(datasource,BlockCollection):
         self.merge_fast(datasource)
         self.scoping = scoping   #reset visibility
@@ -424,10 +425,9 @@ how save frames are produced.
 <<Add a new data section>>=
 def NewBlock(self,blockname,blockcontents=None,fix=True,parent=None):
     if blockcontents is None:
-       blockcontents = StarBlock()
-    if self.standard is not None:
-       if self.standard == 'CIF':
-          self.checknamelengths(blockcontents,maxlength=75)  #
+        blockcontents = StarBlock()
+    if self.standard == "CIF":
+        blockcontents.setmaxnamelength(75)
     if len(blockname)>75:
              raise StarError , 'Blockname %s is longer than 75 characters' % blockname
     if fix:
@@ -753,24 +753,24 @@ class StarFile(BlockCollection):
 
 @ When initialising, we add those parts that are unique to the StarFile as
 opposed to a simple collection of blocks - i.e. reading in from a file,
-and some line length restrictions.  We don't indent this section in the
+and some line length restrictions.  We do not indent this section in the
 noweb file, so that our comment characters output at the beginning of the
 line.  
 
 <<Initialise data structures>>=
     def __init__(self,datasource=None,maxinlength=-1,maxoutlength=0,
-                scoping='instance',grammar='1.1',scantype='standard',**kwargs):
+                scoping='instance',grammar='1.1',scantype='standard',
+                **kwargs):
         super(StarFile,self).__init__(datasource=datasource,**kwargs)
         self.my_uri = getattr(datasource,'my_uri','')
-        self.maxinlength = maxinlength      #no restriction
         if maxoutlength == 0:
             self.maxoutlength = 2048 
         else:
             self.maxoutlength = maxoutlength
         self.scoping = scoping
         if type(datasource) in StringTypes or hasattr(datasource,"read"):
-            ReadStar(datasource,prepared=self,maxlength=self.maxinlength,
-                        grammar=grammar,scantype=scantype)
+            ReadStar(datasource,prepared=self,grammar=grammar,scantype=scantype,
+            maxlength = maxinlength)
         self.header_comment = \
 """#\\#STAR
 ##########################################################################
@@ -788,29 +788,31 @@ line.
 <<Set URI>>=
     def set_uri(self,my_uri): self.my_uri = my_uri
 
-@ Reading in a file.  We now use the Yapps2-generated [[YappsStarParser]] module to provide grammar
-services.  The structure returned from parsing is a StarFile, with
-possible grammar violations due to duplicate block or item names.
+@ Reading in a file.  We use the Yapps3-generated [[YappsStarParser]]
+module to provide grammar services.  The structure returned from
+parsing is a StarFile, with possible grammar violations due to
+duplicate block names.
 
-We allow fast reads using the compiled StarScan module
-by passing the option 'flex' to this routine.  We also permit an
-already-opened stream to be passed to us (thanks to Boris Dusek for
-this contribution).  There are 3 possible syntax variations: very old
-CIF files allowed unquoted data values to begin with open brackets,
+We allow fast reads using the compiled StarScan module by passing the
+option 'flex' to this routine.  We also permit an already-opened
+stream to be passed to us (thanks to Boris Dusek for this
+contribution).  There are 3 possible syntax variations: very old CIF
+files allowed unquoted data values to begin with open square brackets,
 version 1.1 disallowed this, and DDLm-conformant files interpret these
-as actual bracket expressions.  The different grammars are
-selected by a command-line switch.  
+as actual bracket expressions.  The different grammars are selected by
+the 'grammar' argument.
 
 We allow reading CBF files, which can contain binary sections, by
 removing all characters found between the strings '-BINARY-FORMAT-SECTION'.
 This is not a robust approach as this string could theoretically be found
 in a comment or datavalue.
 
-We save our URL for possible later use in finding files relative to the location of
-this file e.g. with DDLm dictionary imports.
+We save our URL for possible later use in finding files relative to
+the location of this file e.g. with DDLm dictionary imports.
 
 <<Read in a STAR file>>=
-def ReadStar(filename,prepared = StarFile(),maxlength=2048,scantype='standard',grammar='1.1',CBF=False):
+def ReadStar(filename,prepared = StarFile(),maxlength=-1,
+             scantype='standard',grammar='1.1',CBF=False):
     import string
     import codecs
     # save desired scoping
@@ -864,6 +866,8 @@ def ReadStar(filename,prepared = StarFile(),maxlength=2048,scantype='standard',g
     except Y.yappsrt.NoMoreTokens:
            print >>sys.stderr, 'Could not complete parsing; stopped around here:'
            print >>sys.stderr, parser._scanner
+    except ValueError:
+           pass
     if proto_star == None:
         errorstring = 'Syntax error in input file: last value parsed was %s' % Y.lastval
         errorstring = errorstring + '\nParser status: %s' % `parser._scanner`
@@ -1091,7 +1095,7 @@ def GetLoopNames(self,keyname):
     raise KeyError, 'Item does not exist'
 
 @ Adding to a loop.  We find the loop containing the dataname that
-we've been passed, and then append all of the (key,values) pairs that we
+we have been passed, and then append all of the (key,values) pairs that we
 are passed in [[data]], which is a dictionary.  We expect that the data 
 have been sorted out for us, unlike when data are passed in [[AddLoopItem]], 
 when there can be both unlooped and looped data in one set.  The dataname 
@@ -1159,9 +1163,13 @@ Formatting hints are used on output to suggest column positions for
 looped datanames and delimiters. In practice these are used only for
 dictionaries where fine-tuned layout is helpful for human readers.
 
+We provide a simple function to change the maximum name length, so that
+we can read in a StarBlock and then enforce that the names are a maximum
+length as required by CIF. 
+
 <<Initialise a StarBlock>>=
 def __init__(self,data = (), maxoutlength=2048, wraplength=80, overwrite=True,
-             characterset='ascii'):
+             characterset='ascii',maxnamelength=-1):
     self.block = {}    #the actual data storage (lower case keys)
     self.loops = {}    #each loop is indexed by a number and contains a list of datanames
     self.item_order = []  #lower case, loops referenced by integer
@@ -1172,6 +1180,7 @@ def __init__(self,data = (), maxoutlength=2048, wraplength=80, overwrite=True,
     self.popout = False         #used during load iteration
     self.curitem = -1           #used during iteration
     self.maxoutlength = maxoutlength
+    self.setmaxnamelength(maxnamelength)  #to enforce CIF limit of 75 characters
     self.wraplength = wraplength
     self.overwrite = overwrite
     self.characterset = characterset
@@ -1191,8 +1200,16 @@ def __init__(self,data = (), maxoutlength=2048, wraplength=80, overwrite=True,
         # loops as well
         self.loops = data.loops.copy()
 
+def setmaxnamelength(self,maxlength):
+    """Set the maximum allowable dataname length (-1 for no check)"""
+    self.maxnamelength = maxlength
+    if maxlength > 0:
+        bad_names = [a for a in self.keys() if len(a)>self.maxnamelength]
+        if len(bad_names)>0:
+            raise StarError, 'Datanames too long: ' + `bad_names`
+
 @ Adding emulation of a mapping type.  We add any of the other
-functions we'd like to emulate.   [[__len__]] returns the number
+functions we would like to emulate.   [[__len__]] returns the number
 of items in this block, either in a loop or not.  So it is
 not the simple length of the dictionary.
 
@@ -1335,21 +1352,21 @@ def GetItemOrder(self):
 
 @ Adding a data item. 
 
-We check for consistency, by making sure the new item is
-not in the block already.  If it is, we replace it (consistent with
-the meaning of square brackets in Python), unless [[self.overwrite]]  
-is False, in which case an error is raised.
+We check for consistency, by making sure the new item is not in the
+block already.  If it is, we replace it (consistent with the meaning
+of square brackets in Python), unless [[self.overwrite]] is False, in
+which case an error is raised.
 
 We skip checking of data values if the [[precheck]] value is true- this
 is typically set if the item is being read from a file, and so is already
-checked.
+checked, or will be checked in bulk at the end.
 
 <<Add a data item>>=
-def AddItem(self,key,value,precheck=False,maxlength=-1):
+def AddItem(self,key,value,precheck=False):
     if not isinstance(key,basestring):
          raise TypeError, 'Star datanames are strings only (got %s)' % `key`
     if not precheck:
-         self.check_data_name(key,maxlength)    # make sure no nasty characters   
+         self.check_data_name(key,self.maxnamelength)    # make sure no nasty characters   
     # check for overwriting
     if self.has_key(key):
          if not self.overwrite:
@@ -1402,11 +1419,14 @@ that the item has been regularised before this check is called.
 The CIF2 standard allows all of Unicode, with certain blocks disallowed. The
 removal of the disallowed characters takes place on file read. 
 
+We have the name length as a separate call as file reading will automatically
+produce datanames with the correct syntax, so during file reading we do not
+require any checking, but we do still need to check name length.
+
 <<Check data name for STAR conformance>>=
 def check_data_name(self,dataname,maxlength=-1): 
     if maxlength > 0:
-        if len(dataname)>maxlength:
-            raise StarError( 'Dataname %s exceeds maximum length %d' % (dataname,maxlength))
+        self.check_name_length(dataname,maxlength)
     if dataname[0]!='_':
         raise StarError( 'Dataname ' + dataname + ' does not begin with _')
     if self.characterset=='ascii':
@@ -1429,6 +1449,11 @@ def check_data_name(self,dataname,maxlength=-1):
             for a in dataname: print '%x' % ord(a),
             print
             raise StarError( u'Dataname ' + dataname + u' contains unsupported characters (U+xFFFE and/or U+xFFFF)')
+
+def check_name_length(self,dataname,maxlength):
+    if len(dataname)>maxlength:
+        raise StarError( 'Dataname %s exceeds maximum length %d' % (dataname,maxlength))
+    return
 
 <<Check data item for STAR conformance>>=
 def check_item_value(self,item):
@@ -1628,7 +1653,7 @@ def CreateLoop(self,datanames,order=-1):
        if len(listed_values) == len(datanames):
            len_set = set([len(self[a]) for a in datanames])
            if len(len_set)>1:
-               raise ValueError, 'Request to loop datanames with different lengths: %s' % `len_set`
+               raise ValueError, 'Request to loop datanames %s with different lengths: %s' % (`datanames`,`len_set`)
        elif len(listed_values) != 0:
            raise ValueError, 'Request to loop datanames where some are single values and some are not'
        if len(self.loops)>0:

@@ -127,7 +127,12 @@ def makeloop(target_block,loopdata):
        target_block.AddItem(loop_seq[col_no], itemlists[col_no::step_size],precheck=True)
     # print 'Makeloop constructed %s' % `loopstructure`
     # now construct the loop
-    target_block.CreateLoop(loop_seq)
+    try:
+        target_block.CreateLoop(loop_seq)  #will raise ValueError on problem
+    except ValueError:
+        error_string =  'Incorrect number of loop values for loop containing %s' % `loop_seq`
+        print >>sys.stderr, error_string
+        raise ValueError, error_string
 
 # return an object with the appropriate amount of nesting
 def make_empty(nestlevel):
@@ -292,7 +297,7 @@ as well.  The current grammar specification catches only this case i.e. the firs
 element of the array can be of the form xxx[yyy].  No other elements can have this
 form, and there can be no trailing characters.  This form can be allowed for other
 elements by trivial expansion of the current description but, until further notice,
-I don't think it is useful to allow square brackets in list values.
+I do not think it is useful to allow square brackets in list values.
 
 <<Grammar specification DDLm>>=
 # now the rules
@@ -315,7 +320,7 @@ rule input@<<prepared>>: ( ((
                   |
                   save_frame     {{thisbc.merge_fast(save_frame,parent=heading)}}
                   )*
-                   )                      {{return (monitor('dblock',thisbc))}} # but may be empty
+                   )                      {{thisbc[heading].setmaxnamelength(thisbc[heading].maxnamelength);return (monitor('dblock',thisbc))}} # but may be empty
 
      rule dataseq@<<starblock>>:  data@<<starblock>> 
 		       (
@@ -410,7 +415,7 @@ dictionary files that contain duplicate datablocks.
 # now the rules
 
 rule input@<<prepared>>: ( (( 
-            dblock@<<prepared>>         {{allblocks = prepared; allblocks.merge_fast(dblock)}}
+            dblock@<<prepared>>         {{allblocks = prepared;allblocks.merge_fast(dblock)}}
             (
             dblock@<<prepared>>         {{allblocks.merge_fast(dblock)}} #
             )*
@@ -427,7 +432,8 @@ rule input@<<prepared>>: ( ((
                   |
                   save_frame     {{thisbc.merge_fast(save_frame,parent=heading)}}
                   )*
-                   )                      {{return (monitor('dblock',thisbc))}} # but may be empty
+# A trick to force rechecking of all datanames, which was skipped by the precheck = True option below
+                   )                      {{thisbc[heading].setmaxnamelength(thisbc[heading].maxnamelength);return (monitor('dblock',thisbc))}} # but may be empty
 
      rule dataseq@<<starblock>>:  data@<<starblock>> 
 		       (
