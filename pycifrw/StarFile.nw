@@ -31,7 +31,8 @@ damage) or other loss, loss of profits, costs, charges or expenses
 however caused which may be suffered, incurred or arise directly or
 indirectly in respect of this Software.
 
-6. This Software is not licenced for use in medical applications.
+6.This Software is not licenced for use in medical applications.
+
 """
 
 @ \section{Introduction}
@@ -87,7 +88,7 @@ of Python.
 
 <<*>>=
 <<Copyright statement>>
-from types import *
+
 from urllib import *         # for arbitrary opening
 import re
 import copy
@@ -179,7 +180,7 @@ def __init__(self,datasource=None,standard='CIF',blocktype = StarBlock,
     if isinstance(datasource,BlockCollection):
         self.merge_fast(datasource)
         self.scoping = scoping   #reset visibility
-    elif isinstance(datasource,DictType):
+    elif isinstance(datasource,dict):
         for key,value in datasource.items():
              self[key]= value
     self.header_comment = ''
@@ -240,7 +241,7 @@ def __setitem__(self,key,value):
     self.NewBlock(key,value,parent=None)
 
 def __getitem__(self,key):
-    if isinstance(key,StringTypes):
+    if isinstance(key,basestring):
        lowerkey = key.lower()
        if lowerkey in self.lower_keys:
            return self.dictionary[lowerkey]
@@ -286,7 +287,7 @@ def keys(self):
 
 # changes to take case independence into account
 def has_key(self,key):
-    if not isinstance(key,StringTypes): return 0
+    if not isinstance(key,basestring): return 0
     if key.lower() in self.visible_keys:
         return 1
     return 0
@@ -632,7 +633,7 @@ def merge(self,new_bc,mode=None,parent=None,single_block=[],
 	    thisatt = block_to_item[ii]       #keyname in old block
 	    #print "Looking for %s in %s" % (attval,thisatt)
             if attval == thisatt or \
-	       (isinstance(thisatt,ListType) and attval in thisatt):
+	       (isinstance(thisatt,list) and attval in thisatt):
 	          basekey = base_keys.pop(ii)
                   block_to_item.remove(thisatt)
                   break
@@ -685,7 +686,7 @@ def get_all(self,item_name):
     raw_values = filter(lambda a:a != None, raw_values)
     ret_vals = []
     for rv in raw_values:
-        if isinstance(rv,ListType):
+        if isinstance(rv,list):
 	    for rvv in rv:
 		if rvv not in ret_vals: ret_vals.append(rvv)
 	else:
@@ -768,7 +769,7 @@ line.
         else:
             self.maxoutlength = maxoutlength
         self.scoping = scoping
-        if type(datasource) in StringTypes or hasattr(datasource,"read"):
+        if isinstance(datasource,basestring) or hasattr(datasource,"read"):
             ReadStar(datasource,prepared=self,grammar=grammar,scantype=scantype,
             maxlength = maxinlength)
         self.header_comment = \
@@ -1190,7 +1191,7 @@ def __init__(self,data = (), maxoutlength=2048, wraplength=80, overwrite=True,
         self.char_check = re.compile(u"[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\u00A0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFFD\U00010000-\U0010FFFD-]+",re.M)
     else:
         raise StarError("No character set specified")
-    if isinstance(data,(TupleType,ListType)):
+    if isinstance(data,(tuple,list)):
         for item in data:
             self.AddLoopItem(item)
     elif isinstance(data,StarBlock):
@@ -1280,7 +1281,7 @@ def items(self):
     return [a for a in zip(self.keys(),self.values())]
 
 def has_key(self,key):
-    if isinstance(key,StringTypes) and key.lower() in self.keys():
+    if isinstance(key,basestring) and key.lower() in self.keys():
         return 1
     return 0
 
@@ -1399,7 +1400,7 @@ def AddLoopItem(self,incomingdata,precheck=False,maxlength=-1):
     # we accept tuples, strings, lists and dicts!!
     # Direct insertion: we have a string-valued key, with an array
     # of values -> single-item into our loop
-    if isinstance(incomingdata[0],(TupleType,ListType)):
+    if isinstance(incomingdata[0],(tuple,list)):
        # a whole loop
        keyvallist = zip(incomingdata[0],incomingdata[1])
        for key,value in keyvallist:
@@ -1512,8 +1513,7 @@ This is a method of the module, rather than belonging to any particular class.
 
 <<Get data dimension>>=
 def get_dim(dataitem,current=0,packlen=0):
-    zerotypes = [IntType, LongType, 
-                    FloatType, StringType, UnicodeType]
+    zerotypes = [int, long, float, basestring]
     if type(dataitem) in zerotypes:
         return current, packlen
     if not dataitem.__class__ == ().__class__ and \
@@ -2031,7 +2031,7 @@ containing an entry 'delimiter' that requests a particular delimiter.
 def format_value(self,itemvalue,stringsink,compound=False,hints={}):
     """Format a Star data value"""
     delimiter = hints.get('delimiter',None)
-    if isinstance(itemvalue,StringTypes):  #need to sanitize
+    if isinstance(itemvalue,basestring):  #need to sanitize
        stringsink.write(self._formatstring(itemvalue,delimiter=delimiter),canbreak = True)
     elif isinstance(itemvalue,StarList):
        stringsink.set_tab(0)
@@ -2096,7 +2096,7 @@ def format_packets(self,outstring,indent=0,loop_no=-1):
 <<Format a single packet item>>=
 def format_packet_item(self,pack_item,indent,outstring):
        # print 'Formatting %s' % `pack_item`
-       if isinstance(pack_item,StringTypes):
+       if isinstance(pack_item,basestring):
            outstring.write(self._formatstring(pack_item)) 
        else: 
            self.format_value(pack_item,outstring)
@@ -2537,7 +2537,7 @@ operate on a string instead of a list.
 
 <<List manipulations>>=
 def listify(item):
-    if isinstance(item,StringTypes): return [item]
+    if isinstance(item,basestring): return [item]
     else: return item
 
 #Transpose the list of lists passed to us
@@ -2671,7 +2671,7 @@ def recursive_iter(self,dict_so_far={},coord=[]):
 
 # small function to use the coordinates. 
 def coord_to_group(self,dataname,coords):
-      if not isinstance(dataname,StringTypes):
+      if not isinstance(dataname,basestring):
          return dataname     # flag inner loop processing
       newm = self[dataname]          # newm must be a list or tuple
       for c in coords:

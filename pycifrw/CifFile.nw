@@ -31,7 +31,8 @@ damage) or other loss, loss of profits, costs, charges or expenses
 however caused which may be suffered, incurred or arise directly or
 indirectly in respect of this Software.
 
-6. This Software is not licenced for use in medical applications.
+6.This Software is not licenced for use in medical applications.
+
 """
 
 @ \section{Introduction}
@@ -90,7 +91,7 @@ wishes to do them.
 
 <<*>>=
 <<Copyright statement>>
-from types import *
+
 import re
 import StarFile
 import sys
@@ -241,7 +242,7 @@ the item name should also occur in a single member tuple.
 <<Add a data item>>=
 def AddCifItem(self,data):
     # we accept only tuples, strings and lists!!
-    if not (isinstance(data[0],(StringType,UnicodeType,TupleType,ListType))):
+    if not (isinstance(data[0],(basestring,tuple,list))):
               raise TypeError, 'Cif datanames are either a string, tuple or list'
     # we catch single item loops as well...
     if isinstance(data[0],basestring):
@@ -374,7 +375,7 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
     self.template_cache = {}    #for DDLm imports
     self.ddlm_functions = {}    #for DDLm functions
     self.switch_numpy(False)    #no Numpy arrays returned 
-    if isinstance(dic,StringTypes):
+    if isinstance(dic,basestring):
         self.dic_as_cif = CifFile(dic,grammar=grammar,**kwargs)
     (self.dicname,self.diclang,self.defdata) = self.dic_determine(self.dic_as_cif)
     print '%s is a %s dictionary' % (self.dicname,self.diclang)
@@ -558,7 +559,7 @@ def DDL1_normalise(self):
        newnames = [key]  #keep by default
        if value.has_key("_name"):
            real_name = value["_name"]
-           if type(real_name) is ListType:        #looped values
+           if isinstance(real_name,list):        #looped values
                for looped_name in real_name:
                   new_value = value.copy()
                   new_value["_name"] = looped_name  #only looped name
@@ -680,7 +681,7 @@ simplicity.
 <<Loopify parent-child relationships>>
 
 def DDL2_normalise(self):
-   listed_defs = filter(lambda a:isinstance(self[a].get('_item.name'),ListType),self.keys()) 
+   listed_defs = filter(lambda a:isinstance(self[a].get('_item.name'),list),self.keys()) 
    # now filter out all the single element lists!
    dodgy_defs = filter(lambda a:len(self[a]['_item.name']) > 1, listed_defs)
    for item_def in dodgy_defs:
@@ -814,9 +815,9 @@ currently-defined item.  If the child is missing, likewise.
 def create_pcloop(self,definition):
     old_children = self[definition].get('_item_linked.child_name',[])
     old_parents = self[definition].get('_item_linked.parent_name',[])
-    if isinstance(old_children,StringTypes): 
+    if isinstance(old_children,basestring): 
          old_children = [old_children]
-    if isinstance(old_parents,StringTypes): 
+    if isinstance(old_parents,basestring): 
          old_parents = [old_parents]
     if (len(old_children)==0 and len(old_parents)==0) or \
        (len(old_children) > 1 and len(old_parents)>1):
@@ -1592,9 +1593,9 @@ def validate_looping(self,item_name,item_value):
         must_loop = self[item_name][self.must_loop_spec]
     except KeyError:
         return {"result":None}
-    if must_loop == 'yes' and isinstance(item_value,StringTypes): # not looped
+    if must_loop == 'yes' and isinstance(item_value,basestring): # not looped
         return {"result":False}      #this could be triggered
-    if must_loop == 'no' and not isinstance(item_value,StringTypes): 
+    if must_loop == 'no' and not isinstance(item_value,basestring): 
         return {"result":False}
     return {"result":True}
 
@@ -1635,7 +1636,7 @@ def validate_loop_key(self,loop_names):
     entry_name = self.cat_map[category]
     key_spec = self[entry_name].get("_category_mandatory.name",[])
     for names_to_check in key_spec:
-        if isinstance(names_to_check,StringTypes):   #only one
+        if isinstance(names_to_check,basestring):   #only one
             names_to_check = [names_to_check]
         for loop_key in names_to_check:
             if loop_key not in loop_names: 
@@ -1664,7 +1665,7 @@ def validate_loop_references(self,loop_names):
     # build a flat list.  For efficiency we don't remove duplicates,as
     # we expect no more than the order of 10 or 20 looped names.
     def flat_func(a,b): 
-        if isinstance(b,StringTypes): 
+        if isinstance(b,basestring): 
            a.append(b)       #single name
         else:
            a.extend(b)       #list of names
@@ -1718,7 +1719,7 @@ def get_alternates(self,main_name,exclusive_only=False):
     alt_names = []
     if alternates != None: 
         alt_names =  self[main_name].get(self.related_item,None)
-        if isinstance(alt_names,StringTypes): 
+        if isinstance(alt_names,basestring): 
             alt_names = [alt_names]
             alternates = [alternates]
         together = map(None,alt_names,alternates)
@@ -1791,7 +1792,7 @@ it to be present.
 def validate_parent(self,item_name,item_value,whole_block,provisional_items={},globals={}):
     parent_item = self[item_name].get(self.parent_spec)
     if not parent_item: return {"result":None}   #no parent specified
-    if isinstance(parent_item,ListType): 
+    if isinstance(parent_item,list): 
 	parent_item = parent_item[0]
     if self.optimize:
 	if parent_item in self.done_parents:
@@ -1800,7 +1801,7 @@ def validate_parent(self,item_name,item_value,whole_block,provisional_items={},g
             self.done_parents.append(parent_item)
             print "Done parents %s" % `self.done_parents`
     # initialise parent/child values
-    if isinstance(item_value,StringTypes):
+    if isinstance(item_value,basestring):
 	child_values = [item_value]
     else: child_values = item_value[:]    #copy for safety
     # track down the parent
@@ -1827,7 +1828,7 @@ def validate_parent(self,item_name,item_value,whole_block,provisional_items={},g
         parent_values = provisional_items.get(parent_item,whole_block.get(parent_item))
         if not parent_values:   # check global block
             parent_values = globals.get(parent_item)
-    if isinstance(parent_values,StringTypes):
+    if isinstance(parent_values,basestring):
 	parent_values = [parent_values]   
     #print "Checking parent %s against %s, values %s/%s" % (parent_item,
     #                                          item_name,`parent_values`,`child_values`)
@@ -1844,9 +1845,9 @@ def validate_child(self,item_name,item_value,whole_block,provisional_items={},gl
     # special case for dictionaries  -> we check parents of children only
     if globals.has_key(item_name):  #dictionary so skip
 	return {"result":None}
-    if isinstance(child_items,StringTypes): # only one child
+    if isinstance(child_items,basestring): # only one child
         child_items = [child_items]
-    if isinstance(item_value,StringTypes): # single value
+    if isinstance(item_value,basestring): # single value
         parent_values = [item_value]
     else: parent_values = item_value[:]
     # expand child list with list of alternates
@@ -1865,7 +1866,7 @@ def validate_child(self,item_name,item_value,whole_block,provisional_items={},gl
         elif whole_block.has_key(child_item):
             child_values = whole_block[child_item][:]
 	else:  continue 
-	if isinstance(child_values,StringTypes):
+	if isinstance(child_values,basestring):
 	    child_values = [child_values]
         #    print "Checking child %s against %s, values %s/%s" % (child_item,
         #                                          item_name,`child_values`,`parent_values`)
@@ -1888,7 +1889,7 @@ def validate_remove_parent_child(self,item_name,whole_block):
         child_items = self[item_name][self.child_spec]
     except KeyError:
         return {"result":None}
-    if isinstance(child_items,StringTypes): # only one child
+    if isinstance(child_items,basestring): # only one child
         child_items = [child_items]
     for child_item in child_items:
         if whole_block.has_key(child_item): 
@@ -1907,7 +1908,7 @@ def validate_dependents(self,item_name,item_value,whole_block,prov={},globals={}
         dep_items = self[item_name][self.dep_spec][:]
     except KeyError:
         return {"result":None}    #not relevant
-    if isinstance(dep_items,StringTypes):
+    if isinstance(dep_items,basestring):
         dep_items = [dep_items]
     actual_names = whole_block.keys()
     actual_names.extend(prov.keys())
@@ -1953,11 +1954,11 @@ def validate_uniqueness(self,item_name,item_value,whole_block,provisional_items=
     catentry = self.cat_map[category]
     # we make a copy in the following as we will be removing stuff later!
     unique_i = self[catentry].get("_category_key.name",[])[:]
-    if isinstance(unique_i,StringTypes):
+    if isinstance(unique_i,basestring):
         unique_i = [unique_i]
     if item_name not in unique_i:       #no need to verify
         return {"result":None}
-    if isinstance(item_value,StringTypes):  #not looped
+    if isinstance(item_value,basestring):  #not looped
         return {"result":None}
     # print "Checking %s -> %s -> %s ->Unique: " % (item_name,category,catentry) + `unique_i`
     # check that we can't optimize by not doing this check
@@ -2173,7 +2174,7 @@ def transform_drel(self):
         special_ids = [dict(map(None,self.keys(),self.keys()))]
         print "Target id: %s" % derivable
         drel_expr = self[derivable]["_method.expression"]
-        if isinstance(drel_expr,ListType):
+        if isinstance(drel_expr,list):
            try:
                 drel_expr = self[derivable].GetKeyedPacket("_method.purpose","Evaluation")
                 drel_expr = getattr(drel_expr,'_method.expression')
@@ -2360,7 +2361,7 @@ if def_index_val:            #derive a default value
         lcase_comp = True
         index_vals = [a.lower() for a in index_vals]
     # Handle loops
-    if isinstance(val_to_index,ListType):
+    if isinstance(val_to_index,list):
         if lcase_comp:
             val_to_index = [a.lower() for a in val_to_index]
         keypos = [index_vals.index(a) for a in val_to_index]
@@ -2584,12 +2585,12 @@ item that would render an object invalid.
 
 <<Add straight data>>=
 def AddCifItem(self,data):
-    if isinstance(data[0],StringTypes):   # single item
+    if isinstance(data[0],basestring):   # single item
         valid,problems = self.single_item_check(data[0],data[1])
         self.report_if_invalid(valid,problems,data[0])
         valid,problems = self.global_item_check(data[0],data[1])
         self.report_if_invalid(valid,problems,data[0])
-    elif isinstance(data[0],TupleType) or isinstance(data[0],ListType):
+    elif isinstance(data[0],tuple) or isinstance(data[0],list):
         paired_data = map(None,data[0],data[1])
         for name,value in paired_data:
             valid,problems = self.single_item_check(name,value) 
@@ -3195,7 +3196,7 @@ def transpose(base_list):
 
 # listify strings - used surprisingly often
 def listify(item):
-    if isinstance(item,StringTypes): return [item]
+    if isinstance(item,basestring): return [item]
     else: return item
 
 # given a list of search items, return a list of items 
@@ -3219,7 +3220,7 @@ def merge_dic(diclist,mergemode="replace",ddlspec=None):
     dic_as_cif_list = []
     for dic in diclist:
         if not isinstance(dic,CifFile) and \
-           not isinstance(dic,StringTypes):
+           not isinstance(dic,basestring):
                raise TypeError, "Require list of CifFile names/objects for dictionary merging"
 	if not isinstance(dic,CifFile): dic_as_cif_list.append(CifFile(dic))
 	else: dic_as_cif_list.append(dic)
@@ -3247,7 +3248,7 @@ that we are dealing with something like a category -can they be merged??
 def find_parent(ddl2_def):
     if not ddl2_def.has_key("_item.name"):
        return None 
-    if isinstance(ddl2_def["_item.name"],StringTypes):
+    if isinstance(ddl2_def["_item.name"],basestring):
         return ddl2_def["_item.name"]
     if not ddl2_def.has_key("_item_linked.child_name"):
         raise CifError("Asked to find parent in block with no child_names")
