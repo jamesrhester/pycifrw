@@ -1,5 +1,5 @@
 <<Copyright statement>>=
-"""
+__copyright = """
 PYCIFRW License Agreement (Python License, Version 2)
 -----------------------------------------------------
 
@@ -119,6 +119,7 @@ import sys
 <<Top-level functions>>
 <<Utility functions>>
 <<Read in a CIF file>>
+<<API documentation flags>>
 
 @ \section{CifFile}
 
@@ -187,6 +188,30 @@ backwards compatibility.
 
 <<CifBlock class>>=
 class CifBlock(StarFile.StarBlock):
+    """
+    A class to hold a single block of a CIF file.  A `CifBlock` object can be treated as
+    a Python dictionary, in particular, individual items can be accessed using square
+    brackets e.g. `b['_a_dataname']`.  All other Python dictionary methods are also
+    available (e.g. `keys()`, `values()`).  Looped datanames will return a list of values.
+
+    ## Initialisation
+
+    When provided, `data` should be another `CifBlock` whose contents will be copied to
+    this block.
+
+    * if `strict` is set, maximum name lengths will be enforced
+
+    * `maxoutlength` is the maximum length for output lines
+
+    * `wraplength` is the ideal length to make output lines
+
+    * When set, `overwrite` allows the values of datanames to be changed (otherwise an error
+    is raised).
+
+    * `compat_mode` will allow deprecated behaviour of creating single-dataname loops using
+    the syntax `a[_dataname] = [1,2,3,4]`.  This should now be done by calling `CreateLoop`
+    after setting the dataitem value.
+    """
     <<Initialise Cif Block>>
     <<Adjust emulation of a mapping type>>
     <<Add a data item>>
@@ -197,6 +222,22 @@ class CifBlock(StarFile.StarBlock):
 <<Initialise Cif Block>>=
 def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80,overwrite=True,
              compat_mode = False):
+    """When provided, `data` should be another CifBlock whose contents will be copied to
+    this block.
+
+    * if `strict` is set, maximum name lengths will be enforced
+
+    * `maxoutlength` is the maximum length for output lines
+
+    * `wraplength` is the ideal length to make output lines
+
+    * When set, `overwrite` allows the values of datanames to be changed (otherwise an error
+    is raised).
+
+    * `compat_mode` will allow deprecated behaviour of creating single-dataname loops using
+    the syntax `a[_dataname] = [1,2,3,4]`.  This should now be done by calling `CreateLoop`
+    after setting the dataitem value.
+    """
     if strict: maxnamelength=75
     else:
        maxnamelength=-1
@@ -206,7 +247,8 @@ def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80,overwri
     self.compat_mode = compat_mode   #old-style behaviour of setitem
 
 def RemoveCifItem(self,itemname): 
-    self.RemoveLoopItem(itemname)
+    """Remove `itemname` from the CifBlock"""
+    self.RemoveItem(itemname)
 
 @ The second line in the copy method switches the class of the
 returned object to be a CifBlock. It may not be necessary.
@@ -255,6 +297,7 @@ the item name should also occur in a single member tuple.
 
 <<Add a data item>>=
 def AddCifItem(self,data):
+    """ *DEPRECATED*. Use `AddItem` instead."""
     # we accept only tuples, strings and lists!!
     if not (isinstance(data[0],(basestring,tuple,list))):
               raise TypeError, 'Cif datanames are either a string, tuple or list'
@@ -271,6 +314,7 @@ def AddCifItem(self,data):
     self.CreateLoop(data[0][0])
 
 def AddSingleCifItem(self,key,value):
+    """*Deprecated*. Use `AddItem` instead"""
     """Add a single data item. If it is part of a loop, a separate call should be made"""
     self.AddItem(key,value)
 
@@ -280,6 +324,30 @@ block.overwrite to True.
 
 <<Read in a CIF file>>=
 def ReadCif(filename,grammar='1.1',scantype='standard',scoping='instance',standard='CIF'):
+    """ Read in a CIF file, returning a `CifFile` object.  
+
+    * `filename` may be a URL, a file
+    path on the local system, or any object with a `read` method.
+
+    * `grammar` chooses the CIF grammar variant. `1.0` is the original 1992 grammar and `1.1`
+    is identical except for the exclusion of square brackets as the first characters in
+    undelimited datanames. `2.0` will read files in the CIF2.0 standard, and `STAR2` will
+    read files according to the STAR2 publication.  If grammar is `None`, autodetection
+    will be attempted in the order `2.0`, `1.1` and `1.0`. This will always succeed for conformant CIF2.0 files.
+
+    * `scantype` can be `standard` or `flex`.  `standard` provides pure Python parsing at the
+    cost of a factor of 10 or so in speed.  `flex` will tokenise the input CIF file using
+    fast C routines.  Note that running PyCIFRW in Jython uses native Java regular expressions
+    to provide a speedup regardless of this argument.
+
+    * `scoping` is only relevant where nested save frames are expected (STAR2 only). 
+    `instance` scoping makes nested save frames
+    invisible outside their hierarchy, allowing duplicate save frame names in separate
+    hierarchies. `dictionary` scoping makes all save frames within a data block visible to each 
+    other, thereby restricting all save frames to have unique names.
+    Currently the only recognised value for `standard` is `CIF`, which when set enforces a
+    maximum length of 75 characters for datanames and has no other effect. """
+
     finalcif = CifFile(scoping=scoping,standard=standard)
     return StarFile.ReadStar(filename,prepared=finalcif,grammar=grammar,scantype=scantype)
     #return StarFile.StarFile(filename,maxlength,scantype=scantype,grammar=grammar,**kwargs)
@@ -2467,6 +2535,15 @@ to be checked, so we define a separate [[ValidCifFile]] class.
 
 <<A valid CIF block>>=
 class ValidCifBlock(CifBlock):
+    """A `CifBlock` that is valid with respect to a given CIF dictionary.  Methods
+    of `CifBlock` are overridden where necessary to disallow addition of invalid items to the
+    `CifBlock`.
+
+    ## Initialisation
+ 
+    * `dic` is a `CifDic` object to be used for validation.
+
+    """
     <<Initialise with dictionary>>
     <<Run data checks>>
     <<Check input data>>
@@ -2621,6 +2698,7 @@ def AddCifItem(self,data):
     super(ValidCifBlock,self).AddCifItem(data)
 
 def AddItem(self,key,value,**kwargs):
+    """Set value of dataname `key` to `value` after checking for conformance with CIF dictionary"""
     valid,problems = self.single_item_check(key,value)
     self.report_if_invalid(valid,problems,key)
     valid,problems = self.global_item_check(key,value)
@@ -2652,7 +2730,7 @@ def __delitem__(self,key):
     self.RemoveCifItem(key)
 
 @ Adding to a loop.  We find the loop containing the dataname that
-we've been passed, and then append all of the (key,values) pairs that we
+we have been passed, and then append all of the (key,values) pairs that we
 are passed in [[data]], which is a dictionary.  We expect that the data 
 have been sorted out for us, unlike when data are passed in [[AddCifItem]], 
 when there can be both unlooped and looped data in one set.  The dataname 
@@ -2702,6 +2780,8 @@ existence before setting it again!
 
 <<A valid CIF file>>=
 class ValidCifFile(CifFile):
+    """A CIF file for which all datablocks are valid.  Argument `dic` to
+    initialisation specifies a `CifDic` object to use for validation."""
     <<Initialise valid CIF>>
     <<Redefine add new block>>
 
@@ -2743,7 +2823,7 @@ these objects from validation rather than wrap the validation routines inside.
 
 <<ValidationResult class>>=
 class ValidationResult:
-    """Represents validation result"""
+    """Represents validation result. It is initialised with """
     def __init__(self,results):
         """results is return value of validate function"""
         self.valid_result, self.no_matches = results
@@ -2790,7 +2870,11 @@ flag [[isdic]].  This should only be used for DDL2 dictionaries.  DDL1
 dictionaries validate OK if (any) global block is deleted.
 
 <<Validate against the given dictionaries>>=
-def validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False,fake_mand=True):
+def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False,fake_mand=True):
+    """Validate the `ciffile` conforms to the definitions in `CifDic` object `dic`, or if `dic` is missing,
+    to the results of merging the `CifDic` objects in `diclist` according to `mergemode`.  Flag
+    `isdic` indicates that `ciffile` is a CIF dictionary meaning that save frames should be
+    accessed for validation and that mandatory_category should be interpreted differently for DDL2."""
     check_file = CifFile(ciffile)
     if not dic:
         fulldic = merge_dic(diclist,mergemode)
@@ -3273,3 +3357,5 @@ def find_parent(ddl2_def):
         raise CifError("Unable to find single unique parent data item")
     return result[0]
 
+<<API documentation flags>>=
+#No documentation flags

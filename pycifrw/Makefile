@@ -1,7 +1,7 @@
 # Makefile for ANBF Python based Cif handling modules
 
 #
-package: CifFile.py StarFile.py Parsers documentation apidocs
+package: CifFile.py StarFile.py Parsers documentation
 #	python setup.py bdist_wininst
 #
 ../PyCifRW.tar: clean package
@@ -16,10 +16,6 @@ documentation: CifFile.nw YappsStarParser.nw StarFile.nw
 	noweave -html -index -filter l2h YappsStarParser.nw > YappsStarParser.html
 	noweave -html -index -filter l2h TypeContentsParser.nw > TypeContentsParser.html
 # 
-apidocs: CifFile.py StarFile.py
-	pdoc --html --overwrite StarFile.py
-#	pdoc --html CifFile.py
-#
 Parsers: YappsStarParser_DDLm.py YappsStarParser_1_1.py YappsStarParser_1_0.py  TypeContentsParser.py
 	
 #

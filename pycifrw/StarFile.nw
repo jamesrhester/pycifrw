@@ -1,5 +1,5 @@
 <<Copyright statement>>=
-"""
+__copyright = """
 PYCIFRW License Agreement (Python License, Version 2)
 -----------------------------------------------------
 
@@ -124,6 +124,7 @@ except NameError:
 <<Read in a STAR file>>
 <<Get data dimension>>
 <<Utility functions>>
+<<API documentation flags>>
 
 @ \section{BlockCollection}
 
@@ -135,6 +136,7 @@ based on how the block collection was initialised.
 
 <<BlockCollection class>>=
 class BlockCollection(object):
+    """A generic container for `StarBlock` objects."""
     <<Initialise BC data structures>>
     <<Block collection locking>>
     <<BC emulation of mapping type>>
@@ -438,9 +440,12 @@ file is printed, the new block will appear inside the parent block. This is
 how save frames are produced.
 
 <<Add a new data section>>=
-def NewBlock(self,blockname,blockcontents=None,fix=True,parent=None):
-    if blockcontents is None:
-        blockcontents = StarBlock()
+def NewBlock(self,blockname,blockcontents=StarBlock(),fix=True,parent=None):
+    """Add a new block named `blockname` with contents `blockcontents`. If `fix`
+    is True, `blockname` will have spaces and tabs replaced by underscores. `parent`
+    allows a parent block to be set so that block hierarchies can be created.  Depending on
+    the output standard, these blocks will be printed out as nested save frames or
+    ignored."""
     if self.standard == "CIF":
         blockcontents.setmaxnamelength(75)
     if len(blockname)>75:
@@ -716,6 +721,8 @@ Note that child blocks must be save frames, so we hard-code 'save'.
 
 <<Write out to string representation>>=
     def WriteOut(self,comment='',wraplength=80,maxoutlength=2048):
+        """Return the contents of this block as a string, wrapping if possible at `wraplength`
+        characters and restricting maximum line length to `maxoutlength`"""
         import cStringIO
         if not comment:
             comment = self.header_comment
@@ -828,6 +835,35 @@ the location of this file e.g. with DDLm dictionary imports.
 <<Read in a STAR file>>=
 def ReadStar(filename,prepared = StarFile(),maxlength=-1,
              scantype='standard',grammar='1.1',CBF=False):
+
+    """ Read in a STAR file, returning the contents in the `prepared` object.  
+
+    * `filename` may be a URL, a file
+    path on the local system, or any object with a `read` method.
+
+    * `prepared` provides a `StarFile` or `CifFile` object that the contents of `filename`
+    will be added to.
+    
+    * `maxlength` is the maximum allowable line length in the input file. This has been set at
+    2048 characters for CIF but is unlimited (-1) for STAR files.
+
+    * `grammar` chooses the STAR grammar variant. `1.0` is the original 1992 CIF/STAR grammar and `1.1`
+    is identical except for the exclusion of square brackets as the first characters in
+    undelimited datanames. `2.0` will read files in the CIF2.0 standard, and `STAR2` will
+    read files according to the STAR2 publication.  If grammar is `None`, autodetection
+    will be attempted in the order `2.0`, `1.1` and `1.0`. This will always succeed for conformant CIF2.0 files.
+    Note that (nested) save frames are read in all grammar variations and then flagged afterwards if
+    they do not match the requested grammar.
+
+    * `scantype` can be `standard` or `flex`.  `standard` provides pure Python parsing at the
+    cost of a factor of 10 or so in speed.  `flex` will tokenise the input CIF file using
+    fast C routines.  Note that running PyCIFRW in Jython uses native Java regular expressions
+    to provide a speedup regardless of this argument.
+
+    * `CBF` flags that the input file is in Crystallographic Binary File format. The binary block is
+    excised from the input data stream before parsing and is not available in the returned object.
+    """
+
     import string
     import codecs
     # save desired scoping
@@ -1083,6 +1119,8 @@ making up this loop.
 
 <<Get item order>>=
 def GetItemOrder(self):
+    """Return a list of datanames in this `LoopBlock` in the order that they will be
+    printed"""
     return self.parent_block.loops[self.loop_no][:]
 
 @ Move an item to a different position in the loop.  This only affects
@@ -1092,6 +1130,7 @@ passed a loop reference in the [[itemname]] argument.
 
 <<Change data item order>>=
 def ChangeItemOrder(self,itemname,newpos):
+    """Change the position at which `itemname` appears when printing out to `newpos`."""
     self.parent_block.loops[self.loop_no].remove(itemname.lower())
     self.parent_block.loops[self.loop_no].insert(newpos,itemname.lower())
 
@@ -1327,14 +1366,16 @@ def update(self,adict):
     for key in adict.keys():
         self.AddItem(key,adict[key])
 
-@ A utility function to get the numerical order in the printout
-of the given item.  An item has coordinate (loop_no,pos) with
-the top level being loop_no of -1.  If an integer is passed to
-the routine then it will return the position of the loop
-referenced by that number.
+@ This method is used when printing out, which is why it takes both
+names and numbers.
 
 <<Return position of data item>>=
 def GetItemPosition(self,itemname):
+    """A utility function to get the numerical order in the printout
+    of `itemname`.  An item has coordinate `(loop_no,pos)` with
+    the top level having a `loop_no` of -1.  If an integer is passed to
+    the routine then it will return the position of the loop
+    referenced by that number."""
     import string
     if isinstance(itemname,int):
         # return loop position
@@ -1348,12 +1389,11 @@ def GetItemPosition(self,itemname):
     loop_pos = self.loops[loop_no].index(testname)
     return loop_no,loop_pos
 
-@  This routine moves around the order of objects in the top
-level.  
+@  This routine moves around the order of objects in the printout.
 
 <<Change order of data item>>=
 def ChangeItemOrder(self,itemname,newpos):
-    """Move itemname to newpos"""
+    """Move the printout order of `itemname` to `newpos`."""
     if isinstance(itemname,basestring):
         true_name = itemname.lower()
     else:
@@ -1363,6 +1403,8 @@ def ChangeItemOrder(self,itemname,newpos):
 
 <<Return order of all data items>>=
 def GetItemOrder(self):
+    """Return a list of datanames in the order in which they will be printed.  Loops are
+    referred to by numerical index"""
     return self.item_order[:]
 
 @ Adding a data item. 
@@ -1378,6 +1420,8 @@ checked, or will be checked in bulk at the end.
 
 <<Add a data item>>=
 def AddItem(self,key,value,precheck=False):
+    """Add dataname `key` to block with value `value`.  `value` may be
+    a single value, a list or a tuple."""
     if not isinstance(key,basestring):
          raise TypeError, 'Star datanames are strings only (got %s)' % `key`
     if not precheck:
@@ -1410,6 +1454,8 @@ with old versions.  Do not use.
 
 <<Old multi-item add routine>>=
 def AddLoopItem(self,incomingdata,precheck=False,maxlength=-1):
+    """*Deprecated*. Use `AddItem` followed by `CreateLoop` if
+    necessary."""
     # print "Received data %s" % `incomingdata`
     # we accept tuples, strings, lists and dicts!!
     # Direct insertion: we have a string-valued key, with an array
@@ -1572,6 +1618,7 @@ is here for compatibility only.
 
 <<Remove a data item>>=
 def RemoveItem(self,itemname):
+    """Remove `itemname` from the block."""
     # first check any loops
     loop_no = self.FindLoop(itemname)
     testkey = itemname.lower()
@@ -1588,6 +1635,7 @@ def RemoveItem(self,itemname):
             self.item_order.remove(testkey)
  
 def RemoveLoopItem(self,itemname):
+    """*Deprecated*. Use `RemoveItem` instead"""
     self.RemoveItem(itemname)
 
 @ Returning an item value.  Note that a looped block has little
@@ -1606,11 +1654,14 @@ type to be changed.
 
 <<Return value of item>>=
 def GetItemValue(self,itemname):
-    """Return value of itemname"""
+    """Return value of `itemname`.  If `itemname` is looped, a list
+    of all values will be returned."""
     return self.GetFullItemValue(itemname)[0]
 
 def GetFullItemValue(self,itemname):
-    """Return value of itemname and whether or not it is a native value"""
+    """Return the value associated with `itemname`, and a boolean flagging whether 
+    (True) or not (False) it is in a form suitable for calculation.  False is 
+    always returned for strings and `StarList` objects."""
     try:
 	s,v = self.block[itemname.lower()]
     except KeyError:
@@ -1640,7 +1691,6 @@ operations, a LoopBlock can be created with GetLoop and iterated over.
 <<Get co-looped names>>
 <<Add name to loop>>
 <<Add to looped data>>
-<<Transform a group of tags to a loop>>
 <<Remove a packet>>
 <<Get packet by key>>
 <<Get semantic packet by key>>
@@ -1657,11 +1707,14 @@ them being output twice, and we also remove them from any other loop.  Thus, at
 any point in time, a dataname belongs to only one loop, but can be switched to
 another loop trivially.
 
-<<Create a loop>>=
-def CreateLoop(self,datanames,order=-1):
-       """[[datanames]] is a list of datanames that together form a loop.  They should
-       all contain the same number of elements (possibly 0). If [[order]] is given, the loop will
-       appear at this position in the block. A loop counts as a single position."""
+<<Create a loop>>= 
+def CreateLoop(self,datanames,order=-1): 
+       """Create a loop in the datablock. `datanames` is a list of datanames that
+       together form a loop.  They should have been initialised in the block
+       to have the same number of elements (possibly 0). If `order` is given,
+       the loop will appear at this position in the block when printing
+       out. A loop counts as a single position."""
+
        # check lengths: these datanames should exist
        listed_values = [a for a in datanames if isinstance(self[a],list) and not isinstance(self[a],StarList)]
        if len(listed_values) == len(datanames):
@@ -1703,7 +1756,10 @@ to check that it does not exist in any other loops.
 
 <<Add name to loop>>=
 def AddLoopName(self,oldname, newname):
-    """Add [[newname]] to the loop containing [[oldname]]"""
+    """Add `newname` to the loop containing `oldname`. If it is already in the new loop, no
+    error is raised.  If `newname` is in a different loop, it is removed from that loop.
+    The number of values associated with `newname` must match the number of values associated
+    with all other columns of the new loop or a `ValueError` will be raised."""
     loop_no = self.FindLoop(oldname)
     if loop_no < 0:
         raise KeyError, '%s not in loop' % oldname
@@ -1731,12 +1787,15 @@ directly, and therefore refers to a syntactic loop.
 
 <<Get complete looped data>>=
 def GetLoop(self,keyname):
-    """Return a LoopBlock object containing keyname"""
+    """Return a `StarFile.LoopBlock` object constructed from the loop containing `keyname`.
+    `keyname` is only significant as a way to specify the loop."""
     return LoopBlock(self,keyname)
 
 <<Find a loop>>=
 def FindLoop(self,keyname):
-    """Find the loop that contains keyname and return its numerical index,-1 if not present"""
+    """Find the loop that contains `keyname` and return its numerical index or 
+    -1 if not present. The numerical index can be used to refer to the loop in
+    other routines."""
     loop_no = [a for a in self.loops.keys() if keyname.lower() in self.loops[a]]
     if len(loop_no)>0:
         return loop_no[0]
@@ -1748,7 +1807,7 @@ values ourselves on a need-to-know basis.
 
 <<Get co-looped names>>=
 def GetLoopNames(self,keyname):
-    """Return all datanames appearing together with [[keyname]]"""
+    """Return all datanames appearing together with `keyname`"""
     loop_no = self.FindLoop(keyname)
     if loop_no >= 0:
         return self.loops[loop_no]
@@ -1765,6 +1824,11 @@ loop, and has no other significance.
 
 <<Add to looped data>>=
 def AddToLoop(self,dataname,loopdata):
+    """*Deprecated*. Use `AddItem` followed by calls to `AddLoopName`.
+    
+    Add multiple columns to the loop containing `dataname`. `loopdata` is a
+    collection of (key,value) pairs, where `key` is the new dataname and `value`
+    is a list of values for that dataname"""
     # check lengths
     thisloop = self.FindLoop(dataname)
     loop_len = len(self[dataname])
@@ -1774,13 +1838,6 @@ def AddToLoop(self,dataname,loopdata):
            % (`bad_vals`,loop_len)
     self.update(loopdata)
     self.loops[thisloop]+=loopdata.keys()
-
-@ A single-valued set of tags at the top level is isomorphic to those tags
-placed in a loop with a single packet. 
-
-<<Transform a group of tags to a loop>>=
-def Loopify(self,datanamelist):
-    self.CreateLoop(datanamelist)
 
 @ 
 The draft DDLm specification uses square brackets next to a
@@ -1802,7 +1859,9 @@ if a case-insensitive match is appropriate.
 
 <<Get packet by key>>=
 def GetKeyedPacket(self,keyname,keyvalue,no_case=False):
-    """Return the loop packet where [[keyname]] has value [[keyvalue]]. Ignore case if no_case is true"""
+    """Return the loop packet (a `StarPacket` object) where `keyname` has value 
+    `keyvalue`. Ignore case in `keyvalue` if `no_case` is True.  `ValueError`
+    is raised if no packet is found or more than one packet is found."""
     #print "Looking for %s in %s" % (keyvalue, self.parent_block[keyname])
     my_loop = self.GetLoop(keyname)
     if no_case:
@@ -1834,7 +1893,13 @@ of the packet can properly derive the needed value.
 
 <<Get semantic packet by key>>=
 def GetKeyedSemanticPacket(self,keyvalue,cat_id):
-    """Return a complete packet for category cat_id"""
+    """Return a complete packet for category `cat_id` where the
+    category key for the category equals `keyvalue`.  This routine
+    will understand any joined loops, so if separate loops in the
+    datafile belong to the
+    same category hierarchy (e.g. `_atom_site` and `_atom_site_aniso`),
+    the returned `StarPacket` object will contain datanames from
+    both categories."""
     target_keys = self.dictionary.cat_key_table[cat_id]
     p = StarPacket()
     # set case-sensitivity flag
@@ -1859,6 +1924,9 @@ remove both the string and value elements.
 
 <<Remove a packet>>=
 def RemoveKeyedPacket(self,keyname,keyvalue):
+    """Remove the packet for which dataname `keyname` takes
+    value `keyvalue`.  Only the first such occurrence is
+    removed."""
     packet_coord = list(self[keyname]).index(keyvalue)
     loopnames = self.GetLoopNames(keyname)
     for dataname in loopnames:
@@ -1974,6 +2042,9 @@ maximum length.
  
 <<Set the output length>>=
 def SetOutputLength(self,wraplength=80,maxoutlength=2048):
+    """Set the maximum output line length (`maxoutlength`) and the line length to
+    wrap at (`wraplength`).  The wrap length is a target only and may not always be
+    possible."""
     if wraplength > maxoutlength:
         raise StarError("Wrap length (requested %d) must be <= Maximum line length (requested %d)" % (wraplength,maxoutlength))
     self.wraplength = wraplength
@@ -2078,7 +2149,7 @@ the indicated number of spaces.  If we have loops, we add those in too.
 
 <<Format loop names>>=
 def format_names(self,outstring,indent=0,loop_no=-1):
-    """Print datanames from [[loop_no]] one per line"""
+    """Print datanames from `loop_no` one per line"""
     temp_order = self.loops[loop_no][:]   #copy
     while len(temp_order)>0:
         itemname = temp_order.pop(0)
@@ -2710,3 +2781,5 @@ def flat_iterator(self):
         for pack_no in range(my_length):
             yield(self.collapse(pack_no))
         
+<<API documentation flags>>=
+#No documentation flags
