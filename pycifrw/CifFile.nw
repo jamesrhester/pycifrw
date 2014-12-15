@@ -380,14 +380,14 @@ definition. DDLm introduced nesting of definitions.  DDL1 had no
 category definitions. 
 
 We adopt a data model whereby the excess information in a DDL2
-dictionary is absorbed into special methods (and I'm thinking here
+dictionary is absorbed into special methods (and I am thinking here
 of the [[_item_type_list.construct]] stuff which appears at the
 global level), which we initialise
 ourselves for a DDL1 dictionary. 
 
 Note that the underscore following the data or save frame header is
 technically not part of the name, and so in DDL2 dictionaries there are
-two underscores after the word "save".  DDL1 people hadn't figured this
+two underscores after the word "save".  DDL1 people had not figured this
 out yet, so we have to add it in by changing each block name.  DDLm
 reverts to the DDL1 behaviour, perhaps as a way of emphasizing that
 the block name and the contents are semantically different.  Or alternatively,
