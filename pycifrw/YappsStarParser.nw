@@ -11,10 +11,10 @@ only worked for text strings less than about 9000 characters in length.
 For further information about Yapps2, see 
 http://theory.stanford.edu/~amitp/Yapps/
 
-Several standards are available, of which three are implemented: 1.0,
-1.1 and STAR2.  CIF2 differs from STAR2 in that lists have comma
+Several standards are available, of which four are implemented: 1.0,
+1.1, CIF2 and STAR2.  CIF2 differs from STAR2 in that lists have comma
 separators and no nested save frames are allowed.  Note that 1.0,1.1
-and STAR2 differ in their treatment of unquoted data values beginning
+and CIF2/STAR2 differ in their treatment of unquoted data values beginning
 with brackets.
 
 <<1.0_syntax>>=
@@ -38,17 +38,28 @@ parser StarParser:
     <<Regular expressions 1.1>>
     <<Grammar specification 1.1>>
 %%
-@ Note we can make subtle changes to produce different style syntax:
-the following two recipes produce pre 1.1 and DDLm style.
-<<DDLm_syntax>>=
+@ The following two recipes produce CIF2 and STAR2 syntax.
+
+<<CIF2_syntax>>=
 from StarFile import *
 from types import *
 import copy
 <<Helper functions>>
 %%
 parser StarParser:
-    <<Regular expressions DDLm>>
-    <<Grammar specification DDLm>>
+    <<Regular expressions CIF2>>
+    <<Grammar specification CIF2>>
+%%
+@ The STAR2 syntax
+<<STAR2_syntax>>=
+from StarFile import *
+from types import *
+import copy
+<<Helper functions>>
+%%
+parser StarParser:
+    <<Regular expressions STAR2>>
+    <<Grammar specification STAR2>>
 %%
 @   Helper functions.
 
@@ -179,29 +190,31 @@ def pairwise(iterable):
 
 @
 
-The regular expressions aren't quite as easy to deal with as in kjParsing;
-in kjParsing we could pass string variables as re arguments, but here we have
-to have a raw string.  However, we can simplify the BNC specification
-of Nick Spadaccini.   First of all, we do not have to have type I and type 
-II strings, which are distinguished by the presence or absence of a line
-feed directly preceding them and thus by being allowed a semicolon at the
-front or not.  We take care of this by treating as whitespace all terminators
-except for those with a following semicolon, so that a carriage-return-semicolon
-sequence matches the start_sc_line uniquely.
+We can simplify the BNC specification of Nick Spadaccini.  First of
+all, we do not have to have type I and type II strings, which are
+distinguished by the presence or absence of a line feed directly
+preceding them and thus by being allowed a semicolon at the front or
+not.  We take care of this by treating as whitespace all terminators
+except for those with a following semicolon, so that a
+carriage-return-semicolon sequence matches the start_sc_line uniquely.
 
-We include reserved words and save frames. The other
-reserved words have no rules defined, so will flag a syntax error.  However,
-as yapps is a context-sensitive parser, it will by default make any word
-found starting with our reserved words into a data value if it occurs in the
-expected position, so we explicity exclude stuff starting with our words
-in the definition of data_value_1.
+We include reserved words and save frames. The other reserved words
+have no rules defined, so will flag a syntax error.  However, as yapps
+is a context-sensitive parser, it will by default make any word found
+starting with our reserved words into a data value if it occurs in the
+expected position, so we explicity exclude stuff starting with our
+words in the definition of data_value_1.
 
-The syntax rules below correspond to the current CIF2 draft (20110810) with
-the addition of allowing commas between list and table elements, and
-consequently excluding commas from data values.  The inclusion of commas is
-for compatibility with the published STAR and DDLm standards.
+The syntax rules below correspond to the current STAR2 paper. Commas
+are not allowed in non-delimited data values so that they can be used
+to separate list items.
 
-<<Regular expressions DDLm>>=
+<<Regular expressions STAR2>>=
+<<STAR2-CIF2 common regular expressions block 1>>
+<<STAR2-CIF2 common regular expressions block 2>>
+token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$',_\{\}\[\]][^\s,\{\}\[\]]*)"
+
+<<STAR2-CIF2 common regular expressions block 1>>=
 # first handle whitespace and comments, keeping whitespace
 # before a semicolon
 ignore: "([ \t\n\r](?!;))|[ \t]"
@@ -229,9 +242,18 @@ token dat_val_internal_sq: "\[([^\s\[\]]*)\]"
 # interpreted as a single-quote delimited string
 token triple_quote_data_value: "(?s)'''.*?'''|\"\"\".*\"\"\""
 token single_quote_data_value: "'([^\n\r\f'])*'+|\"([^\n\r\"])*\"+"
-token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$',_\{\}\[\]][^\s,\{\}\[\]]*)"
 
+@ Currently just a single line but we allow a whole block just in case.
+
+<<STAR2-CIF2 common regular expressions block 2>>=
 token END: '$'
+
+@ CIF 2.0 uses spaces instead of commas to separate list values so commas are allowed in data values
+
+<<Regular expressions CIF2>>=
+<<STAR2-CIF2 common regular expressions block 1>>
+token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$'_\{\}\[\]][^\s\{\}\[\]]*)"
+<<STAR2-CIF2 common regular expressions block 2>>
 
 @ CIF 1.1 does not allow unquoted data values to begin with a bracket character, but does not have bracket expressions
 as such. 
@@ -299,7 +321,17 @@ form, and there can be no trailing characters.  This form can be allowed for oth
 elements by trivial expansion of the current description but, until further notice,
 I do not think it is useful to allow square brackets in list values.
 
-<<Grammar specification DDLm>>=
+<<Grammar specification STAR2>>=
+<<CIF2-STAR2 common grammar>>
+<<STAR2-specific grammar>>
+
+<<Grammar specification CIF2>>=
+<<CIF2-STAR2 common grammar>>
+<<CIF2-specific grammar>>
+
+@  CIF2 and STAR2 are almost identical in grammar
+
+<<CIF2-STAR2 common grammar>>=
 # now the rules
 
 rule input@<<prepared>>: ( (( 
@@ -357,25 +389,6 @@ rule input@<<prepared>>: ( ((
                             |
                               curly_bracket_expr    {{return curly_bracket_expr}}
 
-     rule square_bracket_expr: o_s_b            {{this_list = []}} 
-                            (  data_value       {{this_list.append(data_value)}}
-                              ( ","  
-                                data_value       {{this_list.append(data_value)}}
-                              ) *
-                            ) *
-                               c_s_b                     {{return StarList(this_list)}}
-
-     rule curly_bracket_expr: ( o_c_b 
-                              delimited_data_value       {{table_as_list = [delimited_data_value]}}
-                              ":"
-                              data_value                 {{table_as_list.append(data_value)}}
-                            ( ","  
-                              delimited_data_value       {{table_as_list.append(delimited_data_value)}}
-                              ":"
-                              data_value                 {{table_as_list.append(data_value)}}
-                            ) *
-                              c_c_b )                    {{return StarDict(pairwise(table_as_list))}}
-
      
 # due to the inability of the parser to backtrack, we contruct our loops in helper functions,
 # and simply collect data during parsing proper.
@@ -405,6 +418,51 @@ rule input@<<prepared>>: ( ((
                       save_frame     {{savebc.merge_fast(save_frame,parent=savehead)}}
                       )*
                       save_end           {{return monitor('save_frame',savebc)}}
+
+@  STAR2 specifies comma-separated list and table elements, whereas CIF2 has space-separated elements.
+
+<<STAR2-specific grammar>>=
+     rule square_bracket_expr: o_s_b            {{this_list = []}} 
+                            (  data_value       {{this_list.append(data_value)}}
+                              ( ","  
+                                data_value       {{this_list.append(data_value)}}
+                              ) *
+                            ) *
+                               c_s_b                     {{return StarList(this_list)}}
+
+     rule curly_bracket_expr: ( o_c_b 
+                              delimited_data_value       {{table_as_list = [delimited_data_value]}}
+                              ":"
+                              data_value                 {{table_as_list.append(data_value)}}
+                            ( ","  
+                              delimited_data_value       {{table_as_list.append(delimited_data_value)}}
+                              ":"
+                              data_value                 {{table_as_list.append(data_value)}}
+                            ) *
+                              c_c_b )                    {{return StarDict(pairwise(table_as_list))}}
+
+
+
+<<CIF2-specific grammar>>=
+      rule square_bracket_expr: o_s_b            {{this_list = []}} 
+                            (  data_value       {{this_list.append(data_value)}}
+                              (  
+                                data_value       {{this_list.append(data_value)}}
+                              ) *
+                            ) *
+                               c_s_b                     {{return StarList(this_list)}}
+
+     rule curly_bracket_expr: ( o_c_b 
+                              delimited_data_value       {{table_as_list = [delimited_data_value]}}
+                              ":"
+                              data_value                 {{table_as_list.append(data_value)}}
+                            (
+                              delimited_data_value       {{table_as_list.append(delimited_data_value)}}
+                              ":"
+                              data_value                 {{table_as_list.append(data_value)}}
+                            ) *
+                              c_c_b )                    {{return StarDict(pairwise(table_as_list))}}
+
 
 
 @ The CIF 1.1 grammar specification does not include bracket expressions, but does exclude brackets from

@@ -850,7 +850,7 @@ def ReadStar(filename,prepared = StarFile(),maxlength=-1,
     * `grammar` chooses the STAR grammar variant. `1.0` is the original 1992 CIF/STAR grammar and `1.1`
     is identical except for the exclusion of square brackets as the first characters in
     undelimited datanames. `2.0` will read files in the CIF2.0 standard, and `STAR2` will
-    read files according to the STAR2 publication.  If grammar is `None`, autodetection
+    read files according to the STAR2 publication.  If grammar is `None` or `auto`, autodetection
     will be attempted in the order `2.0`, `1.1` and `1.0`. This will always succeed for conformant CIF2.0 files.
     Note that (nested) save frames are read in all grammar variations and then flagged afterwards if
     they do not match the requested grammar.
@@ -868,12 +868,20 @@ def ReadStar(filename,prepared = StarFile(),maxlength=-1,
     import codecs
     # save desired scoping
     save_scoping = prepared.scoping
-    if grammar=="1.1":
-        import YappsStarParser_1_1 as Y
-    elif grammar=="1.0":
-        import YappsStarParser_1_0 as Y
-    elif grammar=="DDLm":
-        import YappsStarParser_DDLm as Y
+    import YappsStarParser_1_1 as Y11
+    import YappsStarParser_1_0 as Y10
+    import YappsStarParser_2_0 as Y20
+    import YappsStarParser_STAR2 as YST
+    if grammar == "auto" or grammar is None:
+        try_list = [Y20,Y11,Y10]
+    elif grammar == '1.0':
+        try_list = [Y10]
+    elif grammar == '1.1':
+        try_list = [Y11]
+    elif grammar == '2.0':
+        try_list = [Y20]
+    elif grammar == 'STAR2':
+        try_list = [YST]
     if isinstance(filename,basestring):
         filestream = urlopen(filename)
     else:
@@ -904,21 +912,26 @@ def ReadStar(filename,prepared = StarFile(),maxlength=-1,
         if toolong:
             pos = split.index(toolong[0])
             raise StarError( 'Line %d contains more than %d characters' % (pos+1,maxlength))
-    if scantype == 'standard':
+    # honour the header string
+    if text[:10] != "#\#CIF_2.0" and Y20 in try_list:
+        try_list.remove(Y20)
+    for Y in try_list:
+       if scantype == 'standard' or Y in [Y20,YST]:
             parser = Y.StarParser(Y.StarParserScanner(text))
-    else:
+       else:
 	    parser = Y.StarParser(Y.yappsrt.Scanner(None,[],text,scantype='flex'))
-    proto_star = None
-    try:
-        proto_star = getattr(parser,"input")(prepared)
-    except Y.yappsrt.SyntaxError,e:
+       proto_star = None
+       try:
+           proto_star = getattr(parser,"input")(prepared)
+       except Y.yappsrt.SyntaxError,e:
            input = parser._scanner.input
            Y.yappsrt.print_error(input, e, parser._scanner)
-    except Y.yappsrt.NoMoreTokens:
+       except Y.yappsrt.NoMoreTokens:
            print >>sys.stderr, 'Could not complete parsing; stopped around here:'
            print >>sys.stderr, parser._scanner
-    except ValueError:
+       except ValueError:
            pass
+       if proto_star is not None: break
     if proto_star == None:
         errorstring = 'Syntax error in input file: last value parsed was %s' % Y.lastval
         errorstring = errorstring + '\nParser status: %s' % `parser._scanner`

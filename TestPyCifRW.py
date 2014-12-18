@@ -4,6 +4,7 @@ import sys
 sys.path[0] = '.'
 import unittest, CifFile
 from CifFile import StarFile
+from CifFile.StarFile import StarDict, StarList
 import re
 
 # Test general string and number manipulation functions
@@ -717,10 +718,28 @@ class GrammarTestCase(unittest.TestCase):
        data_Test
          _item_1 'A simple item'
          _item_2 '(Bracket always ok in quotes)'
-         _item_3 (can_have_bracket_here_if_1.0)
+         _item_3 [can_have_bracket_here_if_1.0]
        """
        f = open("test_1.0","w")
        f.write(teststr1_0)
+       f.close()
+       teststr2_0 = """#\#CIF_2.0
+       data_Test
+         _item_1 ['a' 'b' 'c' 'd']
+         _item_2 'ordinary string'
+         _item_3 {'a':2 'b':3}
+       """
+       f = open("test_2.0","w")
+       f.write(teststr2_0)
+       f.close()
+       teststr_st = """
+       data_Test
+         _item_1 ['a' , 'b' , 'c' , 'd']
+         _item_2 'ordinary string'
+         _item_3 {'a':2 , 'b':3}
+       """
+       f = open("test_star","w")
+       f.write(teststr_st)
        f.close()
 
    def tearDown(self):
@@ -729,7 +748,7 @@ class GrammarTestCase(unittest.TestCase):
    def testold(self):
        """Read in 1.0 conformant file; should not fail"""
        f = CifFile.ReadCif("test_1.0",grammar="1.0")  
-       print f["test"]["_item_3"]
+       self.assertEqual(f["test"]["_item_3"],'[can_have_bracket_here_if_1.0]')
       
    def testNew(self):
        """Read in a 1.0 conformant file with 1.1 grammar; should fail"""
@@ -738,12 +757,32 @@ class GrammarTestCase(unittest.TestCase):
        except CifFile.StarError:
            pass
 
-   def testObject(self):
-       """Test use of grammar keyword when initialising object"""
-       try:
-           f = CifFile.CifFile("test_1.0",grammar="1.0")
-       except CifFile.StarError:
-           pass
+   def testCIF2(self):
+       """Read in a 2.0 conformant file"""
+       f = CifFile.ReadCif("test_2.0",grammar="2.0")
+       self.assertEqual(f["test"]["_item_3"]['b'],'3')
+
+   def testSTAR2(self):
+       """Read in a STAR2 conformant file"""
+       f = CifFile.ReadCif("test_star",grammar="STAR2")
+       self.assertEqual(f["test"]["_item_3"]['b'],'3')
+
+   def testAuto(self):
+       """Test that grammar is auto-detected"""
+       f = CifFile.CifFile("test_1.0",grammar="auto")
+       self.assertEqual(f["test"]["_item_3"],'[can_have_bracket_here_if_1.0]')
+       h = CifFile.CifFile("test_2.0",grammar="auto")
+       self.assertEqual(h["test"]["_item_1"],StarList(['a','b','c','d']))
+
+   def testFlexCIF2(self):
+       """Test that CIF2 grammar is detected with flex tokenizer"""
+       f = CifFile.CifFile("test_2.0",grammar="2.0",scantype="flex")
+       self.assertEqual(f["test"]["_item_3"]['b'],'3')
+
+   def testFlexSTAR2(self):
+       """Read in a STAR2 conformant file with flex scanner"""
+       f = CifFile.ReadCif("test_star",grammar="STAR2",scantype="flex")
+       self.assertEqual(f["test"]["_item_3"]['b'],'3')
 
 class ParentChildTestCase(unittest.TestCase):
    def setUp(self):
@@ -1353,10 +1392,11 @@ class DicStructureTestCase(unittest.TestCase):
         print self.fb
 
 if __name__=='__main__':
-     global testdic
-     testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")
+     #global testdic
+     #testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
+     suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
@@ -1365,6 +1405,6 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase) 
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmImportCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDL1TestCase)
-     #unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     unittest.TextTestRunner(verbosity=2).run(suite)
+     #unittest.main()
 
