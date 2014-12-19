@@ -665,7 +665,7 @@ _atom_type.number_in_cell
 class TemplateTestCase(unittest.TestCase):
    def setUp(self):
        """Create a template"""
-       self.template = """#
+       template_string = """#
 # Template
 #
 data_TEST_DIC
@@ -684,7 +684,7 @@ data_TEST_DIC
     _category.key_list        ['_alias.definition_id']
     _type.purpose                Key     
     _type.dimension              [*]
-    _import.get    [{"file":'templ_enum.cif',"save":'units_code'}]
+    _import.get    [{"file":'templ_enum.cif' "save":'units_code'}]
      loop_
     _enumeration_set.state
     _enumeration_set.detail
@@ -693,11 +693,14 @@ data_TEST_DIC
           Item              "applies to a single item definition"
     _enumeration.default        Item   
 """  
+    f = open("cif_template.cif","w")
+    f.write(template_string)
+    f.close()
 
    def testTemplateInput(self):
        """Test that an output template is successfully input"""
        p = CifFile.CifBlock()
-       p.process_template(self.template)
+       p.process_template("cif_template.cif")
        self.failUnless(p.form_hints[0]['dataname']=='_dictionary.title')
        self.failUnless(p.form_hints[4]['column']==31)
        self.failUnless(p.form_hints[2]['delimiter']==';')

@@ -530,7 +530,7 @@ files as collections of StarBlocks, neither of which hold any nested save
 frames. 
 
 This was originally implemented for dictionary merging support, which is
-now deprecated with the new DDLm way of combining dictionaries.  We can't
+now deprecated with the new DDLm way of combining dictionaries.  We cannot
 merge [[CifDic]] objects, because the internal data structures for DDL2 and
 DDL1 are different (parent-child in particular), so any merge operation
 would have to first recreate the original Cif structure before proceeding.
@@ -834,7 +834,7 @@ the location of this file e.g. with DDLm dictionary imports.
 
 <<Read in a STAR file>>=
 def ReadStar(filename,prepared = StarFile(),maxlength=-1,
-             scantype='standard',grammar='1.1',CBF=False):
+             scantype='standard',grammar='STAR2',CBF=False):
 
     """ Read in a STAR file, returning the contents in the `prepared` object.  
 
@@ -2414,9 +2414,10 @@ characters on their lines
 (6) Semicolon-delimited strings are not allowed in loops
 
 <<Input a guide template>>=
-def process_template(self,template_string):
+def process_template(self,template_file):
     """Process a template datafile to formatting instructions"""
-    template_as_cif = StarFile(StringIO(template_string),grammar="DDLm").first_block()
+    template_as_cif = StarFile(template_file,grammar="CIF2").first_block()
+    template_string = open(template_file).read()
     #template_as_lines = template_string.split("\n")
     #template_as_lines = [l for l in template_as_lines if len(l)>0 and l[0]!='#']
     #template_as_lines = [l for l in template_as_lines if l.split()[0] != 'loop_']

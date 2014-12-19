@@ -323,7 +323,7 @@ will be locked for changing ([[overwrite=False]]) and can be unlocked by setting
 block.overwrite to True.
 
 <<Read in a CIF file>>=
-def ReadCif(filename,grammar='1.1',scantype='standard',scoping='instance',standard='CIF'):
+def ReadCif(filename,grammar='auto',scantype='standard',scoping='instance',standard='CIF'):
     """ Read in a CIF file, returning a `CifFile` object.  
 
     * `filename` may be a URL, a file
@@ -333,11 +333,13 @@ def ReadCif(filename,grammar='1.1',scantype='standard',scoping='instance',standa
     is identical except for the exclusion of square brackets as the first characters in
     undelimited datanames. `2.0` will read files in the CIF2.0 standard, and `STAR2` will
     read files according to the STAR2 publication.  If grammar is `None`, autodetection
-    will be attempted in the order `2.0`, `1.1` and `1.0`. This will always succeed for conformant CIF2.0 files.
+    will be attempted in the order `2.0`, `1.1` and `1.0`. This will always succeed for 
+    properly-formed CIF2.0 files.
 
     * `scantype` can be `standard` or `flex`.  `standard` provides pure Python parsing at the
     cost of a factor of 10 or so in speed.  `flex` will tokenise the input CIF file using
-    fast C routines.  Note that running PyCIFRW in Jython uses native Java regular expressions
+    fast C routines, but is not available for CIF2/STAR2 fil  Note that running PyCIFRW in 
+    Jython uses native Java regular expressions
     to provide a speedup regardless of this argument.
 
     * `scoping` is only relevant where nested save frames are expected (STAR2 only). 
