@@ -882,6 +882,8 @@ def ReadStar(filename,prepared = StarFile(),maxlength=-1,
         try_list = [Y20]
     elif grammar == 'STAR2':
         try_list = [YST]
+    else:
+        raise AttributeError, 'Unknown STAR/CIF grammar requested, %s' % `grammar`
     if isinstance(filename,basestring):
         filestream = urlopen(filename)
     else:

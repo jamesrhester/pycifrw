@@ -1,0 +1,51 @@
+# Using dREL in PyCIFRW
+
+## Introduction
+
+dREL is a language for manipulating tabular data described in [1].  A
+CIF dictionary (DDL2/DDLm) definition can contain a piece of dREL code
+describing how the defined data item can be calculated from other
+dataitem values.  PyCIFRW includes a dREL parser that executes these
+calculations to provide missing values
+
+## Using dREL methods
+
+Once a dictionary containing methods is assigned to a `CifBlock` using
+`CifBlock.assign_dictionary`, any attempts to retrieve a missing
+dataname will trigger execution of the dREL method for that dataname,
+if a method is present in the dictionary.  Note that the value
+returned will not necessarily be a string type.
+
+~~~{.python}
+>>> import CifFile
+>>> p = CifFile.CifDic('pycifrw/drel/testing/cif_core.dic',grammar='STAR2')
+>>> r = CifFile.CifFile('pycifrw/drel/testing/data/nick.cif',grammar='STAR2')
+>>> r = r.first_block()    #only care about the first block
+>>> r['_cell.volume']      #should be in the file already
+u'635.3'                   # Note this is a string value
+>>> del r['_cell.volume']  # remove from the CifBlock
+>>> r['_cell.volume']      # check that it is gone
+KeyError: 'No such item: _cell.volume'
+>>> r.assign_dictionary(p) # Use this dictionary for calculations
+>>> r['_cell.volume']      # Is it there now?
+635.2977003095574          # Note this is a floating-point number
+~~~
+
+### Limitations on dREL methods
+
+dREL is a rich specification and, while the PyCIFRW implementation is relatively comprehensive,
+a number of functionalities are not yet implemented, and testing is not complete.
+
+1. No su propagation.  Standard uncertainties are not propagated during calculation (to be added)
+
+2. Category methods.  If an entire loop ('category') is missing, PyCIFRW will not attempt to
+create the category, even though the methods to do so are provided in the dictionary (see for example
+'geom_bond')
+
+3. Values that have been calculated are stored as their native type (not necessarily strings).
+These values may be formatted unusually (e.g. too many decimal places) when output to a file. A
+method will be introduced in later versions to properly format native values.
+
+4. The Python numpy package is required for dREL-based calculations.
+
+[1]: http://dx.doi.org/10.1021/ci300076w

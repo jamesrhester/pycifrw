@@ -1,0 +1,105 @@
+# Using CIF dictionaries with PyCIFRW
+
+## Introduction
+
+CIF dictionaries describe the meaning of the datanames found in CIF data files
+in a machine-readable format - the CIF format.  Each block in a CIF dictionary
+defines a single dataname by assigning values to a limited set of attributes.
+The set of attributes used by a dictionary is called its 'Dictionary Definition
+Language' or DDL.  Three languages have been used in IUCr-supported CIF dictionaries:
+DDL1 (the original language), DDL2 (heavily developed by the macromolecular community), and
+DDLm (a new standard that aims to unite the best of DDL1 and DDL2). DDL2 and DDLm both
+allow algorithms to be defined for datanames.  These algorithms describe how to derive values for
+datanames from other quantities in the data file.
+
+Knowing the dictionary that a given datafile is written with reference to thus allows
+us to do two things: to *validate* that datanames and values match the constraints imposed
+by the definition; and, in the case of DDL2 and DDLm, to *calculate* values which might
+then be used for checking or simply to fill in missing information.
+
+## Dictionaries
+
+DDL dictionaries can be read into `CifFile` objects just like CIF data
+files. For this purpose, `CifFile` objects automatically support save
+frames (used in DDL2 and DDLm dictionaries), which are accessed just
+like `CifBlock`s using their save frame name.
+
+The more powerful `CifDic` object creats a unified interface to DDL1,
+DDL2 and DDLm dictionaries. A `CifDic` is initialised with a single file name
+or `CifFile` object, and will accept the grammar keyword:
+
+~~~{.python}
+    cd = CifFile.CifDic("cif_core.dic",grammar='1.1')
+~~~
+
+Definitions are accessed using the usual notation, e.g. 
+`cd['_atom_site_aniso_label']`. Return values are always `CifBlock` 
+objects. Additionally, the `CifDic` object contains a number of 
+instance variables derived from dictionary global data:
+
+  `dicname` 
+:    The dictionary name + version as given in the dictionary 
+
+  `diclang`
+:    'DDL1','DDL2', or 'DDLm'
+
+
+`CifDic` objects provide a large number of validation functions, 
+which all return a Python dictionary which contains at least the 
+key `result`. `result` takes the values `True`, `False` or `None` depending 
+on the success, failure or non-applicability of each test. In 
+case of failure, additional keys are returned depending on the 
+nature of the error.
+
+## Validation with PyCIFRW
+
+A top level function is provided for convenient validation of CIF 
+files:
+
+~~~{.python}
+    CifFile.validate("mycif.cif",dic = "cif_core.dic")
+~~~
+
+This returns a tuple `(valid_result, no_matches)`. `valid_result` and 
+`no_matches` are Python dictionaries indexed by block name. For 
+`valid_result`, the value for each block is itself a dictionary 
+indexed by item_name. The value attached to each item name is a 
+list of `(check_function, check_result)` tuples, with `check_result` 
+a small dictionary containing at least the key `result`. All tests 
+which passed or were not applicable are removed from this 
+dictionary, so `result` is always `False`. Additional keys contain 
+auxiliary information depending on the test. Each of the items in 
+`no_matches` is a simple list of item names which were not found in 
+the dictionary.
+
+If a simple validation report is required, the function 
+`validate_report` can be called on the output of the above 
+function, printing a simple ASCII report. This function can be 
+studied as an example of how to process the structure returned by 
+the `validate` function.
+
+A somewhat nicer interface to validation is provided in the 
+`ValidationResult` class (thanks to Boris Dusek), which is 
+initialised with the return value from validate:
+
+~~~{.python}
+    val_report = ValidationResult(validate("mycif.cif",dic="cif_core.dic"))
+~~~
+
+This class provides the `report` method, producing a human-readable 
+report, as well as boolean methods which return whether or not 
+the block is valid or if items appear in the block that are not 
+present in the dictionary - `is_valid` and `has_no_match_items` 
+respectively.
+
+### Limitations on validation
+
+1. (DDL2 only) When validating data dictionaries themselves, no 
+  checks are made on group and subgroup consistency (e.g. that a 
+  specified subgroup is actually defined).
+
+2. (DDL1 only) Some `_type_construct` attributes in the DDL1 spec 
+  file are not machine-readable, so values cannot be checked for 
+  consistency
+
+3. DDLm validation methods are not yet implemented

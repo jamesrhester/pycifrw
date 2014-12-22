@@ -374,10 +374,9 @@ the `CifFile`/`CifBlock`.
 
 If you want precise control of the layout of your CIF file, you can
 pass a template file to the `CifBlock.process_template` method. A 
-``template'' is a CifFile containing a
+'template' is a CIF file containing a
 single block, where the datanames are laid out in the way that the
-user desires. The layout elements that are picked up from the template
-CifFile are:
+user desires. The layout elements that are picked up from this template are:
 
 1. order (overrides current order of `CifBlock`)
 2. column position of datavalues (only the first row of a loop block is inspected) 
@@ -386,18 +385,20 @@ CifFile are:
 Constraints on the template:
 
 1. There should only ever be one dataname on each line
-2.  loop_ and and datablock tokens should appear as the only non-blank 
+2.  `loop_` and and `datablock` tokens should appear as the only non-blank 
 characters on their lines
-3. Comments are flagged by a '#' as the first character
+3. Comments are flagged by a '#' as the first character in the line
 4. Blank lines are acceptable (and ignored)
 5. The dummy datavalues should use only alphanumeric characters
 6. Semicolon-delimited strings are not allowed in loops
 
-After calling `process_template`, and subsequent calls to `WriteOut`
-will respect the template information, and revert to default behaviour
-for any datanames that were not found in the template.  Templating is
-most useful when formatting CIF dictionaries which are likely to be read
-heavily by human readers, and have a limited number of datanames.
+After calling `process_template` with the template file as the
+argument, subsequent calls to `WriteOut` will respect the template
+information, and revert to default behaviour for any datanames that
+were not found in the template.  Templating is most useful when
+formatting CIF dictionaries which are read heavily by
+human readers, and have many (thousands!) of datablocks, each 
+containing the same limited number of datanames.
 
 #### Output format
 
@@ -406,113 +407,13 @@ with the obvious exception that the 2.0 list and table datastructures have
 no equivalents in the earlier standards and therefore will only appear in
 CIF2.0 files.
 
-# Dictionaries and Validation
+## Unsupported operations
 
-## Dictionaries
+The following notes are from previous versions of PyCIFRW.  The operations
+described have not been updated to new internal datastructures and may
+not work in this release.
 
-DDL dictionaries may also be read into `CifFile` objects. For this 
-purpose, `CifBlock` objects automatically support save frames (used 
-in DDL2 and DDLm dictionaries), which are accessed just like top-level
-`CifBlock`s using their save frame name. 
-
-A `CifDic` object hides the difference between DDL1 dictionaries, 
-where all definitions are separate data blocks, and DDL2 and DDLm
-dictionaries, where all definitions are in save frames of a 
-single data block. A `CifDic` is initialised with a single file 
-name or `CifFile` object, and will accept the grammar keyword:
-
-    cd = CifFile.CifDic("cif_core.dic",grammar='1.1')
-
-Definitions are accessed using the usual notation, e.g. 
-`cd['_atom_site_aniso_label']`. Return values are always `CifBlock` 
-objects. Additionally, the `CifDic` object contains a number of 
-instance variables derived from dictionary global data:
-
-  `dicname` 
-:    The dictionary name + version as given in the dictionary 
-
-  `diclang`
-:    'DDL1','DDL2', or 'DDLm'
-
-
-`CifDic` objects provide a large number of validation functions, 
-which all return a Python dictionary which contains at least the 
-key result. result takes the values True, False or None depending 
-on the success, failure or non-applicability of each test. In 
-case of failure, additional keys are returned depending on the 
-nature of the error.
-
-## Validation
-
-A top level function is provided for convenient validation of CIF 
-files:
-
-    CifFile.validate("mycif.cif",dic = "cif_core.dic")
-
-This returns a tuple `(valid_result, no_matches)`. `valid_result` and 
-`no_matches` are Python dictionaries indexed by block name. For 
-`valid_result`, the value for each block is itself a dictionary 
-indexed by item_name. The value attached to each item name is a 
-list of `(check_function, check_result)` tuples, with `check_result` 
-a small dictionary containing at least the key `result`. All tests 
-which passed or were not applicable are removed from this 
-dictionary, so `result` is always `False`. Additional keys contain 
-auxiliary information depending on the test. Each of the items in 
-`no_matches` is a simple list of item names which were not found in 
-the dictionary.
-
-If a simple validation report is required, the function 
-`validate_report` can be called on the output of the above 
-function, printing a simple ASCII report. This function can be 
-studied as an example of how to process the structure returned by 
-the `validate` function.
-
-A somewhat nicer interface to validation is provided in the 
-`ValidationResult` class (thanks to Boris Dusek), which is 
-initialised with the return value from validate:
-
-    val_report = ValidationResult(validate("mycif.cif",dic="cif_core.dic"))
-
-This class provides the `report` method, producing a human-readable 
-report, as well as boolean methods which return whether or not 
-the block is valid or if items appear in the block that are not 
-present in the dictionary - `is_valid` and `has_no_match_items` 
-respectively.
-
-### Limitations on validation
-
-1. (DDL2 only) When validating data dictionaries themselves, no 
-  checks are made on group and subgroup consistency (e.g. that a 
-  specified subgroup is actually defined).
-
-2. (DDL1 only) Some `_type_construct` attributes in the DDL1 spec 
-  file are not machine-readable, so values cannot be checked for 
-  consistency
-
-## ValidCifFile objects
-
-A `ValidCifFile` object behaves identically to a `CifFile` object 
-with the additional characteristic that it is always valid against the 
-given dictionary object. Any attempt to set a data value, or add 
-or remove a data name, that would invalidate the object raises a 
-`ValidCifFile` error. This class is slow, experimental and it is 
-relatively easy to get around the validity checks; it is probably 
-more efficient to construct a complete file and then run a 
-validity check.
-
-Additional keywords for initialisation are:
-
-  dic 
-:    A CifDic object to use in validation
-
-  diclist 
-:    A list of CifFile objects or filenames to be merged 
-  into a CifDic object (see below)
-
-  mergemode
-:     Choose merging method (one of 'strict','overlay', 'replace')
-
-## Merging dictionaries
+### Merging dictionaries
 
 PyCIFRW provides a top-level function to merge DDL1/2 dictionary 
 files. It takes a list of CIF filenames or `CifFile` objects, and a 
@@ -541,7 +442,7 @@ method, which actually performs the merging operation:
   merging DDL1 dictionaries in strict mode, in which case the 
   on_this_dictionary block would cause an error.
 
-### Limitations on merging
+#### Limitations on merging
 
 In overlay mode, the COMCIFS recommendations require that, when 
 both definitions contain identical unlooped attributes which can 
@@ -551,14 +452,6 @@ include both sets of data in the new loop.
 This is not yet implemented in PyCIFRW, as it involves checking 
 the DDL1/DDL2 spec to determine which attributes may be looped 
 together.
-
-# Working with STAR files
-
-## Creating STAR files
-
-Star files are created entirely analogously to CIF files, using 
-the `StarFile` object or `ReadStar` function.  Internally CIF
-functionality is implemented in terms of `StarFile`s.
 
 # Example programs
 

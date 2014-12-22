@@ -1304,7 +1304,7 @@ class DicMergeTestCase(unittest.TestCase):
 
 class DicEvalTestCase(unittest.TestCase):
     def setUp(self):
-        cc = CifFile.CifFile("pycifrw/drel/testing/data/nick.cif",grammar="DDLm")
+        cc = CifFile.CifFile("pycifrw/drel/testing/data/nick.cif",grammar="STAR2")
         self.fb = cc.first_block()
         self.fb.assign_dictionary(testdic)
         
@@ -1340,7 +1340,7 @@ class DicEvalTestCase(unittest.TestCase):
 class DicStructureTestCase(unittest.TestCase):
     """Tests use of dictionary semantic information for item lookup"""
     def setUp(self):
-        cc = CifFile.CifFile("pycifrw/drel/testing/data/nick.cif",grammar="DDLm")
+        cc = CifFile.CifFile("pycifrw/drel/testing/data/nick.cif",grammar="STAR2")
         self.fb = cc.first_block()
         self.fb.assign_dictionary(testdic)
 

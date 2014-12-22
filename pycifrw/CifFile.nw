@@ -338,9 +338,9 @@ def ReadCif(filename,grammar='auto',scantype='standard',scoping='instance',stand
 
     * `scantype` can be `standard` or `flex`.  `standard` provides pure Python parsing at the
     cost of a factor of 10 or so in speed.  `flex` will tokenise the input CIF file using
-    fast C routines, but is not available for CIF2/STAR2 fil  Note that running PyCIFRW in 
+    fast C routines, but is not available for CIF2/STAR2 files.  Note that running PyCIFRW in 
     Jython uses native Java regular expressions
-    to provide a speedup regardless of this argument.
+    to provide a speedup regardless of this argument (and does not yet support CIF2).
 
     * `scoping` is only relevant where nested save frames are expected (STAR2 only). 
     `instance` scoping makes nested save frames
@@ -466,6 +466,7 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
     super(CifDic,self).__init__(datasource=self.defdata,**kwargs) 
     self.scopes_mandatory = {"dictionary":[],"category":[],"item":[]}
     self.scopes_naughty = {"dictionary":[],"category":[],"item":[]}
+    self.grammar = grammar # remember for importing dictionaries correctly
     # rename and expand out definitions using "_name" in DDL dictionaries
     if self.diclang == "DDL1":
         self.DDL1_normalise()   #this removes any non-definition entries
@@ -1342,7 +1343,7 @@ def ddlm_import(self):
         file_loc = import_ref["file"]
         full_uri = self.resolve_path(file_loc)
         if full_uri not in self.template_cache:
-            dic_as_cif = CifFile(urllib.urlopen(full_uri),grammar="DDLm")
+            dic_as_cif = CifFile(urllib.urlopen(full_uri),grammar=self.grammar)
             self.template_cache[full_uri] = CifDic(dic_as_cif,do_minimum=True)  #this will recurse internal imports
             print 'Added %s to cached dictionaries' % full_uri
         import_from = self.template_cache[full_uri]
