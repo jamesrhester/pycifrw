@@ -335,7 +335,7 @@ class LoopBlockTestCase(unittest.TestCase):
 
    def testLoopify(self):
        """Test changing unlooped data to looped data"""
-       self.cf.Loopify(["_planet","_satellite","_rings"])
+       self.cf.CreateLoop(["_planet","_satellite","_rings"])
        newloop = self.cf.GetLoop("_rings")
        self.assertFalse(newloop.has_key("_number_item"))
        
@@ -344,7 +344,7 @@ class LoopBlockTestCase(unittest.TestCase):
           not touch already looped data for a CIF file"""
 #      from IPython.Debugger import Tracer; debug_here = Tracer()
 #      debug_here()
-       self.cf.Loopify(["_planet","_satellite","_rings"])
+       self.cf.CreateLoop(["_planet","_satellite","_rings"])
        newloop = self.cf.GetLoop("_rings")
        self.assertTrue(newloop.has_key('_planet'))
        
@@ -472,7 +472,7 @@ class BlockNameTestCase(unittest.TestCase):
        cf.NewBlock('second_block')
        cf['first_block']['_test1'] = 'abc'
        cf['second_block']['_test1'] = 'def'
-       self.failUnless(cf['first_block']['_test1']=='abc')
+       self.assertEqual(cf['first_block']['_test1'],'abc')
 
 #
 #   Test reading cases
@@ -665,7 +665,7 @@ _atom_type.number_in_cell
 class TemplateTestCase(unittest.TestCase):
    def setUp(self):
        """Create a template"""
-       template_string = """#
+       template_string = """#\#CIF_2.0
 # Template
 #
 data_TEST_DIC
@@ -693,9 +693,9 @@ data_TEST_DIC
           Item              "applies to a single item definition"
     _enumeration.default        Item   
 """  
-    f = open("cif_template.cif","w")
-    f.write(template_string)
-    f.close()
+       f = open("cif_template.cif","w")
+       f.write(template_string)
+       f.close()
 
    def testTemplateInput(self):
        """Test that an output template is successfully input"""
@@ -710,7 +710,7 @@ data_TEST_DIC
 ###### template tests #####
 ##############################################################
 #
-#   Test alternative grammars (1.0, DDLm)
+#   Test alternative grammars (1.0, 2.0, STAR2)
 #
 ##############################################################
 class GrammarTestCase(unittest.TestCase):
@@ -786,6 +786,16 @@ class GrammarTestCase(unittest.TestCase):
        """Read in a STAR2 conformant file with flex scanner"""
        f = CifFile.ReadCif("test_star",grammar="STAR2",scantype="flex")
        self.assertEqual(f["test"]["_item_3"]['b'],'3')
+
+   def testRoundTrip(self):
+       """Read in STAR2, write out CIF2, read in and check """
+       f = CifFile.ReadCif("test_star",grammar="STAR2")
+       g = open("star_to_cif2","w")
+       f.set_grammar("2.0")
+       g.write(str(f))
+       g.close()
+       h = CifFile.ReadCif("star_to_cif2",grammar="2.0")
+       self.assertEqual(f["test"]["_item_3"],h["test"]["_item_3"])
 
 class ParentChildTestCase(unittest.TestCase):
    def setUp(self):
@@ -931,47 +941,55 @@ class DDLmTestCase(unittest.TestCase):
    def testold(self):
        """Read in 1.2 nonconformant file; should fail"""
        try:
-           f = CifFile.ReadCif("test_1.2",grammar="DDLm")  
+           f = CifFile.ReadCif("test_1.2",grammar="STAR2")  
        except CifFile.StarError:
            pass
       
    def testgood(self):
        """Read in 1.2 conformant file: should succeed"""
-       f = CifFile.ReadCif("goodtest_1.2",grammar="DDLm")
+       f = CifFile.ReadCif("goodtest_1.2",grammar="STAR2")
        
    def testTables(self):
        """Test that DDLm tables are properly parsed"""
-       f = CifFile.ReadCif("goodtest_1.2",grammar="DDLm")
+       f = CifFile.ReadCif("goodtest_1.2",grammar="STAR2")
        self.failUnless(f["test"]["_test.1"]["wiffle"] == '3')
 
    def testTables2(self):
        """Test that a plain table is properly parsed"""
-       f = CifFile.ReadCif("goodtest_1.2",grammar="DDLm")
+       f = CifFile.ReadCif("goodtest_1.2",grammar="STAR2")
        self.failUnless(f["test"]["_import.get"][0]["file"] == 'core_exptl.dic')
 
    def testTables3(self):
        """Test that a nested structure is properly parsed"""
-       f = CifFile.ReadCif("goodtest_1.2",grammar="DDLm")
+       f = CifFile.ReadCif("goodtest_1.2",grammar="STAR2")
        self.failUnless(f["test"]["_test_3"]["ppp"]["poke"]["jike"][1]["gg"]=='100')
 
    def testTripleQuote(self):
        """Test that triple quoted values are treated correctly"""
-       f = CifFile.ReadCif("goodtest_1.2",grammar="DDLm")
+       f = CifFile.ReadCif("goodtest_1.2",grammar="STAR2")
        print f["test"]["_triple_quote_test"]
        self.failUnless(f["test"]["_triple_quote_test"][:9] == 'The comma')
 
    def testRoundTrip(self):
        """Test that a DDLm file can be read in, written out and read in again"""
-       f = CifFile.ReadCif("goodtest_1.2",grammar="DDLm")
+       f = CifFile.ReadCif("goodtest_1.2",grammar="STAR2")
        g = open("newgoodtest_1.2.cif","w")
        g.write(str(f))
        g.close()
-       h = CifFile.ReadCif("newgoodtest_1.2.cif",grammar="DDLm")
+       h = CifFile.ReadCif("newgoodtest_1.2.cif",grammar="STAR2")
        #print h['Test']
        #print h['Test']['_import.get']
        #print h['Test']['_import.get'][2]
        #print h['Test']['_import.get'][2]['file']
        self.failUnless(h['Test']['_import.get'][2]['file']=='core_struc.dic')
+
+   def testUnNest(self):
+       """Test that we can convert a nested save frame STAR2 file to a non-nested file"""
+       f = CifFile.ReadCif("goodtest_1.2",grammar="STAR2")
+       g = open("cif2goodtest_1.2.cif","w")
+       f.set_grammar("2.0")
+       g.write(str(f))
+       h = CifFile.ReadCif("cif2goodtest_1.2.cif")
 
 ##########
 #
@@ -998,7 +1016,7 @@ class DDLmImportCase(unittest.TestCase):
 
 class DictTestCase(unittest.TestCase):
     def setUp(self):
-	self.ddldic = CifFile.CifDic("pycifrw/tests/ddl.dic",grammar='DDLm',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
+	self.ddldic = CifFile.CifDic("pycifrw/tests/ddl.dic",grammar='STAR2',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
     
     def tearDown(self):
 	pass
@@ -1092,7 +1110,7 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
         p = open('ddlm_testdata','w')
         p.write(filedata)
         p.close()
-        self.testblock = CifFile.CifFile('ddlm_testdata',grammar="DDLm")['testblock']
+        self.testblock = CifFile.CifFile('ddlm_testdata',grammar="STAR2")['testblock']
     
     def testTypeInterpretation(self):
         """Test that we decode DDLm type.contents correctly"""
@@ -1238,7 +1256,7 @@ class DDL1TestCase(unittest.TestCase):
 	#       [["C","C","N"],["C1","C2","N1"]]))
 
     def testReport(self):
-        CifFile.validate_report(CifFile.validate("pycifrw/tests/C13H2203_with_errors.cif",dic=self.ddl1dic))
+        CifFile.validate_report(CifFile.Validate("pycifrw/tests/C13H2203_with_errors.cif",dic=self.ddl1dic))
 
 class FakeDicTestCase(unittest.TestCase):
 # we test stuff that hasn't been used in official dictionaries to date.
@@ -1395,11 +1413,11 @@ class DicStructureTestCase(unittest.TestCase):
         print self.fb
 
 if __name__=='__main__':
-     #global testdic
-     #testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="DDLm")
+     global testdic
+     testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="STAR2")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
-     suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
@@ -1408,6 +1426,6 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase) 
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmImportCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDL1TestCase)
-     unittest.TextTestRunner(verbosity=2).run(suite)
-     #unittest.main()
+     #unittest.TextTestRunner(verbosity=2).run(suite)
+     unittest.main()
 

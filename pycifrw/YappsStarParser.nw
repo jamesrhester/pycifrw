@@ -1,6 +1,7 @@
 @
 Noweb literate programming file for Star grammar and parser specification.
-We are using Amit Patel's excellent context-sensitive Yapps2 parser.  
+We are using Amit Patel's excellent context-sensitive Yapps2 parser. 
+' 
 This was chosen
 because it enables us to process long semicolon delimited strings without
 running into Python recursion limits.  In the original kjParsing implementation,
@@ -18,9 +19,7 @@ and CIF2/STAR2 differ in their treatment of unquoted data values beginning
 with brackets.
 
 <<1.0_syntax>>=
-from StarFile import *
-from types import *
-import copy
+from StarFile import StarBlock,StarFile
 <<Helper functions>>
 %%
 parser StarParser:
@@ -29,9 +28,7 @@ parser StarParser:
 %%
 
 <<1.1_syntax>>=
-from StarFile import *
-from types import *
-import copy
+from StarFile import StarBlock,StarFile
 <<Helper functions>>
 %%
 parser StarParser:
@@ -41,9 +38,7 @@ parser StarParser:
 @ The following two recipes produce CIF2 and STAR2 syntax.
 
 <<CIF2_syntax>>=
-from StarFile import *
-from types import *
-import copy
+from StarFile import StarBlock,StarFile,StarList,StarDict
 <<Helper functions>>
 %%
 parser StarParser:
@@ -52,9 +47,7 @@ parser StarParser:
 %%
 @ The STAR2 syntax
 <<STAR2_syntax>>=
-from StarFile import *
-from types import *
-import copy
+from StarFile import StarBlock,StarFile,StarList,StarDict
 <<Helper functions>>
 %%
 parser StarParser:
@@ -85,7 +78,8 @@ def monitor(location,value):
 # Strip extras gets rid of leading and trailing whitespace, and
 # semicolons.
 def stripextras(value):
-    # we get rid of semicolons and leading/trailing terminators etc.
+     from StarFile import remove_line_folding, remove_line_prefix
+     # we get rid of semicolons and leading/trailing terminators etc.
      import re
      jj = re.compile("[\n\r\f \t\v]*")
      semis = re.compile("[\n\r\f \t\v]*[\n\r\f]\n*;")
@@ -96,6 +90,9 @@ def stripextras(value):
              if nv[-1]=='\r': nv = nv[:-1]
 	  except IndexError:    #empty data value
 	     pass
+          # apply protocols
+          nv = remove_line_prefix(nv)
+          nv = remove_line_folding(nv)
           return nv 
      else: 
           cut = jj.match(value)

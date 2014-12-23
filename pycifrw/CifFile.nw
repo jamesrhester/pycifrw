@@ -155,7 +155,7 @@ line.
         super(CifFile,self).__init__(datasource=datasource,standard=standard, **kwargs)
         self.strict = strict
         self.header_comment = \
-"""#\\#CIF1.1
+"""
 ##########################################################################
 #               Crystallographic Information Format file 
 #               Produced by PyCifRW module

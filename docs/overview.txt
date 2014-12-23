@@ -402,10 +402,12 @@ containing the same limited number of datanames.
 
 #### Output format
 
-CIF files are output in a format that is conformant to all CIF standards
-with the obvious exception that the 2.0 list and table datastructures have
-no equivalents in the earlier standards and therefore will only appear in
-CIF2.0 files.
+CIF files are output by default in CIF2 grammar, but with the CIF2-only
+triple quotes avoided unless explicitly requested.  Therefore, as long
+as CIF2-only datastructures (lists and tables) are absent, the output
+CIF files will conform to 1.0,1.1 and 2.0 grammar.  The grammar of the
+output files can be changed by calling `CifFile.set_grammar` with the
+choices being 1.0,1.1,2.0 or STAR2. 
 
 ## Unsupported operations
 

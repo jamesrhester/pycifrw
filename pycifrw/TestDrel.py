@@ -85,7 +85,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
         #create our lexer and parser
         self.lexer = drel_lex.lexer
         self.parser = drel_ast_yacc.parser
-        self.dic = CifFile.CifDic("dic_for_tests.dic",grammar="DDLm")
+        self.dic = CifFile.CifDic("dic_for_tests.dic",grammar="STAR2")
 
     def create_test(self,instring,right_value,debug=False,array=False):
         """Given a string, create and call a function then check result"""
@@ -255,7 +255,7 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        self.lexer = drel_lex.lexer
        self.lexer.lineno = 0
        self.parser = drel_ast_yacc.parser
-       self.dic = CifFile.CifDic("dic_for_tests.dic",grammar="DDLm")
+       self.dic = CifFile.CifDic("dic_for_tests.dic",grammar="STAR2")
 
    def create_test(self,instring,right_value,varname="_a.b",debug=False):
        """Given a string, create and call a function then check result"""
@@ -366,7 +366,7 @@ class MoreComplexTestCase(unittest.TestCase):
        self.lexer = drel_lex.lexer
        self.lexer.lineno = 0
        self.parser = drel_ast_yacc.parser
-       self.dic = CifFile.CifDic("dic_for_tests.dic",grammar="DDLm")
+       self.dic = CifFile.CifDic("dic_for_tests.dic",grammar="STAR2")
 
    def test_nested_stmt(self):
        """Test how a nested do statement executes"""
@@ -446,8 +446,9 @@ class WithDictTestCase(unittest.TestCase):
        self.parser = drel_ast_yacc.parser
        self.parser.lineno = 0
        #use
-       self.testblock = CifFile.CifFile("drel/nick1.cif",grammar="DDLm")["saly2_all_aniso"]
+       self.testblock = CifFile.CifFile("drel/nick1.cif",grammar="STAR2")["saly2_all_aniso"]
        self.testblock.assign_dictionary(testdic)
+       self.testblock.provide_value = True  #get values back
        self.testdic = testdic
        #create the global namespace
        self.namespace = self.testblock.keys()
@@ -665,7 +666,7 @@ class WithDictTestCase(unittest.TestCase):
       
 if __name__=='__main__':
     global testdic
-    testdic = CifFile.CifDic("drel/testing/cif_core.dic",grammar="DDLm",do_minimum=True)
+    testdic = CifFile.CifDic("drel/testing/cif_core.dic",grammar="STAR2",do_minimum=True)
     unittest.main()
     #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)

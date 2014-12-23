@@ -13,8 +13,8 @@ calculations to provide missing values
 Once a dictionary containing methods is assigned to a `CifBlock` using
 `CifBlock.assign_dictionary`, any attempts to retrieve a missing
 dataname will trigger execution of the dREL method for that dataname,
-if a method is present in the dictionary.  Note that the value
-returned will not necessarily be a string type.
+if available.  Note that the value returned will not necessarily be a
+string type.
 
 ~~~{.python}
 >>> import CifFile
@@ -36,7 +36,8 @@ KeyError: 'No such item: _cell.volume'
 dREL is a rich specification and, while the PyCIFRW implementation is relatively comprehensive,
 a number of functionalities are not yet implemented, and testing is not complete.
 
-1. No su propagation.  Standard uncertainties are not propagated during calculation (to be added)
+1. No standard uncertainty (su) propagation.  The CIF standards provide for
+su, which would allow propagation.  To be implemented. 
 
 2. Category methods.  If an entire loop ('category') is missing, PyCIFRW will not attempt to
 create the category, even though the methods to do so are provided in the dictionary (see for example
@@ -47,5 +48,7 @@ These values may be formatted unusually (e.g. too many decimal places) when outp
 method will be introduced in later versions to properly format native values.
 
 4. The Python numpy package is required for dREL-based calculations.
+
+4. Multi-line strings in dREL are not correctly converted to Python.
 
 [1]: http://dx.doi.org/10.1021/ci300076w
