@@ -3,7 +3,7 @@ import time
 import CifFile
 import cProfile
 import pstats
-testfiles = ['1YGG.cif','ag03.cif','C13H22O3.cif','../dictionaries/cif_core.dic',
+testfiles = ['1wic.cif','ag03.cif','C13H22O3.cif','../dictionaries/cif_core.dic',
               '../dictionaries/mmcif_pdbx.dic']
 #testfiles = []
 cached_mmdic = CifFile.CifDic('../dictionaries/mmcif_pdbx.dic',standard=None)
@@ -24,7 +24,7 @@ for file in testfiles:
     # try to validate  
 for file,dic in valfiles:
     start_time = time.time()
-    jj = CifFile.validate(file,dic=dic) 
+    jj = CifFile.Validate(file,dic=dic) 
     finish_time = time.time()
     print "Validate file %s: %8.1f\n" % (file,finish_time - start_time)
      

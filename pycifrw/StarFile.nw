@@ -109,7 +109,32 @@ based on how the block collection was initialised.
 
 <<BlockCollection class>>=
 class BlockCollection(object):
-    """A generic container for `StarBlock` objects."""
+    """A container for StarBlock objects. The constructor takes
+    one non-keyword argument `datasource` to set the initial data.  If
+    `datasource` is a Python dictionary, the values must be `StarBlock`
+    objects and the keys will be blocknames in the new object. Keyword
+    arguments: 
+
+    standard: 
+        `CIF` or `Dic`.  `CIF` enforces 75-character blocknames, and will
+        print block contents before that block's save frame.
+  
+    blocktype:
+        The type of blocks held in this container. Normally `StarBlock`
+        or `CifBlock`.
+
+    characterset:
+        `ascii` or `unicode`.  Blocknames and datanames appearing within
+        blocks are restricted to the appropriate characterset.
+
+    scoping:
+        `instance` or `dictionary`: `instance` implies that nested save frames are
+        invisible to save frames lower in the hierarchy or in sibling
+        hierarchies. `dictionary` makes all save frames visible everywhere
+        within a data block.  Only relevant for STAR2 dictionaries and
+        data files.
+
+"""
     <<Initialise BC data structures>>
     <<Block collection locking>>
     <<BC emulation of mapping type>>
@@ -153,7 +178,7 @@ name and the parent blockname.
 
 <<Initialise BC data structures>>=
 def __init__(self,datasource=None,standard='CIF',blocktype = StarBlock,
-             characterset='ascii',scoping='instance',parent_id=None,**kwargs):
+             characterset='ascii',scoping='instance',**kwargs):
     import collections
     self.dictionary = {}
     self.standard = standard
@@ -162,7 +187,6 @@ def __init__(self,datasource=None,standard='CIF',blocktype = StarBlock,
     self.PC = collections.namedtuple('PC',['block_id','parent'])
     self.child_table = {}
     self.visible_keys = []            # for efficiency
-    self.parent_id = parent_id
     self.scoping = scoping  #will trigger setting of child table
     self.blocktype = blocktype
     self.set_grammar('2.0')
@@ -307,7 +331,7 @@ def clear(self):
 
 def copy(self):   
     newcopy = self.dictionary.copy()  #all blocks
-    newcopy = BlockCollection('',newcopy,parent_id=self.parent_id)
+    newcopy = BlockCollection('',newcopy)
     newcopy.child_table = self.child_table.copy()
     newcopy.lower_keys = self.lower_keys
     newcopy.characterset = self.characterset
