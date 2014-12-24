@@ -159,14 +159,14 @@ def __init__(self,datasource=None,standard='CIF',blocktype = StarBlock,
     self.standard = standard
     self.lower_keys = set()           # short_cuts
     self.renamed = {}
-    self.characterset = characterset
     self.PC = collections.namedtuple('PC',['block_id','parent'])
     self.child_table = {}
     self.visible_keys = []            # for efficiency
     self.parent_id = parent_id
     self.scoping = scoping  #will trigger setting of child table
     self.blocktype = blocktype
-    self.grammar = '2.0'
+    self.set_grammar('2.0')
+    self.set_characterset(characterset)
     if isinstance(datasource,BlockCollection):
         self.merge_fast(datasource)
         self.scoping = scoping   #reset visibility
@@ -178,6 +178,13 @@ def __init__(self,datasource=None,standard='CIF',blocktype = StarBlock,
 def set_grammar(self,new_grammar):
     """Set the grammar for output to `new_grammar`"""
     self.grammar = new_grammar
+
+def set_characterset(self,characterset):
+    """Set the allowed characters for datanames and datablocks: may be `ascii` or `unicode`. If datanames
+    have already been added to any datablocks, they are not checked."""
+    self.characterset = characterset
+    for one_block in self.lower_keys:
+        self[one_block].set_characterset(characterset)
 
 @ Unlocking.  When editing dictionaries with many datablocks, we would
 rather just unlock all datablocks at once.
@@ -469,6 +476,7 @@ def NewBlock(self,blockname,blockcontents=None,fix=True,parent=None):
        else:
            print 'Warning:Parent block %s does not exist for child %s' % (parent,newblockname)  
     self[new_lowerbn].set_grammar(self.grammar)
+    self[new_lowerbn].set_characterset(self.characterset)
     return new_lowerbn  #in case calling routine wants to know
 
 @ Renaming a block.  This is a slightly intricate operation as we have to
@@ -716,7 +724,7 @@ are spaces; if 'STAR2', save frames are nested.
         if not comment:
             comment = self.header_comment
         outstring = cStringIO.StringIO()
-        if self.grammar == "2.0" and comment[0:9] != r"#\#CIF_2.0":
+        if self.grammar == "2.0" and comment[0:10] != r"#\#CIF_2.0":
             outstring.write(r"#\#CIF_2.0" + "\n")
         outstring.write(comment)
         # loop over top-level
@@ -838,7 +846,7 @@ We save our URL for possible later use in finding files relative to
 the location of this file e.g. with DDLm dictionary imports.
 
 <<Read in a STAR file>>=
-def ReadStar(filename,prepared = StarFile(),maxlength=-1,
+def ReadStar(filename,prepared = None, maxlength=-1,
              scantype='standard',grammar='STAR2',CBF=False):
 
     """ Read in a STAR file, returning the contents in the `prepared` object.  
@@ -877,6 +885,8 @@ def ReadStar(filename,prepared = StarFile(),maxlength=-1,
     import YappsStarParser_1_0 as Y10
     import YappsStarParser_2_0 as Y20
     import YappsStarParser_STAR2 as YST
+    if prepared is None:
+        prepared = StarFile()
     if grammar == "auto" or grammar is None:
         try_list = [('2.0',Y20),('1.1',Y11),('1.0',Y10)]
     elif grammar == '1.0':
@@ -925,10 +935,15 @@ def ReadStar(filename,prepared = StarFile(),maxlength=-1,
         if not try_list:
             raise StarError, 'File %s missing CIF2.0 header' % (filename)
     for grammar_name,Y in try_list:
-       if scantype == 'standard' or Y in [Y20,YST]:
+       if scantype == 'standard' or grammar_name in ['2.0','STAR2']:
             parser = Y.StarParser(Y.StarParserScanner(text))
        else:
 	    parser = Y.StarParser(Y.yappsrt.Scanner(None,[],text,scantype='flex'))
+       # handle encoding switch
+       if grammar_name in ['2.0','STAR2']:
+           prepared.set_characterset('unicode')
+       else:
+           prepared.set_characterset('ascii')
        proto_star = None
        try:
            proto_star = getattr(parser,"input")(prepared)
@@ -1259,17 +1274,11 @@ def __init__(self,data = (), maxoutlength=2048, wraplength=80, overwrite=True,
     self.curitem = -1           #used during iteration
     self.maxoutlength = maxoutlength
     self.setmaxnamelength(maxnamelength)  #to enforce CIF limit of 75 characters
+    self.set_characterset(characterset)   #to check input names
     self.wraplength = wraplength
     self.overwrite = overwrite
     self.string_delimiters = ["'",'"',"\n;"]   #universal CIF set
     self.list_delimiter = "  "                 #CIF2 default
-    self.characterset = characterset
-    if self.characterset == 'ascii':
-        self.char_check = re.compile("[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+",re.M)
-    elif self.characterset == 'unicode':
-        self.char_check = re.compile(u"[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\u00A0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFFD\U00010000-\U0010FFFD-]+",re.M)
-    else:
-        raise StarError("No character set specified")
     if isinstance(data,(tuple,list)):
         for item in data:
             self.AddLoopItem(item)
@@ -1287,6 +1296,14 @@ def setmaxnamelength(self,maxlength):
         bad_names = [a for a in self.keys() if len(a)>self.maxnamelength]
         if len(bad_names)>0:
             raise StarError, 'Datanames too long: ' + `bad_names`
+
+def set_characterset(self,characterset):
+    """Set the characterset for checking datanames: may be `ascii` or `unicode`"""
+    self.characterset = characterset
+    if characterset == 'ascii':
+        self.char_check = re.compile("[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+",re.M)
+    elif characterset == 'unicode':
+        self.char_check = re.compile(u"[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\u00A0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFFD\U00010000-\U0010FFFD-]+",re.M)
 
 @ Adding emulation of a mapping type.  We add any of the other
 functions we would like to emulate.   [[__len__]] returns the number
@@ -2082,7 +2099,8 @@ def SetOutputLength(self,wraplength=80,maxoutlength=2048):
     self.maxoutlength = maxoutlength
 
 @ Setting up the output grammar. The output grammar determines the list
-delimiters for CIF2/STAR2, and the available delimiters for 1.0/1.1/2.0.
+delimiters for CIF2/STAR2, and the available delimiters for 1.0/1.1/2.0, as well as
+the allowed characters
 
 <<Set the output grammar>>=
 def set_grammar(self,new_grammar):

@@ -3,7 +3,7 @@ include pycifrw/LICENSE
 include pycifrw/INSTALLATION
 include pycifrw/*.html
 include pycifrw/*.pdf
-include pycifrw/TestPyCifRW.py
+include TestPyCifRW.py
 include pycifrw/RELEASENOTES
 include pycifrw/Programs/*.py
 include pycifrw/Programs/*.cif

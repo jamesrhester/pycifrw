@@ -1,3 +1,4 @@
+#\#CIF_2.0
 # Purpose: a minimal CIF with unicode content
 data_null_block
 _item_cyrillic    "Москва"

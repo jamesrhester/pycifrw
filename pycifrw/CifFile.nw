@@ -52,56 +52,23 @@ to be bound by the terms and conditions of this License Agreement.
 @ \section{Introduction}
 
 This file implements a general CIF reading/writing utility.  The basic
-objects ([[CifFile/CifBlock/CifLoopBlock]]) read and write syntactically 
-correct CIF 1.1 files
-including save frames.  Objects for validating CIFs are built on these
-basic objects: A [[CifDic]] object is derived from a [[CifFile]] created from a
-DDL1/2 dictionary; and the [[ValidCifFile/ValidCifBlock]] objects allow
-creation/checking of CIF files against a list of Cif dictionaries.
+objects ([[CifFile/CifBlock]]) read and write syntactically correct
+CIF 1.1 files including save frames.  Objects for validating CIFs are
+built on these basic objects: A [[CifDic]] object is derived from a
+[[CifFile]] created from a DDL1/2 dictionary; and the
+[[ValidCifFile/ValidCifBlock]] objects allow creation/checking of CIF
+files against a list of CIF dictionaries.
 
 The [[CifFile]] class is initialised with either no arguments (a new CIF file) 
 or with the name of an already existing CIF file.  Data items are 
 accessed/changed/added using the python mapping type ie to get 
 [[dataitem]] you would type [[value = cf[blockname][dataitem]]]. 
 
-The methods available for the CifFile type are:
-\begin{enumerate}
-\item [[ReadCif(filename)]]: (re)initialise using Cif file [[filename]]. Filename may be a URL.
-\item [[NewBlock(blockname,[block contents],replace=False)]]: add new block to this object.  If [[blockcontents]] is provided, it
-must be a [[CifBlock]] object (see below).  If replace is [[False]], attempts to
-replace a pre-existing block will cause an error.
-\item [[WriteOut(comment)]]: return the contents of the current file as a
-CIF-conformant string, with optional [[comment]] at the beginning.
-\end{enumerate}
-
-Some of the more useful methods available for the CifBlock type are:
-\begin{enumerate}
-\item [[AddCifItem(data)]]: add [[data]] to the current block.  [[data]] is 
-a tuple containing either an array of itemnames and an array of arrays of 
-data, or else an itemname and a data value for that item.  This method 
-is called when setting data using [], but can be called directly and can
-take multiple datanames and values in the [[data]] tuple.
-\item [[RemoveCifItem(dataname)]]: remove the given Cif dataname from the 
-current block.  Same as typing [['del block[item]']]
-\item [[GetLoop(dataname)]]: for looped data item [[dataname]], return the
-[[CifLoopBlock]] containing [[dataname]]. 
-\item [[AddLoop(dataname,data)]]: add [[data]] to the loop containing
-[[dataname]].  If dataname is not a looped item, an error is returned.
-If (data) has the wrong length, an error is returned. 
-\item [[AddDictionary(dicname)]]: add [[dicname]] to the list of dictionaries
-which this datablock conforms to.
-\end{enumerate}
-
 Note also that a CifFile object can be accessed as a mapping type, ie using
 square brackets.  Most mapping operations have been implemented (see below).
 
-We import type objects at the module level, as required by later versions
-of Python.
-
 We build upon the objects defined in the StarFile class, by imposing a few
-extra restrictions where necessary.  We need a parallel CIF object at every
-level, as we must catch data name lengths and nested loops however the user
-wishes to do them.
+extra restrictions where necessary. 
 
 <<*>>=
 <<Copyright statement>>
@@ -109,7 +76,7 @@ wishes to do them.
 import re
 import StarFile
 import sys
-<<CifLoopBlock class>>
+
 <<CifBlock class>>
 <<CifFile class>>
 <<Define an error class>>
@@ -119,6 +86,7 @@ import sys
 <<Top-level functions>>
 <<Utility functions>>
 <<Read in a CIF file>>
+<<CifLoopBlock class>>
 <<API documentation flags>>
 
 @ \section{CifFile}
@@ -169,21 +137,11 @@ line.
 ##########################################################################
 """
 
-@ \section{Cif Loop block class}
-
-With the removal (by PyCIFRW) of nested loops, this class is now unnecessary. It is now
-simply a pointer to StarFile.LoopBlock.
-
-<<CifLoopBlock class>>=
-class CifLoopBlock(StarFile.LoopBlock):
-    def __init__(self,data=(),**kwargs):
-        super(CifLoopBlock,self).__init__(data,**kwargs)
-
 @ \section{Cif Block class}
 
 CifBlocks exist(ed) as a separate class in order to enforce non-nested
-loops and maximum dataname lengths. As these have been removed
-completed from PyCIFRW, they are no longer necessary but kept here for
+loops and maximum dataname lengths. As nested loops have been removed
+completely from PyCIFRW, they are no longer necessary but kept here for
 backwards compatibility.
 
 <<CifBlock class>>=
@@ -3359,6 +3317,16 @@ def find_parent(ddl2_def):
     if len(result)>1 or len(result)==0:
         raise CifError("Unable to find single unique parent data item")
     return result[0]
+
+@ \section{Cif Loop block class}
+
+With the removal (by PyCIFRW) of nested loops, this class is now unnecessary. It is now
+simply a pointer to StarFile.LoopBlock.
+
+<<CifLoopBlock class>>=
+class CifLoopBlock(StarFile.LoopBlock):
+    def __init__(self,data=(),**kwargs):
+        super(CifLoopBlock,self).__init__(data,**kwargs)
 
 <<API documentation flags>>=
 #No documentation flags

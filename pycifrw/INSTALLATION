@@ -6,8 +6,8 @@ Prerequisites
 
 Python 2.3 or greater must already be installed.
 Self-installing packages for Python (Windows and Mac) are 
-available from www.python.org.  Almost all Linux
-distributions bundle python as standard.
+available from www.python.org.  All major Linux
+distributions come with Python included in the base setup.
 
 Installation
 ------------
@@ -18,8 +18,8 @@ Download and execute the file PyCifRW-3.2.exe
 
 (All operating systems)
  
-1. Download and unpack the file PyCifRW-3.2.tar.gz
-2. In directory PyCifRW-3.2, execute the command
+1. Download and unpack the file PyCifRW-4.1.tar.gz
+2. In directory PyCifRW-4.1, execute the command
  
     'python setup.py install'
 

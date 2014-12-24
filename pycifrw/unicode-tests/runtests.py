@@ -1,8 +1,7 @@
 #  Run files in the list, and catch any expected exceptions
 import sys
-sys.path.insert(0,"..")
+#sys.path.insert(0,"..")
 from CifFile import *
-from StarFile import *
 
 def runtests(scantype):
     test_table = [
@@ -14,7 +13,7 @@ def runtests(scantype):
 
     for filename, testresult in test_table:
         try:
-        	ReadCif(filename,scantype=scantype,grammar="DDLm")
+        	ReadCif(filename,scantype=scantype,grammar="2.0")
         except:
         	if testresult == 'OK':
            	    print "%s causes error where none expected" % filename
