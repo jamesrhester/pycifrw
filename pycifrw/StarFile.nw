@@ -128,11 +128,12 @@ class BlockCollection(object):
         blocks are restricted to the appropriate characterset.
 
     scoping:
-        `instance` or `dictionary`: `instance` implies that nested save frames are
-        invisible to save frames lower in the hierarchy or in sibling
+        `instance` or `dictionary`: `instance` implies that save frames are
+        hidden from save frames lower in the hierarchy or in sibling
         hierarchies. `dictionary` makes all save frames visible everywhere
-        within a data block.  Only relevant for STAR2 dictionaries and
-        data files.
+        within a data block.  This setting is only relevant for STAR2 dictionaries and
+        STAR2 data files, as save frames are currently not used in plain CIF data
+        files.
 
 """
     <<Initialise BC data structures>>
@@ -200,7 +201,7 @@ def __init__(self,datasource=None,standard='CIF',blocktype = StarBlock,
     self.header_comment = ''
  
 def set_grammar(self,new_grammar):
-    """Set the grammar for output to `new_grammar`"""
+    """Set the syntax and grammar for output to `new_grammar`"""
     self.grammar = new_grammar
 
 def set_characterset(self,characterset):
@@ -236,11 +237,10 @@ def checklengths(self,maxlength):
             errorstring += "\n" + bn
         raise StarError( 'Following block name(s) too long: \n' + errorstring)
 
-@ Switch scoping.  In some cases we want to hide save frames from our accesses,
+@ Switch scoping.  We interpose some code in the normal [[__setattr__]]
+method so detect a scoping switch. In some cases we want to hide save frames from our accesses,
 in other cases we wish to make all frames visible.  Setting the scoping attribute
-allows this to be swapped around.  As we could be a 'view' onto a subset of save
-frames, we use the parent_id to choose the appropriate selection of datablocks.
-
+allows this to be swapped around.  
 We do not assume that no change means we do not have to do anything.
 
 <<Switch save frame scoping rules>>=

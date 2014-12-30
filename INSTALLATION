@@ -1,5 +1,5 @@
-Installation instructions for PyCifRW
--------------------------------------
+Installation instructions for PyCifRW v 4
+-----------------------------------------
 
 Prerequisites
 -------------
@@ -14,7 +14,8 @@ Installation
 
 (Windows minimal)
 
-Download and execute the file PyCifRW-3.2.exe
+A self-installing executable is not currently availble for 
+Windows.
 
 (All operating systems)
  
@@ -26,10 +27,8 @@ Download and execute the file PyCifRW-3.2.exe
 In Windows this can be accomplished by double-clicking 
 the setup.py icon.
 
-Note that documentation and commented source code
+Note that commented source code
 (.nw files) are available only in the .tar.gz file.
-The validate.py program is also not provided in 
-the windows installer.
 
 Checking the installation
 -------------------------
