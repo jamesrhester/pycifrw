@@ -52,5 +52,5 @@ else:
     diclist = map(lambda a:os.path.join(dic_directory,a),input_dics)
     merged_dics = CifFile.merge_dic(diclist)
     validate_cif.output_header(True,filename,input_dics)
-    print CifFile.validate_report(CifFile.validate(cf,dic= merged_dics,isdic=is_dic),use_html=True)
+    print CifFile.validate_report(CifFile.Validate(cf,dic= merged_dics,isdic=is_dic),use_html=True)
     validate_cif.output_footer(True)

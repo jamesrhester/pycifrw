@@ -13,3 +13,7 @@ place (this file is simply the form for entry of user data).
 
 3.  Put all CIF dictionaries into directory /usr/local/lib/cif. For
 correct naming, check the HTML source in cifv_server.html. 
+
+
+Note that this web server has not been tested for almost a decade but
+should work.

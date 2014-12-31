@@ -934,7 +934,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
     if isinstance(filename,basestring): #we opened it, we close it
         filestream.close()
     if not text:      # empty file, return empty block
-        return StarFile().set_uri(my_uri)
+        return prepared.set_uri(my_uri)
     # filter out non-ASCII characters in CBF files if required.  We assume
     # that the binary is enclosed in a fixed string that occurs
     # nowhere else.

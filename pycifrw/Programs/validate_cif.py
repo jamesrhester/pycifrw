@@ -14,10 +14,11 @@ def cif_by_ftp(ftp_ptr,store=True,directory="."):
     # print "Opening %s" % ftp_ptr
     if store:
 	new_fn = os.path.split(urllib.url2pathname(ftp_ptr))[1]
-	target = os.path.join(directory,new_fn)
+	target = os.path.abspath(os.path.join(directory,new_fn))
 	if target != ftp_ptr:
             urllib.urlretrieve(ftp_ptr,target)
-	    # print "Stored %s as %s" % (ftp_ptr,target)
+	    print "Stored %s as %s" % (ftp_ptr,target)
+	print 'Reading ' + target
 	ret_cif = CifFile.CifFile(target)
     else:
         ret_cif = CifFile.ReadCif(ftp_ptr)
@@ -30,15 +31,15 @@ def locate_dic(dicname,dicversion,regloc="cifdic.register",store_dir = "."):
     register = cif_by_ftp(regloc,directory=store_dir)
     good_gen = register["validation_dictionaries"]
     dataloop = good_gen.GetLoop("_cifdic_dictionary.version")
-    datalist = dataloop.flat_iterator()
-    matches = filter(lambda a:a["_cifdic_dictionary.name"]==dicname and a["_cifdic_dictionary.version"]==dicversion,datalist)
+    matches = [a for a in dataloop if getattr(a,"_cifdic_dictionary.name")==dicname and \
+					getattr(a,"_cifdic_dictionary.version")==dicversion]
     if len(matches)==0:
 	print "Unable to find any matches for %s version %s" % (dicname,dicversion)
 	return ""
     elif len(matches)>1:
         print "Warning: found more than one candidate, choosing first."
         print map(str,matches)
-    return matches[0]["_cifdic_dictionary.URL"]    # the location
+    return getattr(matches[0],"_cifdic_dictionary.URL")    # the location
     
 
 def parse_options():
@@ -64,7 +65,7 @@ def parse_options():
     op.add_option("-t","--is_dict", dest = "dict_flag", action="store_true",default=False,
                   help = "CIF file should be validated as a CIF dictionary")
     op.add_option("-r","--registry-loc", dest = "registry",
-		  default = "./cifdic.register",
+		  default = "file:cifdic.register",
 		  help = "Location of global dictionary registry (see also -c option)")
     (options,args) = op.parse_args()
     # our logic: if we are given a dictionary file using -f, the dictionaries 
@@ -93,7 +94,7 @@ def execute_with_options(options,args):
     # open the cif file
     cf = CifFile.CifFile(args[0])
     output_header(options.use_html,args[0],diclist)
-    print CifFile.validate_report(CifFile.validate(cf,dic= fulldic,isdic=options.dict_flag),use_html=options.use_html)
+    print CifFile.validate_report(CifFile.Validate(cf,dic= fulldic,isdic=options.dict_flag),use_html=options.use_html)
     output_footer(options.use_html)
 
 #
