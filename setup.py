@@ -1,4 +1,4 @@
-# Setup file for automatic installation of the PyCIFRW
+# Setup file for creation of the PyCIFRW
 # distribution
 from setuptools import setup, Extension
 

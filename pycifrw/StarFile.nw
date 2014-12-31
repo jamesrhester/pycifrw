@@ -2039,7 +2039,9 @@ line break is inserted and a new line is begun.
 
 We never insert newlines inside supplied strings.  Tabs are applied
 after any requested line breaks, and both are applied before the next
-item is output.
+item is output.  If the character is flagged as a delimiter, it is only
+output if the previous character is not a delimiter or if the next
+character will be a line break.
 
 After adding any line breaks and/or tab stops, we recognise the following situations:
 (1) The supplied string does not overflow the line: we output, and
@@ -2060,17 +2062,30 @@ class CIFStringIO(StringIO):
         self.target_width = target_width
         self.tabwidth = -1
         self.indentlist = [0]
+        self.last_char = ""
 
-    def write(self,outstring,canbreak=False,mustbreak=False,do_tab=True,newindent=False,unindent=False,startcol=-1):
+    def write(self,outstring,canbreak=False,mustbreak=False,do_tab=True,newindent=False,unindent=False,
+                             delimiter=False,startcol=-1):
         """Write a string with correct linebreak, tabs and indents"""
         # do we need to break?
+        if delimiter:
+            if len(outstring)>1:
+                raise ValueError, 'Delimiter %s is longer than one character' % `outstring`
+            output_delimiter = True
         if mustbreak:    #insert a new line and indent
-            StringIO.write(self,'\n' + ' '*self.indentlist[-1])
+            temp_string = '\n' + ' ' * self.indentlist[-1]
+            StringIO.write(self,temp_string)
             self.currentpos = self.indentlist[-1]
+            self.last_char = temp_string[-1]
         if self.currentpos+len(outstring)>self.target_width: #try to break
-            if canbreak:
-                StringIO.write(self,'\n'+' '*self.indentlist[-1])
+            if not delimiter:  
+              if canbreak:
+                temp_string = '\n' + ' ' * self.indentlist[-1]
+                StringIO.write(self,temp_string)
                 self.currentpos = self.indentlist[-1]
+                self.last_char = temp_string[-1]
+            else:        #assume a break will be forced on next value
+                output_delimiter = False    #the line break becomes the delimiter
         if newindent:           #indent by current amount
             if self.indentlist[-1] == 0:    #first time
                 self.indentlist.append(self.currentpos)
@@ -2089,13 +2104,21 @@ class CIFStringIO(StringIO):
             if self.currentpos < next_stop:
                 StringIO.write(self,(next_stop-self.currentpos)*' ')
                 self.currentpos = next_stop
-        #now output the string
-        StringIO.write(self,outstring)
+                self.last_char = ' '
+        #check that we still need a delimiter
+        if self.last_char in [' ','\n','\t']:
+            output_delimiter = False
+        #now output the string - every invocation comes through here
+        if (delimiter and output_delimiter) or not delimiter:
+            StringIO.write(self,outstring)
         last_line_break = outstring.rfind('\n')
         if last_line_break >=0:
             self.currentpos = len(outstring)-last_line_break
         else:
             self.currentpos = self.currentpos + len(outstring)
+        #remember the last character
+        if len(outstring)>0:
+            self.last_char = outstring[-1]
         
     def set_tab(self,tabwidth):
         """Set the tab stop position"""
@@ -2259,10 +2282,12 @@ def format_packets(self,outstring,indent=0,loop_no=-1):
    packet_data = apply(zip,alldata)
    print 'Packet data: %s' % `packet_data`
    for position in range(len(packet_data)):
+       if position > 0:
+           outstring.write("\n")    #new line each packet except first
        for point in range(len(packet_data[position])):
            datapoint = packet_data[position][point]
            packstring = self.format_packet_item(datapoint,indent,outstring)
-       outstring.write("\n",do_tab=False)
+           outstring.write(' ',canbreak=True,do_tab=False,delimiter=True)
            
 @ Formatting a single packet item.
 
@@ -2273,7 +2298,6 @@ def format_packet_item(self,pack_item,indent,outstring):
            outstring.write(self._formatstring(pack_item)) 
        else: 
            self.format_value(pack_item,outstring)
-       outstring.write(' ',canbreak=True,do_tab=False)
 
 @ Formatting a string.  We make sure that the length of the item value
 is less than [[self.maxoutlength]], or else we should split them, and so on. We check the

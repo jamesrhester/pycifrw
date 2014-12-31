@@ -30,8 +30,9 @@ CIF files rather slow, it should run wherever Python runs.  The latest version
 has been tested on Linux and Windows 7.
 
 The source code of a C extension module is also included in the distribution.
-This module accelerates CIF file reading, and from time to time 
-system-dependent installation packages are generated containing this module. 
+This module accelerates CIF file reading. From time to time 
+system-dependent installation packages are generated containing precompiled
+versions of this module. 
 
 Files
 -----
