@@ -2,13 +2,14 @@ recursive-include pycifrw *.nw
 include LICENSE
 include INSTALLATION
 include pycifrw/*.html
-include pycifrw/*.pdf
 include TestPyCifRW.py
 include RELEASENOTES
 include pycifrw/Programs/*.py
 include pycifrw/Programs/*.cif
 include pycifrw/Programs/*.html
+include pycifrw/Programs/README
 include pycifrw/Programs/Web.README
 include pycifrw/Changelog
 include pycifrw/Makefile
 include pycifrw/lib/*
+include docs/*.html
