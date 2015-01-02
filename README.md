@@ -71,6 +71,7 @@ License
 ----------
 
 PyCIFRW is made available using the Python 2.0 license.  The full text is [here](https://bitbucket.org/jamesrhester/pycifrw/src/efd90c5e6dec7caf1e61fac68492a7fd66661d97/LICENSE?at=development)
+
 Use
 ---
 
