@@ -178,8 +178,7 @@ class CifBlock(StarFile.StarBlock):
 @ A CifBlock is a StarBlock with a very few restrictions.
 
 <<Initialise Cif Block>>=
-def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80,overwrite=True,
-             compat_mode = False):
+def __init__(self,data = (), strict = 1, compat_mode=False, **kwargs):
     """When provided, `data` should be another CifBlock whose contents will be copied to
     this block.
 
@@ -199,8 +198,7 @@ def __init__(self,data = (), strict = 1, maxoutlength=2048,wraplength=80,overwri
     if strict: maxnamelength=75
     else:
        maxnamelength=-1
-    super(CifBlock,self).__init__(data=data,maxoutlength=maxoutlength,wraplength=wraplength,
-                                        overwrite=overwrite,maxnamelength=maxnamelength)
+    super(CifBlock,self).__init__(data=data,maxnamelength=maxnamelength,**kwargs)
     self.dictionary = None   #DDL dictionary referring to this block
     self.compat_mode = compat_mode   #old-style behaviour of setitem
 

@@ -518,7 +518,7 @@ class FileWriteTestCase(unittest.TestCase):
                'a string with a " and a safe\';',
                'a string with a final \''])))
        self.cf = CifFile.CifBlock(items)
-       cif = CifFile.CifFile(scoping='dictionary')
+       cif = CifFile.CifFile(scoping='dictionary',maxoutlength=80)
        cif['Testblock'] = self.cf
        # Add some comments
        self.save_block = CifFile.CifBlock(s_items)
@@ -662,6 +662,20 @@ _atom_type.number_in_cell
        b.close()
        testin = CifFile.CifFile("test2.cif",standard=None)
 
+   def testPrefixProtocol(self):
+       """Test that pathological strings round-trip correctly"""
+       cif_as_text = open('test.cif','r').read()
+       bf = CifFile.CifFile(maxoutlength=80)
+       bb = CifFile.CifBlock()
+       bb['_data_embedded'] = cif_as_text
+       bf['tough_one'] = bb
+       out_f = open('embedded.cif','w')
+       out_f.write(str(bf))
+       out_f.close()
+       in_emb = CifFile.CifFile('embedded.cif',grammar='2.0')
+       self.assertEqual(in_emb['tough_one']['_data_embedded'],cif_as_text)
+       
+       
 class TemplateTestCase(unittest.TestCase):
    def setUp(self):
        """Create a template"""
@@ -1413,10 +1427,10 @@ class DicStructureTestCase(unittest.TestCase):
         print self.fb
 
 if __name__=='__main__':
-     #global testdic
-     #testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="STAR2")
+     global testdic
+     testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="STAR2")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
-     suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
@@ -1426,6 +1440,6 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase) 
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmImportCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDL1TestCase)
-     unittest.TextTestRunner(verbosity=2).run(suite)
-     #unittest.main()
+     #unittest.TextTestRunner(verbosity=2).run(suite)
+     unittest.main()
 

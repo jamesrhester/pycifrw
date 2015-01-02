@@ -737,14 +737,18 @@ the default output comment specifies a CIF 1.1 standard file.
 Note that child blocks must be save frames, so we hard-code 'save'.
 
 If [[self.grammar]] is '2.0', save frames are not nested and table/list delimiters
-are spaces; if 'STAR2', save frames are nested.
+are spaces; if 'STAR2', save frames are nested.  We allow the maximum line length
+to be overridden here although preferably the output length is set when
+initialising the file.
 
 <<Write out to string representation>>=
-    def WriteOut(self,comment='',wraplength=80,maxoutlength=2048):
-        """Return the contents of this block as a string, wrapping if possible at `wraplength`
+    def WriteOut(self,comment='',wraplength=80,maxoutlength=0):
+        """Return the contents of this file as a string, wrapping if possible at `wraplength`
         characters and restricting maximum line length to `maxoutlength`.  Delimiters and
         save frame nesting are controlled by `self.grammar`."""
         import cStringIO
+        if maxoutlength != 0:
+            self.SetOutputLength(maxoutlength)
         if not comment:
             comment = self.header_comment
         outstring = cStringIO.StringIO()
@@ -757,13 +761,15 @@ are spaces; if 'STAR2', save frames are nested.
             outstring.write('\n' + 'data_' +blockname+'\n')
             self[blockref].set_grammar(self.grammar)
             if self.standard == 'Dic':              #put contents before save frames
-              self[blockref].SetOutputLength(wraplength,maxoutlength)
+              self[blockref].SetOutputLength(wraplength,self.maxoutlength)
               outstring.write(str(self[blockref]))
             if self.grammar == 'STAR2':  #nested save frames
                 child_refs = self.get_immediate_children(blockref)
                 for child_ref,child_info in child_refs:
                     child_name = child_info.block_id
                     outstring.write('\n' + 'save_' + child_name + '\n')
+                    self[child_ref].set_grammar(self.grammar)
+                    self[child_ref].SetOutputLength(wraplength,self.maxoutlength)
                     self.block_to_string_nested(child_ref,child_name,outstring,4)    
                     outstring.write('\n' + 'save_'+ '\n')   
             elif self.grammar in ('1.0','1.1','2.0'):                   #non-nested save frames
@@ -772,10 +778,11 @@ are spaces; if 'STAR2', save frames are nested.
                     child_name = self.child_table[child_ref].block_id
                     outstring.write('\n' + 'save_' + child_name + '\n')
                     self[child_ref].set_grammar(self.grammar)
+                    self[child_ref].SetOutputLength(wraplength,self.maxoutlength)
                     outstring.write(str(self[child_ref]))
                     outstring.write('\n' + 'save_' + '\n')
             if self.standard != 'Dic':              #put contents after save frames
-                self[blockref].SetOutputLength(wraplength,maxoutlength)
+                self[blockref].SetOutputLength(wraplength,self.maxoutlength)
                 outstring.write(str(self[blockref]))
         returnstring =  outstring.getvalue()
         outstring.close()
@@ -2875,9 +2882,6 @@ returns the whole star block.
 
 <<A one-level iterator>>=
 def flat_iterator(self):
-    if self.dimension == 0:   
-        yield copy.copy(self)
-    else:
         my_length = 0
         top_keys = self.block.keys()
         if len(top_keys)>0:

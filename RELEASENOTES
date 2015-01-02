@@ -1,15 +1,14 @@
 Release Notes for PyCIFRW-4.1  
 =============================
 
-Version 4.1 is the first stable release in the next
-major version of PyCIFRW.  It includes support for CIF 2.0 (including
-unicode), dREL and DDLm
-for the first time, with expanded documentation.  A number of major simplifications have gone on
-under the hood leading to slightly faster CIF file input and much
-simpler construction of loops.
+Version 4.1 is the first stable release in the next major version of
+PyCIFRW.  It includes support for CIF 2.0 (including unicode), dREL
+and DDLm, with expanded documentation.  A number of major
+simplifications have gone on under the hood leading to slightly faster
+CIF file input and much simpler construction and interaction with loops.
 
-Templates have been added for finer control over the 
-layout of output CIF files. 
+Templates have been added for finer control over the layout of output
+CIF files.
 
 Incompatible changes (since 3.0 series)
 =======================================
@@ -18,12 +17,23 @@ Incompatible changes (since 3.0 series)
 * Nested loops (only allowed in STAR files) are no longer supported
 * Merging of datablocks in 'overlay' mode has been removed. This is
   relevant only for dictionary merging.
+* The package now installs in a separate Python site-packages directory. 
+  called 'CifFile'. It should thus be imported using 'import CifFile' or 
+  'from CifFile import CifFile'.  This may differ from earlier versions.
+* A single-item loop can no longer be created using the form cf['_dataname'] = [1,2,3,4]
+  To get the old behaviour, created the CifBlock with 'compat_mode = True'.
+* The line folding protocol is always used when writing CIF files. This is
+  only invoked if you have lines longer than 2048 characters/your specified
+  maximum length.
+* The text prefix protocol introduced in CIF2.0 is always used when writing. 
+  This is only invoked if a string contains the character sequence '\n;'
 
 Deprecated methods
 ==================
 
-* AddCifItem.  This convoluted and mind-bending way of adding a whole loop all at once in a single tuple
-has been deprecated.  Just assign dataname values using the usual square brackets and then call
-CreateLoop with the datanames that belong in a single loop.
+* AddCifItem.  This unnecessarily convoluted and mind-bending way of
+adding a whole loop all at once in a single tuple has been deprecated.
+Just assign dataname values using the usual square brackets and then
+call CreateLoop with the datanames that belong in a single loop.
 
 
