@@ -1,0 +1,13 @@
+This directory contains small example programs showing some uses of PyCIFRW.  Of interest:
+
+validate_cif.py    Validate against DDL1/DDL2 dictionaries.  For example:
+     
+  python validate_cif.py ../drel/testing/data/nacltest.cif -c -n cif_core.dic -u 2.3.1
+
+will validate nacltest.cif using the information in cif_core.dic as distributed by the
+IUCr ftp site. 
+
+
+loop_example.py    Small program demonstrating how to pick particular columns from a loop
+
+
