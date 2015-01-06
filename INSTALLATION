@@ -9,12 +9,22 @@ Self-installing packages for Python (Windows and Mac) are
 available from www.python.org.  All major Linux
 distributions come with Python included in the base setup.
 
+Use of the dREL functionality requires installation of PLY
+(Python Lex Yacc):
+
+    pip install ply
+
+and numpy
+
+    pip install numpy
+
+
 Installation
 ------------
 
 (Windows minimal)
 
-A self-installing executable is not currently availble for 
+A self-installing executable is not currently available for 
 Windows.
 
 (All operating systems)
@@ -22,13 +32,21 @@ Windows.
 1. Download and unpack the file PyCifRW-4.1.tar.gz
 2. In directory PyCifRW-4.1, execute the command
  
-    'python setup.py install'
+     python setup.py install 
 
 In Windows this can be accomplished by double-clicking 
 the setup.py icon.
 
 Note that commented source code
 (.nw files) are available only in the .tar.gz file.
+
+(Linux with compiled scanner)
+
+Alternatively, a 'wheel' package is available for Linux/i686
+that contains the precompiled scanner and can be installed
+using pip:
+
+    pip install --use-wheel PyCifRW-4.1-cp27-none-linux_i686.whl
 
 Checking the installation
 -------------------------

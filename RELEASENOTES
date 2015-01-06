@@ -23,10 +23,12 @@ Incompatible changes (since 3.0 series)
 * A single-item loop can no longer be created using the form cf['_dataname'] = [1,2,3,4]
   To get the old behaviour, created the CifBlock with 'compat_mode = True'.
 * The line folding protocol is always used when writing CIF files. This is
-  only invoked if you have lines longer than 2048 characters/your specified
-  maximum length.
+  only invoked if you have lines longer than 2048 characters (or your specified
+  maximum length).
 * The text prefix protocol introduced in CIF2.0 is always used when writing. 
   This is only invoked if a string contains the character sequence '\n;'
+* The text prefix protocol and line folding protocol are detected and 
+  transparently removed from text values when reading.
 
 Deprecated methods
 ==================

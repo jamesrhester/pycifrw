@@ -353,6 +353,14 @@ that the leading underscore is not part of the name.
 
 <<CIF Dictionary type>>=
 class CifDic(StarFile.BlockCollection):
+    """Create a Cif Dictionary object from the provided source, which can
+    be a filename/URL or a CifFile.  Optional arguments:
+
+    * do_minimum:
+         Do not set up the dREL system for auto-calculation.  This is
+         useful during recursive loads where the dREL links will be
+         established at the end
+    """
     <<Initialise Cif dictionary>>
     <<Dictionary determination function>>
     <<Deal with DDL1 differences>>
@@ -367,6 +375,7 @@ class CifDic(StarFile.BlockCollection):
     <<Add category information>>
     <<List all items in a category>>
     <<Category manipulation methods>>
+    <<Dictionary output routines>>
     <<Return a single packet by key>>
     <<Extract number and esd>>
     <<Analyse range>>
@@ -417,9 +426,11 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
     self.switch_numpy(False)    #no Numpy arrays returned 
     if isinstance(dic,basestring):
         self.dic_as_cif = CifFile(dic,grammar=grammar,**kwargs)
+        self.dic_as_cif.standard = 'Dic'    #for correct output order
+        self.dic_as_cif.scoping = 'dictionary'
     (self.dicname,self.diclang,self.defdata) = self.dic_determine(self.dic_as_cif)
     print '%s is a %s dictionary' % (self.dicname,self.diclang)
-    super(CifDic,self).__init__(datasource=self.defdata,**kwargs) 
+    super(CifDic,self).__init__(datasource=self.defdata.copy(),**kwargs) 
     self.scopes_mandatory = {"dictionary":[],"category":[],"item":[]}
     self.scopes_naughty = {"dictionary":[],"category":[],"item":[]}
     self.grammar = grammar # remember for importing dictionaries correctly
@@ -1236,8 +1247,7 @@ def add_category_info(self):
         <<Get list of DDL1/2 categories>>
     # match ids and entries in the dictionary
     catpairs = map(None,category_ids,categories)
-    self.cat_map = {}
-    for catid,cat in catpairs:self.cat_map[catid] = cat
+    self.cat_map = dict(catpairs)
 
 <<Get list of DDL1/2 categories>>=
 categories = filter(lambda a:self[a].has_key("_category.id"),self.keys())
@@ -2481,6 +2491,51 @@ def getmaxmin(self,rangeexp):
     if maximum == None: maximum = "." 
     else: maximum = float(maximum)
     return maximum,minimum
+
+@ \subsection {Outputting dictionaries}
+
+We would like dictionary blocks to be output in a readable order, that is,
+parent categories before their child definitions.  The base BlockCollection
+output routines have no knowledge of save frame interrelations, so we have
+to override the output block order returned by the get_child_list routine.
+
+<<Dictionary output routines>>=
+def WriteOut(self,**kwargs):
+    def drop_underscore(a):
+        if a[0] == '_':
+            return a[1:]
+        else:
+            return a
+    myblockorder = self.get_full_child_list()
+    # drop the underscores as the CIF will not have them
+    myblockorder = [drop_underscore(a) for a in myblockorder]
+    self.dic_as_cif.set_grammar(self.grammar)
+    self.dic_as_cif.standard = 'Dic'
+    return self.dic_as_cif.WriteOut(blockorder = myblockorder,**kwargs)
+
+def get_full_child_list(self):
+    """Return a list of definition blocks in order parent-child-child-child-parent-child..."""
+    top_block = self.get_roots()[0][0]
+    root_cat = [a for a in self.keys() if self[a].get('_definition.class',None)=='Head']
+    if len(root_cat) == 1:
+        all_names = [top_block] + self.recurse_child_list(root_cat[0])
+        print 'Final block order: ' + `all_names`
+        return all_names
+    raise ValueError, 'Dictionary contains no Head category, please print as plain CIF instead'
+
+def recurse_child_list(self,parentname):
+    """Recursively expand the logical child list of [[parentname]]"""
+    final_list = [parentname]
+    child_blocks = [a for a in self.keys() if self[a].get('_name.category_id','').lower() == parentname.lower()]
+    child_blocks.sort()    #we love alphabetical order
+    child_cats = [a for a in child_blocks if self[a].get('_definition.scope','Item') == 'Category']
+    for child_cat in child_cats:
+        final_list += self.recurse_child_list(child_cat)
+    child_items = [a for a in child_blocks if self[a].get('_definition.scope','Item') == 'Item']
+    final_list += child_items
+    return final_list
+
+    
 
 @ \section {Valid CIFS}
 

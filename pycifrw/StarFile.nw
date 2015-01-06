@@ -331,9 +331,11 @@ def clear(self):
 
 def copy(self):   
     newcopy = self.dictionary.copy()  #all blocks
-    newcopy = BlockCollection('',newcopy)
+    for k,v in self.dictionary.items():
+        newcopy[k] = v.copy()
+    newcopy = BlockCollection(newcopy)
     newcopy.child_table = self.child_table.copy()
-    newcopy.lower_keys = self.lower_keys
+    newcopy.lower_keys = self.lower_keys.copy()
     newcopy.characterset = self.characterset
     newcopy.scoping = self.scoping  #this sets visible keys
     return newcopy
@@ -394,9 +396,11 @@ def get_immediate_children(self,parentname):
     child_handles = [a for a in self.child_table.items() if a[1].parent == parentname.lower()]
     return child_handles
 
+# This takes time
 def get_child_list(self,parentname):
-    """Get a list of all child categories"""
+    """Get a list of all child categories in alphabetical order"""
     child_handles = [a[0] for a in self.child_table.items() if self.is_child_of_parent(parentname.lower(),a[0])]
+    child_handles.sort()
     return child_handles
 
 def is_child_of_parent(self,parentname,blockname):
@@ -742,10 +746,12 @@ to be overridden here although preferably the output length is set when
 initialising the file.
 
 <<Write out to string representation>>=
-    def WriteOut(self,comment='',wraplength=80,maxoutlength=0):
+    def WriteOut(self,comment='',wraplength=80,maxoutlength=0,blockorder=None):
         """Return the contents of this file as a string, wrapping if possible at `wraplength`
         characters and restricting maximum line length to `maxoutlength`.  Delimiters and
-        save frame nesting are controlled by `self.grammar`."""
+        save frame nesting are controlled by `self.grammar`. If `blockorder` is
+        provided, blocks are output in this order unless nested save frames have been
+        requested (STAR2)."""
         import cStringIO
         if maxoutlength != 0:
             self.SetOutputLength(maxoutlength)
@@ -756,7 +762,10 @@ initialising the file.
             outstring.write(r"#\#CIF_2.0" + "\n")
         outstring.write(comment)
         # loop over top-level
-        top_block_names = [(a[0],a[1].block_id) for a in self.child_table.items() if a[1].parent is None]
+        if blockorder is None:
+            top_block_names = [(a[0],a[1].block_id) for a in self.child_table.items() if a[1].parent is None]
+        else:
+            top_block_names = [(a,self.child_table[a].block_id) for a in blockorder if self.child_table[a].parent is None]
         for blockref,blockname in top_block_names:
             outstring.write('\n' + 'data_' +blockname+'\n')
             self[blockref].set_grammar(self.grammar)
@@ -773,14 +782,17 @@ initialising the file.
                     self.block_to_string_nested(child_ref,child_name,outstring,4)    
                     outstring.write('\n' + 'save_'+ '\n')   
             elif self.grammar in ('1.0','1.1','2.0'):                   #non-nested save frames
-                child_refs = self.get_child_list(blockref)
+                if blockorder is None:
+                    child_refs = self.get_child_list(blockref)
+                else:
+                    child_refs = [a for a in blockorder if self.is_child_of_parent(blockref,a)]
                 for child_ref in child_refs:
                     child_name = self.child_table[child_ref].block_id
                     outstring.write('\n' + 'save_' + child_name + '\n')
                     self[child_ref].set_grammar(self.grammar)
                     self[child_ref].SetOutputLength(wraplength,self.maxoutlength)
                     outstring.write(str(self[child_ref]))
-                    outstring.write('\n' + 'save_' + '\n')
+                    outstring.write('\n\n' + 'save_' + '\n')
             if self.standard != 'Dic':              #put contents after save frames
                 self[blockref].SetOutputLength(wraplength,self.maxoutlength)
                 outstring.write(str(self[blockref]))

@@ -14,6 +14,10 @@ using `pip`, for example:
 
     pip install --use-wheel PyCifRW-4.1-cp27-none-linux_i686.whl
 
+or using the platform independent source package found on PyPI:
+
+    pip install pycifrw
+
 If you want to include PyCIFRW with your package, you can install the
 PyCIFRW wheel into your development environment and then bundle the
 contents of the `CifFile` directory found in the Python local

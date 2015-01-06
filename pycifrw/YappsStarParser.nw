@@ -427,8 +427,8 @@ rule input@<<prepared>>: ( ((
                             ) *
                                c_s_b                     {{return StarList(this_list)}}
 
-     rule curly_bracket_expr: ( o_c_b 
-                              delimited_data_value       {{table_as_list = [delimited_data_value]}}
+     rule curly_bracket_expr: ( o_c_b                     {{table_as_list = []}} 
+                             ( delimited_data_value       {{table_as_list = [delimited_data_value]}}
                               ":"
                               data_value                 {{table_as_list.append(data_value)}}
                             ( ","  
@@ -436,6 +436,7 @@ rule input@<<prepared>>: ( ((
                               ":"
                               data_value                 {{table_as_list.append(data_value)}}
                             ) *
+                               ) *
                               c_c_b )                    {{return StarDict(pairwise(table_as_list))}}
 
 
@@ -449,14 +450,15 @@ rule input@<<prepared>>: ( ((
                             ) *
                                c_s_b                     {{return StarList(this_list)}}
 
-     rule curly_bracket_expr: ( o_c_b 
-                              delimited_data_value       {{table_as_list = [delimited_data_value]}}
+     rule curly_bracket_expr: ( o_c_b                    {{table_as_list = []}}
+                            (  delimited_data_value      {{table_as_list = [delimited_data_value]}}
                               ":"
                               data_value                 {{table_as_list.append(data_value)}}
                             (
                               delimited_data_value       {{table_as_list.append(delimited_data_value)}}
                               ":"
                               data_value                 {{table_as_list.append(data_value)}}
+                            ) *
                             ) *
                               c_c_b )                    {{return StarDict(pairwise(table_as_list))}}
 

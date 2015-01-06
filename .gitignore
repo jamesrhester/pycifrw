@@ -1,4 +1,6 @@
 *.pyc
 *.g
 *.html
-*.py
+*~
+pycifrw/*.py
+pycifrw/drel/*.py
