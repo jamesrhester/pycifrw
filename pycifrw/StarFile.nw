@@ -146,6 +146,7 @@ class BlockCollection(object):
     <<Collect all values of a single key in all blocks>>
     <<Switch save frame scoping rules>>
     <<Parent child utilities>>
+    <<Set output template>>
 <<Write out to string representation>>
 
 @ With the advent of CIF2, the allowed character set has expanded to
@@ -190,6 +191,7 @@ def __init__(self,datasource=None,standard='CIF',blocktype = StarBlock,
     self.visible_keys = []            # for efficiency
     self.scoping = scoping  #will trigger setting of child table
     self.blocktype = blocktype
+    self.master_template = {}   #for outputting
     self.set_grammar('2.0')
     self.set_characterset(characterset)
     if isinstance(datasource,BlockCollection):
@@ -337,6 +339,7 @@ def copy(self):
     newcopy.child_table = self.child_table.copy()
     newcopy.lower_keys = self.lower_keys.copy()
     newcopy.characterset = self.characterset
+    newcopy.master_template = self.master_template.copy()
     newcopy.scoping = self.scoping  #this sets visible keys
     return newcopy
 
@@ -761,6 +764,11 @@ initialising the file.
         if self.grammar == "2.0" and comment[0:10] != r"#\#CIF_2.0":
             outstring.write(r"#\#CIF_2.0" + "\n")
         outstring.write(comment)
+        # prepare all blocks
+        for b in self.dictionary.values():
+            b.set_grammar(self.grammar)
+            b.formatting_hints = self.master_template
+            b.SetOutputLength(wraplength,self.maxoutlength)
         # loop over top-level
         if blockorder is None:
             top_block_names = [(a[0],a[1].block_id) for a in self.child_table.items() if a[1].parent is None]
@@ -768,17 +776,13 @@ initialising the file.
             top_block_names = [(a,self.child_table[a].block_id) for a in blockorder if self.child_table[a].parent is None]
         for blockref,blockname in top_block_names:
             outstring.write('\n' + 'data_' +blockname+'\n')
-            self[blockref].set_grammar(self.grammar)
             if self.standard == 'Dic':              #put contents before save frames
-              self[blockref].SetOutputLength(wraplength,self.maxoutlength)
-              outstring.write(str(self[blockref]))
+                outstring.write(str(self[blockref]))
             if self.grammar == 'STAR2':  #nested save frames
                 child_refs = self.get_immediate_children(blockref)
                 for child_ref,child_info in child_refs:
                     child_name = child_info.block_id
                     outstring.write('\n' + 'save_' + child_name + '\n')
-                    self[child_ref].set_grammar(self.grammar)
-                    self[child_ref].SetOutputLength(wraplength,self.maxoutlength)
                     self.block_to_string_nested(child_ref,child_name,outstring,4)    
                     outstring.write('\n' + 'save_'+ '\n')   
             elif self.grammar in ('1.0','1.1','2.0'):                   #non-nested save frames
@@ -789,12 +793,9 @@ initialising the file.
                 for child_ref in child_refs:
                     child_name = self.child_table[child_ref].block_id
                     outstring.write('\n' + 'save_' + child_name + '\n')
-                    self[child_ref].set_grammar(self.grammar)
-                    self[child_ref].SetOutputLength(wraplength,self.maxoutlength)
                     outstring.write(str(self[child_ref]))
                     outstring.write('\n\n' + 'save_' + '\n')
             if self.standard != 'Dic':              #put contents after save frames
-                self[blockref].SetOutputLength(wraplength,self.maxoutlength)
                 outstring.write(str(self[blockref]))
         returnstring =  outstring.getvalue()
         outstring.close()
@@ -814,7 +815,15 @@ initialising the file.
             outstring.write('\n' + '  '*indentlevel + 'save_' + '\n')
         if self.standard != 'Dic':
             outstring.write(str(self[block_ref]))
-        
+
+@  Output template.  We process the template file and store the results for use in the
+WriteOut method.
+      
+<<Set output template>>=
+def SetTemplate(self,template_file):
+        """Use `template_file` as a template for all block output"""
+        self.master_template = process_template(template_file)
+
 @ \section{StarFile}
 
 If we are passed a filename, we open it and read it in, assuming that
@@ -2042,7 +2051,6 @@ grammar to use.
 <<Format a single packet item>>
 <<Format a string>>
 <<Format a data value>>
-<<Input a guide template>>
 <<Create a proper ordering>>
 <<Convert value to string>>
 
@@ -2199,10 +2207,10 @@ We attempt some nice formatting by printing non-packet items with an apparent
 tab stop at 40 characters.
 
 <<Print a complete block>>=
-def printsection(self,instring='',ordering=[],blockstart="",blockend="",indent=0):
+def printsection(self,instring='',blockstart="",blockend="",indent=0):
     import string
     # first make an ordering
-    self.create_ordering(ordering)
+    self.create_ordering()  #create self.output_order
     # now do it...
     if not instring:
         outstring = CIFStringIO(target_width=80)       # the returned string
@@ -2213,7 +2221,7 @@ def printsection(self,instring='',ordering=[],blockstart="",blockend="",indent=0
     while len(self.output_order)>0:
        #print "Remaining to output " + `self.output_order`
        itemname = self.output_order.pop(0)
-       item_spec = [i for i in ordering if i['dataname'].lower()==itemname.lower()]
+       item_spec = [i for i in self.formatting_hints if i['dataname'].lower()==itemname.lower()]
        if len(item_spec)>0:
            col_pos = item_spec[0].get('column',-1)
        else:
@@ -2226,9 +2234,9 @@ def printsection(self,instring='',ordering=[],blockstart="",blockend="",indent=0
                outstring.write(self.true_case[itemname],mustbreak=True,do_tab=False)
                outstring.write(' ',canbreak=True,do_tab=False)    #space after itemname
                self.format_value(itemvalue,outstring,hints=item_spec)
-           else:   # we are asked to print a loop block
-                #first make sure we have sensible coords.  Length should be one
-                #less than the current dimension
+           else:# we are asked to print a loop block
+                # first make sure we have sensible coords.  Length should be one
+                # less than the current dimension
                 outstring.set_tab(10)       #guess this is OK?
                 outstring.write(' '*indent,mustbreak=True,do_tab=False); outstring.write('loop_\n',do_tab=False)
                 self.format_names(outstring,indent+2,loop_no=itemname)
@@ -2523,7 +2531,7 @@ characters on their lines
 (6) Semicolon-delimited strings are not allowed in loops
 
 <<Input a guide template>>=
-def process_template(self,template_file):
+def process_template(template_file):
     """Process a template datafile to formatting instructions"""
     template_as_cif = StarFile(template_file,grammar="2.0").first_block()
     template_string = open(template_file).read()
@@ -2531,7 +2539,7 @@ def process_template(self,template_file):
     #template_as_lines = [l for l in template_as_lines if len(l)>0 and l[0]!='#']
     #template_as_lines = [l for l in template_as_lines if l.split()[0] != 'loop_']
     #template_full_lines = dict([(l.split()[0],l) for l in template_as_lines if len(l.split())>0])
-    self.form_hints = []   #ordered array of hint dictionaries
+    form_hints = []   #ordered array of hint dictionaries
     for item in template_as_cif.item_order:  #order of input
         if not isinstance(item,int):    #not nested
             hint_dict = {"dataname":item}
@@ -2545,7 +2553,7 @@ def process_template(self,template_file):
                 if spec_char != ";":   #so we need to work out the column number
                     hint_dict.update({"column":spec_pos})
             print '%s: %s' % (item,`hint_dict`)
-            self.form_hints.append(hint_dict)
+            form_hints.append(hint_dict)
         else:           #loop block
             testnames = template_as_cif.loops[item]
             total_items = len(template_as_cif.loops[item])
@@ -2569,15 +2577,15 @@ def process_template(self,template_file):
                         next_end = line_end_pos.next().start()
                         print 'next end %d' % next_end
                     except StopIteration:
-                        pass 
+                        break
                 print 'Start %d, last_end %d' % (thismatch.start('all'),last_end)
                 col_pos = thismatch.start('all') - last_end
                 if thismatch.group('none') is None:
                     hint_dict.update({'delimiter':thismatch.groups()[0][0]})
                 hint_dict.update({'column':col_pos})
                 print '%s: %s' % (loopname,`hint_dict`)
-                self.form_hints.append(hint_dict)
-    return
+                form_hints.append(hint_dict)
+    return form_hints
 
 @ Creating a proper ordering for output from the template information.  When we output,
 we expect the ordering to consist of a sequence of datanames or loop references.  Our
@@ -2585,9 +2593,9 @@ templated ordering is essentially a list of datanames, so we now have to find wh
 loops each dataname corresponds to and adjust each loops ordering accordingly.
 
 <<Create a proper ordering>>=
-def create_ordering(self,order_dict):
+def create_ordering(self):
     """Create a canonical ordering that includes loops using our formatting hints dictionary"""
-    requested_order = [i['dataname'] for i in order_dict]
+    requested_order = [i['dataname'] for i in self.formatting_hints]
     new_order = []
     for item in requested_order:
        if isinstance(item,basestring) and item.lower() in self.item_order:
@@ -2739,6 +2747,7 @@ use.
 <<Remove line indent>>
 <<List manipulations>>
 <<Check stringiness>>
+<<Input a guide template>>
 
 @  Listify - used to allow uniform treatment of datanames - otherwise sequence functions might
 operate on a string instead of a list.

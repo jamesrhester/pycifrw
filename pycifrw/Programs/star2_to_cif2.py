@@ -23,6 +23,8 @@ if __name__ == "__main__":
     except:
         print 'Failed to read as CIF dictionary'
     incif.set_grammar("2.0")
+    incif.standard = 'Dic'
+    incif.SetTemplate("dic_template.dic")
     of = open(outfile,"w")
     of.write(incif.WriteOut())
     of.close()
