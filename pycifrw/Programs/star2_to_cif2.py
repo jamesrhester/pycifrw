@@ -25,8 +25,16 @@ if __name__ == "__main__":
     incif.set_grammar("2.0")
     incif.standard = 'Dic'
     incif.SetTemplate("dic_template.dic")
+    comment = """##############################################################################
+#                                                                            #
+#                      DDLm REFERENCE DICTIONARY                             #
+#                                                                            #
+##############################################################################"""
+
+
+    print 'Master template:' + `incif.dic_as_cif.master_template`
     of = open(outfile,"w")
-    of.write(incif.WriteOut())
+    of.write(incif.WriteOut(comment=comment,saves_after='_description.text'))
     of.close()
     print 'Finished writing %s in %f seconds' % (outfile,time.clock() - startread)
 

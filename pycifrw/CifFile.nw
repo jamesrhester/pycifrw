@@ -2513,6 +2513,9 @@ def WriteOut(self,**kwargs):
     self.dic_as_cif.standard = 'Dic'
     return self.dic_as_cif.WriteOut(blockorder = myblockorder,**kwargs)
 
+def SetTemplate(self,template_file):
+    self.dic_as_cif.SetTemplate(template_file)
+
 def get_full_child_list(self):
     """Return a list of definition blocks in order parent-child-child-child-parent-child..."""
     top_block = self.get_roots()[0][0]
