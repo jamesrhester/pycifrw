@@ -2109,7 +2109,7 @@ class CIFStringIO(StringIO):
             self.currentpos = self.indentlist[-1]
             self.last_char = temp_string[-1]
         if self.currentpos+len(outstring)>self.target_width: #try to break
-            if not delimiter:  
+            if not delimiter and outstring[0]!='\n':          #ie <cr>;  
               if canbreak:
                 temp_string = '\n' + ' ' * self.indentlist[-1]
                 StringIO.write(self,temp_string)
@@ -2584,7 +2584,7 @@ def process_template(template_file):
                     hint_dict.update({"delimiter":spec_char[0]})
                     if spec_char == '"""' or spec_char == "'''":
                         hint_dict.update({"delimiter":spec_char})
-                if spec_char != ";":   #so we need to work out the column number
+                if spec_char[0] != ";":   #so we need to work out the column number
                     hint_dict.update({"column":spec_pos})
                 else:                  #need to put in the carriage return
                     hint_dict.update({"delimiter":"\n;"})
