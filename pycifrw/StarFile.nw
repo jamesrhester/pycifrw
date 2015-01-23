@@ -2061,8 +2061,7 @@ care with CIF/STAR rules for output.  We allow the caller to specify:
 (3) that we can do a line break if we wish
 (4) moving to a nested indent level, starting from the current position
 (5) Whether or not to align the next item with the tab stops
-(6) The column that this item should start at. If we are past this column, a
-line break is inserted and a new line is begun.
+(6) The column that this item should start at. If we are past this column, it is ignored.
 
 We never insert newlines inside supplied strings.  Tabs are applied
 after any requested line breaks, and both are applied before the next
@@ -2124,8 +2123,17 @@ class CIFStringIO(StringIO):
                 self.indentlist.pop()
             else:
                 print 'Warning: cannot unindent any further'
+        #try to match requested column
+        if startcol > 0:
+            if self.currentpos < startcol:
+                StringIO.write(self,(startcol - self.currentpos)* ' ')
+                self.currentpos = startcol
+                self.last_char = ' '
+            else:
+                print 'Could not format %s at column %d as already at %d' % (outstring,startcol,self.currentpos)
+                startcol = -1   #so that tabbing works as a backup
         #handle tabs
-        if self.tabwidth >0 and do_tab:
+        if self.tabwidth >0 and do_tab and startcol < 0:
             next_stop = ((self.currentpos//self.tabwidth)+1)*self.tabwidth
             #print 'Currentpos %d: Next tab stop at %d' % (self.currentpos,next_stop)
             if self.currentpos < next_stop:
@@ -2216,29 +2224,35 @@ def printsection(self,instring='',blockstart="",blockend="",indent=0):
         outstring = CIFStringIO(target_width=80)       # the returned string
     else:
         outstring = instring
-    # print loop delimiter
+    # print block delimiter
     outstring.write(blockstart,canbreak=True)
+    print `self.formatting_hints`
     while len(self.output_order)>0:
        #print "Remaining to output " + `self.output_order`
        itemname = self.output_order.pop(0)
-       item_spec = [i for i in self.formatting_hints if i['dataname'].lower()==itemname.lower()]
-       if len(item_spec)>0:
-           col_pos = item_spec[0].get('column',-1)
-       else:
-           col_pos = -1
-           item_spec = {}
-   	   if not isinstance(itemname,int):  #no loop
+       if not isinstance(itemname,int):  #no loop
+               item_spec = [i for i in self.formatting_hints if i['dataname'].lower()==itemname.lower()]
+               if len(item_spec)>0:
+                   item_spec = item_spec[0]
+                   col_pos = item_spec.get('column',-1)
+                   name_pos = item_spec.get('name_pos',-1)
+               else:
+                   col_pos = -1
+                   item_spec = {}
                if col_pos < 0: col_pos = 40
                outstring.set_tab(col_pos)
                itemvalue = self[itemname]
-               outstring.write(self.true_case[itemname],mustbreak=True,do_tab=False)
-               outstring.write(' ',canbreak=True,do_tab=False)    #space after itemname
+               outstring.write(self.true_case[itemname],mustbreak=True,do_tab=False,startcol=name_pos)
+               outstring.write(' ',canbreak=True,do_tab=False,delimiter=True)    #space after itemname
                self.format_value(itemvalue,outstring,hints=item_spec)
-           else:# we are asked to print a loop block
-                # first make sure we have sensible coords.  Length should be one
-                # less than the current dimension
+       else:# we are asked to print a loop block
                 outstring.set_tab(10)       #guess this is OK?
-                outstring.write(' '*indent,mustbreak=True,do_tab=False); outstring.write('loop_\n',do_tab=False)
+                loop_spec = [i['name_pos'] for i in self.formatting_hints if i["dataname"]=='loop']
+                if loop_spec: 
+                    loop_indent = max(loop_spec[0],0)
+                else:
+                    loop_indent = indent
+                outstring.write('loop_\n',mustbreak=True,do_tab=False,startcol=loop_indent)
                 self.format_names(outstring,indent+2,loop_no=itemname)
                 self.format_packets(outstring,indent+2,loop_no=itemname)
     else:
@@ -2289,9 +2303,11 @@ the indicated number of spaces.  If we have loops, we add those in too.
 def format_names(self,outstring,indent=0,loop_no=-1):
     """Print datanames from `loop_no` one per line"""
     temp_order = self.loops[loop_no][:]   #copy
+    format_hints = dict([(i['dataname'],i) for i in self.formatting_hints if i['dataname'] in temp_order])
     while len(temp_order)>0:
         itemname = temp_order.pop(0)
-        outstring.write(' ' * indent,do_tab=False) 
+        req_indent = format_hints.get(itemname,{}).get('name_pos',indent)
+        outstring.write(' ' * req_indent,do_tab=False) 
         outstring.write(self.true_case[itemname],do_tab=False)
         outstring.write("\n",do_tab=False)
 
@@ -2305,26 +2321,32 @@ def format_packets(self,outstring,indent=0,loop_no=-1):
    import cStringIO
    import string
    alldata = [self[a] for a in self.loops[loop_no]]
-   print 'Alldata: %s' % `alldata`
+   loopnames = self.loops[loop_no]
+   #print 'Alldata: %s' % `alldata`
    packet_data = apply(zip,alldata)
-   print 'Packet data: %s' % `packet_data`
+   #print 'Packet data: %s' % `packet_data`
+   #create a dictionary for quick lookup of formatting requirements
+   format_hints = dict([(i['dataname'],i) for i in self.formatting_hints if i['dataname'] in loopnames])
    for position in range(len(packet_data)):
        if position > 0:
            outstring.write("\n")    #new line each packet except first
        for point in range(len(packet_data[position])):
            datapoint = packet_data[position][point]
-           packstring = self.format_packet_item(datapoint,indent,outstring)
+           format_hint = format_hints.get(loopnames[point],{})
+           packstring = self.format_packet_item(datapoint,indent,outstring,format_hint)
            outstring.write(' ',canbreak=True,do_tab=False,delimiter=True)
            
 @ Formatting a single packet item.
 
 <<Format a single packet item>>=
-def format_packet_item(self,pack_item,indent,outstring):
+def format_packet_item(self,pack_item,indent,outstring,format_hint):
        # print 'Formatting %s' % `pack_item`
        if isinstance(pack_item,basestring):
-           outstring.write(self._formatstring(pack_item)) 
+           delimiter = format_hint.get('delimiter',None)
+           startcol = format_hint.get('column',-1)
+           outstring.write(self._formatstring(pack_item,delimiter=delimiter),startcol=startcol) 
        else: 
-           self.format_value(pack_item,outstring)
+           self.format_value(pack_item,outstring,hints = format_hint)
 
 @ Formatting a string.  We make sure that the length of the item value
 is less than [[self.maxoutlength]], or else we should split them, and so on. We check the
@@ -2513,17 +2535,20 @@ def remove_line_prefix(instring):
 
 @ \subsection{Templating}
 
-A ``template'' is a CifFile containing a single block, where the datanames
-are laid out in the way that the user desires. The layout elements that are
-picked up from the template CifFile are: (1) order (2) column position of
-datavalues (only the first row of a loop block counts) (3) delimiters. The
-information that is gleaned is converted to entries in the formatting_hints
-table which are then consulted when writing out.  Note that the order
-from formatting_hints will override the item_order information.
+A ``template'' is a CifFile containing a single block, where the
+datanames are laid out in the way that the user desires. The layout
+elements that are picked up from the template CifFile are: (1) order
+(2) column position of datavalues (only the first row of a loop block
+counts) (3) delimiters (4) column position of datanames.  Within loops
+all items will be indented as for the final name in the loop
+header. The information that is gleaned is converted to entries in the
+formatting_hints table which are then consulted when writing out.
+Note that the order from formatting_hints will override the item_order
+information.
 
 Constraints on the template:
 (1) There should only ever be one dataname on each line
-(2) loop_ and and datablock tokens should appear as the only non-blank 
+(2) loop_  and datablock tokens should appear as the only non-blank 
 characters on their lines
 (3) Comments are flagged by a '#' as the first character
 (4) Blank lines are acceptable
@@ -2544,7 +2569,7 @@ def process_template(template_file):
         if not isinstance(item,int):    #not nested
             hint_dict = {"dataname":item}
             # find the line in the file
-            start_pos = re.search("(^[ \t]*" + item + "[ \t\n]+)(?P<spec>([\S]+)|(^;))",template_string,re.I|re.M)
+            start_pos = re.search("(^[ \t]*(?P<name>" + item + ")[ \t\n]+)(?P<spec>([\S]+)|(^;))",template_string,re.I|re.M)
             if start_pos.group("spec") != None:
                 spec_pos = start_pos.start("spec")-start_pos.start(0)
                 spec_char = template_string[start_pos.start("spec")]
@@ -2552,6 +2577,11 @@ def process_template(template_file):
                     hint_dict.update({"delimiter":spec_char})
                 if spec_char != ";":   #so we need to work out the column number
                     hint_dict.update({"column":spec_pos})
+                else:                  #need to put in the carriage return
+                    hint_dict.update({"delimiter":"\n;"})
+                if start_pos.group('name') != None:
+                    name_pos = start_pos.start('name') - start_pos.start(0)
+                    hint_dict.update({"name_pos":name_pos})
             print '%s: %s' % (item,`hint_dict`)
             form_hints.append(hint_dict)
         else:           #loop block
@@ -2559,17 +2589,24 @@ def process_template(template_file):
             total_items = len(template_as_cif.loops[item])
             testname = testnames[0]
             #find the loop spec line in the file
-            loop_regex = "(^[ \t]*loop_[ \t\n\r]+" + testname + "([ \t\n\r]+_[\S]+){%d}[ \t]*$(?P<packet>(.(?!_loop|_[\S]+))*))" % (total_items - 1)
+            loop_regex = "(^[ \t]*(?P<loop>loop_)[ \t\n\r]+(?P<name>" + testname + ")([ \t\n\r]+_[\S]+){%d}[ \t]*$(?P<packet>(.(?!_loop|_[\S]+))*))" % (total_items - 1)
             loop_line = re.search(loop_regex,template_string,re.I|re.M|re.S)
             loop_so_far = loop_line.end()
             packet_text = loop_line.group('packet')
+            loop_indent = loop_line.start('loop') - loop_line.start(0)
+            form_hints.append({"dataname":'loop','name_pos':loop_indent})
             packet_regex = "[ \t]*(?P<all>(?P<sq>'([^\n\r\f']*)'+)|(?P<dq>\"([^\n\r\"]*)\"+)|(?P<none>[^\s]+))"
             packet_pos = re.finditer(packet_regex,packet_text)
             line_end_pos = re.finditer("^",packet_text,re.M)
             next_end = line_end_pos.next().end()
             last_end = next_end
             for loopname in testnames:
-                hint_dict = {"dataname":loopname}
+                #find the name in the file for name pos
+                name_regex = "(^[ \t]*(?P<name>" + loopname + "))"
+                name_match = re.search(name_regex,template_string,re.I|re.M|re.S)
+                loop_name_indent = name_match.start('name')-name_match.start(0)
+                hint_dict = {"dataname":loopname,"name_pos":loop_name_indent}
+                #find the value
                 thismatch = packet_pos.next()
                 while thismatch.start('all') > next_end:
                     try: 
@@ -2579,7 +2616,7 @@ def process_template(template_file):
                     except StopIteration:
                         break
                 print 'Start %d, last_end %d' % (thismatch.start('all'),last_end)
-                col_pos = thismatch.start('all') - last_end
+                col_pos = thismatch.start('all') - last_end + 1
                 if thismatch.group('none') is None:
                     hint_dict.update({'delimiter':thismatch.groups()[0][0]})
                 hint_dict.update({'column':col_pos})
@@ -2595,7 +2632,7 @@ loops each dataname corresponds to and adjust each loops ordering accordingly.
 <<Create a proper ordering>>=
 def create_ordering(self):
     """Create a canonical ordering that includes loops using our formatting hints dictionary"""
-    requested_order = [i['dataname'] for i in self.formatting_hints]
+    requested_order = [i['dataname'] for i in self.formatting_hints if i['dataname']!='loop']
     new_order = []
     for item in requested_order:
        if isinstance(item,basestring) and item.lower() in self.item_order:
@@ -2604,6 +2641,11 @@ def create_ordering(self):
            target_loop = self.FindLoop(item)
            if target_loop not in new_order:
                new_order.append(target_loop)
+               # adjust loop name order
+               loopnames = self.loops[target_loop]
+               loop_order = [i for i in requested_order if i in loopnames]
+               unordered = [i for i in loopnames if i not in loop_order]
+               self.loops[target_loop] = loop_order + unordered
     extras = [i for i in self.item_order if i not in new_order]
     self.output_order = new_order + extras
     print 'Final order: ' + `self.output_order`

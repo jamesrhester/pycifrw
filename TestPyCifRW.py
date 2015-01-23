@@ -692,7 +692,7 @@ data_TEST_DIC
      format datanames.  It is not a valid dictionary, but it must 
      be a valid CIF file.
 ;
-
+    _name.category_id            blahblah
     _name.object_id              ALIAS
     _category.key_id           '_alias.definition_id'
     _category.key_list        ['_alias.definition_id']
@@ -713,13 +713,48 @@ data_TEST_DIC
 
    def testTemplateInput(self):
        """Test that an output template is successfully input"""
-       p = CifFile.CifBlock()
-       p.process_template("cif_template.cif")
-       self.failUnless(p.form_hints[0]['dataname']=='_dictionary.title')
-       self.failUnless(p.form_hints[4]['column']==31)
-       self.failUnless(p.form_hints[2]['delimiter']==';')
-       self.failUnless(p.form_hints[9]['column']==10)
-       self.failUnless(p.form_hints[10]['delimiter']=='"')
+       p = CifFile.CifFile()
+       p.SetTemplate("cif_template.cif")
+       #print p.master_template
+       self.failUnless(p.master_template[0]['dataname']=='_dictionary.title')
+       self.failUnless(p.master_template[5]['column']==31)
+       self.failUnless(p.master_template[2]['delimiter']=='\n;')
+       self.failUnless(p.master_template[11]['column']==11)
+       self.failUnless(p.master_template[12]['delimiter']=='"')
+
+   def testTemplateOutputOrder(self):
+       """Test that items are output in the correct order"""
+       test_file = """##
+       data_test
+       _enumeration.default Item
+       _name.object_id  ALIAS
+       _crazy_dummy_dataname 'whahey look at me'
+       loop_
+          _enumeration_set.detail
+          _enumeration_set.state
+          _enumeration_set.dummy
+          'applies to all'  dictionary 0
+          'cat only'  category 1
+          'whatever'  item 2
+       _name.category_id   blahblah
+       _description.text  'whatevers'
+       """
+       f = open("temp_test_file.cif","w")
+       f.write(test_file)
+       f.close()
+       p = CifFile.CifFile("temp_test_file.cif")
+       p.SetTemplate("cif_template.cif")
+       f = open("temp_test_file_new.cif","w")
+       f.write(str(p))
+       f.close()
+       # now read as new file
+       g = CifFile.CifFile("temp_test_file_new.cif").first_block()
+       self.assertEqual(g.item_order[1],'_name.category_id')
+       self.assertEqual(g.loops[1][-1],'_enumeration_set.dummy')
+       self.assertEqual(g.loops[1][0],'_enumeration_set.state')
+       self.assertEqual(g.item_order[-1],'_crazy_dummy_dataname')
+       # TODO: check position in loop packets
+       # TODO: check delimiters
 
 ###### template tests #####
 ##############################################################
@@ -1427,8 +1462,8 @@ class DicStructureTestCase(unittest.TestCase):
         print self.fb
 
 if __name__=='__main__':
-     global testdic
-     testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="STAR2")
+     #global testdic
+     #testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="STAR2")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
@@ -1440,6 +1475,7 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase) 
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmImportCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDL1TestCase)
-     #unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
+     unittest.TextTestRunner(verbosity=2).run(suite)
+     #unittest.main()
 
