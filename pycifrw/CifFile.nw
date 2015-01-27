@@ -2529,13 +2529,13 @@ def get_full_child_list(self):
 def recurse_child_list(self,parentname):
     """Recursively expand the logical child list of [[parentname]]"""
     final_list = [parentname]
-    child_blocks = [a for a in self.keys() if self[a].get('_name.category_id','').lower() == parentname.lower()]
+    child_blocks = [a for a in self.child_table.keys() if self[a].get('_name.category_id','').lower() == parentname.lower()]
     child_blocks.sort()    #we love alphabetical order
+    child_items = [a for a in child_blocks if self[a].get('_definition.scope','Item') == 'Item']
+    final_list += child_items
     child_cats = [a for a in child_blocks if self[a].get('_definition.scope','Item') == 'Category']
     for child_cat in child_cats:
         final_list += self.recurse_child_list(child_cat)
-    child_items = [a for a in child_blocks if self[a].get('_definition.scope','Item') == 'Item']
-    final_list += child_items
     return final_list
 
     

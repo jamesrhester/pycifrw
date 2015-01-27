@@ -32,7 +32,8 @@ if __name__ == "__main__":
 ##############################################################################"""
 
 
-    print 'Master template:' + `incif.dic_as_cif.master_template`
+    # print 'Master template:' + `incif.dic_as_cif.master_template`
+    print 'check: ' + `incif.recurse_child_list('enumeration')`
     of = open(outfile,"w")
     of.write(incif.WriteOut(comment=comment,saves_after='_description.text'))
     of.close()

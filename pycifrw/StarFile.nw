@@ -772,6 +772,8 @@ initialising the file.
             b.formatting_hints = self.master_template
             b.SetOutputLength(wraplength,self.maxoutlength)
         # loop over top-level
+        # monitor output
+        all_names = self.child_table.keys()
         if blockorder is None:
             top_block_names = [(a[0],a[1].block_id) for a in self.child_table.items() if a[1].parent is None]
         else:
@@ -779,6 +781,7 @@ initialising the file.
         for blockref,blockname in top_block_names:
             print 'Writing %s, ' % blockname + `self[blockref]`
             outstring.write('\n' + 'data_' +blockname+'\n')
+            all_names.remove(blockref)
             if self.standard == 'Dic':              #put contents before save frames
                 outstring.write(self[blockref].printsection(finish_at='_dictionary_valid.application'))
             if self.grammar == 'STAR2':  #nested save frames
@@ -798,12 +801,15 @@ initialising the file.
                     outstring.write('\n\n' + 'save_' + child_name + '\n')
                     outstring.write(str(self[child_ref]))
                     outstring.write('\n\n' + 'save_' + '\n')
+                    all_names.remove(child_ref)
             if self.standard != 'Dic':              #put contents after save frames
                 outstring.write(str(self[blockref]))
             else:
                 outstring.write(self[blockref].printsection(start_from='_dictionary_valid.application'))
         returnstring =  outstring.getvalue()
         outstring.close()
+        if len(all_names)>0:
+            print 'WARNING: following blocks not output: %s' % `all_names`
         return returnstring
 
     def block_to_string_nested(self,block_ref,block_id,outstring,indentlevel=0):
@@ -2395,7 +2401,7 @@ def _formatstring(self,instring,delimiter=None,standard='CIF1',indent=0):
     if len(instring)==0: allowed_delimiters.difference_update([None])
     if len(instring) > (self.maxoutlength-2) or '\n' in instring:
             allowed_delimiters.intersection_update(["\n;","'''",'"""'])
-    if ' ' in instring or '\t' in instring or '\v' in instring or '_' in instring or ',' in instring:
+    if ' ' in instring or '\t' in instring or '\v' in instring or instring[0] in '_$#;([{' or ',' in instring:
             allowed_delimiters.difference_update([None])
     if '"' in instring: allowed_delimiters.difference_update(['"',None])
     if "'" in instring: allowed_delimiters.difference_update(["'",None])
