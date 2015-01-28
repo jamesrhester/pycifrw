@@ -431,8 +431,8 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
     (self.dicname,self.diclang,self.defdata) = self.dic_determine(self.dic_as_cif)
     print '%s is a %s dictionary' % (self.dicname,self.diclang)
     super(CifDic,self).__init__(datasource=self.defdata.copy(),**kwargs) 
-    self.scopes_mandatory = {"dictionary":[],"category":[],"item":[]}
-    self.scopes_naughty = {"dictionary":[],"category":[],"item":[]}
+    self.scopes_mandatory = {}
+    self.scopes_naughty = {}
     self.grammar = grammar # remember for importing dictionaries correctly
     # rename and expand out definitions using "_name" in DDL dictionaries
     if self.diclang == "DDL1":
@@ -480,7 +480,7 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
         self.item_validation_funs = []
         self.loop_validation_funs = []
         self.global_validation_funs = []
-        self.block_validation_funs = []
+        self.block_validation_funs = [self.check_mandatory_items,self.check_prohibited_items]
         self.global_remove_validation_funs = []
     self.optimize = False        # default value
     self.done_parents = []
@@ -1054,23 +1054,33 @@ def create_cat_key_table(self):
 
 @ DDLm introduces validity information in the enclosing datablock.  It is a loop of scope,
 attribute values where the scope is one of dictionary (everywhere), category (whole
-category) and item (just the single definition).  Validity can be [[+]] (mandatory), 
-[[.]] encouraged and [[!]] not allowed.  It only appears in the DDLm attributes dictionary, so
+category) and item (just the single definition).  Validity can be mandatory, 
+encouraged or not allowed.  It only appears in the DDLm attributes dictionary, so
 this information is blank unless we are dealing with the DDLm dictionary.
 
 <<Parse DDLm validity information>>=
 def ddlm_parse_valid(self):
-    if not self.dic_as_cif[self.master_key].has_key("_dictionary_valid.scope"):
+    if not self.dic_as_cif[self.master_key].has_key("_dictionary_valid.application"):
         return
-    for scope_pack in self.dic_as_cif[self.master_key].GetLoop("_dictionary_valid.scope"):
-        scope = getattr(scope_pack,"_dictionary_valid.scope")
+    for scope_pack in self.dic_as_cif[self.master_key].GetLoop("_dictionary_valid.application"):
+        scope = getattr(scope_pack,"_dictionary_valid.application")
         valid_info = getattr(scope_pack,"_dictionary_valid.attributes")
-        valid_info = valid_info.split()
-        for i in range(0,len(valid_info),2): 
-            if valid_info[i]=="+":
-               self.scopes_mandatory[scope.lower()].append(valid_info[i+1].lower())
-            elif valid_info[i]=="!":
-               self.scopes_naughty[scope.lower()].append(valid_info[i+1].lower())
+        if scope[1] == "Mandatory":
+            self.scopes_mandatory[scope[0]] = self.expand_category_opt(valid_info)
+        elif scope[1] == "Prohibited":
+            self.scopes_naughty[scope[0]] = self.expand_category_opt(valid_info)
+            
+def expand_category_opt(self,name_list):
+    """Return a list of all non-category items in a category or return the name
+       if the name is not a category"""
+    new_list = []
+    for name in name_list:
+      if self.get(name,{}).get('_definition.scope','Item') == 'Category':
+        new_list += self.expand_category_opt([a for a in self.keys() if \
+                 self[a].get('_name.category_id','').lower() == name.lower()])
+      else:
+        new_list.append(name)
+    return new_list
 
 @  These methods were added when developing interactive editing tools, which allow
 shifting categories around. 
@@ -1205,7 +1215,7 @@ def remove_definition(self,defname):
 identifies a unique textual dataname appearing in the data file.  Because of category
 joins when nested categories are looped, a single dataname may be referred to
 by several different category identifiers.  The [[get_name_by_cat_obj]] routine
-will search all loop categories within the given category's hierarchy until
+will search all loop categories within the given category hierarchy until
 it finds the appropriate one.
 
 If [[give_default]] is True, the default construction '_catid.objid'
@@ -1254,7 +1264,7 @@ categories = filter(lambda a:self[a].has_key("_category.id"),self.keys())
 # get the category id
 category_ids = map(lambda a:self[a]["_category.id"],categories)
 
-@ Note that as of Oct 2007 we don't know if _definition.scope is mandatory,
+@ _definition.scope is not mandatory, defaulting to 'Item',
 so we use a get instead of a straight square bracket.
 
 <<Get list of DDLm categories>>=
@@ -1456,8 +1466,8 @@ def run_global_validation(self,item_name,item_value,data_block,provisional_items
     results = map(lambda f:(f.__name__,f(item_name,item_value,data_block,provisional_items,globals)),self.global_validation_funs)
     return {item_name:results}
 
-def run_block_validation(self,whole_block,globals={},fake_mand=False):
-    results = map(lambda f:(f.__name__,f(whole_block,globals,fake_mand)),self.block_validation_funs)
+def run_block_validation(self,whole_block):
+    results = [(f.__name__,f(whole_block)) for f in self.block_validation_funs]
     # fix up the return values
     return {"whole_block":results}
 
@@ -1501,7 +1511,7 @@ keys depending on the type of error.
 We use the expressions for type that we have available to check that
 the type of the item passed to us matches up.  We may have a list of
 items, so be aware of that.  We define a tiny matching function so
-that we don't have to do a double match to catch the non-matching
+that we do not have to do a double match to catch the non-matching
 case, which returns None and thus an attribute error if we immediately
 try to get a group.  
 
@@ -1543,7 +1553,7 @@ def decide(self,result_list):
            return {"result":False,"bad_values":result_list}
 
 def validate_item_container(self, item_name,item_value):
-    container_type = self[item_name][_type.container]
+    container_type = self[item_name]['_type.container']
     item_values = listify(item_value)
     if container_type == 'Single':
        okcheck = [a for a in item_values if not isinstance(a,(int,float,long,basestring))]
@@ -1804,11 +1814,10 @@ related items.  We also unilaterally include items listed in aliases
 as acting in this way.
 
 <<Validate exclusion rules>>=
-def validate_exclusion(self,item_name,item_value,whole_block,provisional_items={},globals={}):
+def validate_exclusion(self,item_name,item_value,whole_block,provisional_items={}):
    alternates = map(lambda a:a.lower(),self.get_alternates(item_name,exclusive_only=True))
    item_name_list = map(lambda a:a.lower(),whole_block.keys())
    item_name_list.extend(map(lambda a:a.lower(),provisional_items.keys()))
-   item_name_list.extend(map(lambda a:a.lower(),globals.keys()))
    bad = filter(lambda a:a in item_name_list,alternates)
    if len(bad)>0:
        print "Bad: %s, alternates %s" % (`bad`,`alternates`)
@@ -2053,6 +2062,8 @@ def validate_uniqueness(self,item_name,item_value,whole_block,provisional_items=
 <<Block-level validation>>=
 <<Validate category presence>>
 <<Fake mandatory category information>>
+<<Process DDLm mandatory information>>
+<<Process DDLm prohibited information>>
 
 @ DDL2 introduces a new idea, that of a mandatory category, items of
 which must be present.  We check only this particular fact, and 
@@ -2074,17 +2085,13 @@ Note that this routine is constructed such that not all mandatory categories
 are checked in the event of a single failure.
 
 <<Validate category presence>>=
-def validate_mandatory_category(self,whole_block,globals={},fake_mand=False):
-    if fake_mand:
-	return {"result":True}
+def validate_mandatory_category(self,whole_block):
     mand_cats = filter(lambda a:self[a].get("_category.mandatory_code","no")=="yes",
                 self.keys())
     # map to actual ids
     catlist = self.cat_map.items()
     # print "Mandatory categories - %s" % `mand_cats`
     all_keys = whole_block.keys() #non-save block keys
-    if globals:         #
-        all_keys.extend(globals.abs_all_keys)
     for mand_cat in mand_cats:
         cat_id = filter(lambda a:a[1]==mand_cat,catlist)[0][0]
         no_of_items = len(filter(lambda a:self[a].get(self.cat_spec)==cat_id,
@@ -2100,7 +2107,7 @@ present in the save frames or enclosing block.
 
 This is for efficiency; as the validation routines are constructed
 on a per-block basis, and we try to treat save frames as block
-equivalents, we don't want to repeat checks more than we have to.
+equivalents, we do not want to repeat checks more than we have to.
 
 As this is run outside the normal procedure, which is block based,
 we return the information in the same way that the run_data_checks
@@ -2126,6 +2133,37 @@ def find_prob_cats(self,whole_block):
 	return (False,{'whole_block':[('validate_mandatory_category',{"result":False,"bad_items":problem_cats})]})
     else:
 	return (True,{})
+
+@  Processing DDLm mandatory categories/items
+
+DDLm manages mandatory items by providing a table in the DDLm
+dictionary which classifies datanames into
+mandatory/recommended/prohibited for dictionary, category or item
+scopes. Note that the following check might fail for categories and
+dictionaries if '_definition.scope' is missing.
+
+<<Process DDLm mandatory information>>=
+def check_mandatory_items(self,whole_block):
+    """Return an error if any mandatory items are missing"""
+    if len(self.scopes_mandatory)== 0: return {"result":True}
+    scope = whole_block.get('_definition.scope','Item')
+    missing = [a for a in self.scopes_mandatory[scope] if not whole_block.has_key(a)]
+    if len(missing)==0:
+        return {"result":True}
+    else:
+        return {"result":False,"bad_items":missing}
+
+<<Process DDLm prohibited information>>=
+def check_prohibited_items(self,whole_block):
+    """Return an error if any prohibited items are present"""
+    if len(self.scopes_naughty)== 0: return {"result":True}
+    scope = whole_block.get('_definition.scope','Item')
+    present = [a for a in self.scopes_naughty[scope] if whole_block.has_key(a)]
+    if len(present)==0:
+        return {"result":True}
+    else:
+        return {"result":False,"bad_items":present}
+
 
 @ Preparing our type expressions
 
@@ -2881,10 +2919,12 @@ class ValidationResult:
         
 @ We provide a function to do straight validation, using the built-in
 methods of the dictionary type.  We need to create a single dictionary
-from the multiple dictionaries we are passed, before doing our check. Also,
-we allow validation of dictionaries themselves, by passing a special
-flag [[isdic]].  This should only be used for DDL2 dictionaries.  DDL1
-dictionaries validate OK if (any) global block is deleted.
+from the multiple dictionaries we are passed, before doing our
+check. Also, we allow validation of dictionaries themselves, by
+passing a special flag [[isdic]].  This should only be used for
+DDL2/DDLm dictionaries, and simply makes save frames visible as
+ordinary blocks. DDL1 dictionaries validate OK if (any) global block
+is deleted.
 
 <<Validate against the given dictionaries>>=
 def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False,fake_mand=True):
@@ -2900,37 +2940,34 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False,fake_m
     no_matches = {}
     valid_result = {}
     if isdic:          #assume one block only
-        blockname = check_file.keys()[0]
-        check_bc = check_file[blockname]["saves"]
-        check_globals = check_file[blockname] 
+        check_file.scoping = 'dictionary'   #all blocks visible
 	# collect a list of parents for speed
-	poss_parents = fulldic.get_all("_item_linked.parent_name")
-	for parent in poss_parents:
-	    curr_parent = listify(check_globals.get(parent,[]))
-	    new_vals = check_bc.get_all(parent)
-	    new_vals.extend(curr_parent)
-	    if len(new_vals)>0:
-	        check_globals[parent] = new_vals
-	        # print "Added %s (len %d)" % (parent,len(check_globals[parent]))
-	# next dictionary problem: the main DDL2 dictionary has what
-	# I would characterise as a mandatory_category problem, but
-	# in order to gloss over it, we allow a different 
-	# interpretation, which requires only a single check for one
-	# block.
-	if fake_mand:
-	    valid_result[blockname] = fulldic.find_prob_cats(check_globals)
-	    no_matches[blockname] = filter(lambda a:not fulldic.has_key(a),check_globals.keys())
-    else:
-        check_bc = check_file
-        check_globals = CifBlock()   #empty
-    for block in check_bc.keys(): 
-        #print "Validating block %s" % block 
-        no_matches[block] = filter(lambda a:not fulldic.has_key(a),check_bc[block].keys())
+	if fulldic.diclang == 'DDL2':
+            poss_parents = fulldic.get_all("_item_linked.parent_name")
+            for parent in poss_parents:
+                curr_parent = listify(check_file.get(parent,[]))
+                new_vals = check_file.get_all(parent)
+                new_vals.extend(curr_parent)
+                if len(new_vals)>0:
+                    check_file[parent] = new_vals
+	        print "Added %s (len %d)" % (parent,len(check_file[parent]))
+	    # next dictionary problem: the main DDL2 dictionary has what
+	    # I would characterise as a mandatory_category problem, but
+	    # in order to gloss over it, we allow a different 
+	    # interpretation, which requires only a single check for one
+	    # block.
+	    if fake_mand:
+	        valid_result[blockname] = fulldic.find_prob_cats(check_file)
+	        no_matches[blockname] = [a for a in check_file.keys if not fulldic.has_key(a)]
+    # now run the validations
+    for block in check_file.keys(): 
+        print "Validating block %s" % block 
+        no_matches[block] = [a for a in check_file[block].keys() if not fulldic.has_key(a)]
         # remove non-matching items
-        # print "Not matched: " + `no_matches[block]`
+        print "Not matched: " + `no_matches[block]`
         for nogood in no_matches[block]:
-             del check_bc[block][nogood]
-        valid_result[block] = run_data_checks(check_bc[block],fulldic,globals=check_globals,fake_mand=fake_mand)
+             del check_file[block][nogood]
+        valid_result[block] = run_data_checks(check_file[block],fulldic,fake_mand=fake_mand)
     return valid_result,no_matches
 
 def validate_report(val_result,use_html=False):
@@ -3085,14 +3122,14 @@ the tests, we contract these lists to contain only false results, and then
 remove all items containing no false results.
 
 <<Run dictionary validation checks>>=
-def run_data_checks(check_block,fulldic,globals={},fake_mand=False):
+def run_data_checks(check_block,fulldic):
     v_result = {}
     for key in check_block.keys():
         update_value(v_result, fulldic.run_item_validation(key,check_block[key]))
-        update_value(v_result, fulldic.run_global_validation(key,check_block[key],check_block,globals=globals))
+        update_value(v_result, fulldic.run_global_validation(key,check_block[key],check_block))
     for loopnames in check_block.loops.values():
         update_value(v_result, fulldic.run_loop_validation(loopnames))
-    update_value(v_result,fulldic.run_block_validation(check_block,globals=globals,fake_mand=fake_mand))
+    update_value(v_result,fulldic.run_block_validation(check_block))
     # return false and list of baddies if anything didn't match
     for test_key in v_result.keys():
         v_result[test_key] = filter(lambda a:a[1]["result"]==False,v_result[test_key])
