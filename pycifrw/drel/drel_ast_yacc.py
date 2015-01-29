@@ -235,7 +235,8 @@ def p_stringliteral(p):
 def p_enclosure(p):
     '''enclosure : parenth_form
                   | string_conversion
-                  | list_display '''
+                  | list_display
+                  | table_display '''
     p[0]=p[1]
 
 def p_parenth_form(p):
@@ -275,6 +276,29 @@ def p_listmaker2(p):
         p[0] = p[0]
     else:
         p[0] = p[1] + [p[4]] 
+
+# define tables
+def p_table_display(p):
+    ''' table_display : "{" maybe_nline tablemaker maybe_nline "}"
+                      | "{" maybe_nline "}" '''
+    if len(p) == 4: p[0] = ["TABLE"]
+    else:
+        p[0] = ["TABLE"] + p[3]
+
+def p_tablemaker(p):
+    '''tablemaker :  stringliteral ":" expression tablemaker2 '''
+    p[0] = [(p[1],p[3])] + p[4]
+
+def p_tablemaker2(p):
+    '''tablemaker2 : "," maybe_nline stringliteral ":" expression
+                   | tablemaker2 "," maybe_nline stringliteral ":" expression
+                   |  '''
+    if len(p) == 6: 
+          p[0] = [(p[3],p[5])]
+    elif len(p) < 2:
+          p[0] = p[0]
+    else:
+          p[0] = p[1] + [(p(4),p(6))]
 
 # Note that we need to catch tags of the form 't.12', which
 # our lexer will interpret as ID REAL.  We therefore also

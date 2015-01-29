@@ -131,7 +131,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
 
     def testList(self):
         """test parsing a list over two lines"""
-        self.create_test('_a.b = [1,2,\n 3,4,\n 5,6]',StarFile.StarList([1,2,3,4,5,6]),debug=True)
+        self.create_test('_a.b = [1,2,\n 3,4,\n 5,6]',StarFile.StarList([1,2,3,4,5,6]))
 
     def testparenth(self):
         """test parsing a parenthesis over two lines"""
