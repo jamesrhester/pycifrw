@@ -273,7 +273,7 @@ def p_listmaker2(p):
     if len(p) == 4:
         p[0] = [p[3]]
     elif len(p) < 2:
-        p[0] = p[0]
+        p[0] = []
     else:
         p[0] = p[1] + [p[4]] 
 
@@ -281,7 +281,8 @@ def p_listmaker2(p):
 def p_table_display(p):
     ''' table_display : "{" maybe_nline tablemaker maybe_nline "}"
                       | "{" maybe_nline "}" '''
-    if len(p) == 4: p[0] = ["TABLE"]
+    if len(p) == 4: 
+        p[0] = ["TABLE"]
     else:
         p[0] = ["TABLE"] + p[3]
 
@@ -296,9 +297,9 @@ def p_tablemaker2(p):
     if len(p) == 6: 
           p[0] = [(p[3],p[5])]
     elif len(p) < 2:
-          p[0] = p[0]
+          p[0] = []
     else:
-          p[0] = p[1] + [(p(4),p(6))]
+          p[0] = p[1] + [(p[4],p[6])]
 
 # Note that we need to catch tags of the form 't.12', which
 # our lexer will interpret as ID REAL.  We therefore also
