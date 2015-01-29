@@ -1459,7 +1459,6 @@ save_
         del self.testcif['definition.scope']['_description.common']
         del self.testcif['definition.scope']['_enumeration_set.state']
         result = self.refdic.run_loop_validation(self.testcif['definition.scope'].loops[1])
-        print `result`
         self.failUnless(dict(result['_enumeration_set.detail'])['validate_loop_key_ddlm']['result']==False)
 
 

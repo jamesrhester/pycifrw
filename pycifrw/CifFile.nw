@@ -1496,8 +1496,8 @@ def run_global_validation(self,item_name,item_value,data_block,provisional_items
     results = map(lambda f:(f.__name__,f(item_name,item_value,data_block,provisional_items,globals)),self.global_validation_funs)
     return {item_name:results}
 
-def run_block_validation(self,whole_block):
-    results = [(f.__name__,f(whole_block)) for f in self.block_validation_funs]
+def run_block_validation(self,whole_block,block_scope='Item'):
+    results = [(f.__name__,f(whole_block,default_scope=block_scope)) for f in self.block_validation_funs]
     # fix up the return values
     return {"whole_block":results}
 
@@ -2216,10 +2216,12 @@ scopes. Note that the following check might fail for categories and
 dictionaries if '_definition.scope' is missing.
 
 <<Process DDLm mandatory information>>=
-def check_mandatory_items(self,whole_block):
+def check_mandatory_items(self,whole_block,default_scope='Item'):
     """Return an error if any mandatory items are missing"""
     if len(self.scopes_mandatory)== 0: return {"result":True}
-    scope = whole_block.get('_definition.scope','Item')
+    if default_scope == 'Datablock':
+        return {"result":True}     #is a data file
+    scope = whole_block.get('_definition.scope',default_scope)
     missing = [a for a in self.scopes_mandatory[scope] if not whole_block.has_key(a)]
     if len(missing)==0:
         return {"result":True}
@@ -2227,10 +2229,12 @@ def check_mandatory_items(self,whole_block):
         return {"result":False,"bad_items":missing}
 
 <<Process DDLm prohibited information>>=
-def check_prohibited_items(self,whole_block):
+def check_prohibited_items(self,whole_block,default_scope='Item'):
     """Return an error if any prohibited items are present"""
     if len(self.scopes_naughty)== 0: return {"result":True}
-    scope = whole_block.get('_definition.scope','Item')
+    if default_scope == 'Datablock':
+        return {"result":True}     #is a data file
+    scope = whole_block.get('_definition.scope',default_scope)
     present = [a for a in self.scopes_naughty[scope] if whole_block.has_key(a)]
     if len(present)==0:
         return {"result":True}
@@ -3000,7 +3004,7 @@ ordinary blocks. DDL1 dictionaries validate OK if (any) global block
 is deleted.
 
 <<Validate against the given dictionaries>>=
-def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False,fake_mand=True):
+def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
     """Validate the `ciffile` conforms to the definitions in `CifDic` object `dic`, or if `dic` is missing,
     to the results of merging the `CifDic` objects in `diclist` according to `mergemode`.  Flag
     `isdic` indicates that `ciffile` is a CIF dictionary meaning that save frames should be
@@ -3013,6 +3017,8 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False,fake_m
     no_matches = {}
     valid_result = {}
     if isdic:          #assume one block only
+        check_file.scoping = 'instance' #only data blocks visible
+        top_level = check_file.keys()[0]
         check_file.scoping = 'dictionary'   #all blocks visible
 	# collect a list of parents for speed
 	if fulldic.diclang == 'DDL2':
@@ -3029,18 +3035,24 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False,fake_m
 	    # in order to gloss over it, we allow a different 
 	    # interpretation, which requires only a single check for one
 	    # block.
-	    if fake_mand:
-	        valid_result[blockname] = fulldic.find_prob_cats(check_file)
-	        no_matches[blockname] = [a for a in check_file.keys if not fulldic.has_key(a)]
+	    #if fake_mand:
+	    #    valid_result[blockname] = fulldic.find_prob_cats(check_file)
+	    #    no_matches[blockname] = [a for a in check_file.keys if not fulldic.has_key(a)]
     # now run the validations
     for block in check_file.keys(): 
-        print "Validating block %s" % block 
+        if isdic and block == top_level:
+           block_scope = 'Dictionary'
+        elif isdic:
+           block_scope = 'Item'
+        else:
+           block_scope = 'Datablock'
         no_matches[block] = [a for a in check_file[block].keys() if not fulldic.has_key(a)]
         # remove non-matching items
         print "Not matched: " + `no_matches[block]`
         for nogood in no_matches[block]:
              del check_file[block][nogood]
-        valid_result[block] = run_data_checks(check_file[block],fulldic,fake_mand=fake_mand)
+        print "Validating block %s, scope %s" % (block,block_scope)
+        valid_result[block] = run_data_checks(check_file[block],fulldic,block_scope=block_scope)
     return valid_result,no_matches
 
 def validate_report(val_result,use_html=False):
@@ -3155,14 +3167,14 @@ def error_report(error_name,error_explanation,error_dics):
    for error in error_dics:
       bodystring += "\n%-32s" % error["item_name"]
       if error.has_key("bad_values"):
-          out_vals = map(lambda a:a[:50],error["bad_values"])
+          out_vals = map(lambda a:`a`[:50],error["bad_values"])
           bodystring += "%-20s" % out_vals 
       if error.has_key("bad_items"):
-          bodystring += "%-20s" % error["bad_items"]
+          bodystring += "%-20s" % `error["bad_items"]`
       if error.has_key("child"):
-          bodystring += "%-20s" % error["child"]
+          bodystring += "%-20s" % `error["child"]`
       if error.has_key("parent"):
-          bodystring += "%-20s" % error["parent"]
+          bodystring += "%-20s" % `error["parent"]`
    return retstring + headstring + bodystring 
 
 #  This lays out an HTML error report
@@ -3201,14 +3213,14 @@ the tests, we contract these lists to contain only false results, and then
 remove all items containing no false results.
 
 <<Run dictionary validation checks>>=
-def run_data_checks(check_block,fulldic):
+def run_data_checks(check_block,fulldic,block_scope='Item'):
     v_result = {}
     for key in check_block.keys():
         update_value(v_result, fulldic.run_item_validation(key,check_block[key]))
         update_value(v_result, fulldic.run_global_validation(key,check_block[key],check_block))
     for loopnames in check_block.loops.values():
         update_value(v_result, fulldic.run_loop_validation(loopnames))
-    update_value(v_result,fulldic.run_block_validation(check_block))
+    update_value(v_result,fulldic.run_block_validation(check_block,block_scope=block_scope))
     # return false and list of baddies if anything didn't match
     for test_key in v_result.keys():
         v_result[test_key] = filter(lambda a:a[1]["result"]==False,v_result[test_key])
