@@ -405,7 +405,7 @@ not yet been implemented.
 
 When loading DDLm dictionaries we may recursively call this
 initialisation function with a dictionary to be imported as the
-argument.  In this case we don't want to do all the method derivation,
+argument.  In this case we do not want to do all the method derivation,
 as the necessary categories will be loaded into the calling dictionary
 rather than the currently initialising dictionary.  So there is a
 keyword argument to stop the operations that should operate on the
@@ -477,10 +477,19 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
       self.global_remove_validation_funs = [
         self.validate_remove_parent_child] # removal is quicker with special checks
     elif self.diclang == 'DDLm':
-        self.item_validation_funs = []
-        self.loop_validation_funs = []
+        self.item_validation_funs = [
+            self.validate_item_enum,
+            ]
+        self.loop_validation_funs = [
+            self.validate_looping_ddlm,
+            self.validate_loop_key_ddlm,
+            self.validate_loop_membership
+            ]
         self.global_validation_funs = []
-        self.block_validation_funs = [self.check_mandatory_items,self.check_prohibited_items]
+        self.block_validation_funs = [
+            self.check_mandatory_items,
+            self.check_prohibited_items
+            ]
         self.global_remove_validation_funs = []
     self.optimize = False        # default value
     self.done_parents = []
@@ -538,25 +547,29 @@ def dic_determine(self,cifdic):
 	if name != self.master_key:
 	    print "Warning: DDL2 blockname %s not equal to dictionary name %s" % (self.master_key,name)
         if cifdic[self.master_key].has_key("_dictionary.class"):   #DDLm
-            self.unique_spec = "_category_key.generic"
+            self.enum_spec = '_enumeration_set.state'
+            self.key_spec = '_category.key_id'
+            self.must_exist_spec = None
+            self.cat_spec = '_name.category_id'
             return(name+version,"DDLm",cifdic) 
-        #otherwise DDL2
-	self.type_spec = "_item_type.code" 
-	self.enum_spec = "_item_enumeration.value"
-        self.esd_spec = "_item_type_conditions.code"
-	self.cat_spec = "_item.category_id" 
-	self.loop_spec = "there_is_no_loop_spec!"
-        self.must_loop_spec = "xxx"
-        self.must_exist_spec = "_item.mandatory_code"
-        self.child_spec = "_item_linked.child_name"
-        self.parent_spec = "_item_linked.parent_name"
-        self.related_func = "_item_related.function_code"
-        self.related_item = "_item_related.related_name"
-        self.unique_spec = "_category_key.name"
-        self.list_ref_spec = "xxx"
-        self.primitive_type = "_type"
-        self.dep_spec = "_item_dependent.dependent_name"
-	return (name+version,"DDL2",cifdic)
+        else:   #DDL2
+            self.key_spec = "_category_mandatory.name"
+            self.type_spec = "_item_type.code" 
+            self.enum_spec = "_item_enumeration.value"
+            self.esd_spec = "_item_type_conditions.code"
+            self.cat_spec = "_item.category_id" 
+            self.loop_spec = "there_is_no_loop_spec!"
+            self.must_loop_spec = "xxx"
+            self.must_exist_spec = "_item.mandatory_code"
+            self.child_spec = "_item_linked.child_name"
+            self.parent_spec = "_item_linked.parent_name"
+            self.related_func = "_item_related.function_code"
+            self.related_item = "_item_related.related_name"
+            self.unique_spec = "_category_key.name"
+            self.list_ref_spec = "xxx"
+            self.primitive_type = "_type"
+            self.dep_spec = "_item_dependent.dependent_name"
+            return (name+version,"DDL2",cifdic)
     else:
 	raise CifError, "Unable to determine dictionary DDL version"
     
@@ -1253,8 +1266,10 @@ to find all entries with a _definition.scope of "Category".
 def add_category_info(self):
     if self.diclang == "DDLm":
         <<Get list of DDLm categories>>
+        <<Create category parent table>>
     else:
         <<Get list of DDL1/2 categories>>
+        self.parent_lookup = dict(zip(categories,categories))  #dummy
     # match ids and entries in the dictionary
     catpairs = map(None,category_ids,categories)
     self.cat_map = dict(catpairs)
@@ -1296,6 +1311,21 @@ def get_key_pack(self,category,value,data):
     onepack = data.GetPackKey(keyname,value)
     return onepack
  
+@ For help in validation we create a lookup table which matches a category to
+its ultimate parent.  This allows us to quickly check whether or not a data 
+item is allowed to be co-looped with other data items.
+
+<<Create category parent table>>=
+looped_cats = [a for a in categories if self[a].get('_definition.class','Set') == 'Loop']
+self.parent_lookup = {}
+for one_cat in looped_cats:
+    parent_cat = one_cat
+    parent_def = self[parent_cat]
+    while self[parent_def['_name.category_id']].get('_definition.class','Set') == 'Loop':
+        parent_cat = parent_def['_name.category_id'].lower()
+        parent_def = self[parent_cat]
+    self.parent_lookup[one_cat] = parent_cat
+
 @ Section{DDLm functionality}
 
 DDLm is a far more complex dictionary standard than DDL2.  We are able to import
@@ -1638,7 +1668,7 @@ def validate_item_enum(self,item_name,item_value):
     enum_list.append("?")   #unknown
     item_values = listify(item_value)
     #print "Enum check: %s in %s" % (`item_values`,`enum_list`)
-    check_all = filter(lambda a: a not in enum_list,item_values)
+    check_all = [a for a in item_values if a not in enum_list]
     if len(check_all)>0: return {"result":False,"bad_values":check_all}
     else: return {"result":True}
 
@@ -1646,7 +1676,10 @@ def validate_item_enum(self,item_name,item_value):
 For DDL2 there is no explicit restriction on looping beyond membership in
 a category.  Note that the DDL1 language specifies a default value of 'no'
 for this item,  so when not explicitly allowed by the dictionary, listing
-is prohibited.
+is prohibited.  In DDLm, only members of 'Loop' categories allow looping.
+As we transition the whole setup to DDLm-type data structures, the two
+calls below will merge and move to the looping checks rather than the single item
+checks.
 
 <<Validate looping properties>>=
 def validate_looping(self,item_name,item_value):
@@ -1660,12 +1693,22 @@ def validate_looping(self,item_name,item_value):
         return {"result":False}
     return {"result":True}
 
+def validate_looping_ddlm(self,loop_names):
+    """Check that all names are loopable"""
+    truly_loopy = self.get_final_cats(loop_names)
+    if len(truly_loopy)<len(loop_names):  #some are bad
+        categories = [(a,self[a][self.cat_spec].lower()) for a in loop_names]
+        not_looped = [a[0] for a in categories if a[1] not in self.parent_lookup.keys()]
+        return {"result":False,"bad_items":not_looped}
+    return {"result":True}
+
 @ And some things are related to the group structure.  Note that these
 functions do not require knowledge of the item values.
 
 <<Loop-level validation>>=
 <<Validate loop membership>>
 <<Validate loop key>>
+<<Validate loop key DDLm>>
 <<Validate loop mandatory items>>
 <<Get alternative item names>>
 
@@ -1674,28 +1717,40 @@ The most common constraints on a loop are that all items are from the same
 category, and that loops of a certain category must contain a certain key to
 be valid.  The latter test should be performed after the former test.
 
+DDLm allows nested loop categories, so an item from a child category can appear
+in a parent category loop if both are from 'Loop' categories.
+
 <<Validate loop membership>>=
 def validate_loop_membership(self,loop_names):
-    try:
-        categories = map(lambda a:self[a][self.cat_spec],loop_names)
-    except KeyError:       #category is mandatory
-        raise ValidCifError( "%s missing from dictionary %s for item in loop containing %s" % (self.cat_spec,self.dicname,loop_names[0]))
-    bad_items =  filter(lambda a:a != categories[0],categories)
+    final_cat = self.get_final_cats(loop_names)
+    bad_items =  [a for a in final_cat if a != final_cat[0]]
     if len(bad_items)>0:
         return {"result":False,"bad_items":bad_items}
     else: return {"result":True}
 
+def get_final_cats(self,loop_names):
+    """Return a list of the uppermost parent categories for the loop_names. Names
+    that are not from loopable categories are ignored."""
+    try:
+        categories = [self[a][self.cat_spec].lower() for a in loop_names]
+    except KeyError:       #category is mandatory
+        raise ValidCifError( "%s missing from dictionary %s for item in loop containing %s" % (self.cat_spec,self.dicname,loop_names[0]))
+    truly_looped = [a for a in categories if a in self.parent_lookup.keys()]
+    return [self.parent_lookup[a] for a in truly_looped]
+
 @ The items specified by [[_list_mandatory]] (DDL1) must be present in a loop
 containing items of a given category (and it follows that only one loop
 in a given data block is available for any category containing such an
-item).
+item).  This has been explicitly described as a key in DDL2. In DDLm, any
+key from a parent looped category is acceptable as well as the key of
+the given category itself.
 
 <<Validate loop key>>=
 def validate_loop_key(self,loop_names):
     category = self[loop_names[0]][self.cat_spec]
     # find any unique values which must be present 
     entry_name = self.cat_map[category]
-    key_spec = self[entry_name].get("_category_mandatory.name",[])
+    key_spec = self[entry_name].get(self.key_spec,[])
     for names_to_check in key_spec:
         if isinstance(names_to_check,basestring):   #only one
             names_to_check = [names_to_check]
@@ -1712,7 +1767,25 @@ def validate_loop_key(self,loop_names):
                     if len(alt) == 0: 
                         return {"result":False,"bad_items":loop_key}  # no alternates   
     return {"result":True}
-    
+
+@  Validating keys in DDLm. We move everything to the uppermost parent category, and
+then lookup what keys can be used. If any of these are present, we are happy.  This
+might miss some subtleties in mixed or unmixed loops?
+
+<<Validate loop key DDLm>>=
+def validate_loop_key_ddlm(self,loop_names):
+    """Make sure at least one of the necessary keys are available"""
+    final_cats = self.get_final_cats(loop_names)
+    if len(final_cats)>0:
+        poss_keys = self.cat_key_table[final_cats[0]]
+        found_keys = [a for a in poss_keys if a in loop_names]
+        if len(found_keys)>0:
+            return {"result":True}
+        else:
+            return {"result":False,"bad_items":poss_keys}
+    else: 
+        return {"result":True}
+
 @ The [[_list_reference]] value specifies data names which must co-occur with the
 defined data name.  We check that this is indeed the case for all items in the
 loop.  We trace through alternate values as well.  In DDL1 dictionaries, a
@@ -3032,6 +3105,8 @@ def validate_report(val_result,use_html=False):
             "The following looped data names are of different categories to the first looped data name",
         'validate_loop_key':\
             "A required dataname for this category is missing from the loop\n containing the dataname",
+        'validate_loop_key_ddlm':\
+            "A loop key is missing for the category containing the dataname",
         'validate_loop_references':\
             "A dataname required by the item is missing from the loop",
         'validate_parent':\
@@ -3045,7 +3120,11 @@ def validate_report(val_result,use_html=False):
         'validate_exclusion': \
             "Both dataname and exclusive alternates or aliases are present in data block",
         'validate_mandatory_category':\
-            "A required category is missing from this block"}
+            "A required category is missing from this block",
+        'check_mandatory_items':\
+            "A required data attribute is missing from this block",
+        'check_prohibited_items':\
+            "A prohibited data attribute is present in this block"}
 
         for test_name,test_results in error_type_dic.items():
            if use_html:

@@ -1387,6 +1387,34 @@ save_alias.definition_id
     _type.contents               Tag
 
 save_  
+
+save_definition.scope
+
+    _definition.id               '_definition.scope'
+    _definition.class            Attribute
+    _definition.update           2006-11-16
+    _description.text                   
+;
+     The extent to which a definition affects other definitions.
+;
+    _name.category_id            definition
+    _name.object_id              scope
+    _type.purpose                State
+    _type.source                 Assigned
+    _type.container              Single
+    _type.contents               Code
+    loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+    _description.common
+              Dictionary    'applies to all defined items in the dictionary'   'whoops'
+              Category      'applies to all defined items in the category'     'not'
+              Item          'applies to a single item definition'              'allowed'
+    _enumeration.default         Item
+
+save_
+
+
  """
         f = open('ddlm_valid_test.cif2','w')
         f.write(testdic_string)
@@ -1409,6 +1437,31 @@ save_
         self.testcif['alias']['_enumeration_set.state'] = [1,2,3,4]
         result = self.refdic.run_block_validation(self.testcif['alias'])
         self.failUnless(dict(result['whole_block'])['check_prohibited_items']['result']==False)
+
+    def testUnlooped(self):
+        """Test that unloopable data items are found"""
+        result = self.refdic.run_loop_validation(self.testcif['definition.scope'].loops[1])
+        self.failUnless(dict(result['_enumeration_set.state'])['validate_looping_ddlm']['result']==False)
+
+    def testWrongLoop(self):
+        """Test that non-co-loopable data items are found"""
+        del self.testcif['definition.scope']['_description.common']  #get rid of bad one
+        self.testcif['definition.scope']['_description_example.case'] = [1,2,3]
+        self.testcif['definition.scope'].CreateLoop(['_enumeration_set.state',
+                                                      '_enumeration_set.detail',
+                                                      '_description_example.case']) 
+        loop_no = self.testcif['definition.scope'].FindLoop('_enumeration_set.state')
+        result = self.refdic.run_loop_validation(self.testcif['definition.scope'].loops[loop_no])
+        self.failUnless(dict(result['_enumeration_set.state'])['validate_loop_membership']['result']==False)
+
+    def testUnKeyed(self):
+        """Test that a missing key is found"""
+        del self.testcif['definition.scope']['_description.common']
+        del self.testcif['definition.scope']['_enumeration_set.state']
+        result = self.refdic.run_loop_validation(self.testcif['definition.scope'].loops[1])
+        print `result`
+        self.failUnless(dict(result['_enumeration_set.detail'])['validate_loop_key_ddlm']['result']==False)
+
 
 class FakeDicTestCase(unittest.TestCase):
 # we test stuff that hasn't been used in official dictionaries to date.
