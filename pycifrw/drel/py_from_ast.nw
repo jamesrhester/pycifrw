@@ -251,6 +251,14 @@ mentioned so that we can create a dependency tree.
             return outstring[:-1] + "])"
         else:
             return outstring[:-1]
+    elif node_type == "TABLE":
+        if len(in_node)==1:
+            return "StarFile.StarTable({})"
+        else:
+            outstring = "{"
+        for table_elem in in_node[1:]:
+            outstring = outstring + traverse_ast(table_elem[0])+":"+traverse_ast(table_elem[1]) +","
+        return outstring[:-1] + "}"
     <<Process subscriptions>>
     <<Process attribute reference>>
     <<Process function call>>

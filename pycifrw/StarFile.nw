@@ -1830,14 +1830,17 @@ def CreateLoop(self,datanames,order=-1):
                raise ValueError, 'Request to loop datanames %s with different lengths: %s' % (`datanames`,`len_set`)
        elif len(listed_values) != 0:
            raise ValueError, 'Request to loop datanames where some are single values and some are not'
-       if len(self.loops)>0:
-           loopno = max(self.loops.keys()) + 1
-       else:
-           loopno = 1
        # store as lower case
        lc_datanames = [d.lower() for d in datanames]
        # remove these datanames from all other loops
        [self.loops[a].remove(b) for a in self.loops for b in lc_datanames if b in self.loops[a]]
+       # remove empty loops
+       empty_loops = [a for a in self.loops.keys() if len(self.loops[a])==0]
+       for a in empty_loops: del self.loops[a]
+       if len(self.loops)>0:
+           loopno = max(self.loops.keys()) + 1
+       else:
+           loopno = 1
        self.loops[loopno] = list(lc_datanames)
        if order >= 0:
            self.item_order.insert(order,loopno)

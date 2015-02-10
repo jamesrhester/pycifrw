@@ -1307,6 +1307,161 @@ class DDL1TestCase(unittest.TestCase):
     def testReport(self):
         CifFile.validate_report(CifFile.Validate("pycifrw/tests/C13H2203_with_errors.cif",dic=self.ddl1dic))
 
+class DDLmDicTestCase(unittest.TestCase):
+    """Test validation of DDLm dictionaries"""
+    def setUp(self):
+        testdic_string = """#\#CIF_2.0
+#\#CIF_2.0
+##############################################################################
+#                                                                            #
+#                      DDLm REFERENCE DICTIONARY                             #
+#                                                                            #
+##############################################################################
+data_DDL_DIC
+
+    _dictionary.title            DDL_DIC
+    _dictionary.class            Reference
+    _dictionary.version          3.11.08
+    _dictionary.date             2015-01-28
+    _dictionary.uri              www.iucr.org/cif/dic/ddl.dic
+    _dictionary.ddl_conformance  3.11.08
+    _dictionary.namespace        DdlDic
+    _description.text                   
+;
+     This dictionary contains the definitions of attributes that
+     make up the DDLm dictionary definition language.  It provides 
+     the meta meta data for all CIF dictionaries.
+;
+
+save_ATTRIBUTES
+
+    _definition.id               ATTRIBUTES
+    _definition.scope            Category
+    _definition.class            Head
+    _definition.update           2011-07-27
+    _description.text                   
+;
+     This category is parent of all other categories in the DDLm
+     dictionary.
+;
+    _name.object_id              ATTRIBUTES
+
+save_
+
+#============================================================================
+
+save_ALIAS
+
+    _definition.id               ALIAS
+    _definition.scope            Category
+    _definition.class            Loop
+    _definition.update           2013-09-08
+    _description.text                   
+;
+     The attributes used to specify the aliased names of definitions.
+;
+    _name.category_id            ATTRIBUTES
+    _name.object_id              ALIAS
+    _category.key_id             '_alias.definition_id'
+    loop_
+    _category_key.name
+                                 '_alias.definition_id' 
+
+save_
+
+
+save_alias.definition_id
+
+    _definition.id               '_alias.definition_id'
+    _definition.class            Attribute
+    _definition.update           2006-11-16
+    _description.text                   
+;
+     Identifier tag of an aliased definition.
+;
+    _name.category_id            alias
+    _name.object_id              definition_id
+    _type.purpose                Key
+    _type.source                 Assigned
+    _type.container              Single
+    _type.contents               Tag
+
+save_  
+
+save_definition.scope
+
+    _definition.id               '_definition.scope'
+    _definition.class            Attribute
+    _definition.update           2006-11-16
+    _description.text                   
+;
+     The extent to which a definition affects other definitions.
+;
+    _name.category_id            definition
+    _name.object_id              scope
+    _type.purpose                State
+    _type.source                 Assigned
+    _type.container              Single
+    _type.contents               Code
+    loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+    _description.common
+              Dictionary    'applies to all defined items in the dictionary'   'whoops'
+              Category      'applies to all defined items in the category'     'not'
+              Item          'applies to a single item definition'              'allowed'
+    _enumeration.default         Item
+
+save_
+
+
+ """
+        f = open('ddlm_valid_test.cif2','w')
+        f.write(testdic_string)
+        f.close()
+        self.testcif = CifFile.CifFile('ddlm_valid_test.cif2',grammar='auto')
+        self.refdic = CifFile.CifDic('pycifrw/dictionaries/ddl.dic',grammar='auto')
+
+    def tearDown(self):
+        import os
+        os.remove('ddlm_valid_test.cif2')
+
+    def testMandatory(self):
+        """Test that missing mandatory items are found"""
+        del self.testcif['alias.definition_id']['_name.category_id']
+        result = self.refdic.run_block_validation(self.testcif['alias.definition_id'])
+        self.failUnless(dict(result['whole_block'])['check_mandatory_items']['result']==False)
+
+    def testProhibited(self):
+        """Test that prohibited items are found"""
+        self.testcif['alias']['_enumeration_set.state'] = [1,2,3,4]
+        result = self.refdic.run_block_validation(self.testcif['alias'])
+        self.failUnless(dict(result['whole_block'])['check_prohibited_items']['result']==False)
+
+    def testUnlooped(self):
+        """Test that unloopable data items are found"""
+        result = self.refdic.run_loop_validation(self.testcif['definition.scope'].loops[1])
+        self.failUnless(dict(result['_enumeration_set.state'])['validate_looping_ddlm']['result']==False)
+
+    def testWrongLoop(self):
+        """Test that non-co-loopable data items are found"""
+        del self.testcif['definition.scope']['_description.common']  #get rid of bad one
+        self.testcif['definition.scope']['_description_example.case'] = [1,2,3]
+        self.testcif['definition.scope'].CreateLoop(['_enumeration_set.state',
+                                                      '_enumeration_set.detail',
+                                                      '_description_example.case']) 
+        loop_no = self.testcif['definition.scope'].FindLoop('_enumeration_set.state')
+        result = self.refdic.run_loop_validation(self.testcif['definition.scope'].loops[loop_no])
+        self.failUnless(dict(result['_enumeration_set.state'])['validate_loop_membership']['result']==False)
+
+    def testUnKeyed(self):
+        """Test that a missing key is found"""
+        del self.testcif['definition.scope']['_description.common']
+        del self.testcif['definition.scope']['_enumeration_set.state']
+        result = self.refdic.run_loop_validation(self.testcif['definition.scope'].loops[1])
+        self.failUnless(dict(result['_enumeration_set.detail'])['validate_loop_key_ddlm']['result']==False)
+
+
 class FakeDicTestCase(unittest.TestCase):
 # we test stuff that hasn't been used in official dictionaries to date.
     def setUp(self):
@@ -1474,8 +1629,9 @@ if __name__=='__main__':
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase) 
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmImportCase)
-     #suite =  unittest.TestLoader().loadTestsFromTestCase(DDL1TestCase)
-     suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
+     #suite =  unittest.TestLoader().loadTestsFromTestCase(DDL1TestCase) 
+     suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
+     #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      unittest.TextTestRunner(verbosity=2).run(suite)
      #unittest.main()
 

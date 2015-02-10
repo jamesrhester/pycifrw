@@ -131,7 +131,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
 
     def testList(self):
         """test parsing a list over two lines"""
-        self.create_test('_a.b = [1,2,\n 3,4,\n 5,6]',StarFile.StarList([1,2,3,4,5,6]),debug=True)
+        self.create_test('_a.b = [1,2,\n 3,4,\n 5,6]',StarFile.StarList([1,2,3,4,5,6]))
 
     def testparenth(self):
         """test parsing a parenthesis over two lines"""
@@ -240,6 +240,21 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
        exec realfunc
        b = myfunc(self)
        self.failUnless(b['bx']==25)
+
+    def test_Tables_2(self):
+       """Test that brace-delimited tables are parsed correctly"""
+       teststrg = """
+       c = {'hello':1,'goodbye':2}
+       _a.b = c['hello']
+       """
+       print "Table test:"
+       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
+                                                   cif_dic=self.dic)
+       print realfunc
+       exec realfunc
+       b = myfunc(self)
+       self.failUnless(b==1)
 
     def test_subscription(self):
        """Test proper list of dependencies is returned"""
@@ -665,13 +680,13 @@ class WithDictTestCase(unittest.TestCase):
        self.failUnless(b[1] == '1_555')
       
 if __name__=='__main__':
-    global testdic
-    testdic = CifFile.CifDic("drel/testing/cif_core.dic",grammar="STAR2",do_minimum=True)
-    unittest.main()
+    #global testdic
+    #testdic = CifFile.CifDic("drel/testing/cif_core.dic",grammar="STAR2",do_minimum=True)
+    #unittest.main()
     #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
-    #suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
+    suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase) 
     #suite = unittest.TestLoader().loadTestsFromTestCase(dRELRuntimeTestCase)
-    #unittest.TextTestRunner(verbosity=2).run(suite)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
