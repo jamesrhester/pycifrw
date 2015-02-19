@@ -1,7 +1,7 @@
 all: installed documentation
 #
 installed: package
-	pip install -v -v -v --use-wheel dist/PyCifRW-4.1-cp27-none-linux_i686.whl
+	pip install -v -v -v --use-wheel dist/PyCifRW-4.1.1-cp27-none-linux_i686.whl
 #
 package: setup.py sources drel
 	python setup.py sdist

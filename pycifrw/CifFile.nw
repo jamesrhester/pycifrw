@@ -528,6 +528,7 @@ def dic_determine(self,cifdic):
 	self.must_loop_spec = "_list"
         self.must_exist_spec = "_list_mandatory"
         self.list_ref_spec = "_list_reference"
+        self.key_spec = "_list_mandatory"
         self.unique_spec = "_list_uniqueness"
         self.child_spec = "_list_link_child"
         self.parent_spec = "_list_link_parent"
@@ -1498,7 +1499,7 @@ def run_global_validation(self,item_name,item_value,data_block,provisional_items
     return {item_name:results}
 
 def run_block_validation(self,whole_block,block_scope='Item'):
-    results = [(f.__name__,f(whole_block,default_scope=block_scope)) for f in self.block_validation_funs]
+    results = [(f.__name__,f(whole_block)) for f in self.block_validation_funs]
     # fix up the return values
     return {"whole_block":results}
 
