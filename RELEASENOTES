@@ -1,4 +1,31 @@
-Release Notes for PyCIFRW-4.1  
+Release Notes for PyCIFRW-4.1.1  
+===============================
+
+Version 4.1.1 is a bugfix release for 4.1. 
+
+Changes since 4.1
+=================
+
+* Unicode range reduced: 
+
+Most Mac and Windows builds of Python are the so-called 'narrow' builds, which 
+raise an exception when presented with Unicode code points outside
+the Basic Multilingual Plane, meaning that on Windows systems Version 4.1
+failed to run.  The Yapps system
+used for parsing CIF files does not allow us to gracefully degrade Unicode
+support depending on OS, so support for non BMP code points has been 
+removed in this release. It will be added back in when PyCIFRW is ported to Python 3.
+Note that non-BMP characters are generally quite obscure (e.g. runes, domino tiles) 
+and that the BMP includes almost all modern scripts.
+
+* Tables added to dREL: Tables were missing from the dREL implementation
+* Various DDLm validation additions (a work in progress)
+* Output template improvements- datanames and loop_ position also templateable
+* Output formatting tweaks
+* STAR2 to CIF2 conversion utility in the Programs subdirectory
+
+
+Release Notes for PyCIFRW-4.1
 =============================
 
 Version 4.1 is the first stable release in the next major version of
@@ -21,7 +48,7 @@ Incompatible changes (since 3.0 series)
   called 'CifFile'. It should thus be imported using 'import CifFile' or 
   'from CifFile import CifFile'.  This may differ from earlier versions.
 * A single-item loop can no longer be created using the form cf['_dataname'] = [1,2,3,4]
-  To get the old behaviour, created the CifBlock with 'compat_mode = True'.
+  To get the old behaviour, create the CifBlock with 'compat_mode = True'.
 * The line folding protocol is always used when writing CIF files. This is
   only invoked if you have lines longer than 2048 characters (or your specified
   maximum length).

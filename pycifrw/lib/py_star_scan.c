@@ -50,11 +50,14 @@ for(i=0;i<current_len;i++){
     /* printf("Freeing value %d\n",i); */
     free(value_list[i]);
     }
+if(token_list!=NULL) {
 /* printf("Freeing token_list\n"); */
-free(token_list);
+free(token_list);}
+if(value_list!=NULL) {
 /* printf("Freeing value_list\n"); */
-free(value_list);
-free(line_no_list);
+free(value_list);}
+if(line_no_list!=NULL) {
+free(line_no_list);}
 alloc_mem = 0;
 /* Now get our first block of storage */
 token_list = (int *) malloc(MEM_ALLOC_SIZE*sizeof(int *));

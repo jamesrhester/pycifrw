@@ -125,7 +125,9 @@ class BlockCollection(object):
 
     characterset:
         `ascii` or `unicode`.  Blocknames and datanames appearing within
-        blocks are restricted to the appropriate characterset.
+        blocks are restricted to the appropriate characterset. Note that
+        only characters in the basic multilingual plane are accepted. This
+        restriction will be lifted when PyCIFRW is ported to Python3.
 
     scoping:
         `instance` or `dictionary`: `instance` implies that save frames are
@@ -1362,11 +1364,15 @@ def setmaxnamelength(self,maxlength):
 
 def set_characterset(self,characterset):
     """Set the characterset for checking datanames: may be `ascii` or `unicode`"""
+    import sys
     self.characterset = characterset
     if characterset == 'ascii':
         self.char_check = re.compile("[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+",re.M)
     elif characterset == 'unicode':
-        self.char_check = re.compile(u"[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\u00A0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFFD\U00010000-\U0010FFFD-]+",re.M)
+        if sys.maxunicode < 1114111:
+           self.char_check = re.compile(u"[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\u00A0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFFD-]+",re.M)
+        else:
+           self.char_check = re.compile(u"[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\u00A0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFFD\U00010000-\U0010FFFD-]+",re.M)
 
 @ Adding emulation of a mapping type.  We add any of the other
 functions we would like to emulate.   [[__len__]] returns the number
@@ -2404,7 +2410,7 @@ def _formatstring(self,instring,delimiter=None,standard='CIF1',indent=0):
     if len(instring)==0: allowed_delimiters.difference_update([None])
     if len(instring) > (self.maxoutlength-2) or '\n' in instring:
             allowed_delimiters.intersection_update(["\n;","'''",'"""'])
-    if ' ' in instring or '\t' in instring or '\v' in instring or instring[0] in '_$#;([{' or ',' in instring:
+    if ' ' in instring or '\t' in instring or '\v' in instring or (len(instring)>0 and instring[0] in '_$#;([{') or ',' in instring:
             allowed_delimiters.difference_update([None])
     if '"' in instring: allowed_delimiters.difference_update(['"',None])
     if "'" in instring: allowed_delimiters.difference_update(["'",None])

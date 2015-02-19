@@ -290,7 +290,8 @@ def ReadCif(filename,grammar='auto',scantype='standard',scoping='instance',stand
     undelimited datanames. `2.0` will read files in the CIF2.0 standard, and `STAR2` will
     read files according to the STAR2 publication.  If grammar is `None`, autodetection
     will be attempted in the order `2.0`, `1.1` and `1.0`. This will always succeed for 
-    properly-formed CIF2.0 files.
+    properly-formed CIF2.0 files.  Note that only Unicode characters in the basic multilingual
+    plane are recognised (this will be fixed when PyCIFRW is ported to Python 3).
 
     * `scantype` can be `standard` or `flex`.  `standard` provides pure Python parsing at the
     cost of a factor of 10 or so in speed.  `flex` will tokenise the input CIF file using
@@ -1887,7 +1888,7 @@ related items.  We also unilaterally include items listed in aliases
 as acting in this way.
 
 <<Validate exclusion rules>>=
-def validate_exclusion(self,item_name,item_value,whole_block,provisional_items={}):
+def validate_exclusion(self,item_name,item_value,whole_block,provisional_items={},globals={}):
    alternates = map(lambda a:a.lower(),self.get_alternates(item_name,exclusive_only=True))
    item_name_list = map(lambda a:a.lower(),whole_block.keys())
    item_name_list.extend(map(lambda a:a.lower(),provisional_items.keys()))

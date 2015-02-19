@@ -680,13 +680,13 @@ class WithDictTestCase(unittest.TestCase):
        self.failUnless(b[1] == '1_555')
       
 if __name__=='__main__':
-    #global testdic
-    #testdic = CifFile.CifDic("drel/testing/cif_core.dic",grammar="STAR2",do_minimum=True)
-    #unittest.main()
+    global testdic
+    testdic = CifFile.CifDic("drel/testing/cif_core.dic",grammar="STAR2",do_minimum=True)
+    unittest.main()
     #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
-    suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
+    #suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase) 
     #suite = unittest.TestLoader().loadTestsFromTestCase(dRELRuntimeTestCase)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    #unittest.TextTestRunner(verbosity=2).run(suite)
 
