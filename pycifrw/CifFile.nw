@@ -341,8 +341,7 @@ category definitions.
 We adopt a data model whereby the excess information in a DDL2
 dictionary is absorbed into special methods (and I am thinking here
 of the [[_item_type_list.construct]] stuff which appears at the
-global level), which we initialise
-ourselves for a DDL1 dictionary. 
+global level), which we initialise ourselves for a DDL1 dictionary. 
 
 Note that the underscore following the data or save frame header is
 technically not part of the name, and so in DDL2 dictionaries there are
@@ -353,14 +352,14 @@ the block name and the contents are semantically different.  Or alternatively,
 that the leading underscore is not part of the name.
 
 <<CIF Dictionary type>>=
-class CifDic(StarFile.BlockCollection):
+class CifDic(StarFile.StarFile):
     """Create a Cif Dictionary object from the provided source, which can
     be a filename/URL or a CifFile.  Optional arguments:
 
     * do_minimum:
          Do not set up the dREL system for auto-calculation.  This is
          useful during recursive loads where the dREL links will be
-         established at the end
+         established at the end.
     """
     <<Initialise Cif dictionary>>
     <<Dictionary determination function>>
@@ -421,17 +420,14 @@ execution, then turn it off afterwards.
 <<Initialise Cif dictionary>>=
 def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
     self.do_minimum = do_minimum
-    self.dic_as_cif = dic
     self.template_cache = {}    #for DDLm imports
     self.ddlm_functions = {}    #for DDLm functions
     self.switch_numpy(False)    #no Numpy arrays returned 
-    if isinstance(dic,basestring):
-        self.dic_as_cif = CifFile(dic,grammar=grammar,**kwargs)
-        self.dic_as_cif.standard = 'Dic'    #for correct output order
-        self.dic_as_cif.scoping = 'dictionary'
-    (self.dicname,self.diclang,self.defdata) = self.dic_determine(self.dic_as_cif)
+    super(CifDic,self).__init__(datasource=dic,grammar=grammar,**kwargs) 
+    self.standard = 'Dic'    #for correct output order
+    self.scoping = 'dictionary'
+    (self.dicname,self.diclang) = self.dic_determine()
     print '%s is a %s dictionary' % (self.dicname,self.diclang)
-    super(CifDic,self).__init__(datasource=self.defdata.copy(),**kwargs) 
     self.scopes_mandatory = {}
     self.scopes_naughty = {}
     self.grammar = grammar # remember for importing dictionaries correctly
@@ -480,6 +476,7 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
     elif self.diclang == 'DDLm':
         self.item_validation_funs = [
             self.validate_item_enum,
+            self.validate_item_esd_ddlm,
             ]
         self.loop_validation_funs = [
             self.validate_looping_ddlm,
@@ -518,8 +515,8 @@ which implies DDL2/DDLM.  This is also where we define some universal
 keys for uniform access to DDL attributes.    
 
 <<Dictionary determination function>>=
-def dic_determine(self,cifdic):
-    if cifdic.has_key("on_this_dictionary"): 
+def dic_determine(self):
+    if self.has_key("on_this_dictionary"): 
         self.master_key = "on_this_dictionary"
 	self.type_spec = "_type"
 	self.enum_spec = "_enumeration"
@@ -537,23 +534,23 @@ def dic_determine(self,cifdic):
         self.primitive_type = "_type"
         self.dep_spec = "xxx"
         self.cat_list = []   #to save searching all the time
-	name = cifdic["on_this_dictionary"]["_dictionary_name"]
-	version = cifdic["on_this_dictionary"]["_dictionary_version"]
-	return (name+version,"DDL1",cifdic)
-    elif len(cifdic.get_roots()) == 1:              # DDL2/DDLm
-        self.master_key = cifdic.get_roots()[0][0]	
+	name = self["on_this_dictionary"]["_dictionary_name"]
+	version = self["on_this_dictionary"]["_dictionary_version"]
+	return (name+version,"DDL1")
+    elif len(self.get_roots()) == 1:              # DDL2/DDLm
+        self.master_key = self.get_roots()[0][0]	
         # now change to dictionary scoping
-        cifdic.scoping = 'dictionary'
-	name = cifdic[self.master_key]["_dictionary.title"]
-	version = cifdic[self.master_key]["_dictionary.version"]
+        self.scoping = 'dictionary'
+	name = self[self.master_key]["_dictionary.title"]
+	version = self[self.master_key]["_dictionary.version"]
 	if name != self.master_key:
 	    print "Warning: DDL2 blockname %s not equal to dictionary name %s" % (self.master_key,name)
-        if cifdic[self.master_key].has_key("_dictionary.class"):   #DDLm
+        if self[self.master_key].has_key("_dictionary.class"):   #DDLm
             self.enum_spec = '_enumeration_set.state'
             self.key_spec = '_category.key_id'
             self.must_exist_spec = None
             self.cat_spec = '_name.category_id'
-            return(name+version,"DDLm",cifdic) 
+            return(name+version,"DDLm") 
         else:   #DDL2
             self.key_spec = "_category_mandatory.name"
             self.type_spec = "_item_type.code" 
@@ -571,7 +568,7 @@ def dic_determine(self,cifdic):
             self.list_ref_spec = "xxx"
             self.primitive_type = "_type"
             self.dep_spec = "_item_dependent.dependent_name"
-            return (name+version,"DDL2",cifdic)
+            return (name+version,"DDL2")
     else:
 	raise CifError, "Unable to determine dictionary DDL version"
     
@@ -686,7 +683,7 @@ def DDL1_normalise(self):
                 self[fake_name] = newcatdata
                 self.cat_list.append(newcat)
     # write out the type information in DDL2 style
-    self.dic_as_cif[self.master_key].AddLoopItem((
+    self[self.master_key].AddLoopItem((
         ("_item_type_list.code","_item_type_list.construct",
           "_item_type_list.primitive_code"),
         (base_types,base_constructs,prim_types)
@@ -1075,9 +1072,9 @@ this information is blank unless we are dealing with the DDLm dictionary.
 
 <<Parse DDLm validity information>>=
 def ddlm_parse_valid(self):
-    if not self.dic_as_cif[self.master_key].has_key("_dictionary_valid.application"):
+    if not self[self.master_key].has_key("_dictionary_valid.application"):
         return
-    for scope_pack in self.dic_as_cif[self.master_key].GetLoop("_dictionary_valid.application"):
+    for scope_pack in self[self.master_key].GetLoop("_dictionary_valid.application"):
         scope = getattr(scope_pack,"_dictionary_valid.application")
         valid_info = getattr(scope_pack,"_dictionary_valid.attributes")
         if scope[1] == "Mandatory":
@@ -1387,7 +1384,7 @@ def resolve_path(self,file_loc):
     import urlparse
     url_comps = urlparse.urlparse(file_loc)
     if url_comps[0]: return file_loc    #already full URI
-    new_url = urlparse.urljoin(self.dic_as_cif.my_uri,file_loc)
+    new_url = urlparse.urljoin(self.my_uri,file_loc)
     #print "Transformed %s to %s for import " % (file_loc,new_url)
     return new_url
     
@@ -1615,6 +1612,17 @@ def validate_item_esd(self,item_name,item_value):
     if can_esd: return {"result":True}         #must be OK!
     item_values = listify(item_value)
     check_all = filter(lambda a: get_number_with_esd(a)[1] != None, item_values)
+    if len(check_all)>0: return {"result":False,"bad_values":check_all}
+    return {"result":True}
+
+def validate_item_esd_ddlm(self,item_name,item_value):
+    can_esd = True
+    if self[item_name].get('_type.purpose') != 'Measurand':
+        can_esd = False
+    item_values = listify(item_value)
+    check_all = [get_number_with_esd(a)[1] for a in item_values]
+    check_all = [v for v in check_all if (can_esd and v == None) or \
+             (not can_esd and v != None)]
     if len(check_all)>0: return {"result":False,"bad_values":check_all}
     return {"result":True}
 
@@ -2273,10 +2281,10 @@ this is flagged by the primitive code being of type 'numb'.
 
 <<Add type information>>=
 def add_type_info(self):
-    if self.dic_as_cif[self.master_key].has_key("_item_type_list.construct"): 
-	types = self.dic_as_cif[self.master_key]["_item_type_list.code"]
-        prim_types = self.dic_as_cif[self.master_key]["_item_type_list.primitive_code"]
-	constructs = map(lambda a: a + "$", self.dic_as_cif[self.master_key]["_item_type_list.construct"])
+    if self[self.master_key].has_key("_item_type_list.construct"): 
+	types = self[self.master_key]["_item_type_list.code"]
+        prim_types = self[self.master_key]["_item_type_list.primitive_code"]
+	constructs = map(lambda a: a + "$", self[self.master_key]["_item_type_list.construct"])
         # add in \r wherever we see \n, and change \{ to \\{
         def regex_fiddle(mm_regex):
             brack_match = r"((.*\[.+)(\\{)(.*\].*))" 
@@ -2624,14 +2632,9 @@ def WriteOut(self,**kwargs):
         else:
             return a
     myblockorder = self.get_full_child_list()
-    # drop the underscores as the CIF will not have them
-    myblockorder = [drop_underscore(a) for a in myblockorder]
-    self.dic_as_cif.set_grammar(self.grammar)
-    self.dic_as_cif.standard = 'Dic'
-    return self.dic_as_cif.WriteOut(blockorder = myblockorder,**kwargs)
-
-def SetTemplate(self,template_file):
-    self.dic_as_cif.SetTemplate(template_file)
+    self.set_grammar(self.grammar)
+    self.standard = 'Dic'
+    return super(CifDic,self).WriteOut(blockorder = myblockorder,**kwargs)
 
 def get_full_child_list(self):
     """Return a list of definition blocks in order parent-child-child-child-parent-child..."""

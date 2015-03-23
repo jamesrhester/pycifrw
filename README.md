@@ -17,10 +17,11 @@ Conformance
 
 The CIF 1.1 and 2.0 working specifications were used as a reference,
 
-PyCifRW has been tested on the IUCr sample CIF trip files located at
+PyCifRW has been tested on the IUCr sample CIF1.1 trip files located at
 http://www.iucr.org/iucr-top/cif/developers/trip and fails or 
 successfully reads as it is supposed to (note that `ciftest5` contains
-characters now forbidden in CIFs).   
+characters now forbidden in CIFs). For CIF2.0, only characters in the
+Basic Multilingual Plane are supported due to limitations of Python 2.   
 
 Supported Platforms
 -------------------

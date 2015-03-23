@@ -1145,6 +1145,17 @@ class DictTestCase(unittest.TestCase):
         self.failUnless('description' not in self.ddldic)
         self.failUnless('description_example' not in self.ddldic)
 
+    def testWriteDic(self):
+        """Test that we can write a dictionary after adding a category"""
+        self.ddldic.add_definition('_junkety._junkjunk_','description')
+        self.ddldic.set_grammar('2.0')
+        final_str = str(self.ddldic)  #should not fail
+        ff = open("test_dic_write.cif","w")
+        ff.write(final_str)
+        ff.close()
+        incif = CifFile.CifDic("test_dic_write.cif",grammar='2.0')
+        self.failUnless(incif.has_key('_description.junkjunk'))
+
 # now for some value testing
 class DDLmValueTestCase(unittest.TestCase):
     def setUp(self):
@@ -1632,6 +1643,7 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDL1TestCase) 
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
+     #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
      #unittest.TextTestRunner(verbosity=2).run(suite)
      unittest.main()
 
