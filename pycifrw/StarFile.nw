@@ -483,6 +483,7 @@ this file e.g. with DDLm dictionary imports.
 <<Read in a STAR file>>=
 def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar='1.1'):
     import string
+    import os
     if grammar=="1.1":
         import YappsStarParser_1_1 as Y
     elif grammar=="1.0":
@@ -490,7 +491,12 @@ def ReadStar(filename,maxlength=2048,dest=StarFile(),scantype='standard',grammar
     elif grammar=="DDLm":
         import YappsStarParser_DDLm as Y
     if isinstance(filename,basestring):
-        filestream = urlopen(filename)
+        # Some logic to deal with Windows filenames
+        url = filename
+	drive, tail = os.path.splitdrive(filename)
+	if drive:
+	    url = "file:%s" % filename
+        filestream = urlopen(url)
     else:
 	filestream = filename   #already opened for us
     my_uri = ""

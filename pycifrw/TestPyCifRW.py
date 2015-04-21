@@ -518,6 +518,13 @@ class FileWriteTestCase(unittest.TestCase):
        jj = self.ef.first_block()
        self.failUnless(jj==self.df)
 
+   def testWindowsPath(self):
+       """Test that windows path names starting with a letter are properly handled"""
+       import os
+       fullpath = os.path.abspath("test.cif")
+       CifFile.ReadCif(fullpath)
+
+
 ##############################################################
 #
 #   Test alternative grammars (1.0, DDLm)
