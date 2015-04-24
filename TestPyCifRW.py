@@ -1065,7 +1065,7 @@ class DDLmImportCase(unittest.TestCase):
 
 class DictTestCase(unittest.TestCase):
     def setUp(self):
-	self.ddldic = CifFile.CifDic("pycifrw/tests/ddl.dic",grammar='STAR2',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
+	self.ddldic = CifFile.CifDic("pycifrw/tests/ddl.dic",grammar='2.0',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
     
     def tearDown(self):
 	pass
@@ -1147,14 +1147,40 @@ class DictTestCase(unittest.TestCase):
 
     def testWriteDic(self):
         """Test that we can write a dictionary after adding a category"""
+        import os
         self.ddldic.add_definition('_junkety._junkjunk_','description')
         self.ddldic.set_grammar('2.0')
         final_str = str(self.ddldic)  #should not fail
-        ff = open("test_dic_write.cif","w")
+        cwd = os.getcwd()
+        ffurl = os.path.join(cwd,"pycifrw/tests/test_dic_write.cif")
+        ff = open(ffurl,"w")
         ff.write(final_str)
         ff.close()
-        incif = CifFile.CifDic("test_dic_write.cif",grammar='2.0')
+        incif = CifFile.CifDic("file:"+ffurl,grammar='2.0')
         self.failUnless(incif.has_key('_description.junkjunk'))
+
+    def testSemanticChildren(self):
+        """Test that we can obtain the semantic children of a category"""
+        children = self.ddldic.ddlm_immediate_children('enumeration_set')
+        self.failUnless('_enumeration_set.xref_dictionary' in children)
+        children = self.ddldic.ddlm_immediate_children('enumeration')
+        self.failUnless('enumeration_set' in children)
+        children = self.ddldic.ddlm_immediate_children('ddl_dic')
+        self.failUnless('attributes' in children)
+
+    def testDanglers(self):
+        """Test that we correctly locate missing categories"""
+        self.ddldic['_description.text'].overwrite = True
+        self.ddldic['_description.text']['_name.category_id'] = 'NNN'
+        p = self.ddldic.ddlm_danglers()
+        self.failUnless('_description.text' in p)
+        self.failUnless('ddl_dic' not in p)
+        self.failUnless('attributes' not in p)
+
+    def testAllChildren(self):
+        """Test that we can pick up all children"""
+        children = self.ddldic.ddlm_all_children('description')
+        self.failUnless('_description_example.detail' in children)
 
 # now for some value testing
 class DDLmValueTestCase(unittest.TestCase):
@@ -1628,8 +1654,8 @@ class DicStructureTestCase(unittest.TestCase):
         print self.fb
 
 if __name__=='__main__':
-     global testdic
-     testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="STAR2")
+     #global testdic
+     #testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="STAR2")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
@@ -1643,7 +1669,7 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDL1TestCase) 
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
-     #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     #unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
+     unittest.TextTestRunner(verbosity=2).run(suite)
+     #unittest.main()
 

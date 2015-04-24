@@ -775,7 +775,7 @@ initialising the file.
             b.SetOutputLength(wraplength,self.maxoutlength)
         # loop over top-level
         # monitor output
-        all_names = self.child_table.keys()
+        all_names = self.child_table.keys()   #i.e. lower case
         if blockorder is None:
             top_block_names = [(a[0],a[1].block_id) for a in self.child_table.items() if a[1].parent is None]
         else:
@@ -803,7 +803,7 @@ initialising the file.
                     outstring.write('\n\n' + 'save_' + child_name + '\n')
                     outstring.write(str(self[child_ref]))
                     outstring.write('\n\n' + 'save_' + '\n')
-                    all_names.remove(child_ref)
+                    all_names.remove(child_ref.lower())
             if self.standard != 'Dic':              #put contents after save frames
                 outstring.write(str(self[blockref]))
             else:
@@ -1842,7 +1842,9 @@ def CreateLoop(self,datanames,order=-1):
        [self.loops[a].remove(b) for a in self.loops for b in lc_datanames if b in self.loops[a]]
        # remove empty loops
        empty_loops = [a for a in self.loops.keys() if len(self.loops[a])==0]
-       for a in empty_loops: del self.loops[a]
+       for a in empty_loops:
+           self.item_order.remove(a) 
+           del self.loops[a]
        if len(self.loops)>0:
            loopno = max(self.loops.keys()) + 1
        else:
@@ -2656,7 +2658,8 @@ we expect the ordering to consist of a sequence of datanames or loop references.
 templated ordering is essentially a list of datanames, so we now have to find which
 loops each dataname corresponds to and adjust each loops ordering accordingly.  For
 dictionary use we allow only a segment of the file to be output be specifying a
-finish_at/start_from dataname. 
+finish_at/start_from dataname.  For consistency, we default to outputting nothing if
+start_from is not found, and outputting everything if finish_at is not found. 
 
 <<Create a proper ordering>>=
 def create_ordering(self,finish_at,start_from):
@@ -2685,6 +2688,8 @@ def create_ordering(self,finish_at,start_from):
            self.output_order = self.output_order[self.output_order.index(start_from):]
         elif loop_no >= 0:
            self.output_order = self.output_order[self.output_order.index(loop_no):]
+        else:
+           self.output_order = []
     if finish_at != '':
         loop_no = self.FindLoop(finish_at)
         if self.output_order.count(finish_at):
@@ -2729,7 +2734,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
     if mode == 'strict':
        for key in new_block.keys(): 
            if self.has_key(key) and key not in match_att:
-              raise CifError( "Identical keys %s in strict merge mode" % key)
+              raise StarError( "Identical keys %s in strict merge mode" % key)
            elif key not in match_att:           #a new dataname
                self[key] = new_block[key]
        # we get here if there are no keys in common, so we can now copy

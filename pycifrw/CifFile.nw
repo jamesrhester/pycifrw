@@ -366,6 +366,7 @@ class CifDic(StarFile.StarFile):
     <<Deal with DDL1 differences>>
     <<Iron out DDL2 strangeness>> 
     <<Normalise DDLm save frame names>>
+    <<Get semantic children>>
     <<Parse DDLm validity information>>
     <<Perform DDLm imports>>
     <<Create alias table>>
@@ -1010,7 +1011,7 @@ def create_cat_obj_table(self):
     base_table = dict([((self[a].get('_name.category_id','').lower(),self[a].get('_name.object_id','').lower()),[self[a].get('_definition.id','')]) \
                        for a in self.keys() if self[a].get('_definition.scope','Item')=='Item'])
     self.loopable_cats = [a.lower() for a in self.keys() if self[a].get('_definition.class','')=='Loop']
-    loopers = [self.get_immediate_children(a) for a in self.loopable_cats]
+    loopers = [self.ddlm_immediate_children(a) for a in self.loopable_cats]
     loop_children = [[b[0] for b in a if b[0].lower() in self.loopable_cats ] for a in loopers]
     expand_list = dict([(a,b) for a,b in zip(self.loopable_cats,loop_children) if len(b)>0])
     print "Expansion list:" + `expand_list`
@@ -1064,6 +1065,54 @@ def create_cat_key_table(self):
         collect_keys(k,v)
     print 'Keys for categories' + `self.cat_key_table`
 
+@  For convenience we provide ways of interrogating the semantic tree of categories. Note that if
+we are passed the top-level datablock, the semantic children are the syntactic children.  An additional method finds the 'dangling' definitions, which
+are definitions that have no category definition present - these might
+be definitions added by this dictionary to categories found in other dictionaries.
+
+<<Get semantic children>>=
+def ddlm_immediate_children(self,catname):
+    """Return a list of blocknames for the immediate children of catname.  These are
+    semantic children (i.e. based on _name.category_id), not structural children as
+    in the case of StarFile.get_immediate_children"""
+    # check the roots   
+    roots = [a[0] for a in self.get_roots()]
+    if catname in roots:   #a datablock essentially
+        straight_children = [a[0] for a in self.get_immediate_children(catname) if self[a[0]].get('_definition.class') == 'Head']
+    else:
+        straight_children = [a for a in self.keys() if self[a].get('_name.category_id','').lower() == catname.lower()]
+    return straight_children
+
+def ddlm_all_children(self,catname):
+    """Return a list of all children, including the `catname`"""
+    all_children = self.ddlm_immediate_children(catname)
+    cat_children = [a for a in all_children if self[a].get('_definition.scope','Item') == 'Category']
+    for c in cat_children:
+        all_children.remove(c)
+        all_children += self.ddlm_all_children(c)
+    return all_children + [catname]
+
+def is_semantic_child(self,parent,maybe_child):
+    """Return true if `maybe_child` is a child of `parent`"""
+    all_children = self.ddlm_all_children(parent)
+    return maybe_child in all_children
+
+def ddlm_danglers(self):
+    """Return a list of definitions that do not have a category defined
+    for them, or are children of an unattached category"""
+    top_block = self.get_roots()[0][0]
+    connected = set(self.ddlm_all_children(top_block))
+    all_keys = set(self.keys())
+    unconnected = all_keys - connected
+    return list(unconnected)
+
+def get_ddlm_parent(self,itemname):
+    """Get the parent category of itemname"""
+    parent = self[itemname].get('_name.category_id','')
+    if parent == '':  # use the top block by default
+        parent = self.get_parent(itemname)
+    return parent
+
 @ DDLm introduces validity information in the enclosing datablock.  It is a loop of scope,
 attribute values where the scope is one of dictionary (everywhere), category (whole
 category) and item (just the single definition).  Validity can be mandatory, 
@@ -1113,10 +1162,10 @@ def change_category_name(self,oldname,newname):
         raise KeyError,'Cannot rename non-existent category %s to %s' % (oldname,newname)
     if self.has_key(newname):
         raise KeyError,'Cannot rename %s to %s as %s already exists' % (oldname,newname,oldname)
+    child_defs = self.ddlm_immediate_children(oldname)
     self.rename(oldname,newname)   #NB no name integrity checks
     self[newname]['_name.object_id']=newname
     self[newname]['_definition.id']=newname
-    child_defs = [a[0] for a in self.get_immediate_children(newname)]
     for child_def in child_defs:
         self[child_def]['_name.category_id'] = newname
         if self[child_def].get('_definition.scope','Item')=='Item':
@@ -1157,12 +1206,19 @@ def change_category(self,itemname,catname):
     self.lock()
 
 def change_name(self,one_def,newobj):
-    """Change the object_id of one_def to newobj"""
-    newid = self.create_catobj_name(self[one_def]['_name.category_id'],newobj)
-    self.unlock()
-    self.rename(one_def,newid)
-    self[newid]['_definition.id']=newid
-    self[newid]['_name.object_id']=newobj
+    """Change the object_id of one_def to newobj. This is not used for
+    categories, but can be used for dictionaries"""
+    if not self[one_def].has_key('_dictionary.title'):  #a dictionary block 
+        newid = self.create_catobj_name(self[one_def]['_name.category_id'],newobj)
+        self.unlock()
+        self.rename(one_def,newid)
+        self[newid]['_definition.id']=newid
+        self[newid]['_name.object_id']=newobj
+    else:
+        self.unlock()
+        newid = newobj
+        self.rename(one_def,newobj)
+        self[newid]['_dictionary.title'] = newid
     self.lock()
     return newid
    
@@ -1219,8 +1275,10 @@ def remove_definition(self,defname):
     if defname not in self:
         return
     if self[defname].get('_definition.scope')=='Category':
-        child_cats = [a['_name.category_id'] for a in self.get_children(defname) if a.get('_definition.scope')=='Category']
-        for cc in child_cats: del self.cat_map[cc]
+        children = self.ddlm_immediate_children(defname)
+        [self.remove_definition(a) for a in children]
+        cat_map_id = self[defname]['_definition.id']
+        del self.cat_map[cat_map_id]        
     del self[defname]
 
 @ The DDLm architecture identifies a data definition by (category,object) which
@@ -2626,11 +2684,6 @@ to override the output block order returned by the get_child_list routine.
 
 <<Dictionary output routines>>=
 def WriteOut(self,**kwargs):
-    def drop_underscore(a):
-        if a[0] == '_':
-            return a[1:]
-        else:
-            return a
     myblockorder = self.get_full_child_list()
     self.set_grammar(self.grammar)
     self.standard = 'Dic'
@@ -2639,9 +2692,16 @@ def WriteOut(self,**kwargs):
 def get_full_child_list(self):
     """Return a list of definition blocks in order parent-child-child-child-parent-child..."""
     top_block = self.get_roots()[0][0]
-    root_cat = [a for a in self.keys() if self[a].get('_definition.class',None)=='Head']
+    root_cat = [a for a in self.keys() if self[a].get('_definition.class','Datum')=='Head']
     if len(root_cat) == 1:
         all_names = [top_block] + self.recurse_child_list(root_cat[0])
+        unrooted = self.ddlm_danglers()
+        for no_root in unrooted: 
+            new_names = self.recurse_child_list(no_root)
+            double_names = set(new_names).intersection(set(all_names))
+            if len(double_names)>0:
+                raise CifError,'Chasing root %s gave double names %s' % (no_root,`double_names`)
+            all_names += new_names
         print 'Final block order: ' + `all_names`
         return all_names
     raise ValueError, 'Dictionary contains no Head category, please print as plain CIF instead'
