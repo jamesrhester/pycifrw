@@ -182,7 +182,7 @@ class CifLoopBlock(StarFile.LoopBlock):
 
     def insert_loop(self,newloop,**kwargs):
         if newloop.dimension > 1:
-            raise  CifError( 'Attempt to insert inner loop, loop level %d' % dimension)
+            raise  CifError( 'Attempt to insert inner loop, loop level %d' % newloop.dimension)
         StarFile.LoopBlock.insert_loop(self,newloop,**kwargs)
 
     def Loopify(self,datanamelist):
