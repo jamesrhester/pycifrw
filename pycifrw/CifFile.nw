@@ -551,6 +551,7 @@ def dic_determine(self):
             self.key_spec = '_category.key_id'
             self.must_exist_spec = None
             self.cat_spec = '_name.category_id'
+            self.primitive_type = '_type.contents'
             return(name+version,"DDLm") 
         else:   #DDL2
             self.key_spec = "_category_mandatory.name"
@@ -1012,7 +1013,9 @@ def create_cat_obj_table(self):
                        for a in self.keys() if self[a].get('_definition.scope','Item')=='Item'])
     self.loopable_cats = [a.lower() for a in self.keys() if self[a].get('_definition.class','')=='Loop']
     loopers = [self.ddlm_immediate_children(a) for a in self.loopable_cats]
-    loop_children = [[b[0] for b in a if b[0].lower() in self.loopable_cats ] for a in loopers]
+    print 'Loopable cats:' + `self.loopable_cats`
+    print 'Of atom_type:' + `self.ddlm_immediate_children('atom_type')`
+    loop_children = [[b for b in a if b.lower() in self.loopable_cats ] for a in loopers]
     expand_list = dict([(a,b) for a,b in zip(self.loopable_cats,loop_children) if len(b)>0])
     print "Expansion list:" + `expand_list`
     extra_table = {}   #for debugging we keep it separate from base_table until the end
@@ -1186,14 +1189,14 @@ def create_catobj_name(self,cat,obj):
     return ('_'+cat+'.'+obj)
 
 def change_category(self,itemname,catname):
-    """Move itemname into catname"""
+    """Move itemname into catname, return new handle"""
     defid = self[itemname]
     if defid['_name.category_id'].lower()==catname.lower():
         print 'Already in category, no change'
-        return
+        return itemname
     if catname not in self:    #don't have it
         print 'No such category %s' % catname
-        return
+        return itemname
     self.unlock()
     objid = defid['_name.object_id']
     defid['_name.category_id'] = catname
@@ -1204,6 +1207,7 @@ def change_category(self,itemname,catname):
         self.rename(itemname,newid)
     self.set_parent(catname,newid)  
     self.lock()
+    return newid
 
 def change_name(self,one_def,newobj):
     """Change the object_id of one_def to newobj. This is not used for
@@ -1436,7 +1440,7 @@ def ddlm_import(self):
             print 'Merged %s (%d defs) in %s mode, now have %d defs' % (target_key,len(child_frames),
                mode,len(self))
         # it will never happen again... 
-        del self[self.master_key]["_import.get"]
+        del self[parent_block]["_import.get"]
                 
 def resolve_path(self,file_loc):
     import urlparse
@@ -1662,6 +1666,9 @@ Note that we make use of the primitive type here; there are some
 cases where a string type looks like an esd, so unless we know
 we have a number we ignore these cases.
 
+DDLm requires an esd if _type.purpose is Measurand, and should not have an
+esd if _type.purpose is Number.
+
 <<Validate esd presence>>=
 def validate_item_esd(self,item_name,item_value):
     if self[item_name].get(self.primitive_type) != 'numb':
@@ -1674,6 +1681,9 @@ def validate_item_esd(self,item_name,item_value):
     return {"result":True}
 
 def validate_item_esd_ddlm(self,item_name,item_value):
+    if self[item_name].get('self.primitive_type') not in \
+    ['Count','Index','Integer','Real','Imag','Complex','Binary','Hexadecimal','Octal']:
+        return {"result":None}
     can_esd = True
     if self[item_name].get('_type.purpose') != 'Measurand':
         can_esd = False
@@ -2281,7 +2291,7 @@ DDLm manages mandatory items by providing a table in the DDLm
 dictionary which classifies datanames into
 mandatory/recommended/prohibited for dictionary, category or item
 scopes. Note that the following check might fail for categories and
-dictionaries if '_definition.scope' is missing.
+dictionaries if '_definition.scope' or '_dictionary.title' is missing.
 
 <<Process DDLm mandatory information>>=
 def check_mandatory_items(self,whole_block,default_scope='Item'):
@@ -2290,6 +2300,8 @@ def check_mandatory_items(self,whole_block,default_scope='Item'):
     if default_scope == 'Datablock':
         return {"result":True}     #is a data file
     scope = whole_block.get('_definition.scope',default_scope)
+    if whole_block.has_key('_dictionary.title'):
+       scope = 'Dictionary'
     missing = [a for a in self.scopes_mandatory[scope] if not whole_block.has_key(a)]
     if len(missing)==0:
         return {"result":True}
@@ -2303,6 +2315,8 @@ def check_prohibited_items(self,whole_block,default_scope='Item'):
     if default_scope == 'Datablock':
         return {"result":True}     #is a data file
     scope = whole_block.get('_definition.scope',default_scope)
+    if whole_block.has_key('_dictionary.title'):
+       scope = 'Dictionary'
     present = [a for a in self.scopes_naughty[scope] if whole_block.has_key(a)]
     if len(present)==0:
         return {"result":True}
@@ -2476,6 +2490,7 @@ when returning it.
 def derive_item(self,start_key,cifdata,store_value = False):
     key = start_key   #starting value
     result = None     #success is a non-None value
+    default_result = False #we haven't used a default value
     <<Resolve using aliases>>
     # store any default value in case we have a problem
     def_val = self[key].get("_enumeration.default","")
@@ -2512,9 +2527,9 @@ def derive_item(self,start_key,cifdata,store_value = False):
               has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
               print 'Found pre-existing names: ' + `has_cat_names`
               if len(has_cat_names)>0:   #this category already exists
-                  if out_result is None: #need to create a list of Nones
+                  if out_result is None or default_result: #need to create a list of values
                       loop_len = len(cifdata[has_cat_names[0]])
-                      out_result = [None]*loop_len
+                      out_result = [out_result]*loop_len
                       result = out_result
               cifdata[key] = out_result      #lengths must match or else!!
               print 'Loop info:' + `cifdata.loops`
@@ -2586,9 +2601,15 @@ from a table.  During development, we deliberately allow errors
 arising from the method to be propagated so that we can see anything
 that might be wrong.
 
+If we are using default values, we need to fill in the whole column
+of a looped category.  This is taken care of at the end of the derivation
+function, so we simply set a flag to say that this is necessary.
+
 <<Work out default value of dataname>>=
-if def_val: return self.change_type(key,def_val)
-if def_index_val:            #derive a default value
+if def_val:
+    result = self.change_type(key,def_val)
+    default_result = True
+elif def_index_val:            #derive a default value
     index_vals = self[key]["_enumeration_default.index"]
     val_to_index = cifdata[def_index_val]     #what we are keying on
     if self[def_index_val]['_type.contents'] in ['Code','Name','Tag']:
@@ -2605,6 +2626,7 @@ if def_index_val:            #derive a default value
             val_to_index = val_to_index.lower()
         keypos = index_vals.index(val_to_index)   #value error if no such value available
         result = self[key]["_enumeration_default.value"][keypos]
+        default_result = True   #flag that it must be extended
     result = self.change_type(key,result)
     print "Indexed on %s to get %s for %s" % (def_index_val,`result`,`val_to_index`)
 

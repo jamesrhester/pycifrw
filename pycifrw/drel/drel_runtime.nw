@@ -16,13 +16,12 @@ def aug_append(current,extra):
     """Add the contents of extra to current"""
     have_list = isinstance(current,list)
     if have_list:
-        if isinstance(extra, (float,int,complex)):
+        if not isinstance(extra, list):
             #append a single element
             return current + [extra]
-        elif isinstance(extra,list):
+        else:
             return current + extra
-    else:
-        raise ValueError, "Cannot append %s to %s" % (`extra`,`current`)
+    raise ValueError, "Cannot append %s to %s" % (`extra`,`current`)
 
 def aug_add(current,extra):
     """Sum the contents of extra to current"""

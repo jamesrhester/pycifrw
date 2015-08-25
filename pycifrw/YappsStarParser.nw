@@ -348,13 +348,13 @@ rule input@<<prepared>>: ( ((
             END                 {{allblocks = prepared}}
             )))                   {{return allblocks}}
 
-     rule dblock@<<prepared>>: ( data_heading {{heading = data_heading[5:];thisbc=StarFile(characterset='unicode',standard=prepared.standard);thisbc.NewBlock(heading,StarBlock(overwrite=False))}}# a data heading
+     rule dblock@<<prepared>>: ( data_heading {{heading = data_heading[5:];thisbc=StarFile(characterset='unicode',standard=prepared.standard);thisbc.NewBlock(heading,StarBlock(overwrite=False));stored_bc = thisbc[heading]}}# a data heading
                   (
-                   dataseq@<<thisbc[heading]>>  
+                   dataseq@<<stored_bc>>   #because merging may have changed the heading  
                   |
                   save_frame     {{thisbc.merge_fast(save_frame,parent=heading)}}
                   )*
-                   )                      {{thisbc[heading].setmaxnamelength(thisbc[heading].maxnamelength);return (monitor('dblock',thisbc))}} # but may be empty
+                   )                      {{stored_bc.setmaxnamelength(stored_bc.maxnamelength);return (monitor('dblock',thisbc))}} # but may be empty
 
      rule dataseq@<<starblock>>:  data@<<starblock>> 
 		       (

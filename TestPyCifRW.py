@@ -1182,6 +1182,10 @@ class DictTestCase(unittest.TestCase):
         children = self.ddldic.ddlm_all_children('description')
         self.failUnless('_description_example.detail' in children)
 
+    def testFunnyLayout(self):
+        """Test that having some of the data block at the end is OK"""
+        good_read = CifFile.CifDic("pycifrw/tests/ddl_rearranged.dic",grammar="2.0",scoping="dictionary",do_minimum=True)
+
 # now for some value testing
 class DDLmValueTestCase(unittest.TestCase):
     def setUp(self):
@@ -1654,8 +1658,8 @@ class DicStructureTestCase(unittest.TestCase):
         print self.fb
 
 if __name__=='__main__':
-     #global testdic
-     #testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="STAR2")
+     global testdic
+     testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="STAR2")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
@@ -1669,7 +1673,7 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDL1TestCase) 
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
-     suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     unittest.TextTestRunner(verbosity=2).run(suite)
-     #unittest.main()
+     #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
+     #unittest.TextTestRunner(verbosity=2).run(suite)
+     unittest.main()
 

@@ -743,6 +743,8 @@ def get_function_name(in_name):
         return "","","." + test_name
     if test_name == 'matrix':
         return "numpy.matrix","",".astype('float64')"
+    if test_name == 'sort':
+	return "","",".sort()"
     return in_name,"",""   #no idea
  
 @  Mathematical operations in dREL are complicated by the need to handle matrix

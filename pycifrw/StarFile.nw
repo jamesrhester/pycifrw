@@ -478,8 +478,8 @@ def NewBlock(self,blockname,blockcontents=None,fix=True,parent=None):
         newblockname = re.sub('[  \t]','_',blockname)
     else: newblockname = blockname
     new_lowerbn = newblockname.lower()
-    if new_lowerbn in self.lower_keys:
-        if self.standard is not None:    #already there
+    if new_lowerbn in self.lower_keys:   #already there
+        if self.standard is not None:
            toplevelnames = [a[0] for a in self.child_table.items() if a[1].parent==None]
            if parent is None and new_lowerbn not in toplevelnames:  #can give a new key to this one
               while new_lowerbn in self.lower_keys: new_lowerbn = new_lowerbn + '+'
@@ -612,7 +612,9 @@ where one of the blocks is a top-level block.
 
 <<Merge with another block collection>>=
 def merge_fast(self,new_bc,parent=None):
-    """Do a fast merge"""
+    """Do a fast merge. WARNING: this may change one or more of its frame headers in order to
+    remove duplicate frames.  Please keep a handle to the block object instead of the text of
+    the header."""
     if self.standard is None:
         mode = 'replace' 
     else:
@@ -1177,7 +1179,7 @@ class StarPacket(list):
     def merge_packet(self,incoming):
         """Merge contents of incoming packet with this packet"""
         new_attrs = [a for a in dir(incoming) if a[0] == '_' and a[1] != "_"]
-        self.append(incoming)
+        self.extend(incoming)
         for na in new_attrs:
             setattr(self,na,getattr(incoming,na))
 
@@ -1186,7 +1188,7 @@ class StarPacket(list):
         if att_name.lower() in self.__dict__:
             return getattr(self,att_name.lower())
         if att_name in ('cif_dictionary','fulldata','key'):
-            raise AttributeError, 'Programming error: cannot compute value of %s' % att_name
+            raise AttributeError, 'Programming error: can only assign value of %s' % att_name
         d = self.cif_dictionary
         c = self.fulldata
         k = self.key
@@ -1988,7 +1990,7 @@ def GetKeyedPacket(self,keyname,keyvalue,no_case=False):
        one_pack= [a for a in my_loop if getattr(a,keyname)==keyvalue]
     if len(one_pack)!=1:
         raise ValueError, "Bad packet key %s = %s: returned %d packets" % (keyname,keyvalue,len(one_pack))
-    #print "Keyed packet: %s" % one_pack[0]
+    print "Keyed packet: %s" % one_pack[0]
     return one_pack[0]
 
 @  Semantic loops.  These are loops defined by a dictionary,
