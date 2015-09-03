@@ -330,13 +330,12 @@ class ValidCifError(Exception):
 @ \section {Dictionaries}
 
 To avoid ambiguity with the Python dictionary type, we use capital
-D to denote CIF dictionaries where misinterpretation is possible.
+D to denote CIF Dictionaries where misinterpretation is possible.
 
 We build our Dictionary behaviour on top of the StarFile object, which
 is notionally a collection of StarBlocks. A Dictionary is simply a
 collection of datablocks, where each datablock corresponds to a single
-definition. DDLm introduced nesting of definitions.  DDL1 had no
-category definitions. 
+definition.  DDL1 had no category definitions. 
 
 We adopt a data model whereby the excess information in a DDL2
 dictionary is absorbed into special methods (and I am thinking here
@@ -1226,10 +1225,11 @@ def change_name(self,one_def,newobj):
     self.lock()
     return newid
    
-def add_category(self,catname,catparent=None):
+def add_category(self,catname,catparent=None,is_loop=True):
     """Add a new category to the dictionary with name [[catname]].
        If [[catparent]] is None, the category will be a child of
-       the topmost 'Head' category or else the top data block."""
+       the topmost 'Head' category or else the top data block. If
+       [[is_loop]] is false, a Set category is created."""
     if catname in self:
         raise CifError, 'Attempt to add existing category %s' % catname
     self.unlock()
@@ -1246,7 +1246,10 @@ def add_category(self,catname,catparent=None):
     self[realname]['_name.category_id'] = self[root_cat]['_name.object_id']
     self[realname]['_definition.id'] = realname
     self[realname]['_definition.scope'] = 'Category'
-    self[realname]['_definition.class'] = 'Loop'
+    if is_loop:
+        self[realname]['_definition.class'] = 'Loop'
+    else:
+        self[realname]['_definition.class'] = 'Set'
     self[realname]['_description.text'] = 'No definition provided'
     self.lock()
     self.cat_map[realname]=realname
