@@ -806,6 +806,8 @@ initialising the file.
                     outstring.write(str(self[child_ref]))
                     outstring.write('\n\n' + 'save_' + '\n')
                     all_names.remove(child_ref.lower())
+            else:
+                raise CifError, 'Grammar %s is not recognised for output' % self.grammar
             if self.standard != 'Dic':              #put contents after save frames
                 outstring.write(str(self[blockref]))
             else:
@@ -814,6 +816,8 @@ initialising the file.
         outstring.close()
         if len(all_names)>0:
             print 'WARNING: following blocks not output: %s' % `all_names`
+        else:
+            print 'All blocks output.'
         return returnstring
 
     def block_to_string_nested(self,block_ref,block_id,outstring,indentlevel=0):
@@ -2296,7 +2300,7 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
     startcol = hints.get('column',-1)
     if isinstance(itemvalue,basestring):  #need to sanitize
        stringsink.write(self._formatstring(itemvalue,delimiter=delimiter),canbreak = True,startcol=startcol)
-    elif isinstance(itemvalue,StarList):
+    elif isinstance(itemvalue,(list)):
        stringsink.set_tab(0)
        stringsink.write('[',canbreak=True,newindent=True,mustbreak=compound,startcol=startcol)
        if len(itemvalue)>0:
@@ -2306,7 +2310,7 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
               stringsink.write(self.list_delimiter,do_tab=False)
               self.format_value(listval,stringsink,compound=True)
        stringsink.write(']',unindent=True)
-    elif isinstance(itemvalue,StarDict):
+    elif isinstance(itemvalue,dict):
        stringsink.set_tab(0)
        stringsink.write('{',newindent=True,mustbreak=compound,startcol=startcol)  #start a new line inside
        items = itemvalue.items()
@@ -2318,8 +2322,10 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
                stringsink.write("'"+key+"'"+":",canbreak=True)
                self.format_value(value,stringsink)   #never break between key and value
        stringsink.write('}',unindent=True)
-    else: 
+    elif isinstance(itemvalue,(float,int)):  #TODO - handle uncertainties
        stringsink.write(str(itemvalue),canbreak=True,startcol=startcol)   #numbers
+    else:
+       raise ValueError, 'Value in unexpected format for output: %s' % `itemvalue`
 
 @ Formatting a loop section.  We are passed an indent and destination string,
 and are expected to append a list of item names to the string indented by
@@ -2392,7 +2398,8 @@ improved.
 We have to catch empty strings as well, which are legal.  Another gotcha 
 concerns 'embedded' strings; if the datavalue begins with a quote, it
 will be output verbatim (and misunderstood) unless spaces elsewhere
-force quotation.
+force quotation.  Note that non-delimited strings may not start with
+a reserved word ('data','save','global').
 
 The caller is allowed to request a particular delimiter, with 'None'
 corresponding to no delimiter and the choices being apostrophe,
@@ -2415,6 +2422,10 @@ def _formatstring(self,instring,delimiter=None,standard='CIF1',indent=0):
     if len(instring) > (self.maxoutlength-2) or '\n' in instring:
             allowed_delimiters.intersection_update(["\n;","'''",'"""'])
     if ' ' in instring or '\t' in instring or '\v' in instring or (len(instring)>0 and instring[0] in '_$#;([{') or ',' in instring:
+            allowed_delimiters.difference_update([None])
+    if len(instring)>3 and (instring[:4].lower()=='data' or instring[:4].lower()=='save'):
+            allowed_delimiters.difference_update([None])
+    if len(instring)>5 and instring[:6].lower()=='global':
             allowed_delimiters.difference_update([None])
     if '"' in instring: allowed_delimiters.difference_update(['"',None])
     if "'" in instring: allowed_delimiters.difference_update(["'",None])

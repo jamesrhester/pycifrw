@@ -490,6 +490,7 @@ class FileWriteTestCase(unittest.TestCase):
              ('_item_quote',"'ABC"),
              ('_item_apost','"def'),
              ('_item_sws'," \n "),
+             ('_item_bad_beg',"data_journal"),
              (('_item_5','_item_7','_item_6'),
              ([1,2,3,4],
               ['a','b','c','d'],
@@ -674,7 +675,10 @@ _atom_type.number_in_cell
        out_f.close()
        in_emb = CifFile.CifFile('embedded.cif',grammar='2.0')
        self.assertEqual(in_emb['tough_one']['_data_embedded'],cif_as_text)
-       
+
+   def testBadBeginning(self):
+       """Test that strings with forbidden beginnings round-trip OK"""
+       self.failUnless(self.cf['_item_bad_beg']==self.df['_item_bad_beg'])
        
 class TemplateTestCase(unittest.TestCase):
    def setUp(self):

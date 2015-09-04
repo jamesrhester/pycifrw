@@ -2729,7 +2729,7 @@ def get_full_child_list(self):
             all_names += new_names
         print 'Final block order: ' + `all_names`
         return all_names
-    raise ValueError, 'Dictionary contains no Head category, please print as plain CIF instead'
+    raise ValueError, 'Dictionary contains no/multiple Head categories, please print as plain CIF instead'
 
 def recurse_child_list(self,parentname):
     """Recursively expand the logical child list of [[parentname]]"""
