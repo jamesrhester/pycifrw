@@ -681,7 +681,7 @@ class WithDictTestCase(unittest.TestCase):
       
 if __name__=='__main__':
     global testdic
-    testdic = CifFile.CifDic("drel/testing/cif_core.dic",grammar="STAR2",do_minimum=True)
+    testdic = CifFile.CifDic("drel/testing/cif_core.dic",grammar="STAR2",do_imports='Contents')
     unittest.main()
     #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
