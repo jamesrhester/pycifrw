@@ -1390,10 +1390,12 @@ for one_cat in looped_cats:
 @ Section{DDLm functionality}
 
 DDLm is a far more complex dictionary standard than DDL2.  We are able to import
-definitions, for example.  The top-level dictionary notionally contains a very
-minimal set of save frame definitions.  We start at this top level and work down,
-resolving import references recursively.  This will satisfy the requirement that
-conflicts are resolved from the most nested level upwards.
+definitions in two modes, "Full" and "Contents".  "Contents" simply copies the attributes
+found in the target definition, and is useful as a templating mechanism for commonly-seen
+attributes.  "Full" brings in the entire definition block and all child definitions, and
+is useful for including entire dictionaries.  As a special case, if we import a 'Head'
+definition into a 'Head' definition, we actually make all non-Head categories of the
+imported dictionary into child categories of the importing dictionary 'Head' category.
 
 We use the built-in PyCIFRW merging methods. 
 
@@ -1430,12 +1432,15 @@ def ddlm_import(self):
                 raise CifError, 'Import frame %s already in dictionary' % target_key
             elif dupl == 'Ignore':
                 continue
-        child_frames = import_from.get_children(target_key,include_parent=(mode=='full'))
-        if mode == 'contents':   #merge self and children only
-            # merge block contents
+        if mode == 'contents':   #merge attributes only
             self[parent_block].merge(import_target)
-            self.merge_fast(child_frames,parent=parent_block)
         elif mode =="full":
+            # Check for Head merging Head
+            if self[parent_block].get('_definition.class','Datum')=='Head' and \
+               import_from[target_key].get('_definition.class','Datum')=='Head':
+                  child_frames = import_from.get_children(target_key,include_parent=False)
+            else:
+                  child_frames = import_from.get_children(target_key,include_parent=True)
             self.merge_fast(child_frames,parent=parent_block)      #
             print 'Merged %s (%d defs) in %s mode, now have %d defs' % (target_key,len(child_frames),
                mode,len(self))
