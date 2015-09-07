@@ -2,10 +2,10 @@
 #
 
 import unittest
-from drel import drel_lex,drel_ast_yacc,py_from_ast,drel_runtime
-import numpy
 import CifFile
-from CifFile import StarFile
+from CifFile import StarFile,StarList
+import numpy
+from CifFile.drel import drel_lex,drel_ast_yacc,py_from_ast,drel_runtime
 
 class dRELRuntimeTestCase(unittest.TestCase):
     def setUp(self):
@@ -85,7 +85,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
         #create our lexer and parser
         self.lexer = drel_lex.lexer
         self.parser = drel_ast_yacc.parser
-        self.dic = CifFile.CifDic("dic_for_tests.dic",grammar="STAR2")
+        self.dic = CifFile.CifDic("pycifrw/dic_for_tests.dic",grammar="STAR2")
 
     def create_test(self,instring,right_value,debug=False,array=False):
         """Given a string, create and call a function then check result"""
@@ -131,7 +131,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
 
     def testList(self):
         """test parsing a list over two lines"""
-        self.create_test('_a.b = [1,2,\n 3,4,\n 5,6]',StarFile.StarList([1,2,3,4,5,6]))
+        self.create_test('_a.b = [1,2,\n 3,4,\n 5,6]',StarList([1,2,3,4,5,6]))
 
     def testparenth(self):
         """test parsing a parenthesis over two lines"""
@@ -179,7 +179,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
     def testlists(self):
         """test list parsing"""
         test = "_a.b = ['once', 'upon', 6,7j +.5e2]"
-        self.create_test(test,StarFile.StarList(['once' , 'upon' , 6 , 7j + .5e2 ]))
+        self.create_test(test,StarList(['once' , 'upon' , 6 , 7j + .5e2 ]))
 
     def test_multistatements(self):
         """test multiple statements"""
@@ -218,7 +218,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
 
     def test_non_python_ops(self):
         """Test operators that have no direct Python equivalents"""
-        test_expr = (("b = [1,2]; _a.b = [3,4]; _a.b++=b",StarFile.StarList([3,4,1,2])),
+        test_expr = (("b = [1,2]; _a.b = [3,4]; _a.b++=b",StarList([3,4,1,2])),
         ("b = [1,2]; _a.b = [3,4]; _a.b+=b",[4,6]),
         ("b = 3; _a.b = [3,4]; _a.b-=b",[0,1]),
         ("b = [1,2]; _a.b = [[1,2],[3,4]]; _a.b--=b",[[3,4]]))
@@ -270,7 +270,7 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        self.lexer = drel_lex.lexer
        self.lexer.lineno = 0
        self.parser = drel_ast_yacc.parser
-       self.dic = CifFile.CifDic("dic_for_tests.dic",grammar="STAR2")
+       self.dic = CifFile.CifDic("pycifrw/dic_for_tests.dic",grammar="STAR2")
 
    def create_test(self,instring,right_value,varname="_a.b",debug=False):
        """Given a string, create and call a function then check result"""
@@ -373,7 +373,7 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        exec realfunc
        retval = Closest(0.2,0.8)
        print 'Closest 0.2,0.8 returns ' + ",".join([`retval[0]`,`retval[1]`])
-       self.failUnless(retval == StarFile.StarList([1.2,1]))
+       self.failUnless(retval == StarList([1.2,1]))
 
 class MoreComplexTestCase(unittest.TestCase):
    def setUp(self):
@@ -381,7 +381,7 @@ class MoreComplexTestCase(unittest.TestCase):
        self.lexer = drel_lex.lexer
        self.lexer.lineno = 0
        self.parser = drel_ast_yacc.parser
-       self.dic = CifFile.CifDic("dic_for_tests.dic",grammar="STAR2")
+       self.dic = CifFile.CifDic("pycifrw/dic_for_tests.dic",grammar="STAR2")
 
    def test_nested_stmt(self):
        """Test how a nested do statement executes"""
@@ -461,7 +461,7 @@ class WithDictTestCase(unittest.TestCase):
        self.parser = drel_ast_yacc.parser
        self.parser.lineno = 0
        #use
-       self.testblock = CifFile.CifFile("drel/nick1.cif",grammar="STAR2")["saly2_all_aniso"]
+       self.testblock = CifFile.CifFile("pycifrw/drel/nick1.cif",grammar="STAR2")["saly2_all_aniso"]
        self.testblock.assign_dictionary(testdic)
        self.testblock.provide_value = True  #get values back
        self.testdic = testdic
@@ -470,7 +470,26 @@ class WithDictTestCase(unittest.TestCase):
        self.namespace = dict(map(None,self.namespace,self.namespace))
        self.special_ids = [self.namespace]
 
-   def testLists(self):
+   def test_loop_with_statement(self):
+       """Test with statement on a looped category"""
+       teststrg = """ 
+       with t as atom_type
+       {
+       t.analytical_mass_percent = t.number_in_cell * 10
+       }
+       """
+       loopable_cats = {'atom_type':["id",["id","number_in_cell"]]}   #
+       ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.analytical_mass_percent",
+                                                   cif_dic=testdic,loopable=loopable_cats)
+       print "With statement for looped category -> \n" + realfunc
+       exec realfunc
+       #  
+       atmass = myfunc(self.testblock)
+       print 'test value now %s' % `atmass`  
+       self.failUnless(atmass == [120,280,240])
+       
+   def test_Lists(self):
        """Test case found in Cif dictionary """
        teststrg = """# Store unique sites as a local list
  
@@ -487,15 +506,15 @@ class WithDictTestCase(unittest.TestCase):
 """    
        loop_cats = {"atom_site":["label",["fract_xyz","type_symbol","label"]],
                     "atom_type":["id",["id","radius_bond","radius_contact"]]}
+        # Add drel functions for deriving items
+       testdic.initialise_drel()
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc,dependencies = py_from_ast.make_python_function(res,"myfunc","_geom_bond.id",cat_meth=True,
-                   loopable=loop_cats,have_sn=False,depends=True,cif_dic=testdic)
+                loopable=loop_cats,have_sn=False,depends=True,cif_dic=testdic)
        print 'Simple function becomes:'
        print realfunc
        print 'Depends on: ' + `dependencies`
        exec realfunc
-       # Add drel functions for deriving items
-       testdic.initialise_drel()
        b = myfunc(self.testblock)
        print "subscription returns " + `b` 
 
@@ -522,25 +541,7 @@ class WithDictTestCase(unittest.TestCase):
        print 'exptl method now %s' % newmeth 
        self.failUnless(newmeth == "single-crystal diffraction")
 
-   def test_loop_with_statement(self):
-       """Test with statement on a looped category"""
-       teststrg = """ 
-       with t as atom_type
-       {
-       t.analytical_mass_percent = t.number_in_cell * 10
-       }
-       """
-       loopable_cats = {'atom_type':["id",["id","number_in_cell"]]}   #
-       ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.analytical_mass_percent",
-                                                   cif_dic=testdic,loopable=loopable_cats)
-       print "With statement for looped category -> \n" + realfunc
-       exec realfunc
-       #  
-       atmass = myfunc(self.testblock)
-       print 'test value now %s' % `atmass`  
-       self.failUnless(atmass == [120,280,240])
-       
+
    def test_loop_with_stmt_2(self):
        """Test with statement on a looped category, no aliasing"""
        teststrg = """ 
@@ -680,8 +681,8 @@ class WithDictTestCase(unittest.TestCase):
        self.failUnless(b[1] == '1_555')
       
 if __name__=='__main__':
-    global testdic
-    testdic = CifFile.CifDic("drel/testing/cif_core.dic",grammar="STAR2",do_minimum=True)
+    global testdic 
+    testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="STAR2",do_imports='Contents')
     unittest.main()
     #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)

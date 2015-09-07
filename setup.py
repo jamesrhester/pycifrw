@@ -26,7 +26,7 @@ setup(name="PyCifRW",
 	'Topic :: Software Development :: Libraries :: Python Modules'
       ],
       py_modules = ['CifFile.CifFile','CifFile.yapps3_compiled_rt','CifFile.YappsStarParser_1_1','CifFile.YappsStarParser_1_0',
-                    'CifFile.YappsStarParser_STAR2','CifFile.YappsStarParser_2_0','CifFile.StarFile','CifFile.drel.drel_ast_yacc','CifFile.drel.drel_lex',
+                    'CifFile.YappsStarParser_STAR2','CifFile.YappsStarParser_2_0','CifFile.StarFile','CifFile.drel','CifFile.drel.drel_ast_yacc','CifFile.drel.drel_lex',
                     'CifFile.drel.py_from_ast','CifFile.drel.drel_runtime',
                     'CifFile.TypeContentsParser'],
       ext_modules = [c_scanner],
