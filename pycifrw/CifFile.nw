@@ -76,9 +76,9 @@ extra restrictions where necessary.
 import re,sys
 import StarFile
 from StarFile import StarList  #put in global scope for exec statement
-from drel import drel_runtime  #put in global scope for exec statement
 try:
-    import numpy               #put in global scope for exec statement
+    import numpy                   #put in global scope for exec statement
+    from drel import drel_runtime  #put in global scope for exec statement
 except ImportError:
     pass                       #will fail when using dictionaries for calcs
 
