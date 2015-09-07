@@ -73,9 +73,14 @@ extra restrictions where necessary.
 <<*>>=
 <<Copyright statement>>
 
-import re
+import re,sys
 import StarFile
-import sys
+from StarFile import StarList  #put in global scope for exec statement
+from drel import drel_runtime  #put in global scope for exec statement
+try:
+    import numpy               #put in global scope for exec statement
+except ImportError:
+    pass                       #will fail when using dictionaries for calcs
 
 <<CifBlock class>>
 <<CifFile class>>
@@ -2570,14 +2575,18 @@ def derive_item(self,start_key,cifdata,store_value = False):
     return result
 
 @ Executing a dREL method.  The execution defines a function, 'pyfunc' which is
-then itself executed in global scope.
+then itself executed in global scope.  This has caused us some grief in order to
+get the bindings right (e.g. having StarList in scope).   Essentially, anything
+that the method might refer to should be in scope at this point, otherwise the
+way Python works it will be too late to have things in scope within the enclosing
+routine that calls this function.  As far as I can tell.
 
 <<Execute pythonised dREL method>>=
 #global_table = globals()
 #global_table.update(self.ddlm_functions)
 print 'Executing function for %s:' % key
 #print the_func
-exec the_func in globals(),locals() #will access dREL functions, puts "pyfunc" in scope
+exec the_func in globals()  #will access dREL functions, puts "pyfunc" in scope
 # print 'in following global environment: ' + `global_table`
 stored_setting = cifdata.provide_value
 cifdata.provide_value = True

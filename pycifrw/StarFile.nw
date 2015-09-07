@@ -977,7 +977,9 @@ def ReadStar(filename,prepared = None, maxlength=-1,
     my_uri = ""
     if hasattr(filestream,"geturl"): 
         my_uri = filestream.geturl()
-    text = unicode(filestream.read(),"utf8")
+    text = filestream.read()
+    if not isinstance(text,unicode):
+        text = unicode(text,"utf8")
     if isinstance(filename,basestring): #we opened it, we close it
         filestream.close()
     if not text:      # empty file, return empty block

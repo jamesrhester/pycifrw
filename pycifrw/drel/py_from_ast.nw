@@ -58,7 +58,6 @@ def make_python_function(in_ast,func_name,targetname, special_ids=[{}],cif_dic=N
     if cat_meth:
         preamble += " "*8 + "__dreltarget = {}\n" # initialise
     num_header = """
-        from drel import drel_runtime
         import math,cmath
         try:
             import numpy
@@ -95,6 +94,7 @@ number of packets during execution of the method.
     one_packet_each = ",".join(one_pack_names)
     preamble = "def %s(ciffile,packet_no=-1):\n" % (func_name)
     preamble +="    def drel_func(cifdata,%s):\n" % dummy_vars
+    # preamble +="        print 'Globals inside looped drel_func:' + `globals()`\n"
     # the actual function gets inserted here
     end_body=      "\n    if packet_no < 0:   #map\n"
     if cur_row and len(actual_names) > 1:    #i.e. have real names from category
@@ -108,7 +108,7 @@ number of packets during execution of the method.
         end_body += "           __row_id = range(full_length)\n"
         end_body += "       else:\n"
         end_body += "           return []\n"
-    end_body+=      "       return map(lambda %s: drel_func(ciffile,%s),%s)\n" % (dummy_vars,dummy_vars,map_names)
+    end_body+=      "       return map(lambda %s:drel_func(ciffile,%s),%s)\n" % (dummy_vars,dummy_vars,map_names)
     end_body+=     "    else:\n"
     end_body+=     "        return drel_func(ciffile,%s)\n" % one_packet_each
 
@@ -117,6 +117,7 @@ need for any extra variables
 
 <<Create function header for unlooped data>>=
     preamble = "def %s(ciffile):\n" % func_name
+    #preamble +="        global StarList#from CifFile.drel import drel_runtime\n"
     end_body = ""
 
 @ The AST traverser is a recursive function which is passed a node.
@@ -240,9 +241,9 @@ mentioned so that we can create a dependency tree.
         return in_node[1]
     elif node_type == "LIST":
         if len(in_node)==1:  #empty list
-           return "StarFile.StarList([])"
+           return "StarList([])"
         if special_info["rhs"] == True:
-            outstring = "StarFile.StarList(["
+            outstring = "StarList(["
         else:
             outstring = ""
         for list_elem in in_node[1:]:
@@ -253,7 +254,7 @@ mentioned so that we can create a dependency tree.
             return outstring[:-1]
     elif node_type == "TABLE":
         if len(in_node)==1:
-            return "StarFile.StarTable({})"
+            return "StarTable({})"
         else:
             outstring = "{"
         for table_elem in in_node[1:]:
@@ -546,7 +547,8 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     return outstring
 
 @  Function arguments can have their types explicitly specified, but we don't make use
-of this.
+of this.  See comments elsewhere on how to deal with function binding, or why we don't
+need to do imports at this level.
 
 <<Function definitions>>=
 elif node_type == "FUNCTION":   #FUNCTION ID ARGLIST SUITE
@@ -556,7 +558,8 @@ elif node_type == "FUNCTION":   #FUNCTION ID ARGLIST SUITE
         outstring += one_arg[0] + ","
     outstring = outstring[:-1] + "):"
     # imports
-    import_lines = "import numpy\nfrom drel import drel_runtime\n"
+    #import_lines = "import numpy\nfrom CifFile.drel import drel_runtime\n"
+    import_lines = ""
     outstring = outstring + add_indent("\n" + import_lines + traverse_ast(in_node[3])+"\nreturn %s" % func_name)
     return outstring
 
