@@ -358,12 +358,20 @@ that the leading underscore is not part of the name.
 <<CIF Dictionary type>>=
 class CifDic(StarFile.StarFile):
     """Create a Cif Dictionary object from the provided source, which can
-    be a filename/URL or a CifFile.  Optional arguments:
+    be a filename/URL or a CifFile.  Optional arguments (relevant to DDLm 
+    only):
 
-    * do_minimum:
-         Do not set up the dREL system for auto-calculation.  This is
-         useful during recursive loads where the dREL links will be
-         established at the end.
+    * do_minimum (Boolean):
+         Do not set up the dREL system for auto-calculation or perform
+         imports.  This implies do_imports=False and do_dREL=False
+
+    * do_imports = No/Full/Contents/All:
+         If not 'No', replace _import.get statements with the imported contents for
+         Full mode/Contents mode/Both respectively.  
+
+    * do_dREL = True/False:
+         Parse and convert all dREL methods to Python. Implies do_imports=All
+    
     """
     <<Initialise Cif dictionary>>
     <<Dictionary determination function>>
@@ -424,8 +432,13 @@ It is intended that the dREL methods will turn this on only during
 execution, then turn it off afterwards. 
 
 <<Initialise Cif dictionary>>=
-def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
+def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
+                                                         grammar='1.1',**kwargs):
     self.do_minimum = do_minimum
+    if do_minimum:
+        do_imports = 'No'
+        do_dREL = False
+    if do_dREL: do_imports = 'All'
     self.template_cache = {}    #for DDLm imports
     self.ddlm_functions = {}    #for DDLm functions
     self.switch_numpy(False)    #no Numpy arrays returned 
@@ -446,11 +459,12 @@ def __init__(self,dic,do_minimum=False,grammar='1.1',**kwargs):
     elif self.diclang == "DDLm":
         self.scoping = 'dictionary'   #expose all save frames
         self.ddlm_normalise()
-        self.ddlm_import()      #recursively calls this routine
+        if do_imports is not 'No':
+           self.ddlm_import(import_mode=do_imports)#recursively calls this routine
         self.create_alias_table()
         self.create_cat_obj_table()
         self.create_cat_key_table()
-        if not self.do_minimum:
+        if do_dREL:
             print "Doing full dictionary initialisation" 
             self.initialise_drel()
     self.add_category_info()
@@ -1399,10 +1413,12 @@ for one_cat in looped_cats:
 @ Section{DDLm functionality}
 
 DDLm is a far more complex dictionary standard than DDL2.  We are able to import
-definitions, for example.  The top-level dictionary notionally contains a very
-minimal set of save frame definitions.  We start at this top level and work down,
-resolving import references recursively.  This will satisfy the requirement that
-conflicts are resolved from the most nested level upwards.
+definitions in two modes, "Full" and "Contents".  "Contents" simply copies the attributes
+found in the target definition, and is useful as a templating mechanism for commonly-seen
+attributes.  "Full" brings in the entire definition block and all child definitions, and
+is useful for including entire dictionaries.  As a special case, if we import a 'Head'
+definition into a 'Head' definition, we actually make all non-Head categories of the
+imported dictionary into child categories of the importing dictionary 'Head' category.
 
 We use the built-in PyCIFRW merging methods. 
 
@@ -1410,9 +1426,11 @@ We use the built-in PyCIFRW merging methods.
 <<Master import routine>>
 
 <<Master import routine>>=
-def ddlm_import(self):
+def ddlm_import(self,import_mode='All'):
     import urllib
     import_frames = [(a,self[a]['_import.get']) for a in self.keys() if self[a].has_key('_import.get')]
+    if import_mode is not 'All':
+       import_frames = [b for b in import_frames if b[1].get('mode','Contents')==import_mode]
     #resolve all references
     for parent_block,import_list in import_frames:
       for import_ref in import_list:
@@ -1434,17 +1452,20 @@ def ddlm_import(self):
             else: continue
         # now import appropriately
         mode = import_ref.get("mode",'Contents').lower()
-        if self.has_key(target_key) and mode=='Full':  #so blockname will be duplicated
+        if self.has_key(target_key) and mode=='full':  #so blockname will be duplicated
             if dupl == 'Exit':
                 raise CifError, 'Import frame %s already in dictionary' % target_key
             elif dupl == 'Ignore':
                 continue
-        child_frames = import_from.get_children(target_key,include_parent=(mode=='full'))
-        if mode == 'contents':   #merge self and children only
-            # merge block contents
+        if mode == 'contents':   #merge attributes only
             self[parent_block].merge(import_target)
-            self.merge_fast(child_frames,parent=parent_block)
         elif mode =="full":
+            # Check for Head merging Head
+            if self[parent_block].get('_definition.class','Datum')=='Head' and \
+               import_from[target_key].get('_definition.class','Datum')=='Head':
+                  child_frames = import_from.get_children(target_key,include_parent=False)
+            else:
+                  child_frames = import_from.get_children(target_key,include_parent=True)
             self.merge_fast(child_frames,parent=parent_block)      #
             print 'Merged %s (%d defs) in %s mode, now have %d defs' % (target_key,len(child_frames),
                mode,len(self))
