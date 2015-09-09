@@ -386,6 +386,7 @@ class CifDic(StarFile.StarFile):
     <<Analyse range>>
     <<Initialise dREL functions>>
     <<Transform drel to python>>
+    <<Storing a dREL-derived value>>
     <<Store dREL functions>> 
     <<Switch on numpy arrays>>
     <<Derive item information>>
@@ -2498,7 +2499,7 @@ when returning it.
 def derive_item(self,start_key,cifdata,store_value = False):
     key = start_key   #starting value
     result = None     #success is a non-None value
-    default_result = False #we haven't used a default value
+    default_result = False #we have not used a default value
     <<Resolve using aliases>>
     # store any default value in case we have a problem
     def_val = self[key].get("_enumeration.default","")
@@ -2513,45 +2514,56 @@ def derive_item(self,start_key,cifdata,store_value = False):
         print 'Warning: no way of deriving item %s' % key
     # now try to insert the new information into the right place
     # find if items of this category already appear...
-    if store_value: 
-          # try to change any matrices etc. to lists
-          the_category = self[key]["_name.category_id"]
-          if self[the_category].get('_definition.class','Set')=='Loop':
-              # our result is looped, this only gets the simple structures
-              if result is not None and hasattr(result[0],'dtype'):    #numpy object
-                  if result[0].size > 1:   #so is not a float
-                      out_result = [StarFile.StarList(a.tolist()) for a in result]
-                  else:
-                      def conv_from_numpy(maybe_numpy):
-                          try:
-                              return maybe_numpy.item(0)
-                          except:
-                              return maybe_numpy
-                      out_result = [conv_from_numpy(a) for a in result]
-              else:
-                  out_result = result
-              # so out_result now contains a value suitable for storage
-              cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
-              has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
-              print 'Found pre-existing names: ' + `has_cat_names`
-              if len(has_cat_names)>0:   #this category already exists
-                  if out_result is None or default_result: #need to create a list of values
-                      loop_len = len(cifdata[has_cat_names[0]])
-                      out_result = [out_result]*loop_len
-                      result = out_result
-              cifdata[key] = out_result      #lengths must match or else!!
-              print 'Loop info:' + `cifdata.loops`
-              cifdata.AddLoopName(has_cat_names[0],key)
-          else:    #not a looped category 
-              if result is not None and hasattr(result,'dtype'):
-                  if result.size > 1:
-                      out_result = StarFile.StarList(result.tolist())
-                      cifdata[key] = out_result
-                  else:
-                      cifdata[key] = result.item(0)
-              else:
-                  cifdata[key] = result
+    if store_value:
+          result = self.store_new_value(key,cifdata,result,default_result)
     return result
+    
+@ Storing a dREL-derived value back into our CifFile.  The dREL value (or potentially
+a simple default value) may correspond to an entire column, or even an entire loop 
+for category methods.  We have to distinguish between list values that are StarLists,
+that is, a single CIF value, and list values that correspond to a column of a loop.
+
+<<Storing a dREL-derived value>>=
+def store_new_value(self,key,cifdata,result,default_result):
+    """Store a value from the dREL system into a CifFile"""
+      # try to change any matrices etc. to lists
+      the_category = self[key]["_name.category_id"]
+      if self[the_category].get('_definition.class','Set')=='Loop':
+          # our result is looped, this only gets the simple structures
+          if result is not None and hasattr(result[0],'dtype'):    #numpy object
+              if result[0].size > 1:   #so is not a float
+                  out_result = [StarFile.StarList(a.tolist()) for a in result]
+              else:
+                  def conv_from_numpy(maybe_numpy):
+                      try:
+                          return maybe_numpy.item(0)
+                      except:
+                          return maybe_numpy
+                  out_result = [conv_from_numpy(a) for a in result]
+          else:
+              out_result = result
+          # so out_result now contains a value suitable for storage
+          cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
+          has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
+          print 'Found pre-existing names: ' + `has_cat_names`
+          if len(has_cat_names)>0:   #this category already exists
+              if out_result is None or default_result: #need to create a list of values
+                  loop_len = len(cifdata[has_cat_names[0]])
+                  out_result = [out_result]*loop_len
+                  result = out_result
+          cifdata[key] = out_result      #lengths must match or else!!
+          print 'Loop info:' + `cifdata.loops`
+          cifdata.AddLoopName(has_cat_names[0],key)
+      else:    #not a looped category 
+          if result is not None and hasattr(result,'dtype'):
+              if result.size > 1:
+                  out_result = StarFile.StarList(result.tolist())
+                  cifdata[key] = out_result
+              else:
+                  cifdata[key] = result.item(0)
+          else:
+              cifdata[key] = result
+      return result
 
 @ Executing a dREL method.  The execution defines a function, 'pyfunc' which is
 then itself executed in global scope.  This has caused us some grief in order to

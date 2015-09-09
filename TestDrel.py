@@ -283,7 +283,19 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        if debug: print "-> %s" % realfunc
        exec realfunc
        self.failUnless(myfunc(self) == right_value)
-
+       
+   def test_multi_assign(self):
+       """ Test that multiple assignments are parsed """
+       teststrg = """
+       f = _a.b
+       p = len(f)
+       q = 0
+       _a.b = 0
+       """
+       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       realfunc = py_from_ast.make_python_function(res,"myfunc",'_a.b',cif_dic=self.dic)
+       print "-> " + realfunc
+       
    def test_do_stmt(self):
        """Test how a do statement comes out"""
        teststrg = """
