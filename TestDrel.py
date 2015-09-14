@@ -17,8 +17,8 @@ class dRELRuntimeTestCase(unittest.TestCase):
         c = drel_runtime.aug_append(a,[3])
         d = drel_runtime.aug_append(a,[[4,5,6]])
         self.failUnless(b == [[1,2],[3,4],1])
-        self.failUnless(c == [[1,2],[3,4],3])
-        self.failUnless(d == [[1,2],[3,4],[4,5,6]])
+        self.failUnless(c == [[1,2],[3,4],[3]])
+        self.failUnless(d == [[1,2],[3,4],[[4,5,6]]])
 
     def testListAdd(self):
         a = [[1,2],[3,4]]
@@ -218,12 +218,12 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
 
     def test_non_python_ops(self):
         """Test operators that have no direct Python equivalents"""
-        test_expr = (("b = [1,2]; _a.b = [3,4]; _a.b++=b",StarList([3,4,1,2])),
+        test_expr = (("b = [1,2]; _a.b = [3,4]; _a.b++=b",StarList([3,4,[1,2]])),
         ("b = [1,2]; _a.b = [3,4]; _a.b+=b",[4,6]),
         ("b = 3; _a.b = [3,4]; _a.b-=b",[0,1]),
         ("b = [1,2]; _a.b = [[1,2],[3,4]]; _a.b--=b",[[3,4]]))
         for one_expr in test_expr:
-            self.create_test(one_expr[0],one_expr[1],array=True)
+            self.create_test(one_expr[0],one_expr[1],debug=True,array=True)
 
     def test_tables(self):
        """Test that tables are parsed correctly"""
@@ -383,7 +383,7 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        realfunc = py_from_ast.make_python_function(res,"myfunc",None, func_def = True)
        # print "Function -> \n" + realfunc
        exec realfunc
-       retval = Closest(0.2,0.8)
+       retval = Closest(0.2,0.8,None)
        print 'Closest 0.2,0.8 returns ' + ",".join([`retval[0]`,`retval[1]`])
        self.failUnless(retval == StarList([1.2,1]))
 

@@ -1431,6 +1431,20 @@ the enclosing block collection (e.g. CIF or STAR file object)""")
         if self.provide_value and ((not isinstance(rawitem,list) and rawitem != '?' and rawitem != ".") or \
                                   (isinstance(rawitem,list) and '?' not in rawitem and '.' not in rawitem)):
             return self.dictionary.change_type(key,rawitem)
+        elif self.provide_value: # catch the question marks
+            do_calculate = False
+            if isinstance(rawitem,(list,tuple)):
+                known = [a for a in rawitem if a != '?']
+                if len(known) == 0:   #all questions
+                    do_calculate = True
+            elif rawitem == '?':
+                    do_calculate = True
+            if do_calculate:
+               # remove old value
+               del self[key]
+               new_value = self.dictionary.derive_item(key,self,store_value=True)
+               print 'Set %s to derived value %s' % (key, `new_value`)
+               return new_value
         return rawitem   #can't do anything
        
 def __delitem__(self,key):
@@ -1562,8 +1576,10 @@ def AddItem(self,key,value,precheck=False):
     if not self.has_key(lower_key) and self.FindLoop(lower_key)<0:      #need to add to order
         self.item_order.append(lower_key)
     # always remove from our case table in case the case is different
-    else:
+    try:
         del self.true_case[lower_key]
+    except KeyError:
+        pass
     self.true_case[lower_key] = key
     if pure_string:
         self.block.update({lower_key:[regval,empty_val]})
@@ -1771,7 +1787,11 @@ and whether or not it is a non-string value.  This saves other
 routines performing the same check.  But any StarLists are
 considered to be unready for use as values as they may in
 fact be Arrays or Matrices and therefore require their
-type to be changed.
+type to be changed.  
+
+Note that if the value is '?', or a list of '?', we could
+delete the dataitem altogether, however that would lead to
+inconsistencies with previous calls to has_key, keys() etc.
 
 <<Return value of item>>=
 def GetItemValue(self,itemname):
@@ -1795,7 +1815,7 @@ def GetFullItemValue(self,itemname):
         else:
             return v,not isinstance(v,StarList)  #a StarList is not calculation-ready
     elif None not in s: 
-        return s,False     #a list of string values
+        return s,False         #a list of string values
     else: 
         if len(v)>0:   
             return v,not isinstance(v[0],StarList)
@@ -1829,21 +1849,22 @@ any point in time, a dataname belongs to only one loop, but can be switched to
 another loop trivially.
 
 <<Create a loop>>= 
-def CreateLoop(self,datanames,order=-1): 
+def CreateLoop(self,datanames,order=-1,length_check=True): 
        """Create a loop in the datablock. `datanames` is a list of datanames that
-       together form a loop.  They should have been initialised in the block
+       together form a loop.  If length_check is True, they should have been initialised in the block
        to have the same number of elements (possibly 0). If `order` is given,
        the loop will appear at this position in the block when printing
        out. A loop counts as a single position."""
 
-       # check lengths: these datanames should exist
-       listed_values = [a for a in datanames if isinstance(self[a],list) and not isinstance(self[a],StarList)]
-       if len(listed_values) == len(datanames):
-           len_set = set([len(self[a]) for a in datanames])
-           if len(len_set)>1:
-               raise ValueError, 'Request to loop datanames %s with different lengths: %s' % (`datanames`,`len_set`)
-       elif len(listed_values) != 0:
-           raise ValueError, 'Request to loop datanames where some are single values and some are not'
+       if length_check:
+           # check lengths: these datanames should exist
+           listed_values = [a for a in datanames if isinstance(self[a],list) and not isinstance(self[a],StarList)]
+           if len(listed_values) == len(datanames):
+               len_set = set([len(self[a]) for a in datanames])
+               if len(len_set)>1:
+                   raise ValueError, 'Request to loop datanames %s with different lengths: %s' % (`datanames`,`len_set`)
+           elif len(listed_values) != 0:
+               raise ValueError, 'Request to loop datanames where some are single values and some are not'
        # store as lower case
        lc_datanames = [d.lower() for d in datanames]
        # remove these datanames from all other loops
@@ -1878,7 +1899,8 @@ def remove_loop(self,oldloop):
     self.loops.remove(oldloop)
 
 @ Adding a dataname that has already been set to a loop.  While relatively trivial, we still need
-to check that it does not exist in any other loops.
+to check that it does not exist in any other loops, and remove this dataname from the item order
+if it is present. We always use the canonical lower-case form.
 
 <<Add name to loop>>=
 def AddLoopName(self,oldname, newname):
@@ -1886,19 +1908,25 @@ def AddLoopName(self,oldname, newname):
     error is raised.  If `newname` is in a different loop, it is removed from that loop.
     The number of values associated with `newname` must match the number of values associated
     with all other columns of the new loop or a `ValueError` will be raised."""
+    lower_newname = newname.lower()
     loop_no = self.FindLoop(oldname)
     if loop_no < 0:
         raise KeyError, '%s not in loop' % oldname
-    if newname in self.loops[loop_no]:
+    if lower_newname in self.loops[loop_no]:
         return
     # check length
     loop_len = len(self[oldname])
     if len(self[newname]) != loop_len:
         raise ValueError, 'Mismatch of loop column lengths for %s: should be %d' % (newname,loop_len)
     # remove from any other loops
-    [self.loops[a].remove(newname) for a in self.loops if newname in self.loops[a]]
+    [self.loops[a].remove(lower_newname) for a in self.loops if lower_newname in self.loops[a]]
     # and add to this loop
-    self.loops[loop_no].append(newname)
+    self.loops[loop_no].append(lower_newname)
+    # remove from item_order if present
+    try:
+        self.item_order.remove(lower_newname)
+    except ValueError:
+        pass
     
 @ Loops.  We should distinguish two loop structures: the loop
 structures provided by the syntax, and the loop structures defined by

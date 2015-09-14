@@ -420,10 +420,13 @@ elif node_type == "FUNC_CALL":
             outstring = outstring + "["
         for argument in in_node[2]:
             outstring = outstring + every_arg_prefix + traverse_ast(argument) + ","
-        outstring = outstring[:-1]
-        if func_name == "list" and len(in_node[2])>1:
-            outstring = outstring + "]"
-        outstring = outstring + ")" + postfix
+        if postfix == None:  # signal for dictionary defined
+            outstring = outstring + "ciffile)"
+        else:
+            outstring = outstring[:-1]
+            if func_name == "list" and len(in_node[2])>1:
+                outstring = outstring + "]"
+            outstring = outstring + ")" + postfix
     return outstring
 
 @  Compound statements
@@ -548,7 +551,10 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
 
 @  Function arguments can have their types explicitly specified, but we don't make use
 of this.  See comments elsewhere on how to deal with function binding, or why we don't
-need to do imports at this level.
+need to do imports at this level.  The draft cif_core dictionary assumes access to
+the data file (see function SymEquiv, which does a key-based lookup of symmetry_equiv),
+so we define a compulsory third argument, which must be 'ciffile' to match the naming
+that occurs automatically in key lookup code generation.
 
 <<Function definitions>>=
 elif node_type == "FUNCTION":   #FUNCTION ID ARGLIST SUITE
@@ -556,7 +562,7 @@ elif node_type == "FUNCTION":   #FUNCTION ID ARGLIST SUITE
     outstring = "def %s (" % func_name
     for one_arg in in_node[2]:
         outstring += one_arg[0] + ","
-    outstring = outstring[:-1] + "):"
+    outstring = outstring + "ciffile):"
     # imports
     #import_lines = "import numpy\nfrom CifFile.drel import drel_runtime\n"
     import_lines = ""
@@ -706,24 +712,33 @@ unary functions.
 We force all matrices to be 64-bit floats.  If you check SeitzFromJones, you will
 find a matrix that defaults to integer type, meaning that any assignments of float
 values are rounded, thus the need for explicitly working with floats.
-  
+
+User-defined functions (i.e. in dictionaries) have access to the data file (see
+use of 'symmetry_equiv' key access in SymEquiv) so this must be passed as a
+final argument.  We assume anything that is not found here is user-defined, and
+add the 'ciffile' argument at the end.
+
 <<Function transformer>>=
 def get_function_name(in_name):
     """Return the Python name of the dREL function, an argument prefix,
        and anything to be appended to the end"""
     builtins = {"table":"dict",
                 "list":"list",
-                "int":"int",
+                "array":"numpy.array",
                 "len":"len",
                 "abs":"abs",
                 "magn":"abs",
                 "atoi":"int",
                 "float":"float",
+                "str":"str",
                 "array":"numpy.array",
                 "norm":"numpy.linalg.norm",
                 "sqrt":"math.sqrt",
                 "exp":"math.exp",
-                "complex":"complex"}
+                "complex":"complex",
+                "strip":"drel_runtime.drel_strip",
+                "int":"drel_runtime.drel_int",
+                "eigen":"drel_runtime.drel_eigen"}
     test_name = in_name.lower()
     target_name = builtins.get(test_name,None)
     if target_name is not None:
@@ -732,8 +747,6 @@ def get_function_name(in_name):
         return "math."+test_name[:-1],"math.radians(",")"
     if test_name in ['acosd','asind','atand','atan2d']:
         return "math.degrees(math."+test_name[:-1],"",")"
-    if test_name in ['array']:
-        return "numpy.array","",""
     if test_name == "mod":
         return "divmod","","[1]"
     if test_name == "upper":
@@ -748,7 +761,7 @@ def get_function_name(in_name):
         return "numpy.matrix","",".astype('float64')"
     if test_name == 'sort':
 	return "","",".sort()"
-    return in_name,"",""   #no idea
+    return in_name,"",None   #dictionary defined
  
 @  Mathematical operations in dREL are complicated by the need to handle matrix
 operations transparently.  The two operators that are affected are "^" (cross

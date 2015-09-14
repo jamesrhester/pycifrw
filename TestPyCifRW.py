@@ -308,7 +308,7 @@ class LoopBlockTestCase(unittest.TestCase):
    """Check operations on loop blocks"""
    def setUp(self):
         self.cf = CifFile.CifBlock()
-	self.names = (('_item_name_1','_item_name#2','_item_%$#3'),)
+	self.names = (('_Item_Name_1','_item_name#2','_item_%$#3'),)
 	self.values = (((1,2,3,4),('hello','good_bye','a space','# 4'),
 	          (15.462, -99.34,10804,0.0001)),)
         self.cf.AddCifItem((self.names,self.values))
@@ -324,14 +324,28 @@ class LoopBlockTestCase(unittest.TestCase):
    def testLoop(self):
         """Check GetLoop returns values and names in matching order"""
    	results = self.cf.GetLoop(self.names[0][2])
+        lowernames = [a.lower() for a in self.names[0]]
 	for key in results.keys():
-	    self.failUnless(key in self.names[0])
-	    self.failUnless(tuple(results[key]) == self.values[0][list(self.names[0]).index(key)])
-	
+	    self.failUnless(key.lower() in lowernames)
+	    self.failUnless(tuple(results[key]) == self.values[0][lowernames.index(key.lower())])
+
+   def testLoopCharCase(self):
+       """Test that upper/lower case names in loops works correctly"""
+       # Note the wildly varying case for these two names
+       self.cf['_item_name_20'] = ['a','b','c','q']
+       self.cf.AddLoopName('_item_Name_1','_Item_name_20')
+       self.failUnless(self.cf.FindLoop('_Item_name_1')==self.cf.FindLoop('_Item_Name_20'))
+       
    def testGetLoopCase(self):
        """Check that getloop works for any case"""
        results = self.cf.GetLoop('_Item_Name_1')
        self.assertEqual(results['_item_name_1'][1],2)
+
+   def testLoopOutputOrder(self):
+       """Check that an item placed in a loop no longer appears in the output order"""
+       self.cf['_item_name_20'] = ['a','b','c','q']
+       self.cf.AddLoopName('_item_Name_1','_Item_name_20')
+       self.failUnless('_item_name_20' not in self.cf.GetItemOrder())
 
    def testLoopify(self):
        """Test changing unlooped data to looped data"""
@@ -1604,6 +1618,25 @@ class DicEvalTestCase(unittest.TestCase):
         del self.fb['_cell.volume']
         self.failUnless(abs(self.fb['_cell_volume']-float(target))<0.01)
 
+    def testEigenSystem(self):
+        """Test that question marks are seen as missing values"""
+        self.fb.provide_value = True
+        result = self.fb['_model_site.adp_eigen_system']
+        print 'adp eigensystem is: ' + `result`
+        
+    def testCategoryMethod(self):
+        """Test that a category method calculates and updates"""
+        # delete pre-existing values
+        del self.fb['_model_site.id']
+        del self.fb['_model_site.adp_eigen_system']
+        self.fb.provide_value = True
+        result = self.fb['model_site']
+        self.fb.provide_value = False
+        print '**Updated block:'
+        print str(self.fb)
+        self.failUnless(self.fb.has_key('_model_site.Cartn_xyz'))
+        self.failUnless(self.fb.has_key('_model_site.mole_index'))
+        
 class DicStructureTestCase(unittest.TestCase):
     """Tests use of dictionary semantic information for item lookup"""
     def setUp(self):
@@ -1663,8 +1696,8 @@ class DicStructureTestCase(unittest.TestCase):
 
 if __name__=='__main__':
      global testdic
-     testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="STAR2")
-     #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
+     testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.cif2.dic",grammar="2.0")
+     suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
@@ -1678,6 +1711,6 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     #unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     unittest.TextTestRunner(verbosity=2).run(suite)
+     #unittest.main()
 

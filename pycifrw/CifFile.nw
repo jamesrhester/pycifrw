@@ -392,12 +392,8 @@ class CifDic(StarFile.StarFile):
     <<Return a single packet by key>>
     <<Extract number and esd>>
     <<Analyse range>>
-    <<Initialise dREL functions>>
-    <<Transform drel to python>>
-    <<Storing a dREL-derived value>>
-    <<Store dREL functions>> 
+    <<Linkage to dREL>>
     <<Switch on numpy arrays>>
-    <<Derive item information>>
     <<Convert string to appropriate type>>
     <<Item-level validation>>
     <<Loop-level validation>>
@@ -2425,9 +2421,17 @@ supplied regarding looped categories and keys.
 If we were really serious about dictionary-driven software, the attribute
 lookups that follow would not use get(), but square brackets and allow default
 values to be returned.  However, that would require assigning a dictionary
-to the dictionary and consequent automated searches which I can't be bothered
+to the dictionary and consequent automated searches which I cannot be bothered
 to do at this stage.  Just be aware that the default value in the get()
 statement is the _enumeration.default specified in ddl.dic...
+
+<<Linkage to dREL>>=
+<<Initialise dREL functions>>                                             
+<<Transform drel to python>>
+<<Store dREL functions>>
+<<Derive item information>>
+<<Storing a dREL-derived value>>
+<<Storing a whole new dREL-derived category>>
 
 <<Transform drel to python>>=
 def transform_drel(self):
@@ -2444,7 +2448,6 @@ def transform_drel(self):
     loop_info = dict(zip(loopable_cats,zip(loop_keys,cat_names)))
     # parser.listable_items = [a for a in self.keys() if "*" in self[a].get("_type.dimension","")] 
     derivable_list = [a for a in self.keys() if self[a].has_key("_method.expression") \
-                          and self[a].get("_definition.scope","")!='Category' \
                           and self[a].get("_name.category_id","")!= "function"]
     for derivable in derivable_list:
         target_id = derivable
@@ -2470,9 +2473,12 @@ def transform_drel(self):
             print traceback.print_tb(sys.exc_info()[-1],None,sys.stdout)
             continue
         # Construct the python method
+        cat_meth = False
+        if self[derivable].get('_definition.scope','Item') == 'Category':
+            cat_meth = True
         pyth_meth = py_from_ast.make_python_function(meth_ast,"pyfunc",target_id,
                                                                    loopable=loop_info,
-                                                     cif_dic = self)
+                                                     cif_dic = self,cat_meth=cat_meth)
         save_overwrite = self[derivable].overwrite
         self[derivable].overwrite = True
         self[derivable]["_method.py_expression"] = pyth_meth
@@ -2503,14 +2509,16 @@ def add_drel_funcs(self):
         py_function = py_from_ast.make_python_function(res_ast,None,targetname=funcname,func_def=True,loopable=loop_info,cif_dic = self)
         #print 'dREL library function ->\n' + py_function
         global_table = globals()
-        # global_table.update(self.ddlm_functions)
         exec py_function in global_table    #add to namespace
-    #print "All functions -> " + `self.ddlm_functions`
+    #print 'Globals after dREL functions added:' + `globals()`
+    self.ddlm_functions = globals()  #for outside access
 
 @ When a dictionary is available during CIF file access, we can resolve a missing dataname in
 three ways: (1) check if it is defined under an alias; (2) use a dREL method to calculate the
 value; (3) use default values if defined.  We resolve in this priority.  Note that we also
-convert to the appropriate type.
+convert to the appropriate type.  A subsection of (2) is that we might be able to use a category
+method to find our values; we execute the category method if no items in the category are
+available.
 
 The store_value flag asks us to update the ciffile object with the new value.  We remove any
 numpy dependencies before doing this, which means that we must recreate the numpy type
@@ -2528,6 +2536,8 @@ def derive_item(self,start_key,cifdata,store_value = False):
     the_func = self[key].get('_method.py_expression',"")
     if the_func:   #attempt to calculate it
         <<Execute pythonised dREL method>>
+    if result is None: # try category method
+        <<Execute category method and check dataname>>
     if result is None:   # try defaults
         <<Work out default value of dataname>>
     # read it in
@@ -2536,45 +2546,64 @@ def derive_item(self,start_key,cifdata,store_value = False):
     # now try to insert the new information into the right place
     # find if items of this category already appear...
     if store_value:
-          result = self.store_new_value(key,cifdata,result,default_result)
+        if self[key].get("_definition.scope","Item")=='Item':
+            result = self.store_new_value(key,cifdata,result,default_result)
+        else:
+            self.store_new_cat_values(cifdata,result)
     return result
     
 @ Storing a dREL-derived value back into our CifFile.  The dREL value (or potentially
 a simple default value) may correspond to an entire column, or even an entire loop 
 for category methods.  We have to distinguish between list values that are StarLists,
 that is, a single CIF value, and list values that correspond to a column of a loop.
+Additionally, testing has revealed that we cannot judge the type of elements in a list
+by the first element (e.g. could be a plain list, then a numpy array).
+
+The [[conv_from_numpy]] mini-functions are designed to handle arbitrary numpy arrays
+quickly.
 
 <<Storing a dREL-derived value>>=
 def store_new_value(self,key,cifdata,result,default_result):
-    """Store a value from the dREL system into a CifFile"""
+      """Store a value from the dREL system into a CifFile"""
       # try to change any matrices etc. to lists
       the_category = self[key]["_name.category_id"]
       if self[the_category].get('_definition.class','Set')=='Loop':
           # our result is looped, this only gets the simple structures
-          if result is not None and hasattr(result[0],'dtype'):    #numpy object
-              if result[0].size > 1:   #so is not a float
-                  out_result = [StarFile.StarList(a.tolist()) for a in result]
-              else:
-                  def conv_from_numpy(maybe_numpy):
+          # only if there is a default value do we expect a single number
+          out_result = result
+          if result is not None and not default_result:
+              # find any numpy arrays
+              numpy_objs = [a for a in result if hasattr(a,'dtype')]    #numpy object
+              if len(numpy_objs)>0:
+                  if numpy_objs[0].size > 1:   #so is not a float
+                      def conv_from_numpy(one_elem):
+                         try:
+                            return StarFile.StarList(one_elem.tolist())
+                         except:
+                            return one_elem
+                      out_result = [conv_from_numpy(a) for a in result]
+                  else:
+                    def conv_from_numpy(maybe_numpy):
                       try:
                           return maybe_numpy.item(0)
                       except:
                           return maybe_numpy
-                  out_result = [conv_from_numpy(a) for a in result]
-          else:
-              out_result = result
+                    out_result = [conv_from_numpy(a) for a in result]
           # so out_result now contains a value suitable for storage
           cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
           has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
-          print 'Found pre-existing names: ' + `has_cat_names`
+          print 'Adding {}, found pre-existing names: '.format(key) + `has_cat_names`
           if len(has_cat_names)>0:   #this category already exists
               if out_result is None or default_result: #need to create a list of values
                   loop_len = len(cifdata[has_cat_names[0]])
                   out_result = [out_result]*loop_len
                   result = out_result
-          cifdata[key] = out_result      #lengths must match or else!!
+              cifdata[key] = out_result      #lengths must match or else!!
+              cifdata.AddLoopName(has_cat_names[0],key)
+          else:
+              cifdata[key] = out_result
+              cifdata.CreateLoop([key])
           print 'Loop info:' + `cifdata.loops`
-          cifdata.AddLoopName(has_cat_names[0],key)
       else:    #not a looped category 
           if result is not None and hasattr(result,'dtype'):
               if result.size > 1:
@@ -2586,12 +2615,36 @@ def store_new_value(self,key,cifdata,result,default_result):
               cifdata[key] = result
       return result
 
+@ Storing category results.  dREL allows 'category methods', which initialise an entire
+category.  The dREL system that we have written returns a dictionary of lists, with the
+dictionary keys being item names.  It is sufficient for us to extract each of these names
+and pass them to our normal storage routine.  If some of the items on the list already
+exist, we are in trouble, as there is no longer any guarantee that what we have
+calculated for one dataname will match up with values for the pre-existing datanames.
+So if anything already exists, we bail.  Note however that we could be more intelligent
+and match up on IDs.
+
+<<Storing a whole new dREL-derived category>>= 
+def store_new_cat_values(self,cifdata,result):
+    """Store the values in [[result]] into [[cifdata]]"""
+    double_names = [a for a in result.keys() if cifdata.has_key(a)]
+    if len(double_names)>0:
+        print "Category not updated, some datanames already present:" + `double_names`
+        return
+    for one_name, one_value in result.items():
+        try:
+            self.store_new_value(one_name,cifdata,one_value,False)
+        except StarFile.StarError:
+            print '%s: Not replacing %s with calculated %s' % (one_name,`cifdata[one_name]`,`one_value`)
+                        
+
 @ Executing a dREL method.  The execution defines a function, 'pyfunc' which is
 then itself executed in global scope.  This has caused us some grief in order to
 get the bindings right (e.g. having StarList in scope).   Essentially, anything
 that the method might refer to should be in scope at this point, otherwise the
 way Python works it will be too late to have things in scope within the enclosing
-routine that calls this function.  As far as I can tell.
+routine that calls this function.  Importing the necessary modules at the beginning
+of the module file (as done here) seems to be a reliable way to go.
 
 <<Execute pythonised dREL method>>=
 #global_table = globals()
@@ -2606,6 +2659,24 @@ result = pyfunc(cifdata)
 cifdata.provide_value = stored_setting
 #print "Function returned %s" % `result`
 
+@ A dataname may have a method of derivation defined only in the category
+method, such as is currently envisioned for _model_site, where e.g. the molecule
+number is assigned in the category method and no separate derivation exists.
+Therefore, the following code is called if no individual method is provided,
+and then we check to see if the item name that we were after has been 
+generated. 
+
+<<Execute category method and check dataname>>=
+category = self[key]['_name.category_id']
+if self[category].has_key('_method.py_expression'):
+    print "**Now applying category method for %s in search of %s**" % (category,key)
+    cat_result = self.derive_item(category,cifdata,store_value=True)
+    print "**Obtained " + `cat_result`        
+# do we now have our value?
+    if cat_result.has_key(key):
+        return cat_result[key]
+        
+                                             
 @ Aliases.  If we have this item under a different name, find it and
 return it immediately after putting it into the correct type. We could
 be passed either the dictionary defined dataname, or any of its
