@@ -1331,7 +1331,8 @@ dictionaries where fine-tuned layout is helpful for human readers.
 
 We provide a simple function to change the maximum name length, so that
 we can read in a StarBlock and then enforce that the names are a maximum
-length as required by CIF. 
+length as required by CIF.  Values calculated with a dictionary are
+cached by setting self.cache_vals to True.
 
 <<Initialise a StarBlock>>=
 def __init__(self,data = (), maxoutlength=2048, wraplength=80, overwrite=True,
@@ -1341,10 +1342,11 @@ def __init__(self,data = (), maxoutlength=2048, wraplength=80, overwrite=True,
     self.item_order = []  #lower case, loops referenced by integer
     self.formatting_hints = {}
     self.true_case = {} #transform lower case to supplied case
-    self.provide_value = False   #prefer string version always
+    self.provide_value = False  #prefer string version always
     self.dictionary = None      #DDLm dictionary
     self.popout = False         #used during load iteration
     self.curitem = -1           #used during iteration
+    self.cache_vals = True      #store all calculated values
     self.maxoutlength = maxoutlength
     self.setmaxnamelength(maxnamelength)  #to enforce CIF limit of 75 characters
     self.set_characterset(characterset)   #to check input names
@@ -1413,7 +1415,7 @@ the enclosing block collection (e.g. CIF or STAR file object)""")
     except KeyError:
        if self.dictionary:
            # send the dictionary the required key and a pointer to us
-           new_value = self.dictionary.derive_item(key,self,store_value=True)
+           new_value = self.dictionary.derive_item(key,self,store_value=self.cache_vals)
            print 'Set %s to derived value %s' % (key, `new_value`)
            return new_value
        else:
@@ -1524,17 +1526,24 @@ def GetItemPosition(self,itemname):
     loop_pos = self.loops[loop_no].index(testname)
     return loop_no,loop_pos
 
-@  This routine moves around the order of objects in the printout.
+@  This routine moves around the order of objects in the printout.  We can
+only move an item within the loop in which it appears.
 
 <<Change order of data item>>=
 def ChangeItemOrder(self,itemname,newpos):
-    """Move the printout order of `itemname` to `newpos`."""
+    """Move the printout order of `itemname` to `newpos`. If `itemname` is
+    in a loop, `newpos` refers to the order within the loop."""
     if isinstance(itemname,basestring):
         true_name = itemname.lower()
     else:
         true_name = itemname
-    self.item_order.remove(true_name)
-    self.item_order.insert(newpos,true_name)
+    loopno = self.FindLoop(true_name)
+    if loopno < 0:  #top level
+        self.item_order.remove(true_name)
+        self.item_order.insert(newpos,true_name)
+    else:
+        self.loops[loopno].remove(true_name)
+        self.loops[loopno].insert(newpos,true_name)
 
 <<Return order of all data items>>=
 def GetItemOrder(self):
@@ -1900,7 +1909,9 @@ def remove_loop(self,oldloop):
 
 @ Adding a dataname that has already been set to a loop.  While relatively trivial, we still need
 to check that it does not exist in any other loops, and remove this dataname from the item order
-if it is present. We always use the canonical lower-case form.
+if it is present. We always use the canonical lower-case form.  Also, the access to self[oldname]
+may trigger a round of evaluation, which we wish to avoid, so we make sure to switch off calculations
+in this case.
 
 <<Add name to loop>>=
 def AddLoopName(self,oldname, newname):
@@ -1915,7 +1926,10 @@ def AddLoopName(self,oldname, newname):
     if lower_newname in self.loops[loop_no]:
         return
     # check length
+    old_provides = self.provide_value
+    self.provide_value = False
     loop_len = len(self[oldname])
+    self.provide_value = old_provides
     if len(self[newname]) != loop_len:
         raise ValueError, 'Mismatch of loop column lengths for %s: should be %d' % (newname,loop_len)
     # remove from any other loops
@@ -1993,23 +2007,16 @@ def AddToLoop(self,dataname,loopdata):
     self.update(loopdata)
     self.loops[thisloop]+=loopdata.keys()
 
-@ 
-The draft DDLm specification uses square brackets next to a
-pre-specified identifier to mean "the packet containing this key
-item".  As the meaning of such square brackets in PyCIFRW is always
-that of simple dictionary access, we instead implement a function
-which fullfils this role and pre-process the DRel script to remove the
-square brackets where necessary.  At the LoopBlock level we have no
-idea as to which data name is the key, so that is passed to us from
-the dictionary processing layer.  Note we assume a single key rather
-than multiple keys for this call, and let the calling layer handle
-multiple or missing packets.
+@ The draft DDLm specification uses square brackets next to a
+pre-specified identifier to mean "the packet of this category for
+which the key equals this item". We implement a function which
+fullfils this role for use in the pythonised dREL script.  At this
+StarFile level we have no idea as to which data name is the key, so
+that is passed to us from the dictionary processing layer.  Note we
+assume a single key rather than multiple keys for this call, and let
+the calling layer handle multiple or missing packets.
 
-We guarantee to return a single packet, even if multiple packets
-match.  Perhaps we should raise an error in this case.
-
-This is a dictionary-agnostic routine, so will not be able to determine
-if a case-insensitive match is appropriate.
+We guarantee to return a single packet, or else raise a ValueError.
 
 <<Get packet by key>>=
 def GetKeyedPacket(self,keyname,keyvalue,no_case=False):
@@ -2045,6 +2052,20 @@ packet is requested.  In order to do this derivation, we need
 to store the key name and value, so that the __getattr__ method
 of the packet can properly derive the needed value.
 
+With a deriving dictionary we run the danger that we will generate
+keys for a child category for which no other values are defined.  Such
+keys are pointless as the only information we have is that they come
+from the parent category, and so they can only be copies of the parent
+key, and therefore the child category is identical to the parent
+category as it has the same keys.  We therefore do not generate keys
+of child categories; if child category items are present, then the
+key should already be present.  
+
+ON the other hand, if the child category keys are present but the parent keys
+are missing, then we in principle know that the child keys are a
+subset of the parent keys, but we cannot use the key to derive any values,
+as the keys are opaque. 
+
 <<Get semantic packet by key>>=
 def GetKeyedSemanticPacket(self,keyvalue,cat_id):
     """Return a complete packet for category `cat_id` where the
@@ -2061,13 +2082,31 @@ def GetKeyedSemanticPacket(self,keyvalue,cat_id):
     if self.dictionary[target_keys[0]]['_type.contents'] in ['Code','Tag','Name']:
         lcase = True
     for cat_key in target_keys:
+        self.dictionary.generate_key(self,cat_key)
+        if not self.has_key(cat_key): continue   #couldn't be generated
         try:
             extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
-        except KeyError:        #try to create the key
-            key_vals = self[cat_key]   #will create a key column
-        p.merge_packet(self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase))
+        except KeyError:        #missing key
+            try:
+                test_key = self[cat_key]  #generate key if possible
+                print 'Test key is %s' % `test_key`
+                if test_key is not None and\
+                not (isinstance(test_key,list) and (None in test_key or len(test_key)==0)):
+                    print 'Getting packet for key %s' % `keyvalue`
+                    extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
+            except:             #can't be generated
+                continue
+        except ValueError:      #none/more than one, assume none
+            continue
+            #extra_packet = self.dictionary.generate_default_packet(cat_id,cat_key,keyvalue)
+        p.merge_packet(extra_packet)
     # the following attributes used to calculate missing values
-    p.key = target_keys[0]
+    for keyname in target_keys:
+        if hasattr(p,keyname):
+            p.key = keyname
+            break
+    if not hasattr(p,"key"):
+        raise ValueError, "No key found for %s, packet is %s" % (cat_id,str(p))
     p.cif_dictionary = self.dictionary
     p.fulldata = self
     return p

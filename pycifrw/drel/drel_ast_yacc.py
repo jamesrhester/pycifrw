@@ -569,6 +569,8 @@ def p_error(p):
            p.lexer.lexdata[p.lexpos:min(p.lexpos + 100,len(p.lexer.lexdata))]
     except:
         pass
+    parser.restart()
     raise SyntaxError
 
+lexer = drel_lex.lexer
 parser = yacc.yacc()    

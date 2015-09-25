@@ -81,6 +81,7 @@ try:
     from drel import drel_runtime  #put in global scope for exec statement
 except ImportError:
     pass                       #will fail when using dictionaries for calcs
+from copy import copy          #must be in global scope for exec statement
 
 <<CifBlock class>>
 <<CifFile class>>
@@ -1416,7 +1417,10 @@ is useful for including entire dictionaries.  As a special case, if we import a 
 definition into a 'Head' definition, we actually make all non-Head categories of the
 imported dictionary into child categories of the importing dictionary 'Head' category.
 
-We use the built-in PyCIFRW merging methods. 
+The merging method of the StarFile object is purely syntactic and so does not understand
+DDLm relationships.  We add all blocks as the children of the top-level dictionary block,
+and then in the case of a new 'Head' block we simply reparent the immediate semantic
+children of the old 'Head' block. 
 
 <<Perform DDLm imports>>=
 <<Master import routine>>
@@ -1456,15 +1460,35 @@ def ddlm_import(self,import_mode='All'):
         if mode == 'contents':   #merge attributes only
             self[parent_block].merge(import_target)
         elif mode =="full":
-            # Check for Head merging Head
+            # Do the syntactic merge
+            syntactic_head = self.get_parent(parent_block) #root frame if no nesting
+             # Check for Head merging Head
             if self[parent_block].get('_definition.class','Datum')=='Head' and \
                import_from[target_key].get('_definition.class','Datum')=='Head':
+                  head_to_head = True
                   child_frames = import_from.get_children(target_key,include_parent=False)
             else:
+                  head_to_head = False
                   child_frames = import_from.get_children(target_key,include_parent=True)
-            self.merge_fast(child_frames,parent=parent_block)      #
-            print 'Merged %s (%d defs) in %s mode, now have %d defs' % (target_key,len(child_frames),
+            self.merge_fast(child_frames,parent=syntactic_head)      #
+            print 'Syntactic merge of %s (%d defs) in %s mode, now have %d defs' % (target_key,len(child_frames),
                mode,len(self))
+            # Now the semantic merge
+            merging_cat = self[parent_block]['_name.object_id']      #new parent
+            if head_to_head:
+                from_cat = import_from[target_key]['_name.object_id']  #old parent
+                child_frames = self.ddlm_immediate_children(from_cat)    #old children
+                #the new parent is the importing category for all old children
+                for f in child_frames:
+                    self[f].overwrite = True
+                    self[f]['_name.category_id'] = merging_cat
+                    self[f].overwrite = False
+                print 'Semantic merge: %d defs reparented from %s to %s' % (len(child_frames),from_cat,merging_cat)
+            else:  #imported category is only child
+                from_frame = import_from[target_key]['_definition.id'] #so we can find it
+                child_frame = [d for d in self.keys() if self[d]['_definition.id']==from_frame][0]
+                self[child_frame]['_name.category_id'] = merging_cat
+                print 'Semantic merge: category for %s : now %s' % (from_frame,merging_cat)
         # it will never happen again... 
         del self[parent_block]["_import.get"]
                 
@@ -2413,7 +2437,8 @@ The drel_ast_yacc package will generate an Abstract Syntax Tree, which
 we then convert to a Python function using [[py_from_ast.make_function]].  We use
 it during initialisation to transform all methods to python expressions,
 and then the [[derive_item]] method will use this to try to derive the
-expression.
+expression.  Note that newline is the only recognised statement separator
+in dREL, so we make sure all lines are separated in this way.
 
 The [[make_function]] function requires dictionary information to be
 supplied regarding looped categories and keys.
@@ -2432,6 +2457,8 @@ statement is the _enumeration.default specified in ddl.dic...
 <<Derive item information>>
 <<Storing a dREL-derived value>>
 <<Storing a whole new dREL-derived category>>
+<<Generating keys>>
+<<Generating default packets>>
 
 <<Transform drel to python>>=
 def transform_drel(self):
@@ -2439,6 +2466,7 @@ def transform_drel(self):
     from drel import py_from_ast
     import traceback
     parser = drel_ast_yacc.parser
+    lexer = drel_ast_yacc.lexer
     my_namespace = self.keys()
     my_namespace = dict(map(None,my_namespace,my_namespace)) 
     # we provide a table of loopable categories {cat_name:(key,[item_name,...]),...})
@@ -2462,15 +2490,18 @@ def transform_drel(self):
            except (KeyError,ValueError):
                 print 'No evaluation method found, skipping' 
                 continue
+        drel_expr = "\n".join(drel_expr.splitlines())
         # print "Transforming %s" % drel_expr
         # List categories are treated differently...
         try:
-            meth_ast = parser.parse(drel_expr+"\n")
+            meth_ast = parser.parse(drel_expr+"\n",lexer=lexer)
         except:
             print 'Syntax error in method for %s; leaving as is' % derivable
             a,b = sys.exc_info()[:2]
             print `a`,`b`
             print traceback.print_tb(sys.exc_info()[-1],None,sys.stdout)
+            # reset the lexer
+            lexer.begin('INITIAL')
             continue
         # Construct the python method
         cat_meth = False
@@ -2487,7 +2518,8 @@ def transform_drel(self):
 
 @ Drel functions are all stored in category 'functions' in our final dictionary.  We want to
 convert them to executable python code and store them in an appropriate namespace which we
-can then pass to our individual item methods.
+can then pass to our individual item methods.  As dREL accepts only linefeed as a terminator,
+we convert the input text as required.
 
 <<Store dREL functions>>=
 def add_drel_funcs(self):
@@ -2504,8 +2536,9 @@ def add_drel_funcs(self):
     cat_names = [self.names_in_cat(a,names_only=True) for a in loopable_cats]
     loop_info = dict(zip(loopable_cats,zip(loop_keys,cat_names)))
     for funcname,funcbody in funcnames:
+        newline_body = "\n".join(funcbody.splitlines())
         parser.target_id = funcname
-        res_ast = parser.parse(funcbody)
+        res_ast = parser.parse(newline_body)
         py_function = py_from_ast.make_python_function(res_ast,None,targetname=funcname,func_def=True,loopable=loop_info,cif_dic = self)
         #print 'dREL library function ->\n' + py_function
         global_table = globals()
@@ -2543,15 +2576,39 @@ def derive_item(self,start_key,cifdata,store_value = False):
     # read it in
     if result is None:   #can't do anything else
         print 'Warning: no way of deriving item %s' % key
+    <<Adjust value to be appropriate length>>
     # now try to insert the new information into the right place
     # find if items of this category already appear...
-    if store_value:
+    # Never cache empty values
+    if not (isinstance(result,list) and len(result)==0) and\
+      store_value and result is not None:
         if self[key].get("_definition.scope","Item")=='Item':
-            result = self.store_new_value(key,cifdata,result,default_result)
+            if is_looped:
+                result = self.store_new_looped_value(key,cifdata,result,default_result)
+            else:
+                result = self.store_new_unlooped_value(key,cifdata,result)
         else:
             self.store_new_cat_values(cifdata,result)
     return result
-    
+
+@ Adjusting our calculated value. If we have used a default value or we have None, we
+need to make the dimension match the currently-existing length of the category.
+
+<<Adjust value to be appropriate length>>=
+the_category = self[key]["_name.category_id"]
+is_looped = False
+if self[the_category].get('_definition.class','Set')=='Loop':
+    is_looped = True
+    cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
+    has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
+    if len(has_cat_names)>0:   #this category already exists
+        if result is None or default_result: #need to create a list of values
+            loop_len = len(cifdata[has_cat_names[0]])
+            out_result = [result]*loop_len
+            result = out_result
+    else:   #nothing exists in this category, we can't store this at all
+        result = []
+                        
 @ Storing a dREL-derived value back into our CifFile.  The dREL value (or potentially
 a simple default value) may correspond to an entire column, or even an entire loop 
 for category methods.  We have to distinguish between list values that are StarLists,
@@ -2563,56 +2620,52 @@ The [[conv_from_numpy]] mini-functions are designed to handle arbitrary numpy ar
 quickly.
 
 <<Storing a dREL-derived value>>=
-def store_new_value(self,key,cifdata,result,default_result):
-      """Store a value from the dREL system into a CifFile"""
+def store_new_looped_value(self,key,cifdata,result,default_result):
+      """Store a looped value from the dREL system into a CifFile"""
       # try to change any matrices etc. to lists
       the_category = self[key]["_name.category_id"]
-      if self[the_category].get('_definition.class','Set')=='Loop':
-          # our result is looped, this only gets the simple structures
-          # only if there is a default value do we expect a single number
-          out_result = result
-          if result is not None and not default_result:
-              # find any numpy arrays
-              numpy_objs = [a for a in result if hasattr(a,'dtype')]    #numpy object
-              if len(numpy_objs)>0:
-                  if numpy_objs[0].size > 1:   #so is not a float
-                      def conv_from_numpy(one_elem):
-                         try:
-                            return StarFile.StarList(one_elem.tolist())
-                         except:
-                            return one_elem
-                      out_result = [conv_from_numpy(a) for a in result]
-                  else:
-                    def conv_from_numpy(maybe_numpy):
-                      try:
-                          return maybe_numpy.item(0)
-                      except:
-                          return maybe_numpy
-                    out_result = [conv_from_numpy(a) for a in result]
-          # so out_result now contains a value suitable for storage
-          cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
-          has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
-          print 'Adding {}, found pre-existing names: '.format(key) + `has_cat_names`
-          if len(has_cat_names)>0:   #this category already exists
-              if out_result is None or default_result: #need to create a list of values
-                  loop_len = len(cifdata[has_cat_names[0]])
-                  out_result = [out_result]*loop_len
-                  result = out_result
-              cifdata[key] = out_result      #lengths must match or else!!
-              cifdata.AddLoopName(has_cat_names[0],key)
-          else:
-              cifdata[key] = out_result
-              cifdata.CreateLoop([key])
-          print 'Loop info:' + `cifdata.loops`
-      else:    #not a looped category 
-          if result is not None and hasattr(result,'dtype'):
-              if result.size > 1:
-                  out_result = StarFile.StarList(result.tolist())
-                  cifdata[key] = out_result
+      out_result = result
+      if result is not None and not default_result:
+          # find any numpy arrays
+          numpy_objs = [a for a in result if hasattr(a,'dtype')]    #numpy object
+          if len(numpy_objs)>0:
+              if numpy_objs[0].size > 1:   #so is not a float
+                  def conv_from_numpy(one_elem):
+                     try:
+                        return StarFile.StarList(one_elem.tolist())
+                     except:
+                        return one_elem
+                  out_result = [conv_from_numpy(a) for a in result]
               else:
-                  cifdata[key] = result.item(0)
+                def conv_from_numpy(maybe_numpy):
+                  try:
+                      return maybe_numpy.item(0)
+                  except:
+                      return maybe_numpy
+                out_result = [conv_from_numpy(a) for a in result]
+      # so out_result now contains a value suitable for storage
+      cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
+      has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
+      print 'Adding {}, found pre-existing names: '.format(key) + `has_cat_names`
+      if len(has_cat_names)>0:   #this category already exists
+          cifdata[key] = out_result      #lengths must match or else!!
+          cifdata.AddLoopName(has_cat_names[0],key)
+      else:
+          cifdata[key] = out_result
+          cifdata.CreateLoop([key])
+      print 'Loop info:' + `cifdata.loops`
+      return result
+
+def store_new_unlooped_value(self,key,cifdata,result):
+      """Store a single value from the dREL system"""
+      if result is not None and hasattr(result,'dtype'):
+          if result.size > 1:
+              out_result = StarFile.StarList(result.tolist())
+              cifdata[key] = out_result
           else:
-              cifdata[key] = result
+              cifdata[key] = result.item(0)
+      else:
+          cifdata[key] = result
       return result
 
 @ Storing category results.  dREL allows 'category methods', which initialise an entire
@@ -2633,9 +2686,14 @@ def store_new_cat_values(self,cifdata,result):
         return
     for one_name, one_value in result.items():
         try:
-            self.store_new_value(one_name,cifdata,one_value,False)
+            self.store_new_looped_value(one_name,cifdata,one_value,False)
         except StarFile.StarError:
             print '%s: Not replacing %s with calculated %s' % (one_name,`cifdata[one_name]`,`one_value`)
+    #put the key as the first item
+    the_key = [a for a in result.keys() if self[a].get('_type.purpose','')=='Key']
+    print 'Fixing item order for {}'.format(`the_key`)
+    for one_key in the_key:  #should only be one
+        cifdata.ChangeItemOrder(one_key,0)
                         
 
 @ Executing a dREL method.  The execution defines a function, 'pyfunc' which is
@@ -2745,6 +2803,50 @@ elif def_index_val:            #derive a default value
         default_result = True   #flag that it must be extended
     result = self.change_type(key,result)
     print "Indexed on %s to get %s for %s" % (def_index_val,`result`,`val_to_index`)
+
+@  Generating keys.  Keys are a slighlty special case, because on the one
+hand they can be any arbitrary unique string, but on the other hand they are crucial
+for implementing category merges and linkages.  The draft cif core dictionary
+has methods for generating keys from other datanames, which strictly speaking
+should be seen as suggestions but are of course useful for the human reader (e.g.
+using atom type as a key).  When attempting to create a key, we do not store
+any intermediate values that might be generated - we may simply be working around
+a bug here, but for now this routine avoids the generation of an empty _atom_type_scat.symbol
+which is then assigned to _atom_type_scat.key instead of doing nothing.
+
+<<Generating keys>>=
+def generate_key(self,cifdata,keyname):
+    """Generate keyname if it is not present in [[cifdata]]"""
+    if not cifdata.has_key(keyname):
+        cache_cache = cifdata.cache_vals
+        cifdata.cache_vals = False
+        keyvals = cifdata[keyname]
+        if keyvals is not None and keyvals != []:
+            cifdata.cache_vals = True
+            dummy = cifdata[keyname]   #this time keep it
+        cifdata.cache_vals = cache_cache  # restore old value
+    return
+
+@ If a key is missing, we may sometimes fill in default values for it, for example,
+a missing atom type may be assumed to have a number in cell of 0.
+
+<<Generating default packets>>=
+def generate_default_packet(self,catname,catkey,keyvalue):
+    """Return a StarPacket with items from ``catname`` and a key value
+    of ``keyvalue``"""
+    names_in_cat = [a for a in self.keys() if self[a]['_name.category_id'].lower() == catname.lower()]
+    names_in_cat = [n for n in names_in_cat if self[n].get("_definition.scope","Item")=='Item']
+    newpack = StarPacket()
+    for na in names_in_cat:
+        def_val = self[na].get("_enumeration.default","")
+        if def_val:
+            final_val = self.change_type(na,def_val)
+            newpack.extend(final_val)
+            setattr(newpack,na,final_val)
+    if len(newpack)>0:
+        newpack.extend(keyvalue)
+        setattr(newpack,catkey,keyvalue)
+    return newpack
 
 @ In the single case of executing dREL methods, we wish to return numpy
 Arrays from our __getitem__ so that the mathematical operations proceed

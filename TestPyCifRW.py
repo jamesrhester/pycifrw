@@ -1636,6 +1636,17 @@ class DicEvalTestCase(unittest.TestCase):
         print str(self.fb)
         self.failUnless(self.fb.has_key('_model_site.Cartn_xyz'))
         self.failUnless(self.fb.has_key('_model_site.mole_index'))
+
+    def testEmptyKey(self):
+        """Test that empty keys are not stored"""
+        del self.fb['_atom_type_scat.symbol']
+        del self.fb['_atom_type_scat.dispersion_real']
+        del self.fb['_atom_type_scat.dispersion_imag']
+        del self.fb['_atom_type_scat.source']
+        p = self.fb.GetKeyedSemanticPacket('O','atom_type')
+        self.failUnless(not hasattr(p,'_atom_type_scat.key'))
+        self.failUnless(not hasattr(p,'_atom_type_scat.symbol'))
+
         
 class DicStructureTestCase(unittest.TestCase):
     """Tests use of dictionary semantic information for item lookup"""

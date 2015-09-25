@@ -429,7 +429,8 @@ elif node_type == "FUNC_CALL":
             outstring = outstring + ")" + postfix
     return outstring
 
-@  Compound statements
+@  Compound statements.  We make a copy of the target expressions in the FOR statement
+to allow these objects to be modified inside the suite.
 
 <<Compound statements>>=
     elif node_type == "IF_EXPR":   #IF_EXPR test true_suite [ELSE IF_EXPR] false_suite
@@ -466,7 +467,7 @@ elif node_type == "FUNC_CALL":
         outstring = outstring[:-1] + " in "
         special_info["rhs"] = True
         for target in in_node[2]:
-            outstring += traverse_ast(target) + ","
+            outstring += "copy("+traverse_ast(target) + "),"
         special_info["rhs"] = None
         outstring = outstring[:-1] + ":" + add_indent("\n" + traverse_ast(in_node[3]))
         return outstring

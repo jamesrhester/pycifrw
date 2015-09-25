@@ -6,6 +6,7 @@ import CifFile
 from CifFile import StarFile,StarList
 import numpy
 from CifFile.drel import drel_lex,drel_ast_yacc,py_from_ast,drel_runtime
+from copy import copy
 
 class dRELRuntimeTestCase(unittest.TestCase):
     def setUp(self):
@@ -183,8 +184,10 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
 
     def test_multistatements(self):
         """test multiple statements"""
-        test = "_a.b = 1.2\nb = 'abc'\nqrs = 4.4\n"
-        self.create_test(test,1.2)
+        test1 = "_a.b = 1.2\nb = 'abc'\nqrs = 4.4\n"
+        test2 = '\n\nq = _c.d\nnumeric = "01234"\n_a.b=11.2'
+        self.create_test(test1,1.2)
+        #self.create_test(test2,11.2)
 
     def test_semicolon_sep(self):
         """test multiple statements between semicolons"""
@@ -526,7 +529,7 @@ class WithDictTestCase(unittest.TestCase):
        print 'Simple function becomes:'
        print realfunc
        print 'Depends on: ' + `dependencies`
-       exec realfunc
+       exec realfunc in globals()
        b = myfunc(self.testblock)
        print "subscription returns " + `b` 
 

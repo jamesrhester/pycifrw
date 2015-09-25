@@ -29,6 +29,22 @@ save_a.b
 	_name.category_id a
 save_
 save_    #end of a
+save_c
+	_definition.id c
+	_definition.scope Category
+	_definition.class Set
+	_description.text 'Simple category'
+	_name.object_id c
+	_name.category_id test
+save_c.d
+	_definition.id '_c.d'
+	_definition.scope Item
+	_definition.class Item
+	_description.text 'Simple item'
+	_name.object_id d
+	_name.category_id c
+save_
+save_    #end of c
 save_    #end of head
 
     
