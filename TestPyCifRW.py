@@ -1141,16 +1141,34 @@ class DictTestCase(unittest.TestCase):
         self.ddldic.add_category('brand-new')
         self.failUnless('brand-new' in self.ddldic)
         self.failUnless(self.ddldic['brand-new']['_name.object_id']=='brand-new')
-        self.failUnless(self.ddldic.get_parent('brand-new').lower()=='attributes')
+        self.failUnless(self.ddldic.get_parent('brand-new').lower()=='ddl_dic')
         self.failUnless(self.ddldic['brand-new']['_name.category_id'].lower()=='attributes')
 
     def testNewDefinition(self):
         """Test that we can add a new definition"""
-        self.ddldic.add_definition('_junkety._junkjunk_','description')
+        realname = self.ddldic.add_definition('_junkety._junkjunk','description')
+        print 'Real name for new definition is %s' % realname
         self.failUnless('_description.junkjunk' in self.ddldic)
         self.failUnless(self.ddldic['_description.junkjunk']['_name.category_id'].lower()=='description')
         self.failUnless(self.ddldic['_description.junkjunk']['_name.object_id']=='junkjunk')
         self.failUnless(self.ddldic['_description.junkjunk']['_definition.id']=='_description.junkjunk')
+
+    def testNewDanglerDef(self):
+        """Test that we can add a new definition with external category"""
+        self.ddldic.add_definition('_junkety._junkjunk','external_cat',allow_dangler=True)
+        self.failUnless('_external_cat.junkjunk' in self.ddldic)
+        self.failUnless(self.ddldic['_external_cat.junkjunk']['_name.category_id'].lower()=='external_cat')
+        self.failUnless(self.ddldic['_external_cat.junkjunk']['_name.object_id']=='junkjunk')
+        self.failUnless(self.ddldic['_external_cat.junkjunk']['_definition.id']=='_external_cat.junkjunk')
+
+
+    def testNewDanglerCat(self):
+        """Test that we can add a new category with external parent"""
+        self.ddldic.add_category('internal_cat','atom_site',allow_dangler=True)
+        self.failUnless('internal_cat' in self.ddldic)
+        self.failUnless(self.ddldic['internal_cat']['_name.object_id']=='internal_cat')
+        self.failUnless(self.ddldic.get_parent('internal_cat').lower()=='ddl_dic')
+        self.failUnless(self.ddldic['internal_cat']['_name.category_id'].lower()=='atom_site')
 
     def testDeleteDefinition(self):
         """Test that we can delete a definition"""
@@ -1200,6 +1218,16 @@ class DictTestCase(unittest.TestCase):
         children = self.ddldic.ddlm_all_children('description')
         self.failUnless('_description_example.detail' in children)
 
+    def testDanglerChildren(self):
+        """Test that danglers are found when outputting"""
+        self.ddldic.add_definition('_junkety._junkjunk','external_cat',allow_dangler=True)
+        self.ddldic.add_category('some_other_cat','atom_site',allow_dangler=True)
+        self.ddldic.add_definition('_xxx.more_junk','some_other_cat')
+        names = self.ddldic.get_full_child_list()
+        self.failUnless('some_other_cat' in names)
+        self.failUnless('_external_cat.junkjunk' in names)
+        self.failUnless('_some_other_cat.more_junk' in names)
+        
     def testFunnyLayout(self):
         """Test that having some of the data block at the end is OK"""
         good_read = CifFile.CifDic("pycifrw/tests/ddl_rearranged.dic",grammar="2.0",scoping="dictionary",do_minimum=True)
@@ -1708,7 +1736,7 @@ class DicStructureTestCase(unittest.TestCase):
 if __name__=='__main__':
      global testdic
      testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.cif2.dic",grammar="2.0")
-     suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
@@ -1721,7 +1749,7 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDL1TestCase) 
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
-     #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
+     suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
      unittest.TextTestRunner(verbosity=2).run(suite)
      #unittest.main()
 

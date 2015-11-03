@@ -1241,26 +1241,33 @@ def change_name(self,one_def,newobj):
         self[newid]['_dictionary.title'] = newid
     self.lock()
     return newid
-   
-def add_category(self,catname,catparent=None,is_loop=True):
+
+# Note that our semantic parent is given by catparent, but our syntactic parent is
+# always just the root block
+def add_category(self,catname,catparent=None,is_loop=True,allow_dangler=False):
     """Add a new category to the dictionary with name [[catname]].
        If [[catparent]] is None, the category will be a child of
        the topmost 'Head' category or else the top data block. If
-       [[is_loop]] is false, a Set category is created."""
+       [[is_loop]] is false, a Set category is created. If [[allow_dangler]]
+       is true, the parent category does not have to exist."""
     if catname in self:
         raise CifError, 'Attempt to add existing category %s' % catname
     self.unlock()
+    syntactic_root = self.get_roots()[0][0]
     if catparent is None:
-        root_cat = [a for a in self.keys() if self[a].get('_definition.class',None)=='Head']
-        if len(root_cat)>0:
-            root_cat = root_cat[0]
+        semantic_root = [a for a in self.keys() if self[a].get('_definition.class',None)=='Head']
+        if len(semantic_root)>0:
+            semantic_root = semantic_root[0]
         else:
-            root_cat = self.get_roots()[0]
+            semantic_root = syntactic_root
     else:
-        root_cat = catparent
-    realname = self.NewBlock(catname,parent=root_cat)
+        semantic_root = catparent
+    realname = self.NewBlock(catname,parent=syntactic_root)
     self[realname]['_name.object_id'] = realname
-    self[realname]['_name.category_id'] = self[root_cat]['_name.object_id']
+    if not allow_dangler or catparent is None:
+        self[realname]['_name.category_id'] = self[semantic_root]['_name.object_id']
+    else:
+        self[realname]['_name.category_id'] = catparent
     self[realname]['_definition.id'] = realname
     self[realname]['_definition.scope'] = 'Category'
     if is_loop:
@@ -1272,20 +1279,22 @@ def add_category(self,catname,catparent=None,is_loop=True):
     self.cat_map[realname]=realname
     return realname
 
-def add_definition(self,itemname,catparent,def_text='PLEASE DEFINE ME'):
+def add_definition(self,itemname,catparent,def_text='PLEASE DEFINE ME',allow_dangler=False):
     """Add itemname to category [[catparent]]. If itemname contains periods,
-    all text before the final period is ignored."""
+    all text before the final period is ignored. If [[allow_dangler]] is True,
+    no check for a parent category is made."""
     self.unlock()
     if '.' in itemname:
-        objname = itemname[:-1].split('.')[-1]
+        objname = itemname.split('.')[-1]
     else:
         objname = itemname
     objname = objname.strip('_')
-    if catparent not in self or self[catparent]['_definition.scope']!='Category':
+    if not allow_dangler and (catparent not in self or self[catparent]['_definition.scope']!='Category'):
         raise CifError, 'No category %s in dictionary' % catparent
     fullname = '_'+catparent.lower()+'.'+objname
     print 'New name: %s' % fullname
-    realname = self.NewBlock(fullname, fix=False, parent=catparent)
+    syntactic_root = self.get_roots()[0][0]
+    realname = self.NewBlock(fullname, fix=False, parent=syntactic_root)
     self[realname]['_definition.id']=fullname
     self[realname]['_name.object_id']=objname
     self[realname]['_name.category_id']=catparent
@@ -2936,12 +2945,15 @@ def get_full_child_list(self):
     if len(root_cat) == 1:
         all_names = [top_block] + self.recurse_child_list(root_cat[0])
         unrooted = self.ddlm_danglers()
-        for no_root in unrooted: 
-            new_names = self.recurse_child_list(no_root)
-            double_names = set(new_names).intersection(set(all_names))
-            if len(double_names)>0:
-                raise CifError,'Chasing root %s gave double names %s' % (no_root,`double_names`)
-            all_names += new_names
+        for no_root in unrooted:
+            if self[no_root].get('_definition.scope','Item')=='Category':
+                new_names = self.recurse_child_list(no_root)
+                double_names = set(new_names).intersection(set(all_names))
+                if len(double_names)>0:
+                    raise CifError,'Chasing root %s gave double names %s' % (no_root,`double_names`)
+                all_names += new_names
+            else:   #simple addition to some category
+                all_names += [no_root]
         print 'Final block order: ' + `all_names`
         return all_names
     raise ValueError, 'Dictionary contains no/multiple Head categories, please print as plain CIF instead'
