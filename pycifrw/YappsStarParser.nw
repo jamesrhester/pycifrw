@@ -386,7 +386,7 @@ rule input@<<prepared>>: ( ((
 
      rule sc_lines_of_text: start_sc_line   {{lines = StringIO();lines.write(start_sc_line)}}
                             (
-                            sc_line_of_text {{lines = lines.write(sc_line_of_text)}}
+                            sc_line_of_text {{lines.write(sc_line_of_text)}}
                             )*
                             end_sc_line     {{lines.write(end_sc_line);return monitor('sc_line_of_text',lines.getvalue())}}
 

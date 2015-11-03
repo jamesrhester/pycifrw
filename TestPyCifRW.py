@@ -1749,7 +1749,7 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDL1TestCase) 
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
-     suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     unittest.TextTestRunner(verbosity=2).run(suite)
-     #unittest.main()
+     #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
+     #unittest.TextTestRunner(verbosity=2).run(suite)
+     unittest.main()
 

@@ -4,13 +4,13 @@ import CifFile
 import cProfile
 import pstats
 testfiles = ['1wic.cif','ag03.cif','C13H22O3.cif','../dictionaries/cif_core.dic',
-              '../dictionaries/mmcif_pdbx.dic']
-#testfiles = []
-cached_mmdic = CifFile.CifDic('../dictionaries/mmcif_pdbx.dic',standard=None)
-# cached_mmdic = CifFile.CifDic('../dictionaries/mmcif_std_2.0.09.dic',standard=None)
+              '../dictionaries/mmcif_pdbx.dic','img2cif_packed.cif']
+#cached_mmdic = CifFile.CifDic('../dictionaries/mmcif_pdbx.dic',standard=None)
+#cached_mmdic = CifFile.CifDic('../dictionaries/mmcif_std_2.0.09.dic',standard=None)
 cached_core = CifFile.CifDic('../dictionaries/cif_core.dic')
-valfiles = [ ('ag03.cif',cached_mmdic), 
-             ('C13H22O3.cif',cached_core)
+#valfiles = [ ('ag03.cif',cached_mmdic), 
+#             ('C13H22O3.cif',cached_core)
+valfiles = [
            ]
 
 for file in testfiles:
