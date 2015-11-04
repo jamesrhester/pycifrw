@@ -51,6 +51,7 @@ parser StarParser:
 @ The STAR2 syntax
 <<STAR2_syntax>>=
 from StarFile import StarBlock,StarFile,StarList,StarDict
+from StringIO import StringIO
 <<Helper functions>>
 %%
 parser StarParser:

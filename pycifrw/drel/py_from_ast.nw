@@ -1,21 +1,38 @@
 @ These routines convert a dREL AST into Python text.  The top-level
 AST builder encloses the python fragment produced by the AST traverser.  
 The function transformer turns dREL function calls into
-the appropriate Python/CifFile/Numpy function calls.
+the appropriate Python/User-defined/Numpy function calls.
 
 <<*>>=
 import re
 from CifFile import CifError
+<<Configuration>>
 <<AST builder>>
 <<AST traverser>>
 <<Function transformer>>
 <<Mathematical operations>>
 <<Utility functions>>
 
+@  Configuration.
+
+The function tables below describe how generic dREL operations are transformed into API-
+specific function calls.  This is mostly concerned with calls to the ciffile object
+passed to the builder.
+
+<<Configuration>>=
+pycifrw_func_table = {   #how to use PyCIFRW CifFile objects
+         "data_access": "ciffile[%s]",   # argument is dataname to be accessed
+         "element_no": "%s[%s]", # accessing a particular element of the result of data_access
+         "count_data": "len(%s)", # number of elements for result of data_access
+         "cat_names":"ciffile.dictionary.names_in_cat(%s)", #names in category %s
+         "has_name":"ciffile.has_key(%s)",
+         "semantic_packet":"ciffile.GetKeyedSemanticPacket(%s,%s)" #get a packet for key, value
+                     }
+
 @  The AST builder puts the infrastructure around the AST statement list to turn it into a
 function call with two arguments: a dictionary and a data file.  The target id will
 usually be the dataname that is being defined. We always call this ``__dreltarget''
-within the generated method and so need to catch references to the target_id.
+within the generated method which is why we need to know the target_id.
 
 Note that the ``_cat.name'' syntax is significant in the dREL context, and therefore
 in the context of the generator.  Only names with this form are possible targets,
@@ -31,13 +48,14 @@ The 'loopable' argument is a table of categories that are loopable, with the val
 being (key_id, datanames). 
 
 <<AST builder>>=
-def make_python_function(in_ast,func_name,targetname, special_ids=[{}],cif_dic=None,cat_meth=False, 
+def make_python_function(in_ast,func_name,targetname, special_ids=[{}],
+                         func_table = pycifrw_func_table, cif_dic=None,cat_meth=False, 
                          func_def = False, have_sn=True,loopable={},debug=None,depends=False):
     """Convert in_ast to python code"""
     if debug is not None:
         print "incoming AST:"
         print `in_ast`
-    func_text,withtable,dependencies,cur_row = start_traverse(in_ast,target_id=targetname,cat_meth=cat_meth,loopable=loopable,debug=debug,func=func_def,cif_dic=cif_dic)
+    func_text,withtable,dependencies,cur_row = start_traverse(in_ast,func_table,target_id=targetname,cat_meth=cat_meth,loopable=loopable,debug=debug,func=func_def,cif_dic=cif_dic)
     if debug is not None:
         print 'Start========'
         print func_text
@@ -86,31 +104,31 @@ number of packets during execution of the method.
         d_vars = d_vars + ['__current_row']
     dummy_vars = ",".join(d_vars)
     actual_names = [k for k in withtable.keys()]
-    actual_names = ["ciffile["+repr(a)+"]" for a in actual_names]
+    actual_names = [func_table["data_access"]% ("'"+a+"'") for a in actual_names]
     if cur_row:
         actual_names+=['__row_id']
     map_names = ",".join(actual_names)
-    one_pack_names = [a+"[packet_no]" for a in actual_names]
+    one_pack_names = [func_table["element_no"] % (a,"packet_no") for a in actual_names]
     one_packet_each = ",".join(one_pack_names)
     preamble = "def %s(ciffile,packet_no=-1):\n" % (func_name)
-    preamble +="    def drel_func(cifdata,%s):\n" % dummy_vars
+    preamble +="    def drel_func(%s):\n" % dummy_vars
     # preamble +="        print 'Globals inside looped drel_func:' + `globals()`\n"
     # the actual function gets inserted here
     end_body=      "\n    if packet_no < 0:   #map\n"
     if cur_row and len(actual_names) > 1:    #i.e. have real names from category
-        end_body +="        __row_id = range(len(%s))\n" % actual_names[0]
+        end_body +="        __row_id = range(%s)\n" % (func_table['count_data'] % ("'"+actual_names[0]+"'"))
     elif cur_row and len(actual_names)==1:   #so no actual names available
         
-        end_body += "       cat_names = ciffile.dictionary.names_in_cat('%s')\n" % getcatname(targetname)[0]
-        end_body += "       have_name = [a for a in cat_names if ciffile.has_key(a)]\n"
+        end_body += "       cat_names = %s\n" % (func_table["cat_names"] % ("'"+getcatname(targetname)[0]+"'"))
+        end_body += "       have_name = [a for a in cat_names if %s]\n" % (func_table["has_name"] % "a")
         end_body += "       if len(have_name)>0:\n"
-        end_body += "           full_length = len(ciffile[have_name[0]])\n"
+        end_body += "           full_length = %s \n" % (func_table["count_data"] % (func_table["data_access"] % "have_name[0]"))
         end_body += "           __row_id = range(full_length)\n"
         end_body += "       else:\n"
         end_body += "           return []\n"
-    end_body+=      "       return map(lambda %s:drel_func(ciffile,%s),%s)\n" % (dummy_vars,dummy_vars,map_names)
+    end_body+=      "       return map(lambda %s:drel_func(%s),%s)\n" % (dummy_vars,dummy_vars,map_names)
     end_body+=     "    else:\n"
-    end_body+=     "        return drel_func(ciffile,%s)\n" % one_packet_each
+    end_body+=     "        return drel_func(%s)\n" % one_packet_each
 
 @ Un'with'ed data can simply be called with the dictionary and ciffile, with no
 need for any extra variables
@@ -128,7 +146,7 @@ of scopes, each containing a table of variables that need to be
 specially handled, either because they correspond to datanames (first
 entry in list) or to variables that have been aliased to categories
 via loop or with statements.  The scoping is not used particularly
-often in the following code as the example methods don't really test
+often in the following code as the example methods do not really test
 out the scoping.
 
 A variable defined in a loop statement will also have a loop index
@@ -160,7 +178,7 @@ of an assignment. If False, then we are dealing with the lhs, and if None, then
 we are not in an assignment.
 
 <<AST traverser>>=
-def start_traverse(in_node,target_id=None,loopable={},cat_meth=False,debug=None, func=False,
+def start_traverse(in_node,api_table,target_id=None,loopable={},cat_meth=False,debug=None, func=False,
                   cif_dic=None):
   special_info = {"special_id":[{}],"target_id":target_id,"withtable":{},"sub_subject":"",
                   "depends":set(),"loopable_cats":loopable,"packet_vars":{},
@@ -171,8 +189,6 @@ def start_traverse(in_node,target_id=None,loopable={},cat_meth=False,debug=None,
       special_info["special_id"][-1].update({"_"+cat:[cat,"",False]})
       if cat in special_info["loopable_cats"].keys():    #
           special_info["special_id"][-1]["_"+cat][1] = "looped_cat"
-  elif cat_meth:
-      print "Category method %s may not work"
   <<Maths operator conversion table>>
   def traverse_ast(in_node,debug=debug):
     if isinstance(in_node,basestring):
@@ -311,7 +327,7 @@ elif node_type == "SUBSCRIPTION":  # variable, single expression
     if newid:
         key_item = "_"+newid[0]+"."+special_info["loopable_cats"][newid[0]][0]   #key name
         special_info["depends"].add(key_item.lower())
-        get_loop = "ciffile.GetKeyedSemanticPacket(%s,'%s')" % (traverse_ast(in_node[2]),newid[0])
+        get_loop = api_table["semantic_packet"] % (traverse_ast(in_node[2]),"'"+newid[0]+"'")
         special_info["sub_subject"] = newid[0]  #in case of attribute reference following
         print "Set sub_subject to %s" % special_info["sub_subject"]
         return get_loop
@@ -365,7 +381,7 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
         # if we are looping, we add a loop prefix. If we are withing an
         # unlooped category, we put the full name back.
         elif newid[2] or (not newid[2] and not newid[1]):   # looping or simple with
-            outstring = "ciffile[" + '"' +true_name +'"]'
+            outstring = api_table["data_access"] % ('"' +true_name +'"')
             special_info["depends"].add(true_name)
             if newid[1]:  # a loop statement requires an index
                 outstring += "[" + newid[1]+ "]"
@@ -384,7 +400,7 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
             special_info["have_drel_target"] = True
         else:
             special_info["depends"].add(fullname)
-            outstring = "ciffile['%s']" % fullname
+            outstring = api_table["data_access"] % ("'" + fullname + "'")
     else: # default to Python attribute access
         # check for packet variables
         if special_info["packet_vars"].has_key(primary):
@@ -531,12 +547,13 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     catnames = set([a[1][0] for a in cif_dic.cat_obj_lookup_table.items() if a[0][0]==cat_id.lower()])
     outstring = "__pycitems = " + repr(catnames)
     outstring += "\nprint 'names in cat = %s' % `__pycitems`"
-    outstring += "\n" + "__pycitems = filter(lambda a:ciffile.has_key(a),__pycitems)"
+    outstring += "\n" + "__pycitems = filter(lambda a:%s,__pycitems)" % (api_table["has_name"] % "a")
     outstring += "\nprint 'names in cat -> %s' % `__pycitems`\n"
     cat_key = cif_dic[cat_id]['_category.key_id']   #take official key
     special_info["depends"].add(cat_key)  #add key as a dependency
     if var_info[2] == True:
-        outstring += "\n" + "__loop_range%d = range(len(ciffile[__pycitems[0]]))" % loop_num
+        access_string = api_table["count_data"] % (api_table["data_access"] % "__pycitems[0]")
+        outstring += "\n" + "__loop_range%d = range(%s)" % (loop_num,access_string)
     else:
         outstring += "\n" + "__loop_range%d = [0]" % loop_num
         #outstring +="\n" + "for __noloop in [0]:"
