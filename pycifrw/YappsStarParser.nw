@@ -517,11 +517,11 @@ rule input@<<prepared>>: ( ((
                       sc_lines_of_text      {{thisval = stripextras(sc_lines_of_text)}}
                       )                     {{return monitor('data_value',thisval)}}
 
-     rule sc_lines_of_text: start_sc_line   {{lines = start_sc_line}}
+     rule sc_lines_of_text: start_sc_line   {{lines = StringIO();lines.write(start_sc_line)}}
                             (
-                            sc_line_of_text {{lines = lines+sc_line_of_text}}
+                            sc_line_of_text {{lines.write(sc_line_of_text)}}
                             )*
-                            end_sc_line     {{return monitor('sc_line_of_text',lines+end_sc_line)}}
+                            end_sc_line     {{lines.write(end_sc_line);return monitor('sc_line_of_text',lines.getvalue())}}
 
 # due to the inability of the parser to backtrack, we contruct our loops in helper functions,
 # and simply collect data during parsing proper.
