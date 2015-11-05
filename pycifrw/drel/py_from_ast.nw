@@ -17,7 +17,12 @@ from CifFile import CifError
 
 The function tables below describe how generic dREL operations are transformed into API-
 specific function calls.  This is mostly concerned with calls to the ciffile object
-passed to the builder.
+passed to the builder.  Note that changing this interface will only work if the objects
+returned by the various calls behave as follows: (i) packets returned by
+the ``semantic packet'' call should have dataname-indexed values that are accessible through the
+Python 'getattr' function (ii) a whole column of data is returned for values returned
+by data access for looped datanames (iii) StarList and StarTable are understood
+value types (iv) the results of all applications are values ready for calculation.
 
 <<Configuration>>=
 pycifrw_func_table = {   #how to use PyCIFRW CifFile objects
