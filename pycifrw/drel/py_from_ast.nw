@@ -673,6 +673,9 @@ elif node_type == "ASSIGN":  #Target_list ,assigner, expression list
         if special_info["sub_subject"] != "":   #a full packet
             special_info["packet_vars"].update({lhs_values[order]:special_info["sub_subject"]})
             special_info["sub_subject"] = ""
+    # we cannot expand a numpy array, hence the workaround here
+    #if in_node[2] == "++=":
+    #    outstring = "_temp1 = %s;%s = %s(_temp1,%s)" % (lhs,lhs,aug_assign_table["++="],rhs[:-1])
     if in_node[2] != "=":
         outstring = "%s = %s(%s,%s)" % (lhs, aug_assign_table[in_node[2]],lhs,rhs[:-1])
     else:
@@ -759,6 +762,8 @@ def get_function_name(in_name):
                 "sqrt":"math.sqrt",
                 "exp":"math.exp",
                 "complex":"complex",
+                "max":"max",
+                "min":"min",
                 "strip":"drel_runtime.drel_strip",
                 "int":"drel_runtime.drel_int",
                 "eigen":"drel_runtime.drel_eigen"}

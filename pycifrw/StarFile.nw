@@ -143,6 +143,7 @@ class BlockCollection(object):
     <<BC emulation of mapping type>>
     <<Add a new data section>>
     <<Re-identify a data block>>
+    <<Make a BC from a name list>>
     <<Merge with another block collection>>
     <<Conformance checks>>
     <<Collect all values of a single key in all blocks>>
@@ -431,6 +432,22 @@ def set_parent(self,parentname,childname):
            parentname.lower())
     self.scoping = self.scoping #reset visibility
         
+@ Making a Block Collection from a set of block names.  This is used
+in merging, where we merge with a Block Collection. ::
+
+<<Make a BC from a name list>>=
+def makebc(self,namelist,scoping='dictionary'):
+    """Make a block collection from a list of block names"""
+    newbc = BlockCollection()
+    block_lower = [n.lower() for n in namelist]
+    proto_child_table = [a for a in self.child_table.items() if a[0] in block_lower]
+    newbc.child_table = dict(proto_child_table)
+    newbc.lower_keys = set([a[0] for a in proto_child_table])
+    newbc.dictionary = dict((a[0],self.dictionary[a[0]]) for a in proto_child_table)
+    newbc.scoping = scoping
+    return newbc
+
+    
 @ Adding a new block.  A new block is just a new item in our
 dictionary, so we add a new entry.  We return the new block name
 in case we have changed it, so the calling routine can refer to it

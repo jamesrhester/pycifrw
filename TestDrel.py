@@ -78,6 +78,11 @@ class dRELRuntimeTestCase(unittest.TestCase):
         self.failUnless((c == numpy.matrix([4,8,12])).any())
         self.failUnless((d == numpy.matrix([4,8,12])).any())
 
+    def testArrayAppend(self):
+        a = numpy.array([0,1,0])
+        b = numpy.array([1,0,0])
+        a = drel_runtime.aug_append(a,b)
+        self.failUnless((a == numpy.array([[0,1,0],[1,0,0]])).any())
 
 # Test simple statements
 
@@ -697,12 +702,12 @@ class WithDictTestCase(unittest.TestCase):
       
 if __name__=='__main__':
     global testdic 
-    testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="STAR2",do_imports='Contents')
-    unittest.main()
+    #testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="STAR2",do_imports='Contents')
+    #unittest.main()
     #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase) 
-    #suite = unittest.TestLoader().loadTestsFromTestCase(dRELRuntimeTestCase)
-    #unittest.TextTestRunner(verbosity=2).run(suite)
+    suite = unittest.TestLoader().loadTestsFromTestCase(dRELRuntimeTestCase)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 

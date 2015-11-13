@@ -1471,28 +1471,29 @@ def ddlm_import(self,import_mode='All'):
         elif mode =="full":
             # Do the syntactic merge
             syntactic_head = self.get_parent(parent_block) #root frame if no nesting
+            from_cat_head = import_target['_name.object_id']
+            child_frames = import_from.ddlm_all_children(from_cat_head)
              # Check for Head merging Head
             if self[parent_block].get('_definition.class','Datum')=='Head' and \
-               import_from[target_key].get('_definition.class','Datum')=='Head':
+               import_target.get('_definition.class','Datum')=='Head':
                   head_to_head = True
-                  child_frames = import_from.get_children(target_key,include_parent=False)
             else:
                   head_to_head = False
-                  child_frames = import_from.get_children(target_key,include_parent=True)
+                  child_frames.remove(from_cat_head)
+            child_frames = import_from.makebc(child_frames)
             self.merge_fast(child_frames,parent=syntactic_head)      #
             print 'Syntactic merge of %s (%d defs) in %s mode, now have %d defs' % (target_key,len(child_frames),
                mode,len(self))
             # Now the semantic merge
             merging_cat = self[parent_block]['_name.object_id']      #new parent
             if head_to_head:
-                from_cat = import_from[target_key]['_name.object_id']  #old parent
-                child_frames = self.ddlm_immediate_children(from_cat)    #old children
+                child_frames = self.ddlm_immediate_children(from_cat_head)    #old children
                 #the new parent is the importing category for all old children
                 for f in child_frames:
                     self[f].overwrite = True
                     self[f]['_name.category_id'] = merging_cat
                     self[f].overwrite = False
-                print 'Semantic merge: %d defs reparented from %s to %s' % (len(child_frames),from_cat,merging_cat)
+                print 'Semantic merge: %d defs reparented from %s to %s' % (len(child_frames),from_cat_head,merging_cat)
             else:  #imported category is only child
                 from_frame = import_from[target_key]['_definition.id'] #so we can find it
                 child_frame = [d for d in self.keys() if self[d]['_definition.id']==from_frame][0]

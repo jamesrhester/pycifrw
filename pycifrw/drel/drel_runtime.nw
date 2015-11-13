@@ -11,8 +11,11 @@ from numpy.linalg import eig
 <<Extra mathematical functions>>
 <<List operations>>
 
-@ Augmented assignments.  ++= is a typical append operation and does not need numpy support,
-but plain += does. a ++= b appends b (not the contents of b) to a. 
+@ Augmented assignments.  aug_append returns a new object.  For numpy, if
+both arrays have the same dimensions, they are reshaped to a
+larger dimension and then concatenated along the
+new axis. If the first array has a larger dimension, the second array is
+reshaped to match.
 
 <<Augmented assignments>>=
 def aug_append(current,extra):
@@ -26,6 +29,15 @@ def aug_append(current,extra):
             newlist = current[:]
             newlist.append(extra)
             return newlist
+    elif isinstance(current,numpy.ndarray):
+        if current.ndim == extra.ndim + 1:
+            extra = numpy.expand_dims(extra,axis=0)
+        elif current.ndim == extra.ndim:
+            extra = numpy.expand_dims(extra,axis=0)
+            current = numpy.expand_dims(current,axis=0)
+        else:
+            raise ValueError, 'Arrays have mismatching sizes for concatenating: %d and %d' % (current.ndim,extra.ndim)
+        return numpy.concatenate((current,extra))
     raise ValueError, "Cannot append %s to %s" % (`extra`,`current`)
 
 def aug_add(current,extra):
