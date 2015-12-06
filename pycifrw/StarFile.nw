@@ -433,7 +433,9 @@ def set_parent(self,parentname,childname):
     self.scoping = self.scoping #reset visibility
         
 @ Making a Block Collection from a set of block names.  This is used
-in merging, where we merge with a Block Collection. ::
+in merging, where we merge with a Block Collection. Any pointers to
+parent blocks that are not in the list become None, ie. become top
+level blocks. ::
 
 <<Make a BC from a name list>>=
 def makebc(self,namelist,scoping='dictionary'):
@@ -442,6 +444,8 @@ def makebc(self,namelist,scoping='dictionary'):
     block_lower = [n.lower() for n in namelist]
     proto_child_table = [a for a in self.child_table.items() if a[0] in block_lower]
     newbc.child_table = dict(proto_child_table)
+    new_top_level = [(a[0],self.PC(a[1].block_id,None)) for a in newbc.child_table.items() if a[1].parent not in block_lower]
+    newbc.child_table.update(dict(new_top_level))
     newbc.lower_keys = set([a[0] for a in proto_child_table])
     newbc.dictionary = dict((a[0],self.dictionary[a[0]]) for a in proto_child_table)
     newbc.scoping = scoping

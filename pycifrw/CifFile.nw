@@ -1493,6 +1493,8 @@ def ddlm_import(self,import_mode='All'):
                     self[f].overwrite = True
                     self[f]['_name.category_id'] = merging_cat
                     self[f].overwrite = False
+                # remove the old head
+                del self[from_cat_head]
                 print 'Semantic merge: %d defs reparented from %s to %s' % (len(child_frames),from_cat_head,merging_cat)
             else:  #imported category is only child
                 from_frame = import_from[target_key]['_definition.id'] #so we can find it
