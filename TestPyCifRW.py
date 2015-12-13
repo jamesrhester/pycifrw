@@ -1733,13 +1733,46 @@ class DicStructureTestCase(unittest.TestCase):
         """Test that a block with dictionary attached can print out string values"""
         print self.fb
 
+    def pullbacksetup(self):
+        """Initial steps when setting up a pullback"""
+        dic_info = CifFile.CifDic("pycifrw/tests/full_demo_0.0.6.dic",grammar="auto")
+        start_data = CifFile.CifFile("pycifrw/tests/Cu033V2O5_1_000.cbf.merged",grammar="auto")
+        start_data = start_data['Merged_scans']
+        start_data.assign_dictionary(dic_info)
+        return start_data
+
+    def testPullBack(self):
+        """Test construction of a category that is pulled back from other categories"""
+        start_data = self.pullbacksetup()
+        q = start_data['_diffrn_detector_monolithic_element.key']
+        p = start_data['_diffrn_detector_monolithic_element.detector_id']
+        print 'p,q = ' + `p` + '\n' + `q`
+        self.failUnless(q==[['element1','adscq210-sn457']])
+        self.failUnless(p==['ADSCQ210-SN457'])
+
+    def testMultiPullback(self):
+        """Test that pullbacks with multiple matches work properly"""
+        start_data = self.pullbacksetup()
+        q = start_data['_full_frame.id']
+        r = start_data['_full_frame.detector_element_id']
+        print 'Frames from monolithic detector:' + `q`
+        self.failUnless(['scan1','frame1'] in q)
+        self.failUnless(['scan1','frame3'] in q)
+
+    def testFilter(self):
+        """Test construction of a block that is filtered from another category"""
+        start_data = self.pullbacksetup()
+        q = start_data['_diffrn_detector_monolithic.id']
+        self.failUnless(q == ['ADSCQ210-SN457'])
+        
+
 if __name__=='__main__':
      global testdic
      testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.cif2.dic",grammar="2.0")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
-     #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
+     suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(LoopBlockTestCase)
@@ -1750,6 +1783,6 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     #unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     unittest.TextTestRunner(verbosity=2).run(suite)
+     #unittest.main()
 

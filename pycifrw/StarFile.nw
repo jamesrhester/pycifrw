@@ -1096,11 +1096,8 @@ def unassign_dictionary(self):
 
 @ \section{Collection datatype}
 
-DDLm introduced data values which could be lists, tuples or hash tables.  As
-we use lists in the API for loop values, and think this is convenient, we
-define a pseudo collection class to hold CIF lists/tuples/hashes.  Note that
-we have to recursively modify all contents as well.  We also need to define
-custom output functions in order to properly format the internal datatypes.
+DDLm introduced data values which could be lists, tuples or hash tables. We define
+a distinct StarList class to distinguish them from loop lists.
 
 <<Define a collection datatype>>=
 class StarList(list):

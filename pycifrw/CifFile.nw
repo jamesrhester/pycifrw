@@ -2468,6 +2468,8 @@ statement is the _enumeration.default specified in ddl.dic...
 <<Store dREL functions>>
 <<Derive item information>>
 <<Storing a dREL-derived value>>
+<<Construct a category>>
+<<Insert category items from pullback information>>
 <<Storing a whole new dREL-derived category>>
 <<Generating keys>>
 <<Generating default packets>>
@@ -2559,11 +2561,11 @@ def add_drel_funcs(self):
     self.ddlm_functions = globals()  #for outside access
 
 @ When a dictionary is available during CIF file access, we can resolve a missing dataname in
-three ways: (1) check if it is defined under an alias; (2) use a dREL method to calculate the
+four ways: (1) check if it is defined under an alias; (2) use a dREL method to calculate the
 value; (3) use default values if defined.  We resolve in this priority.  Note that we also
-convert to the appropriate type.  A subsection of (2) is that we might be able to use a category
-method to find our values; we execute the category method if no items in the category are
-available.
+convert to the appropriate type.  A subsection of (2) is that, if the entire category is
+missing, we can either use DDLm category construction information or a category
+method to find our values; we only do this if no items in the category are present.
 
 The store_value flag asks us to update the ciffile object with the new value.  We remove any
 numpy dependencies before doing this, which means that we must recreate the numpy type
@@ -2574,15 +2576,18 @@ def derive_item(self,start_key,cifdata,store_value = False):
     key = start_key   #starting value
     result = None     #success is a non-None value
     default_result = False #we have not used a default value
+    the_category = self[key]["_name.category_id"]
+    cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
+    has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
     <<Resolve using aliases>>
     # store any default value in case we have a problem
     def_val = self[key].get("_enumeration.default","")
     def_index_val = self[key].get("_enumeration.def_index_id","")
+    if len(has_cat_names)==0: # try category method
+        <<Populate a category>>
     the_func = self[key].get('_method.py_expression',"")
     if the_func:   #attempt to calculate it
         <<Execute pythonised dREL method>>
-    if result is None: # try category method
-        <<Execute category method and check dataname>>
     if result is None:   # try defaults
         <<Work out default value of dataname>>
     # read it in
@@ -2607,12 +2612,9 @@ def derive_item(self,start_key,cifdata,store_value = False):
 need to make the dimension match the currently-existing length of the category.
 
 <<Adjust value to be appropriate length>>=
-the_category = self[key]["_name.category_id"]
 is_looped = False
 if self[the_category].get('_definition.class','Set')=='Loop':
     is_looped = True
-    cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
-    has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
     if len(has_cat_names)>0:   #this category already exists
         if result is None or default_result: #need to create a list of values
             loop_len = len(cifdata[has_cat_names[0]])
@@ -2665,7 +2667,7 @@ def store_new_looped_value(self,key,cifdata,result,default_result):
       else:
           cifdata[key] = out_result
           cifdata.CreateLoop([key])
-      print 'Loop info:' + `cifdata.loops`
+      # print 'Loop info:' + `cifdata.loops`
       return result
 
 def store_new_unlooped_value(self,key,cifdata,result):
@@ -2729,24 +2731,110 @@ result = pyfunc(cifdata)
 cifdata.provide_value = stored_setting
 #print "Function returned %s" % `result`
 
-@ A dataname may have a method of derivation defined only in the category
-method, such as is currently envisioned for _model_site, where e.g. the molecule
-number is assigned in the category method and no separate derivation exists.
-Therefore, the following code is called if no individual method is provided,
-and then we check to see if the item name that we were after has been 
-generated. 
+@ \subsection{Creating categories}
 
-<<Execute category method and check dataname>>=
-category = self[key]['_name.category_id']
-if self[category].has_key('_method.py_expression'):
-    print "**Now applying category method for %s in search of %s**" % (category,key)
-    cat_result = self.derive_item(category,cifdata,store_value=True)
-    print "**Obtained " + `cat_result`        
+A category can be created from scratch (i.e. the identifiers produced)
+if the appropriate DDLm attributes are defined - currently,
+experimental attributes 'category_construct' are included in the test
+dictionaries for this purpose. They define two types of 'pullback'
+(see any category theory textbook), which we can use to create a category.
+If these attributes are absent, we can execute a category method
+instead, if present. In either case, we only do this if no items from
+the category are present.
+
+<<Populate a category>>=
+cat_result = {}
+pulled_from_cats = [k for k in self.keys() if self[k].has_key('_category_construct.components')]
+pulled_from_cats = [(k,[
+                      self[n]['_name.category_id'] for n in self[k]['_category_construct.components']]
+                   ) for k in pulled_from_cats]
+pulled_to_cats = [k[0] for k in pulled_from_cats if the_category in k[1]]
+if self[the_category].has_key('_category_construct.type'):
+    print "**Now constructing category %s using DDLm attributes**" % the_category
+    cat_result = self.construct_category(the_category,cifdata,store_value=True)
+elif len(pulled_to_cats)>0:
+    print "**Now populating category %s from pulled-back category %s" % (the_category,`pulled_to_cats`)
+    cat_result = self.push_from_pullback(the_category,pulled_to_cats,cifdata,store_value=True)
+elif self[category].has_key('_method.py_expression'):
+    print "**Now applying category method for %s in search of %s**" % (the_category,key)
+    cat_result = self.derive_item(the_category,cifdata,store_value=True)
+print "**Obtained " + `cat_result`        
 # do we now have our value?
-    if cat_result.has_key(key):
-        return cat_result[key]
-        
-                                             
+if cat_result.has_key(key):
+    return cat_result[key]
+# perhaps an item method will work now we have some category ids
+elif cat_result:
+    return self.derive_item(key,cifdata,store_value=store_value)
+
+@ Constructing categories using DDLm attributes. We have defined local
+attributes that describe category construction using mathematical
+'pullbacks'.  We can use these to fill a category, but also to populate
+a category if the pullback category is available.
+
+<<Construct a category>>=
+def construct_category(self,category,cifdata,store_value=True):
+    """Construct a category using DDLm attributes"""
+    con_type = self[category].get('_category_construct.type',None)
+    if con_type == None:
+        return {}
+    if con_type == 'Pullback' or con_type == 'Filter':
+        morphisms  = self[category]['_category_construct.components']
+        morph_values = [cifdata[a] for a in morphisms] # the mapped values for each cat
+        cats = [self[a]['_name.category_id'] for a in morphisms]
+        cat_keys = [self[a]['_category.key_id'] for a in cats]
+        cat_values = [cifdata[a] for a in cat_keys] #the category key values for each cat
+        if con_type == 'Filter':
+            morph_values.append([int(a) for a in self[category]['_category_construct.filter']])
+            cat_values.append(range(len(morph_values[-1])))
+        # create the mathematical product filtered by equality of dataname values
+        pullback_ids = [(x,y) for x in cat_values[0] for y in cat_values[1] \
+                        if morph_values[0][cat_values[0].index(x)]==morph_values[1][cat_values[1].index(y)]]
+        # now prepare for return
+        if len(pullback_ids)==0:
+            return {}
+        newids = self[category]['_category_construct.new_ids']
+        if con_type == 'Pullback':
+            final_results = {newids[0]:[x[0] for x in pullback_ids],newids[1]:[x[1] for x in pullback_ids]}
+        elif con_type == 'Filter':   #simple filter
+            final_results = {newids[0]:[x[0] for x in pullback_ids]}
+        if store_value:
+            self.store_new_cat_values(cifdata,final_results)
+        return final_results
+
+@ Going the other way. If we have the pulled-back category, we can populate the
+pulled-from categories with their identifier items using projections from the
+pulled-back category.  In the special case that we have a pullback that uses
+a filter function with a single element, we can automatically populate the
+whole commutative square. 
+
+<<Insert category items from pullback information>>=
+def push_from_pullback(self,target_category,source_categories,cifdata):
+    """Each of the categories in source_categories are pullbacks that include
+    the target_category"""
+    # for each source category, determine which element goes to the target
+    target_key = self[target_category]['_category.key_id']
+    result = {target_key:[]}
+    for sc in source_categories:
+        components = self[sc]['_category_construct.components']
+        comp_cats = [self[c]['_name.category_id'] for c in components]
+        key_name = self[sc]['_category.key_id']
+        if len(components) == 2:  # not a filter
+            element_pos = comp_cats.index(target_category)
+            result[target_key].append([c[element_pos] for c in cifdata[key_name]])
+        else:
+            result[target_key].append(cifdata[key_name])
+            # Bonus derivation if there is a singleton filter
+            if self[sc]['_category_construct.type'] == 'Filter':
+                filter_values = self[sc]['_category_construct.filter']
+                if len(filter_values)==1:    #a singleton
+                    extra_dataname = self[sc]['_category_construct.components[0]']
+                    if result.has_key(extra_dataname): result[extra_dataname].append(filter_values[0])
+                    else:
+                        result[extra_dataname] = [filter_values[0]]
+            else:
+                raise ValueError,'Unexpected category construct type' + self[sc]['_category_construct.type']
+    return result
+
 @ Aliases.  If we have this item under a different name, find it and
 return it immediately after putting it into the correct type. We could
 be passed either the dictionary defined dataname, or any of its
@@ -3767,6 +3855,14 @@ def listify(item):
 def filter_present(namelist,datablocknames):
     return filter(lambda a:a in datablocknames,namelist)
 
+# Make an item immutable, used if we want a list to be a key
+def make_immutable(values):
+    """Turn list of StarList values into a list of immutable items"""
+    if not isinstance(values[0],StarList):
+        return values
+    else:
+        return map(tuple,values)
+
 @ This uses the  [[CifFile]] merge method to merge a list of filenames,
 with an initial check to determine DDL1/DDL2 merge style.  In one
 case we merge save frames in a single block, in another case we
@@ -3792,7 +3888,7 @@ def merge_dic(diclist,mergemode="replace",ddlspec=None):
     if basedic.has_key("on_this_dictionary"):   #DDL1 style only
         for dic in dic_as_cif_list[1:]:
            basedic.merge(dic,mode=mergemode,match_att=["_name"])
-    elif len(basedic.keys()) == 1:                     #One block: DDL2 style
+    elif len(basedic.keys()) == 1:                     #One block: DDL2/m style
         old_block = basedic[basedic.keys()[0]]
         for dic in dic_as_cif_list[1:]:
            new_block = dic[dic.keys()[0]]

@@ -92,7 +92,7 @@ def execute_with_options(options,args):
 	fulldic = CifFile.merge_dic(diccifs)
         diclist = dicurls  # for use in reporting later
     # open the cif file
-    cf = CifFile.CifFile(args[0])
+    cf = CifFile.CifFile(args[0],grammar="auto")
     output_header(options.use_html,args[0],diclist)
     print CifFile.validate_report(CifFile.Validate(cf,dic= fulldic,isdic=options.dict_flag),use_html=options.use_html)
     output_footer(options.use_html)
