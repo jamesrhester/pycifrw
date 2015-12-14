@@ -2793,10 +2793,14 @@ def construct_category(self,category,cifdata,store_value=True):
         if len(pullback_ids)==0:
             return {}
         newids = self[category]['_category_construct.new_ids']
+        fullnewids = [self.cat_obj_lookup_table[(category,n)][0] for n in newids]
         if con_type == 'Pullback':
-            final_results = {newids[0]:[x[0] for x in pullback_ids],newids[1]:[x[1] for x in pullback_ids]}
+            final_results = {fullnewids[0]:[x[0] for x in pullback_ids],fullnewids[1]:[x[1] for x in pullback_ids]}
+            final_results.update(self.duplicate_datanames(cifdata,cats[0],category,key_vals = final_results[fullnewids[0]],skip_names=newids))
+            final_results.update(self.duplicate_datanames(cifdata,cats[1],category,key_vals = final_results[fullnewids[1]],skip_names=newids))
         elif con_type == 'Filter':   #simple filter
-            final_results = {newids[0]:[x[0] for x in pullback_ids]}
+            final_results = {fullnewids[0]:[x[0] for x in pullback_ids]}
+            final_results.update(self.duplicate_datanames(cifdata,cats[0],category,key_vals = final_results[fullnewids[0]],skip_names=newids))
         if store_value:
             self.store_new_cat_values(cifdata,final_results)
         return final_results
@@ -2821,18 +2825,19 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
     for sc in source_categories:
         components = self[sc]['_category_construct.components']
         comp_cats = [self[c]['_name.category_id'] for c in components]
-        source_ids = self[sc]['_category_construct.new_ids']
+        new_ids = self[sc]['_category_construct.new_ids']
+        source_ids = [self.cat_obj_lookup_table[(sc,n)][0] for n in new_ids]
         if len(components) == 2:  # not a filter
             element_pos = comp_cats.index(target_category)
             old_id = source_ids[element_pos]
             print 'Using %s to populate %s' % (old_id,target_key)
             result[target_key] = cifdata[old_id]
             # project through all identical names
-            extra_result = self.duplicate_datanames(cifdata,sc,target_category,skip_names=[old_id,target_key])
+            extra_result = self.duplicate_datanames(cifdata,sc,target_category,skip_names=new_ids+[target_key])
             result.update(extra_result)
         else:
             result[target_key] = cifdata[source_ids[0]]
-            result.update(self.duplicate_datanames(cifdata,sc,target_category,skip_names=[source_ids[0]]))
+            result.update(self.duplicate_datanames(cifdata,sc,target_category,skip_names=new_ids))
             # Bonus derivation if there is a singleton filter
             if self[sc]['_category_construct.type'] == 'Filter':
                 filter_values = self[sc]['_category_construct.filter']
@@ -2846,20 +2851,27 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
         self.store_new_cat_values(cifdata,result)
     return result
 
-def duplicate_datanames(self,cifdata,from_category,to_category,skip_names=[]):
-    """Copy across datanames"""
+def duplicate_datanames(self,cifdata,from_category,to_category,key_vals=None,skip_names=[]):
+    """Copy across datanames for which the from_category key equals [[key_vals]]"""
     result = {}
     s_names_in_cat = set(self.names_in_cat(from_category,names_only=True))
     t_names_in_cat = set(self.names_in_cat(to_category,names_only=True))
     can_project = s_names_in_cat & t_names_in_cat
     can_project -= set(skip_names)  #already dealt with
+    source_key = self[from_category]['_category.key_id']
     print 'Source dataname set: ' + `s_names_in_cat`
     print 'Target dataname set: ' + `t_names_in_cat`
     print 'Projecting through following datanames from %s to %s' % (from_category,to_category) + `can_project`
     for project_name in can_project:
         full_from_name = self.cat_obj_lookup_table[(from_category.lower(),project_name.lower())][0]
         full_to_name = self.cat_obj_lookup_table[(to_category.lower(),project_name.lower())][0]
-        result[full_to_name] = cifdata[full_from_name]
+        if key_vals is None:
+            result[full_to_name] = cifdata[full_from_name]
+        else:
+            all_key_vals = cifdata[source_key]
+            filter_pos = [all_key_vals.index(a) for a in key_vals]
+            all_data_vals = cifdata[full_from_name]
+            result[full_to_name] = [all_data_vals[i] for i in filter_pos]
     return result
 
 @ Aliases.  If we have this item under a different name, find it and

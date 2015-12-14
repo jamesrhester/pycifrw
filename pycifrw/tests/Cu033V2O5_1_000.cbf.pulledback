@@ -1,0 +1,401 @@
+#\#CIF_2.0
+
+##########################################################################
+#               Crystallographic Information Format file 
+#               Produced by PyCifRW module
+# 
+#  This is a CIF file.  CIF has been adopted by the International
+#  Union of Crystallography as the standard for data archiving and 
+#  transmission.
+#
+#  For information on this file format, follow the CIF links at
+#  http://www.iucr.org
+##########################################################################
+
+data_Merged_scans
+
+_diffrn.id                              DS1
+_diffrn_source.diffrn_id                DS1
+_diffrn_source.source                   synchrotron
+_diffrn_source.type                     '  crystallography'
+_diffrn_radiation_wavelength.id         L1
+_diffrn_measurement_axis.measurement_id                                         GONIOMETER
+_diffrn_measurement_axis.axis_id        GONIOMETER_PHI
+loop_
+  _diffrn_scan_axis.scan_id
+  _diffrn_scan_axis.axis_id
+  _diffrn_scan_axis.angle_start
+  _diffrn_scan_axis.angle_range
+  _diffrn_scan_axis.angle_increment
+  _diffrn_scan_axis.displacement_start
+  _diffrn_scan_axis.displacement_range
+  _diffrn_scan_axis.displacement_increment
+         SCAN1     GONIOMETER_PHI      0.00      2.00      2.00      0.00      0.00     0.00     
+         SCAN1     DETECTOR_Z          0.00      0.00      0.00      72.17     0.00     0.00     
+         SCAN1     DETECTOR_Y          0.00      0.00      0.00      0.00      0.00     0.00     
+         SCAN1     DETECTOR_X          0.00      0.00      0.00      0.00      0.00     0.00     
+         SCAN1     DETECTOR_PITCH      0.00      0.00      0.00      0.00      0.00     0.00
+loop_
+  _diffrn_scan_frame_axis.frame_id
+  _diffrn_scan_frame_axis.axis_id
+  _diffrn_scan_frame_axis.angle
+  _diffrn_scan_frame_axis.displacement
+         FRAME1    GONIOMETER_PHI      0.00      0.00      
+         FRAME1    DETECTOR_Z          0.00      72.17     
+         FRAME1    DETECTOR_Y          0.00      0.00      
+         FRAME1    DETECTOR_X          0.00      0.00      
+         FRAME1    DETECTOR_PITCH      0.00      0.00      
+         Frame2    GONIOMETER_PHI      2.00      0.00      
+         Frame2    DETECTOR_Z          0.00      72.17     
+         Frame2    DETECTOR_Y          0.00      0.00      
+         Frame2    DETECTOR_X          0.00      0.00      
+         Frame2    DETECTOR_PITCH      0.00      0.00      
+         Frame3    GONIOMETER_PHI      4.00      0.00      
+         Frame3    DETECTOR_Z          0.00      72.17     
+         Frame3    DETECTOR_Y          0.00      0.00      
+         Frame3    DETECTOR_X          0.00      0.00      
+         Frame3    DETECTOR_PITCH      0.00      0.00      
+         Frame4    GONIOMETER_PHI      6.00      0.00      
+         Frame4    DETECTOR_Z          0.00      72.17     
+         Frame4    DETECTOR_Y          0.00      0.00      
+         Frame4    DETECTOR_X          0.00      0.00      
+         Frame4    DETECTOR_PITCH      0.00      0.00      
+         Frame5    GONIOMETER_PHI      8.00      0.00      
+         Frame5    DETECTOR_Z          0.00      72.17     
+         Frame5    DETECTOR_Y          0.00      0.00      
+         Frame5    DETECTOR_X          0.00      0.00      
+         Frame5    DETECTOR_PITCH      0.00      0.00 
+loop_
+  _axis.id
+  _axis.type
+  _axis.equipment
+  _axis.depends_on
+  _axis.vector[1]
+  _axis.vector[2]
+  _axis.vector[3]
+  _axis.offset[1]
+  _axis.offset[2]
+  _axis.offset[3]
+         GONIOMETER_PHI      rotation  goniometer          .         1         0        0        0        0        0        
+         SOURCE    general   source    .         0         0         1         0        0        0        
+         GRAVITY   general   gravity   .         0         -1        0         0        0        0        
+         DETECTOR_Z          translation         detector  .         0         0        -1       0        0        0        
+         DETECTOR_Y          translation         detector  DETECTOR_Z          0        1        0        0        0        0        
+         DETECTOR_X          translation         detector  DETECTOR_Y          1        0        0        0        0        0        
+         DETECTOR_PITCH      rotation  detector  DETECTOR_X          0         1        0        0        0        0        
+         ELEMENT_X           translation         detector  DETECTOR_PITCH      1        0        0        -105.108 107.865  0        
+         ELEMENT_Y           translation         detector  ELEMENT_X           0        1        0        0        0        0
+loop_
+  _diffrn_detector_axis.detector_id
+  _diffrn_detector_axis.axis_id
+         ADSCQ210-SN457      DETECTOR_X          
+         ADSCQ210-SN457      DETECTOR_Y          
+         ADSCQ210-SN457      DETECTOR_Z          
+         ADSCQ210-SN457      DETECTOR_PITCH 
+loop_
+  _array_structure_list.array_id
+  _array_structure_list.index
+  _array_structure_list.dimension
+  _array_structure_list.precedence
+  _array_structure_list.direction
+  _array_structure_list.axis_set_id
+         image_1   1         2048      1         increasing          ELEMENT_X           
+         image_1   2         2048      2         increasing          ELEMENT_Y 
+loop_
+  _array_element_size.array_id
+  _array_element_size.index
+  _array_element_size.size
+         image_1   1         102.400e-6          
+         image_1   2         102.400e-6 
+_array_structure.id                     image_1
+_array_structure.encoding_type          'signed 32-bit integer'
+loop_
+  _array_structure_list_axis.axis_set_id
+  _array_structure_list_axis.axis_id
+  _array_structure_list_axis.displacement
+  _array_structure_list_axis.displacement_increment
+         ELEMENT_X           ELEMENT_X           0.000000  0.102400  
+         ELEMENT_Y           ELEMENT_Y           0.000000  -0.102400 
+loop_
+  _diffrn_scan_frame.scan_id
+  _diffrn_scan_frame.frame_id
+  _diffrn_scan_frame.frame_number
+  _diffrn_scan_frame.integration_time
+         SCAN1     FRAME1    1         2.0000    
+         SCAN1     Frame2    2         2.0000    
+         SCAN1     Frame3    3         2.0000    
+         SCAN1     Frame4    4         2.0000    
+         SCAN1     Frame5    5         2.0000 
+loop_
+  _full_frame.scan_id
+  _full_frame.id
+  _full_frame.detector_element_id
+  _full_frame.detector_id
+  _full_frame.array_id
+  _full_frame.binary_id
+  _full_frame.details
+  SCAN1 [SCAN1       FRAME1]    ELEMENT1  ADSCQ210-SN457      image_1   1         
+;
+HEADER_BYTES=  512;
+DIM=2;
+BYTE_ORDER=little_endian;
+TYPE=unsigned_short;
+SIZE1=2048;
+SIZE2=2048;
+PIXEL_SIZE=0.1024;
+BIN=2x2;
+ADC=fast;
+DETECTOR_SN=457;
+TIME=2.000000;
+DISTANCE=72.165650;
+PHI=0.000000;
+OSC_START=0.000000;
+OSC_RANGE=2.000000;
+WAVELENGTH=0.711955;
+BEAM_CENTER_X=105.107558;
+BEAM_CENTER_Y=101.697088;
+ACC_TIME=16047;
+CREV=1;
+BIN_TYPE=HW;
+;        
+ SCAN1 [SCAN1  Frame2]    ELEMENT1  ADSCQ210-SN457      image_1   2         
+;
+HEADER_BYTES=  512;
+DIM=2;
+BYTE_ORDER=little_endian;
+TYPE=unsigned_short;
+SIZE1=2048;
+SIZE2=2048;
+PIXEL_SIZE=0.1024;
+BIN=2x2;
+ADC=fast;
+DETECTOR_SN=457;
+TIME=2.000000;
+DISTANCE=72.165650;
+PHI=0.000000;
+OSC_START=0.000000;
+OSC_RANGE=2.000000;
+WAVELENGTH=0.711955;
+BEAM_CENTER_X=105.107558;
+BEAM_CENTER_Y=101.697088;
+ACC_TIME=16047;
+CREV=1;
+BIN_TYPE=HW;
+;        
+  SCAN1 [SCAN1 Frame3]    ELEMENT1  ADSCQ210-SN457      image_1   3         
+;
+HEADER_BYTES=  512;
+DIM=2;
+BYTE_ORDER=little_endian;
+TYPE=unsigned_short;
+SIZE1=2048;
+SIZE2=2048;
+PIXEL_SIZE=0.1024;
+BIN=2x2;
+ADC=fast;
+DETECTOR_SN=457;
+TIME=2.000000;
+DISTANCE=72.165650;
+PHI=0.000000;
+OSC_START=0.000000;
+OSC_RANGE=2.000000;
+WAVELENGTH=0.711955;
+BEAM_CENTER_X=105.107558;
+BEAM_CENTER_Y=101.697088;
+ACC_TIME=16047;
+CREV=1;
+BIN_TYPE=HW;
+;        
+  SCAN1  [SCAN1 Frame4]    ELEMENT1  ADSCQ210-SN457      image_1   4         
+;
+HEADER_BYTES=  512;
+DIM=2;
+BYTE_ORDER=little_endian;
+TYPE=unsigned_short;
+SIZE1=2048;
+SIZE2=2048;
+PIXEL_SIZE=0.1024;
+BIN=2x2;
+ADC=fast;
+DETECTOR_SN=457;
+TIME=2.000000;
+DISTANCE=72.165650;
+PHI=0.000000;
+OSC_START=0.000000;
+OSC_RANGE=2.000000;
+WAVELENGTH=0.711955;
+BEAM_CENTER_X=105.107558;
+BEAM_CENTER_Y=101.697088;
+ACC_TIME=16047;
+CREV=1;
+BIN_TYPE=HW;
+;        
+  SCAN1  [SCAN1 Frame5]    ELEMENT1  ADSCQ210-SN457      image_1   5         
+;
+HEADER_BYTES=  512;
+DIM=2;
+BYTE_ORDER=little_endian;
+TYPE=unsigned_short;
+SIZE1=2048;
+SIZE2=2048;
+PIXEL_SIZE=0.1024;
+BIN=2x2;
+ADC=fast;
+DETECTOR_SN=457;
+TIME=2.000000;
+DISTANCE=72.165650;
+PHI=0.000000;
+OSC_START=0.000000;
+OSC_RANGE=2.000000;
+WAVELENGTH=0.711955;
+BEAM_CENTER_X=105.107558;
+BEAM_CENTER_Y=101.697088;
+ACC_TIME=16047;
+CREV=1;
+BIN_TYPE=HW;
+; 
+loop_
+  _array_intensities.array_id
+  _array_intensities.binary_id
+  _array_intensities.linearity
+  _array_intensities.gain
+  _array_intensities.overload
+  _array_intensities.undefined_value
+  _array_intensities.pixel_slow_bin_size
+  _array_intensities.pixel_fast_bin_size
+         image_1   1         linear    2.53      65535     0         2         2        
+         image_1   2         linear    2.53      65535     0         2         2        
+         image_1   3         linear    2.53      65535     0         2         2        
+         image_1   4         linear    2.53      65535     0         2         2        
+         image_1   5         linear    2.53      65535     0         2         2
+loop_
+  _array_data.binary_id
+  _array_data.array_id 
+  _array_data.data
+         1         image_1   
+;
+--CIF-BINARY-FORMAT-SECTION--
+Content-Type: application/octet-stream;
+     conversions="x-CBF_BYTE_OFFSET"
+Content-Transfer-Encoding: BASE64
+X-Binary-Size: 4203114
+X-Binary-ID: 1
+X-Binary-Element-Type: "signed 32-bit integer"
+X-Binary-Element-Byte-Order: LITTLE_ENDIAN
+Content-MD5: KlQ1BRHWP/Tdkhk3NokxGw==
+X-Binary-Number-of-Elements: 4194304
+X-Binary-Size-Fastest-Dimension: 2048
+X-Binary-Size-Second-Dimension: 2048
+X-Binary-Size-Padding: 4095
+
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+--CIF-BINARY-FORMAT-SECTION----
+;        
+         2         image_1   
+;
+--CIF-BINARY-FORMAT-SECTION--
+Content-Type: application/octet-stream;
+     conversions="x-CBF_BYTE_OFFSET"
+Content-Transfer-Encoding: BASE64
+X-Binary-Size: 4202798
+X-Binary-ID: 1
+X-Binary-Element-Type: "signed 32-bit integer"
+X-Binary-Element-Byte-Order: LITTLE_ENDIAN
+Content-MD5: +dGdiYWJ4UFtYcSPq1Pj6w==
+X-Binary-Number-of-Elements: 4194304
+X-Binary-Size-Fastest-Dimension: 2048
+X-Binary-Size-Second-Dimension: 2048
+X-Binary-Size-Padding: 4095
+
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+--CIF-BINARY-FORMAT-SECTION----
+;        
+         3         image_1   
+;
+--CIF-BINARY-FORMAT-SECTION--
+Content-Type: application/octet-stream;
+     conversions="x-CBF_BYTE_OFFSET"
+Content-Transfer-Encoding: BASE64
+X-Binary-Size: 4203570
+X-Binary-ID: 1
+X-Binary-Element-Type: "signed 32-bit integer"
+X-Binary-Element-Byte-Order: LITTLE_ENDIAN
+Content-MD5: XnGpK/WChS9HiecnIhO27A==
+X-Binary-Number-of-Elements: 4194304
+X-Binary-Size-Fastest-Dimension: 2048
+X-Binary-Size-Second-Dimension: 2048
+X-Binary-Size-Padding: 4095
+
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+--CIF-BINARY-FORMAT-SECTION----
+;        
+         4         image_1   
+;
+--CIF-BINARY-FORMAT-SECTION--
+Content-Type: application/octet-stream;
+     conversions="x-CBF_BYTE_OFFSET"
+Content-Transfer-Encoding: BASE64
+X-Binary-Size: 4203212
+X-Binary-ID: 1
+X-Binary-Element-Type: "signed 32-bit integer"
+X-Binary-Element-Byte-Order: LITTLE_ENDIAN
+Content-MD5: qvP5AGSOzHoKGu+J/NWpnw==
+X-Binary-Number-of-Elements: 4194304
+X-Binary-Size-Fastest-Dimension: 2048
+X-Binary-Size-Second-Dimension: 2048
+X-Binary-Size-Padding: 4095
+
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+--CIF-BINARY-FORMAT-SECTION----
+;        
+         5         image_1   
+;
+--CIF-BINARY-FORMAT-SECTION--
+Content-Type: application/octet-stream;
+     conversions="x-CBF_BYTE_OFFSET"
+Content-Transfer-Encoding: BASE64
+X-Binary-Size: 4202562
+X-Binary-ID: 1
+X-Binary-Element-Type: "signed 32-bit integer"
+X-Binary-Element-Byte-Order: LITTLE_ENDIAN
+Content-MD5: rECQBIjYn7I8n8B3ripZgw==
+X-Binary-Number-of-Elements: 4194304
+X-Binary-Size-Fastest-Dimension: 2048
+X-Binary-Size-Second-Dimension: 2048
+X-Binary-Size-Padding: 4095
+
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+--CIF-BINARY-FORMAT-SECTION----
+; 
+loop_
+  _diffrn_radiation.wavelength_id
+  _diffrn_radiation.diffrn_id
+  _diffrn_radiation_wavelength.wavelength
+  _diffrn_radiation_wavelength.wt
+         L1        DS1       0.711955  1.0 
+loop_
+  _diffrn_scan.id
+  _diffrn_scan.frame_id_start
+  _diffrn_scan.frame_id_end
+  _diffrn_scan.frames
+         SCAN1     FRAME1    Frame5    5 
+loop_
+  _diffrn_measurement.diffrn_id
+  _diffrn_measurement.id
+  _diffrn_measurement.method
+  _diffrn_measurement.number_of_axes
+  _diffrn_measurement.sample_detector_distance
+         DS1       GONIOMETER          oscillation         1         72.1656 
+loop_
+  _diffrn_detector_monolithic.id
+  _diffrn_detector_monolithic.diffrn_id
+  _diffrn_detector_monolithic.type
+  _diffrn_detector_monolithic.details
+  _diffrn_detector_monolithic.number_of_axes
+  _diffrn_detector_monolithic.layer_thickness
+         ADSCQ210-SN457      DS1       'ADSC QUANTUM210'   'bin 2x2 hardware'  4        0.00000
+loop_
+  _diffrn_detector_monolithic_element.id
+  _diffrn_detector_monolithic_element.detector_id
+         ELEMENT1  ADSCQ210-SN457 
