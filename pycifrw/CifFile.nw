@@ -2576,10 +2576,10 @@ def derive_item(self,start_key,cifdata,store_value = False):
     key = start_key   #starting value
     result = None     #success is a non-None value
     default_result = False #we have not used a default value
+    <<Resolve using aliases>>
     the_category = self[key]["_name.category_id"]
     cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
     has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
-    <<Resolve using aliases>>
     # store any default value in case we have a problem
     def_val = self[key].get("_enumeration.default","")
     def_index_val = self[key].get("_enumeration.def_index_id","")
@@ -2755,7 +2755,7 @@ if self[the_category].has_key('_category_construct.type'):
 elif len(pulled_to_cats)>0:
     print "**Now populating category %s from pulled-back category %s" % (the_category,`pulled_to_cats`)
     cat_result = self.push_from_pullback(the_category,pulled_to_cats,cifdata,store_value=True)
-elif self[category].has_key('_method.py_expression'):
+elif self[the_category].has_key('_method.py_expression'):
     print "**Now applying category method for %s in search of %s**" % (the_category,key)
     cat_result = self.derive_item(the_category,cifdata,store_value=True)
 print "**Obtained " + `cat_result`        
@@ -2879,7 +2879,7 @@ return it immediately after putting it into the correct type. We could
 be passed either the dictionary defined dataname, or any of its
 previous names. We have stored our aliases as a table indexed by
 dictionary-defined dataname in order to potentially translate from old
-to new datanames (not yet implemented).  Once we find a dataname that
+to new datanames.  Once we find a dataname that
 is present in the datafile, we return it.  Note that we have two types
 of check: in one we are given an old-style dataname, and have to find
 the new or other old version (in which case we have to check the key
@@ -2887,6 +2887,10 @@ of the table) and in the other check we are given the latest version
 of the dataname and have to check for older names in the datafile -
 this latter is the dREL situation so we have optimised for it be
 checking that first and making the modern datanames the table keys.
+Note that this section of code occurs first in the 'derive_item'
+routine and will change the value of 'key' to the dictionary value
+even if nothing is available in the datafile, thereby enabling the
+other derivation routes possible.
 
 <<Resolve using aliases>>=
 # check for aliases
