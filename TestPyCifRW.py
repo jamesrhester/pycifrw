@@ -1741,6 +1741,14 @@ class DicStructureTestCase(unittest.TestCase):
         start_data.assign_dictionary(dic_info)
         return start_data
 
+    def unpullbacksetup(self):
+        """Initial values when setting up a pullback"""
+        dic_info = CifFile.CifDic("pycifrw/tests/full_demo_0.0.6.dic",grammar="auto")
+        start_data = CifFile.CifFile("pycifrw/tests/Cu033V2O5_1_000.cbf.pulledback",grammar="auto")
+        start_data = start_data['Merged_scans']
+        start_data.assign_dictionary(dic_info)
+        return start_data
+
     def testPullBack(self):
         """Test construction of a category that is pulled back from other categories"""
         start_data = self.pullbacksetup()
@@ -1765,6 +1773,26 @@ class DicStructureTestCase(unittest.TestCase):
         q = start_data['_diffrn_detector_monolithic.id']
         self.failUnless(q == ['ADSCQ210-SN457'])
         
+    def testPopulateFromPullback(self):
+        """Test population of a category with id items from a pulled-back category"""
+        start_data = self.unpullbacksetup()
+        q = start_data['_diffrn_data_frame.key']
+        self.failUnless(['SCAN1','FRAME1'] in q)
+        self.failUnless(['SCAN1','Frame3'] in q)
+
+    def testPopulateFromFilter(self):
+        """Test population of a category that has been filtered"""
+        start_data = self.unpullbacksetup()
+        q = start_data['_diffrn_detector.id']
+        r = start_data['_diffrn_detector.number_of_elements']
+        self.failUnless(q==['ADSCQ210-SN457'])
+        self.failUnless(r == [1])
+
+    def testPopulateNonIDFromFilter(self):
+        """Test that duplicate datanames are populated"""
+        start_data = self.unpullbacksetup()
+        q = start_data['_diffrn_data_frame.binary_id']
+        self.failUnless('3' in q)
 
 if __name__=='__main__':
      global testdic

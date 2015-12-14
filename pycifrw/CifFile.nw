@@ -2737,10 +2737,10 @@ A category can be created from scratch (i.e. the identifiers produced)
 if the appropriate DDLm attributes are defined - currently,
 experimental attributes 'category_construct' are included in the test
 dictionaries for this purpose. They define two types of 'pullback'
-(see any category theory textbook), which we can use to create a category.
-If these attributes are absent, we can execute a category method
-instead, if present. In either case, we only do this if no items from
-the category are present.
+(see any category theory textbook), which we can use to create a
+category.  If these attributes are absent, we can execute a category
+method. In either case, we only do this if no items from the category
+are present.
 
 <<Populate a category>>=
 cat_result = {}
@@ -2805,34 +2805,61 @@ def construct_category(self,category,cifdata,store_value=True):
 pulled-from categories with their identifier items using projections from the
 pulled-back category.  In the special case that we have a pullback that uses
 a filter function with a single element, we can automatically populate the
-whole commutative square. 
+whole commutative square.  We also by default populate identically-named
+datanames. 
+
+The projection datanames are given in _category_construct.new_ids, and they always
+map to the key of the projected-to category.
 
 <<Insert category items from pullback information>>=
-def push_from_pullback(self,target_category,source_categories,cifdata):
+def push_from_pullback(self,target_category,source_categories,cifdata,store_value=True):
     """Each of the categories in source_categories are pullbacks that include
     the target_category"""
-    # for each source category, determine which element goes to the target
     target_key = self[target_category]['_category.key_id']
     result = {target_key:[]}
+    # for each source category, determine which element goes to the target
     for sc in source_categories:
         components = self[sc]['_category_construct.components']
         comp_cats = [self[c]['_name.category_id'] for c in components]
-        key_name = self[sc]['_category.key_id']
+        source_ids = self[sc]['_category_construct.new_ids']
         if len(components) == 2:  # not a filter
             element_pos = comp_cats.index(target_category)
-            result[target_key].append([c[element_pos] for c in cifdata[key_name]])
+            old_id = source_ids[element_pos]
+            print 'Using %s to populate %s' % (old_id,target_key)
+            result[target_key] = cifdata[old_id]
+            # project through all identical names
+            extra_result = self.duplicate_datanames(cifdata,sc,target_category,skip_names=[old_id,target_key])
+            result.update(extra_result)
         else:
-            result[target_key].append(cifdata[key_name])
+            result[target_key] = cifdata[source_ids[0]]
+            result.update(self.duplicate_datanames(cifdata,sc,target_category,skip_names=[source_ids[0]]))
             # Bonus derivation if there is a singleton filter
             if self[sc]['_category_construct.type'] == 'Filter':
                 filter_values = self[sc]['_category_construct.filter']
                 if len(filter_values)==1:    #a singleton
-                    extra_dataname = self[sc]['_category_construct.components[0]']
-                    if result.has_key(extra_dataname): result[extra_dataname].append(filter_values[0])
-                    else:
-                        result[extra_dataname] = [filter_values[0]]
+                    extra_dataname = self[sc]['_category_construct.components'][0]
+                    result[extra_dataname] = [int(filter_values[0])]
             else:
                 raise ValueError,'Unexpected category construct type' + self[sc]['_category_construct.type']
+    if store_value:
+        print 'Now storing ' + `result`
+        self.store_new_cat_values(cifdata,result)
+    return result
+
+def duplicate_datanames(self,cifdata,from_category,to_category,skip_names=[]):
+    """Copy across datanames"""
+    result = {}
+    s_names_in_cat = set(self.names_in_cat(from_category,names_only=True))
+    t_names_in_cat = set(self.names_in_cat(to_category,names_only=True))
+    can_project = s_names_in_cat & t_names_in_cat
+    can_project -= set(skip_names)  #already dealt with
+    print 'Source dataname set: ' + `s_names_in_cat`
+    print 'Target dataname set: ' + `t_names_in_cat`
+    print 'Projecting through following datanames from %s to %s' % (from_category,to_category) + `can_project`
+    for project_name in can_project:
+        full_from_name = self.cat_obj_lookup_table[(from_category.lower(),project_name.lower())][0]
+        full_to_name = self.cat_obj_lookup_table[(to_category.lower(),project_name.lower())][0]
+        result[full_to_name] = cifdata[full_from_name]
     return result
 
 @ Aliases.  If we have this item under a different name, find it and
