@@ -83,6 +83,7 @@ except ImportError:
     pass                       #will fail when using dictionaries for calcs
 from copy import copy          #must be in global scope for exec statement
 
+<<Decorators>>
 <<CifBlock class>>
 <<CifFile class>>
 <<Define an error class>>
@@ -2572,6 +2573,7 @@ numpy dependencies before doing this, which means that we must recreate the nump
 when returning it.
 
 <<Derive item information>>=
+@track_recursion
 def derive_item(self,start_key,cifdata,store_value = False):
     key = start_key   #starting value
     result = None     #success is a non-None value
@@ -3905,6 +3907,29 @@ def make_immutable(values):
         return values
     else:
         return map(tuple,values)
+
+@ Decorators. The following decorator keeps track of calls in order to
+detect recursion.
+
+<<Decorators>>=
+def track_recursion(in_this_func):
+    """Keep an eye on a function call to make sure that the key argument hasn't been
+    seen before"""
+    def wrapper(*args,**kwargs):
+        key_arg = args[1]
+        if key_arg in wrapper.called_list:
+            print 'Recursion watch: %s already called %d times' % (key_arg,wrapper.called_list.count(key_arg))
+            if wrapper.called_list.count(key_arg) > 2:
+                return None    #failure
+        wrapper.called_list.append(key_arg)
+        print 'Recursion watch: call stack: ' + `wrapper.called_list`
+        try:
+            result = in_this_func(*args,**kwargs)
+        finally:
+            wrapper.called_list.pop()
+        return result
+    wrapper.called_list = []
+    return wrapper
 
 @ This uses the  [[CifFile]] merge method to merge a list of filenames,
 with an initial check to determine DDL1/DDL2 merge style.  In one
