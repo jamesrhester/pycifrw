@@ -2771,7 +2771,9 @@ elif cat_result:
 @ Constructing categories using DDLm attributes. We have defined local
 attributes that describe category construction using mathematical
 'pullbacks'.  We can use these to fill a category, but also to populate
-a category if the pullback category is available.
+a category if the pullback category is available. We use [[list]] to coerce
+all values to a list in case we are passed a numpy array, which does not
+have an 'index' method.
 
 <<Construct a category>>=
 def construct_category(self,category,cifdata,store_value=True):
@@ -2784,7 +2786,7 @@ def construct_category(self,category,cifdata,store_value=True):
         morph_values = [cifdata[a] for a in morphisms] # the mapped values for each cat
         cats = [self[a]['_name.category_id'] for a in morphisms]
         cat_keys = [self[a]['_category.key_id'] for a in cats]
-        cat_values = [cifdata[a] for a in cat_keys] #the category key values for each cat
+        cat_values = [list(cifdata[a]) for a in cat_keys] #the category key values for each cat
         if con_type == 'Filter':
             morph_values.append([int(a) for a in self[category]['_category_construct.filter']])
             cat_values.append(range(len(morph_values[-1])))

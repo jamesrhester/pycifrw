@@ -9,7 +9,7 @@ _dictionary.class                       Instance
 _dictionary.namespace                   ?
 _description.text 
                                         'This dictionary was developed as a demonstration dictionary showing how datanames in an olog presentation can be related to one another.'
-_dictionary.date                        2015-12-14
+_dictionary.date                        2015-12-16
 loop_
   _dictionary_audit.version
   _dictionary_audit.date
@@ -22,7 +22,7 @@ loop_
          0.0.6     2015-11-23          'Added alternate coordinate system.(James Hester)()()'     
          0.0.7     2015-11-25          'Merged with img_cif CIF2 version(James Hester)' 
          0.0.8     2015-12-14          'Changed to use pullbacks()()()'        
-         0.0.9     2015-12-14          'Added pullbacks for simple scans()()()()()()'
+         0.0.9     2015-12-16          'Added pullbacks for simple scans and input routines as well()()()()()'
 
 save_DEMO_DIC_HEAD
 
@@ -63,6 +63,21 @@ _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         ARRAY_DATA
 _category.key_id                        '_array_data.binary_id'
 _category.key_list ['_array_data.binary_id']
+_name.linked_item_id                    ''
+loop_
+  _method.purpose
+  _method.expression
+         Evaluation          
+;
+# If we have populated the simple frame category, we can populate this one
+with ad as array_data
+loop dssf as diffrn_scan_simple_frames {
+    ad = (.array_id = dssf.array_id,
+          .binary_id = dssf.binary_id,
+          .as_integers = dssf.array_data
+         )
+
+; 
 
 save_
 
@@ -5338,6 +5353,19 @@ _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         DIFFRN_SCAN_FRAME
 _category.key_id                        '_diffrn_scan_frame.key'
 _category.key_list ['_diffrn_scan_frame.scan_id'  '_diffrn_scan_frame.frame_id']
+_name.linked_item_id                    ''
+loop_
+  _method.purpose
+  _method.expression
+         Evaluation          
+;
+with dssf as diffrn_scan_simple_frames
+diffrn_scan_frame = (.scan_id = dssf.scan_id,
+                     .frame_id = dssf.frame_id,
+                     .frame_number = dssf.frame_number
+                    )
+
+; 
 
 save_
 
@@ -6342,8 +6370,42 @@ loop_
          Evaluation          
 ;
 # Can create category if we have a 3D array
+# Simple frames imply one binary ID per frame
+with dssf as diffrn_scan_simple_frames
+loop sad as scan_array_data {
+    do frame_no = 1, len(sad.array_data) {
+        dssf = (.frame_number = frame_no,
+                .array_data = sad.array_data[frame_no-1],
+                .scan_id = sad.scan_id,
+                .frame_id = 'Frame'+`frame_no`,
+                .array_id = 'Array1',
+                .binary_id = `frame_no`)
+    }
+}
 
 ; 
+
+save_
+
+
+save__diffrn_scan_simple_frames.array_data
+
+_definition.id                          '_diffrn_scan_simple_frames.array_data'
+_name.object_id                         array_data
+_name.category_id                       diffrn_scan_simple_frames
+_definition.class                       Datum
+_description.text                       'PLEASE DEFINE ME'
+
+save_
+
+
+save__diffrn_scan_simple_frames.array_id
+
+_definition.id                          '_diffrn_scan_simple_frames.array_id'
+_name.object_id                         array_id
+_name.category_id                       diffrn_scan_simple_frames
+_definition.class                       Datum
+_description.text                       'PLEASE DEFINE ME'
 
 save_
 
@@ -6365,6 +6427,28 @@ _name.linked_item_id                    '_diffrn_scan_simple.axis_id'
 save_
 
 
+save__diffrn_scan_simple_frames.binary_id
+
+_definition.id                          '_diffrn_scan_simple_frames.binary_id'
+_name.object_id                         binary_id
+_name.category_id                       diffrn_scan_simple_frames
+_definition.class                       Datum
+_description.text                       'PLEASE DEFINE ME'
+
+save_
+
+
+save__diffrn_scan_simple_frames.element_id
+
+_definition.id                          '_diffrn_scan_simple_frames.element_id'
+_name.object_id                         element_id
+_name.category_id                       diffrn_scan_simple_frames
+_definition.class                       Datum
+_description.text                       'PLEASE DEFINE ME'
+
+save_
+
+
 save__diffrn_scan_simple_frames.frame_id
 
 _definition.id                          '_diffrn_scan_simple_frames.frame_id'
@@ -6378,6 +6462,17 @@ _type.source                            Related
 _type.container                         Single
 _type.contents                          Text
 _category_construct.components          ''
+
+save_
+
+
+save__diffrn_scan_simple_frames.frame_number
+
+_definition.id                          '_diffrn_scan_simple_frames.frame_number'
+_name.object_id                         frame_number
+_name.category_id                       diffrn_scan_simple_frames
+_definition.class                       Datum
+_description.text                       'PLEASE DEFINE ME'
 
 save_
 
@@ -6528,6 +6623,14 @@ _type.source                            Related
 _type.container                         Single
 _type.contents                          Text
 _name.linked_item_id                    ''
+loop_
+  _method.purpose
+  _method.expression
+         Evaluation          
+;
+_full_frame.frame_id = _full_frame.id[1]
+
+; 
 
 save_
 
@@ -6569,6 +6672,15 @@ _type.purpose                           Link
 _type.source                            Related
 _type.container                         Single
 _type.contents                          Text
+_name.linked_item_id                    ''
+loop_
+  _method.purpose
+  _method.expression
+         Evaluation          
+;
+_full_frame.scan_id = _full_frame.id[0]
+
+; 
 
 save_
 
