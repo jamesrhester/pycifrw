@@ -2451,7 +2451,9 @@ we then convert to a Python function using [[py_from_ast.make_function]].  We us
 it during initialisation to transform all methods to python expressions,
 and then the [[derive_item]] method will use this to try to derive the
 expression.  Note that newline is the only recognised statement separator
-in dREL, so we make sure all lines are separated in this way.
+in dREL, so we make sure all lines are separated in this way.  We also allow
+multiple 'Evaluation' methods, which is an enhancement of the current
+standard.
 
 The [[make_function]] function requires dictionary information to be
 supplied regarding looped categories and keys.
@@ -2461,7 +2463,7 @@ lookups that follow would not use get(), but square brackets and allow default
 values to be returned.  However, that would require assigning a dictionary
 to the dictionary and consequent automated searches which I cannot be bothered
 to do at this stage.  Just be aware that the default value in the get()
-statement is the _enumeration.default specified in ddl.dic...
+statement is the _enumeration.default specified in ddl.dic.
 
 <<Linkage to dREL>>=
 <<Initialise dREL functions>>                                             
@@ -2497,39 +2499,42 @@ def transform_drel(self):
         # reset the list of visible names for parser
         special_ids = [dict(map(None,self.keys(),self.keys()))]
         print "Target id: %s" % derivable
-        drel_expr = self[derivable]["_method.expression"]
-        if isinstance(drel_expr,list):
-           try:
-                drel_expr = self[derivable].GetKeyedPacket("_method.purpose","Evaluation")
-                drel_expr = getattr(drel_expr,'_method.expression')
-           except (KeyError,ValueError):
-                print 'No evaluation method found, skipping' 
+        drel_exprs = self[derivable]["_method.expression"]
+        drel_purposes = self[derivable]["_method.purpose"]
+        all_methods = []
+        if not isinstance(drel_exprs,list):
+            drel_exprs = [drel_exprs]
+            drel_purposes = [drel_purposes]
+        for drel_purpose,drel_expr in zip(drel_purposes,drel_exprs):
+            if drel_purpose != 'Evaluation':
                 continue
-        drel_expr = "\n".join(drel_expr.splitlines())
-        # print "Transforming %s" % drel_expr
-        # List categories are treated differently...
-        try:
-            meth_ast = parser.parse(drel_expr+"\n",lexer=lexer)
-        except:
-            print 'Syntax error in method for %s; leaving as is' % derivable
-            a,b = sys.exc_info()[:2]
-            print `a`,`b`
-            print traceback.print_tb(sys.exc_info()[-1],None,sys.stdout)
-            # reset the lexer
-            lexer.begin('INITIAL')
-            continue
-        # Construct the python method
-        cat_meth = False
-        if self[derivable].get('_definition.scope','Item') == 'Category':
-            cat_meth = True
-        pyth_meth = py_from_ast.make_python_function(meth_ast,"pyfunc",target_id,
-                                                                   loopable=loop_info,
-                                                     cif_dic = self,cat_meth=cat_meth)
-        save_overwrite = self[derivable].overwrite
-        self[derivable].overwrite = True
-        self[derivable]["_method.py_expression"] = pyth_meth
-        self[derivable].overwrite = save_overwrite
-        #print "Final result:\n " + self[derivable]["_method.py_expression"]
+            drel_expr = "\n".join(drel_expr.splitlines())
+            # print "Transforming %s" % drel_expr
+            # List categories are treated differently...
+            try:
+                meth_ast = parser.parse(drel_expr+"\n",lexer=lexer)
+            except:
+                print 'Syntax error in method for %s; leaving as is' % derivable
+                a,b = sys.exc_info()[:2]
+                print `a`,`b`
+                print traceback.print_tb(sys.exc_info()[-1],None,sys.stdout)
+                # reset the lexer
+                lexer.begin('INITIAL')
+                continue
+            # Construct the python method
+            cat_meth = False
+            if self[derivable].get('_definition.scope','Item') == 'Category':
+                cat_meth = True
+            pyth_meth = py_from_ast.make_python_function(meth_ast,"pyfunc",target_id,
+                                                                       loopable=loop_info,
+                                                         cif_dic = self,cat_meth=cat_meth)
+            all_methods.append(pyth_meth)
+        if len(all_methods)>0:
+            save_overwrite = self[derivable].overwrite
+            self[derivable].overwrite = True
+            self[derivable]["_method.py_expression"] = all_methods
+            self[derivable].overwrite = save_overwrite
+        #print "Final result:\n " + `self[derivable]["_method.py_expression"]`
 
 @ Drel functions are all stored in category 'functions' in our final dictionary.  We want to
 convert them to executable python code and store them in an appropriate namespace which we
@@ -2587,8 +2592,8 @@ def derive_item(self,start_key,cifdata,store_value = False):
     def_index_val = self[key].get("_enumeration.def_index_id","")
     if len(has_cat_names)==0: # try category method
         <<Populate a category>>
-    the_func = self[key].get('_method.py_expression',"")
-    if the_func:   #attempt to calculate it
+    the_funcs = self[key].get('_method.py_expression',"")
+    if the_funcs:   #attempt to calculate it
         <<Execute pythonised dREL method>>
     if result is None:   # try defaults
         <<Work out default value of dataname>>
@@ -2723,15 +2728,18 @@ of the module file (as done here) seems to be a reliable way to go.
 <<Execute pythonised dREL method>>=
 #global_table = globals()
 #global_table.update(self.ddlm_functions)
-print 'Executing function for %s:' % key
-#print the_func
-exec the_func in globals()  #will access dREL functions, puts "pyfunc" in scope
-# print 'in following global environment: ' + `global_table`
-stored_setting = cifdata.provide_value
-cifdata.provide_value = True
-result = pyfunc(cifdata)
-cifdata.provide_value = stored_setting
-#print "Function returned %s" % `result`
+for one_func in the_funcs:
+    print 'Executing function for %s:' % key
+    #print one_func
+    exec one_func in globals()  #will access dREL functions, puts "pyfunc" in scope
+    # print 'in following global environment: ' + `global_table`
+    stored_setting = cifdata.provide_value
+    cifdata.provide_value = True
+    result = pyfunc(cifdata)
+    cifdata.provide_value = stored_setting
+    if result is not None:
+        break
+    #print "Function returned %s" % `result`
 
 @ \subsection{Creating categories}
 
