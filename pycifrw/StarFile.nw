@@ -1433,7 +1433,14 @@ the enclosing block collection (e.g. CIF or STAR file object)""")
     except KeyError:
        if self.dictionary:
            # send the dictionary the required key and a pointer to us
-           new_value = self.dictionary.derive_item(key,self,store_value=self.cache_vals)
+           try:
+               new_value = self.dictionary.derive_item(key,self,store_value=self.cache_vals,allow_defaults=False)
+           except StarDerivationFailure:   #try now with defaults included
+               try: 
+                   new_value = self.dictionary.derive_item(key,self,store_value=self.cache_vals,allow_defaults=True)
+               except StarDerivationFailure,s:
+                   print "In StarBlock.__getitem__, " + `s`
+                   raise KeyError, 'No such item: %s' % key
            print 'Set %s to derived value %s' % (key, `new_value`)
            return new_value
        else:
@@ -1462,9 +1469,18 @@ the enclosing block collection (e.g. CIF or STAR file object)""")
             if do_calculate:
                # remove old value
                del self[key]
-               new_value = self.dictionary.derive_item(key,self,store_value=True)
-               print 'Set %s to derived value %s' % (key, `new_value`)
-               return new_value
+               try:
+                   new_value = self.dictionary.derive_item(key,self,store_value=True,allow_defaults=False)
+               except StarDerivationFailure,s:
+                   try:
+                       new_value = self.dictionary.derive_item(key,self,store_value=True,allow_defaults=True)
+                   except StarDerivationFailure,s:
+                   
+                       print "Could not turn %s into a value:" + `s`
+                       return rawitem
+               else:
+                   print 'Set %s to derived value %s' % (key, `new_value`)
+                   return new_value
         return rawitem   #can't do anything
        
 def __delitem__(self,key):
@@ -2924,6 +2940,18 @@ class StarLengthError(Exception):
     def __str__(self):
         return '\nStar length error: ' + self.value
 
+class StarDerivationError(Exception):
+    def __init__(self,fail_name):
+        self.fail_name = fail_name
+    def __str__(self):
+        return "Derivation of %s failed, None returned" % self.fail_name
+
+class StarDerivationFailure(Exception):
+    def __init__(self,fail_name):
+        self.fail_name = fail_name
+    def __str__(self):
+        return "Derivation of %s failed" % self.fail_name
+                                       
 @ \section{Utility functions}
 
 These functions do not depend on knowing the internals of the various classes

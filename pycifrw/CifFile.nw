@@ -334,6 +334,14 @@ class ValidCifError(Exception):
     def __str__(self):
         return '\nCif Validity error: ' + self.value
 
+class CifRecursionError(Exception):
+    def __init__(self,key_value,call_stack):
+        self.key_value = key_value
+        self.call_stack = call_stack
+    def __str__(self):
+        return "Derivation has recursed, %s seen twice (call stack %s)" % (self.key_value,`self.call_stack`)
+
+
 @ \section {Dictionaries}
 
 To avoid ambiguity with the Python dictionary type, we use capital
@@ -2571,15 +2579,27 @@ four ways: (1) check if it is defined under an alias; (2) use a dREL method to c
 value; (3) use default values if defined.  We resolve in this priority.  Note that we also
 convert to the appropriate type.  A subsection of (2) is that, if the entire category is
 missing, we can either use DDLm category construction information or a category
-method to find our values; we only do this if no items in the category are present.
+method to find our values; we only do this if no items in the category are present. We
+raise a StarDerivationError if we cannot derive the item, and internally we set result
+to None as we go through the various ways of deriving the item.
 
 The store_value flag asks us to update the ciffile object with the new value.  We remove any
 numpy dependencies before doing this, which means that we must recreate the numpy type
 when returning it.
 
+The [[allow_defaults]] flag allows default values to be derived. In a situation where 
+multiple methods are available for deriving an item, a calculation that accepts
+default values will return incorrect values in any situation where an alternative
+calculation method would have given correct values. For example, if the default value
+of axis.vector[n] is 0, but I can use an alternative derivation for axis.vector from
+a different setting, then a calculation that creates axis.vector from the components
+will give the wrong answer as it will fill in default values when the components are
+missing.  The track_recursion decorator code handles this by propagating the initial
+value of allow_defaults to nested calls.
+
 <<Derive item information>>=
 @track_recursion
-def derive_item(self,start_key,cifdata,store_value = False):
+def derive_item(self,start_key,cifdata,store_value = False,allow_defaults=True):
     key = start_key   #starting value
     result = None     #success is a non-None value
     default_result = False #we have not used a default value
@@ -2595,17 +2615,18 @@ def derive_item(self,start_key,cifdata,store_value = False):
     the_funcs = self[key].get('_method.py_expression',"")
     if the_funcs:   #attempt to calculate it
         <<Execute pythonised dREL method>>
-    if result is None:   # try defaults
+    if result is None and allow_defaults:   # try defaults
         <<Work out default value of dataname>>
     # read it in
     if result is None:   #can't do anything else
-        print 'Warning: no way of deriving item %s' % key
+        print 'Warning: no way of deriving item %s, allow_defaults is %s' % (key,`allow_defaults`)
+        raise StarFile.StarDerivationError, start_key
     <<Adjust value to be appropriate length>>
     # now try to insert the new information into the right place
     # find if items of this category already appear...
     # Never cache empty values
     if not (isinstance(result,list) and len(result)==0) and\
-      store_value and result is not None:
+      store_value:
         if self[key].get("_definition.scope","Item")=='Item':
             if is_looped:
                 result = self.store_new_looped_value(key,cifdata,result,default_result)
@@ -2735,8 +2756,16 @@ for one_func in the_funcs:
     # print 'in following global environment: ' + `global_table`
     stored_setting = cifdata.provide_value
     cifdata.provide_value = True
-    result = pyfunc(cifdata)
-    cifdata.provide_value = stored_setting
+    try:
+        result = pyfunc(cifdata)
+    except CifRecursionError,s:
+        print s
+        result = None
+    except StarFile.StarDerivationError,s:
+        print s
+        result = None
+    finally:
+        cifdata.provide_value = stored_setting
     if result is not None:
         break
     #print "Function returned %s" % `result`
@@ -2975,8 +3004,11 @@ def generate_key(self,cifdata,keyname):
     if not cifdata.has_key(keyname):
         cache_cache = cifdata.cache_vals
         cifdata.cache_vals = False
-        keyvals = cifdata[keyname]
-        if keyvals is not None and keyvals != []:
+        try:
+            keyvals = cifdata[keyname]
+        except KeyError:
+            pass
+        else:
             cifdata.cache_vals = True
             dummy = cifdata[keyname]   #this time keep it
         cifdata.cache_vals = cache_cache  # restore old value
@@ -3919,7 +3951,12 @@ def make_immutable(values):
         return map(tuple,values)
 
 @ Decorators. The following decorator keeps track of calls in order to
-detect recursion.
+detect recursion.  We raise a special recursion error to allow the
+[[derive_item]] method to act accordingly.  We also propagate the
+first-seen value of 'allow_defaults' recursively, so that the original call can 
+control whether or not to use default values. Typically methods can
+be tried without, and then with, default values, to ensure that all 
+possibilities for deriving the function are attempted first.
 
 <<Decorators>>=
 def track_recursion(in_this_func):
@@ -3929,14 +3966,25 @@ def track_recursion(in_this_func):
         key_arg = args[1]
         if key_arg in wrapper.called_list:
             print 'Recursion watch: %s already called %d times' % (key_arg,wrapper.called_list.count(key_arg))
-            if wrapper.called_list.count(key_arg) > 2:
-                return None    #failure
+            raise CifRecursionError, (key_arg,wrapper.called_list[:])    #failure
+        if len(wrapper.called_list) == 0:   #first time
+            wrapper.stored_use_defaults = kwargs.get("allow_defaults",False)
+            print 'All recursive calls will set allow_defaults to ' + `wrapper.stored_use_defaults`
+        else:
+            kwargs["allow_defaults"] = wrapper.stored_use_defaults
         wrapper.called_list.append(key_arg)
         print 'Recursion watch: call stack: ' + `wrapper.called_list`
         try:
             result = in_this_func(*args,**kwargs)
+        except StarFile.StarDerivationError,s:
+            if len(wrapper.called_list) == 1: #no more
+                raise StarFile.StarDerivationFailure,wrapper.called_list[0]
+            else:
+                raise
         finally:
             wrapper.called_list.pop()
+            if len(wrapper.called_list) == 0:
+                wrapper.stored_used_defaults = 'error'
         return result
     wrapper.called_list = []
     return wrapper
