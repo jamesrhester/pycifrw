@@ -694,6 +694,34 @@ _atom_type.number_in_cell
        """Test that strings with forbidden beginnings round-trip OK"""
        self.failUnless(self.cf['_item_bad_beg']==self.df['_item_bad_beg'])
        
+class SimpleWriteTestCase(unittest.TestCase):
+    def setUp(self):
+        self.bf = CifFile.CifBlock()
+        self.cf = CifFile.CifFile()
+        self.cf['testblock'] = self.bf
+        self.testfile  = "test_3.cif"
+
+    def testNumpyArray(self):
+        """Check that an array can be output properly"""
+        import numpy
+        vector = numpy.array([1,2,3])
+        self.bf['_a_vector'] = vector
+        open(self.testfile,"w").write(self.cf.WriteOut())
+        df = CifFile.CifFile(self.testfile,grammar="auto").first_block()
+        print 'vector is ' + `df['_a_vector']`
+        self.failUnless(df['_a_vector'] == ['1','2','3'])
+        
+    def testNumpyLoop(self):
+        """Check that an array in a loop can be output properly"""
+        import numpy
+        vector_list = [numpy.array([1,2,3]),numpy.array([11,12,13]),numpy.array([-1.0,1.0,0.0])]
+        self.bf['_a_vector'] = vector_list
+        self.bf.CreateLoop(["_a_vector"])
+        open(self.testfile,"w").write(self.cf.WriteOut())
+        df = CifFile.CifFile(self.testfile,grammar="auto").first_block()
+        print 'vector is ' + `df['_a_vector']`
+        self.failUnless(df['_a_vector'][2] == ['-1.0','1.0','0.0'])
+        
 class TemplateTestCase(unittest.TestCase):
    def setUp(self):
        """Create a template"""
@@ -1737,6 +1765,7 @@ if __name__=='__main__':
      global testdic
      testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.cif2.dic",grammar="2.0")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)

@@ -2331,11 +2331,12 @@ column and delimiter, and an order of output.  We can always satisfy the output 
 but may have to fiddle with columns and delimiters depending on the datavalue contents.
 
 We attempt some nice formatting by printing non-packet items with an apparent
-tab stop at 40 characters.
+tab stop at 40 characters.  And of course, we stop providing values.
 
 <<Print a complete block>>=
 def printsection(self,instring='',blockstart="",blockend="",indent=0,finish_at='',start_from=''):
     import string
+    self.provide_value = False
     # first make an ordering
     self.create_ordering(finish_at,start_from)  #create self.output_order
     # now do it...
@@ -2390,7 +2391,7 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
     startcol = hints.get('column',-1)
     if isinstance(itemvalue,basestring):  #need to sanitize
        stringsink.write(self._formatstring(itemvalue,delimiter=delimiter),canbreak = True,startcol=startcol)
-    elif isinstance(itemvalue,(list)):
+    elif isinstance(itemvalue,(list)) or (hasattr(itemvalue,'dtype') and hasattr(itemvalue,'__iter__')): #numpy
        stringsink.set_tab(0)
        stringsink.write('[',canbreak=True,newindent=True,mustbreak=compound,startcol=startcol)
        if len(itemvalue)>0:
