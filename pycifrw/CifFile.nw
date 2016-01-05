@@ -2620,7 +2620,7 @@ def derive_item(self,start_key,cifdata,store_value = False,allow_defaults=True):
     # read it in
     if result is None:   #can't do anything else
         print 'Warning: no way of deriving item %s, allow_defaults is %s' % (key,`allow_defaults`)
-        raise StarFile.StarDerivationError, start_key
+        raise StarFile.StarDerivationError(start_key)
     <<Adjust value to be appropriate length>>
     # now try to insert the new information into the right place
     # find if items of this category already appear...
@@ -2633,7 +2633,7 @@ def derive_item(self,start_key,cifdata,store_value = False,allow_defaults=True):
             else:
                 result = self.store_new_unlooped_value(key,cifdata,result)
         else:
-            self.store_new_cat_values(cifdata,result)
+            self.store_new_cat_values(cifdata,result,the_category)
     return result
 
 @ Adjusting our calculated value. If we have used a default value or we have None, we
@@ -2713,26 +2713,36 @@ def store_new_unlooped_value(self,key,cifdata,result):
 @ Storing category results.  dREL allows 'category methods', which initialise an entire
 category.  The dREL system that we have written returns a dictionary of lists, with the
 dictionary keys being item names.  It is sufficient for us to extract each of these names
-and pass them to our normal storage routine.  If some of the items on the list already
-exist, we are in trouble, as there is no longer any guarantee that what we have
-calculated for one dataname will match up with values for the pre-existing datanames.
-So if anything already exists, we bail.  Note however that we could be more intelligent
-and match up on IDs.
+and pass them to our normal storage routine. If some of the values in the category key
+are duplicated, we bail, as we may overwrite previous values.  We also bail if we
+do not have exactly the same datanames available, as we are too lazy to insert 'unknown'
+in the non-matching positions.
 
 <<Storing a whole new dREL-derived category>>= 
-def store_new_cat_values(self,cifdata,result):
+def store_new_cat_values(self,cifdata,result,the_category):
     """Store the values in [[result]] into [[cifdata]]"""
+    the_key = [a for a in result.keys() if self[a].get('_type.purpose','')=='Key']
     double_names = [a for a in result.keys() if cifdata.has_key(a)]
     if len(double_names)>0:
-        print "Category not updated, some datanames already present:" + `double_names`
-        return
+        already_present = [a for a in self.names_in_cat(the_category) if cifdata.has_key(a)]
+        if set(already_present) != set(result.keys()):
+            print "Category %s not updated, mismatched datanames: %s" % (the_category, `set(already_present)^set(result.keys())`)
+            return
+        #check key values
+        old_keys = set(cifdata[the_key])
+        common_keys = old_keys & set(result[the_key])
+        if len(common_keys)>0:
+            print "Category %s not updated, key values in common:" % (common_keys)
+            return
+        #extend result values with old values
+        for one_name,one_value in result.items():
+            result[one_name].extend(cifdata[one_name])    
     for one_name, one_value in result.items():
         try:
             self.store_new_looped_value(one_name,cifdata,one_value,False)
         except StarFile.StarError:
             print '%s: Not replacing %s with calculated %s' % (one_name,`cifdata[one_name]`,`one_value`)
     #put the key as the first item
-    the_key = [a for a in result.keys() if self[a].get('_type.purpose','')=='Key']
     print 'Fixing item order for {}'.format(`the_key`)
     for one_key in the_key:  #should only be one
         cifdata.ChangeItemOrder(one_key,0)
@@ -2777,9 +2787,11 @@ if the appropriate DDLm attributes are defined - currently,
 experimental attributes 'category_construct' are included in the test
 dictionaries for this purpose. They define two types of 'pullback'
 (see any category theory textbook), which we can use to create a
-category.  If these attributes are absent, we can execute a category
-method. In either case, we only do this if no items from the category
-are present.
+category.  If these attributes are absent, we can instead execute a
+category method.  We only add any new category items calculated in
+this way if the category does not exist or (i) the category IDs are
+not already present and (ii) the set of attributes calculated is an
+exact match for the set of datanames already present.
 
 <<Populate a category>>=
 cat_result = {}
@@ -2790,20 +2802,23 @@ pulled_from_cats = [(k,[
 pulled_to_cats = [k[0] for k in pulled_from_cats if the_category in k[1]]
 if self[the_category].has_key('_category_construct.type'):
     print "**Now constructing category %s using DDLm attributes**" % the_category
-    cat_result = self.construct_category(the_category,cifdata,store_value=True)
-elif len(pulled_to_cats)>0:
+    try:
+        cat_result = self.construct_category(the_category,cifdata,store_value=True)
+    except (CifRecursionError,StarFile.StarDerivationError):
+        print '** Failed to construct category %s (error)' % the_category
+if len(pulled_to_cats)>0 and not cat_result.has_key(key):
     print "**Now populating category %s from pulled-back category %s" % (the_category,`pulled_to_cats`)
-    cat_result = self.push_from_pullback(the_category,pulled_to_cats,cifdata,store_value=True)
-elif self[the_category].has_key('_method.py_expression'):
+    try:
+        cat_result = self.push_from_pullback(the_category,pulled_to_cats,cifdata,store_value=True)
+    except (CifRecursionError,StarFile.StarDerivationError):
+        print '** Failed to construct category %s from pullback information (error)' % the_category
+if self[the_category].has_key('_method.py_expression') and not cat_result.has_key(key):
     print "**Now applying category method for %s in search of %s**" % (the_category,key)
     cat_result = self.derive_item(the_category,cifdata,store_value=True)
-print "**Obtained " + `cat_result`        
+print "**Obtained for %s " % the_category + `cat_result`        
 # do we now have our value?
 if cat_result.has_key(key):
     return cat_result[key]
-# perhaps an item method will work now we have some category ids
-elif cat_result:
-    return self.derive_item(key,cifdata,store_value=store_value)
 
 @ Constructing categories using DDLm attributes. We have defined local
 attributes that describe category construction using mathematical
@@ -2825,7 +2840,12 @@ def construct_category(self,category,cifdata,store_value=True):
         cat_keys = [self[a]['_category.key_id'] for a in cats]
         cat_values = [list(cifdata[a]) for a in cat_keys] #the category key values for each cat
         if con_type == 'Filter':
-            morph_values.append([int(a) for a in self[category]['_category_construct.filter']])
+            int_filter = self[category].get('_category_construct.integer_filter',None)
+            text_filter = self[category].get('_category_construct.text_filter',None)
+            if int_filter is not None:
+                morph_values.append([int(a) for a in int_filter])
+            if text_filter is not None:
+                morph_values.append(text_filter)
             cat_values.append(range(len(morph_values[-1])))
         # create the mathematical product filtered by equality of dataname values
         pullback_ids = [(x,y) for x in cat_values[0] for y in cat_values[1] \
@@ -2843,7 +2863,7 @@ def construct_category(self,category,cifdata,store_value=True):
             final_results = {fullnewids[0]:[x[0] for x in pullback_ids]}
             final_results.update(self.duplicate_datanames(cifdata,cats[0],category,key_vals = final_results[fullnewids[0]],skip_names=newids))
         if store_value:
-            self.store_new_cat_values(cifdata,final_results)
+            self.store_new_cat_values(cifdata,final_results,category)
         return final_results
 
 @ Going the other way. If we have the pulled-back category, we can populate the
@@ -2881,15 +2901,23 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
             result.update(self.duplicate_datanames(cifdata,sc,target_category,skip_names=new_ids))
             # Bonus derivation if there is a singleton filter
             if self[sc]['_category_construct.type'] == 'Filter':
-                filter_values = self[sc]['_category_construct.filter']
+                int_filter = self[sc].get('_category_construct.integer_filter',None)
+                text_filter = self[sc].get('_category_construct.text_filter',None)
+                if int_filter is not None:
+                    filter_values = int_filter
+                else:
+                    filter_values = text_filter
                 if len(filter_values)==1:    #a singleton
                     extra_dataname = self[sc]['_category_construct.components'][0]
-                    result[extra_dataname] = [int(filter_values[0])]
+                    if int_filter is not None:
+                        result[extra_dataname] = [int(filter_values[0])] * len(result.values()[0])
+                    else:
+                        result[extra_dataname] = filter_values * len(result.values()[0])
             else:
                 raise ValueError,'Unexpected category construct type' + self[sc]['_category_construct.type']
     if store_value:
         print 'Now storing ' + `result`
-        self.store_new_cat_values(cifdata,result)
+        self.store_new_cat_values(cifdata,result,target_category)
     return result
 
 def duplicate_datanames(self,cifdata,from_category,to_category,key_vals=None,skip_names=[]):

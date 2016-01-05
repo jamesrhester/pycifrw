@@ -1764,7 +1764,7 @@ class DicStructureTestCase(unittest.TestCase):
     def pullbacksetup(self):
         """Initial steps when setting up a pullback"""
         dic_info = CifFile.CifDic("pycifrw/tests/full_demo_0.0.6.dic",grammar="auto")
-        start_data = CifFile.CifFile("pycifrw/tests/Cu033V2O5_1_000.cbf.merged",grammar="auto")
+        start_data = CifFile.CifFile("pycifrw/tests/multi-image-test.cif",grammar="auto")
         start_data = start_data['Merged_scans']
         start_data.assign_dictionary(dic_info)
         return start_data
@@ -1772,7 +1772,7 @@ class DicStructureTestCase(unittest.TestCase):
     def unpullbacksetup(self):
         """Initial values when setting up a pullback"""
         dic_info = CifFile.CifDic("pycifrw/tests/full_demo_0.0.6.dic",grammar="auto")
-        start_data = CifFile.CifFile("pycifrw/tests/Cu033V2O5_1_000.cbf.pulledback",grammar="auto")
+        start_data = CifFile.CifFile("pycifrw/tests/multi-image-test.cif.pulledback",grammar="auto")
         start_data = start_data['Merged_scans']
         start_data.assign_dictionary(dic_info)
         return start_data

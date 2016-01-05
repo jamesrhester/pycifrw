@@ -690,10 +690,12 @@ elif node_type == "ASSIGN":  #Target_list ,assigner, expression list
 elif node_type == "FANCY_ASSIGN":  # [1] is cat name, [2] is list of objects
     catname = in_node[1]
     outstring = ""
+    special_info["rhs"] = True
     for obj,value in in_node[2]:
         real_id = cif_dic.get_name_by_cat_obj(catname, obj)
         newvalue = traverse_ast(value)
         outstring = outstring + "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (real_id,real_id,newvalue)
+    special_info["rhs"] = None
     return outstring 
 
 @  Maths.  We have to catch vector and matrix operations and farm them out

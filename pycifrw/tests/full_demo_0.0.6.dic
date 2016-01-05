@@ -3,13 +3,13 @@
 data_demo_dic
 
 _dictionary.title                       demo_dic
-_dictionary.version                     0.0.9
+_dictionary.version                     0.1.1
 _dictionary.ddl_conformance             3.11.04
 _dictionary.class                       Instance
 _dictionary.namespace                   ?
 _description.text 
                                         'This dictionary was developed as a demonstration dictionary showing how datanames in an olog presentation can be related to one another.'
-_dictionary.date                        2015-12-16
+_dictionary.date                        2016-01-05
 loop_
   _dictionary_audit.version
   _dictionary_audit.date
@@ -22,7 +22,9 @@ loop_
          0.0.6     2015-11-23          'Added alternate coordinate system.(James Hester)()()'     
          0.0.7     2015-11-25          'Merged with img_cif CIF2 version(James Hester)' 
          0.0.8     2015-12-14          'Changed to use pullbacks()()()'        
-         0.0.9     2015-12-16          'Added pullbacks for simple scans and input routines as well()()()()()'
+         0.0.9     2015-12-21          'Added pullbacks for simple scans and input routines as well()()()()()()()()()()'        
+         0.1.0     2016-01-05          'Started adding multiple methods(James Hester)()()'        
+         0.1.1     2016-01-05          'Added detector axis and goniometer axis derived categories(James Hester)'
 
 save_DEMO_DIC_HEAD
 
@@ -69,13 +71,13 @@ loop_
   _method.expression
          Evaluation          
 ;
-# If we have populated the simple frame category, we can populate this one
 with ad as array_data
 loop dssf as diffrn_scan_simple_frames {
-    ad = (.array_id = dssf.array_id,
+    array_data   (.array_id = dssf.array_id,
           .binary_id = dssf.binary_id,
           .as_integers = dssf.array_data
          )
+}
 
 ; 
 
@@ -1264,6 +1266,29 @@ loop_
 save_
 
 
+save__array_structure_list.id
+
+_definition.id                          '_array_structure_list.id'
+_name.object_id                         id
+_name.category_id                       array_structure_list
+_definition.class                       Datum
+_description.text                       'PLEASE DEFINE ME'
+_type.purpose                           Key
+_type.source                            Derived
+_type.container                         Multiple
+_type.contents                          Code
+loop_
+  _method.purpose
+  _method.expression
+         Evaluation          
+;
+_array_structure_list.id = [_array_structure_list.array_id, _array_structure_list.index]
+
+; 
+
+save_
+
+
 save__array_structure_list.index
 
 _definition.id                          '_array_structure_list.index'
@@ -1301,29 +1326,6 @@ _type.source                            Derived
 _type.container                         Single
 _type.contents                          Integer
 _enumeration.range                      1:
-
-save_
-
-
-save__array_structure_list.variant
-
-_definition.id                          '_array_structure_list.variant'
-_definition.update                      2014-07-07
-_description.text                       
-;
-    The value of _array_structure_list.variant gives the variant
-    to which the given ARRAY_STRUCTURE_LIST row is related.
-    If this value is not given, the variant is assumed to the default
-    null variant.  This item is a pointer to _variant.variant in the
-    VARIANT category.
-;
-_name.category_id                       array_structure_list
-_name.object_id                         variant
-_name.linked_item_id                    '_variant.variant'
-_type.purpose                           Link
-_type.source                            Related
-_type.container                         Single
-_type.contents                          Code
 
 save_
 
@@ -1599,8 +1601,9 @@ loop_
   _method.expression
          Evaluation          
 ;
- _array_structure_list_axis.id = [_array_structure_list_axis.axis_set_id,
+_array_structure_list_axis.id = [_array_structure_list_axis.axis_set_id,
                                  _array_structure_list_axis.axis_id]
+
 ; 
 
 save_
@@ -2285,7 +2288,13 @@ loop_
   _method.expression
          Evaluation          
 ;
-     _axis.offset = [ _axis.offset_1, _axis.offset_2, _axis.offset_3 ]
+_axis.offset = [ _axis.offset_1, _axis.offset_2, _axis.offset_3 ]
+
+;        
+         Evaluation          
+;
+_axis.offset = _axis.offset_convention2 * [[-1,0,0],[0,1,0],[0,0,-1]]
+
 ; 
 
 save_
@@ -2369,6 +2378,10 @@ _definition.class                       Datum
 _description.text 
                                         'The axis offset expressed in an alternate coordinate system where Z points along the beam away from the source.'
 _name.linked_item_id                    ''
+_type.purpose                           Number
+_type.source                            Recorded
+_type.container                         Array
+_type.contents                          Real
 loop_
   _method.purpose
   _method.expression
@@ -2377,10 +2390,6 @@ loop_
 _axis.offset_convention2 = _axis.offset * [[-1,0,0],[0,1,0],[0,0,-1]]
 
 ; 
-_type.purpose                           Number
-_type.source                            Recorded
-_type.container                         Array
-_type.contents                          Real
 
 save_
 
@@ -2514,7 +2523,13 @@ loop_
   _method.expression
          Evaluation          
 ;
-     _axis.vector = [ _axis.vector_1, _axis.vector_2, _axis.vector_3 ]
+_axis.vector = [ _axis.vector_1, _axis.vector_2, _axis.vector_3 ]
+
+;        
+         Evaluation          
+;
+_axis.vector = _axis.vector_convention2 * Array([[-1,0,0],[0,1,0],[0,0,-1]])
+
 ; 
 
 save_
@@ -2538,6 +2553,14 @@ _type.source                            Derived
 _type.container                         Single
 _type.contents                          Real
 _enumeration.default                    0.0
+loop_
+  _method.purpose
+  _method.expression
+         Evaluation          
+;
+_axis.vector_1 = _axis.vector[0]
+
+; 
 
 save_
 
@@ -2560,6 +2583,14 @@ _type.source                            Derived
 _type.container                         Single
 _type.contents                          Real
 _enumeration.default                    0.0
+loop_
+  _method.purpose
+  _method.expression
+         Evaluation          
+;
+_axis.vector_2 = _axis.vector[1]
+
+; 
 
 save_
 
@@ -2582,6 +2613,14 @@ _type.source                            Derived
 _type.container                         Single
 _type.contents                          Real
 _enumeration.default                    0.0
+loop_
+  _method.purpose
+  _method.expression
+         Evaluation          
+;
+_axis.vector_3 = _axis.vector[2]
+
+; 
 
 save_
 
@@ -2607,6 +2646,65 @@ loop_
 _axis.vector_convention2 = _axis.vector * Array([[-1,0,0],[0,1,0],[0,0,-1]])
 
 ; 
+
+save_
+
+
+save_detector_axis
+
+_name.object_id                         detector_axis
+_name.category_id                       DEMO_DIC_HEAD
+_definition.id                          detector_axis
+_definition.scope                       Category
+_definition.class                       Loop
+_description.text                       
+;
+Items in the DETECTOR_AXIS category record information for axes that are
+attached to detectors. This category is a filtered version of the AXIS
+category that exists purely to cater to file formats that distinguish
+detector axes from other axes.
+;
+_category.key_id                        '_detector_axis.axis_id'
+loop_
+  _category_key.name
+         '_detector_axis.axis_id' 
+_category_construct.type                Filter
+_category_construct.text_filter [detector]
+_category_construct.components ['_axis.equipment']
+_category_construct.new_ids [axis_id]
+
+save_
+
+
+save__detector_axis.axis_id
+
+_definition.id                          '_detector_axis.axis_id'
+_name.object_id                         axis_id
+_name.category_id                       detector_axis
+_definition.class                       Datum
+_description.text                       'PLEASE DEFINE ME'
+
+save_
+
+
+save__detector_axis.vector
+
+_definition.id                          '_detector_axis.vector'
+_name.object_id                         vector
+_name.category_id                       detector_axis
+_definition.class                       Datum
+_description.text                       'PLEASE DEFINE ME'
+
+save_
+
+
+save__detector_axis.vector_convention2
+
+_definition.id                          '_detector_axis.vector_convention2'
+_name.object_id                         vector_convention2
+_name.category_id                       detector_axis
+_definition.class                       Datum
+_description.text                       'PLEASE DEFINE ME'
 
 save_
 
@@ -3291,29 +3389,6 @@ _type.contents                          Code
 save_
 
 
-save__diffrn_detector_axis.variant
-
-_definition.id                          '_diffrn_detector_axis.variant'
-_definition.update                      2014-07-07
-_description.text                       
-;
-    The value of _diffrn_detector_axis.variant gives the variant
-    to which the given DIFFRN_DETECTOR_AXIS row is related.
-    If this value is not given, the variant is assumed to the default
-    null variant.  This item is a pointer to _variant.variant in the
-    VARIANT category.
-;
-_name.category_id                       diffrn_detector_axis
-_name.object_id                         variant
-_name.linked_item_id                    '_variant.variant'
-_type.purpose                           Link
-_type.source                            Related
-_type.container                         Single
-_type.contents                          Code
-
-save_
-
-
 save_DIFFRN_DETECTOR_ELEMENT
 
 _definition.id                          DIFFRN_DETECTOR_ELEMENT
@@ -3519,6 +3594,7 @@ _category_construct.type                Filter
 _category_construct.components ['_diffrn_detector.number_of_elements']
 _category_construct.filter [1]
 _category_construct.new_ids [id]
+_category_construct.integer_filter [1]
 
 save_
 
@@ -3888,29 +3964,6 @@ _description.text
 _name.category_id                       diffrn_measurement_axis
 _name.object_id                         measurement_id
 _name.linked_item_id                    '_diffrn_measurement.id'
-_type.purpose                           Link
-_type.source                            Related
-_type.container                         Single
-_type.contents                          Code
-
-save_
-
-
-save__diffrn_measurement_axis.variant
-
-_definition.id                          '_diffrn_measurement_axis.variant'
-_definition.update                      2014-07-07
-_description.text                       
-;
-    The value of _diffrn_measurement_axis.variant gives the variant
-    to which the given DIFFRN_MEASUREMENT_AXIS row is related.
-    If this value is not given, the variant is assumed to the default
-    null variant.  This item is a pointer to _variant.variant in the
-    VARIANT category.
-;
-_name.category_id                       diffrn_measurement_axis
-_name.object_id                         variant
-_name.linked_item_id                    '_variant.variant'
 _type.purpose                           Link
 _type.source                            Related
 _type.container                         Single
@@ -4523,33 +4576,6 @@ _category.key_id                        '_diffrn_radiation_wavelength.id'
 save_
 
 
-save__diffrn_radiation.wavelength_id
-
-_definition.id                          '_diffrn_radiation.wavelength_id'
-loop_
-  _alias.definition_id
-         '_diffrn_radiation_wavelength.id'       
-         '_diffrn_radiation_wavelength_id'       
-         '_diffrn_radiation.wavelength_id' 
-_definition.update                      2012-11-26
-_description.text                       
-;
-     Code identifying a radiation used in the diffraction measurements.
-     This is linked to _diffrn_refln.wavelength_id and _refln.wavelength_id
-;
-_name.category_id                       diffrn_radiation_wavelength
-_name.object_id                         id
-_type.purpose                           Encode
-_type.source                            Assigned
-_type.container                         Single
-_type.contents                          Code
-loop_
-  _description_example.case
-         x2 
-
-save_
-
-
 save__diffrn_radiation_wavelength.id
 
 _description.text                       
@@ -4565,6 +4591,10 @@ _description.text
 _definition.id                          '_diffrn_radiation_wavelength.id'
 _name.category_id                       diffrn_radiation_wavelength
 _name.object_id                         id
+_type.purpose                           Key
+_type.source                            Assigned
+_type.container                         Single
+_type.contents                          Code
 
 save_
 
@@ -4806,6 +4836,19 @@ _type.purpose                           Link
 _type.source                            Related
 _type.container                         Single
 _type.contents                          Code
+loop_
+  _method.purpose
+  _method.expression
+         Evaluation          
+;
+with ds as diffrn_scan
+loop dsf as diffrn_scan_frame {
+    if (dsf.scan_id == ds.id and dsf.frame_number == 1) {
+        ds.frame_id_start = dsf.frame_id
+    }
+}
+
+; 
 
 save_
 
@@ -5360,7 +5403,7 @@ loop_
          Evaluation          
 ;
 with dssf as diffrn_scan_simple_frames
-diffrn_scan_frame = (.scan_id = dssf.scan_id,
+diffrn_scan_frame (.scan_id = dssf.scan_id,
                      .frame_id = dssf.frame_id,
                      .frame_number = dssf.frame_number
                     )
@@ -6254,29 +6297,6 @@ _type.contents                          Real
 save_
 
 
-save__diffrn_scan_frame_monitor.variant
-
-_definition.id                          '_diffrn_scan_frame_monitor.variant'
-_definition.update                      2014-07-07
-_description.text                       
-;
-    The value of _diffrn_scan_frame_monitor.variant gives the variant
-    to which the given DIFFRN_SCAN_FRAME_MONITOR row is related.
-    If this value is not given, the variant is assumed to the default
-    null variant.  This item is a pointer to _variant.variant in the
-    VARIANT category.
-;
-_name.category_id                       diffrn_scan_frame_monitor
-_name.object_id                         variant
-_name.linked_item_id                    '_variant.variant'
-_type.purpose                           Link
-_type.source                            Related
-_type.container                         Single
-_type.contents                          Code
-
-save_
-
-
 save_diffrn_scan_simple
 
 _name.object_id                         diffrn_scan_simple
@@ -6369,17 +6389,15 @@ loop_
   _method.expression
          Evaluation          
 ;
-# Can create category if we have a 3D array
-# Simple frames imply one binary ID per frame
-with dssf as diffrn_scan_simple_frames
 loop sad as scan_array_data {
     do frame_no = 1, len(sad.array_data) {
-        dssf = (.frame_number = frame_no,
-                .array_data = sad.array_data[frame_no-1],
-                .scan_id = sad.scan_id,
-                .frame_id = 'Frame'+`frame_no`,
-                .array_id = 'Array1',
-                .binary_id = `frame_no`)
+        diffrn_scan_simple_frames   (.frame_number = frame_no,
+                                     .array_data = sad.array_data[frame_no-1],
+                                     .scan_id = sad.scan_id,
+                                     .frame_id = 'Frame'+`frame_no`,
+                                     .array_id = 'Array1',
+                                     .binary_id = `frame_no`,
+                                     .id = [sad.scan_id,'Frame'+`frame_no`])
     }
 }
 
@@ -6645,7 +6663,7 @@ _description.text                       'This item uniquely identifies a full fr
 _type.purpose                           Key
 _type.source                            Assigned
 _type.container                         Single
-_type.contents                          Text
+_type.contents                          Code
 _name.linked_item_id                    ''
 _category_construct.new_ids             ''
 _category_construct.components          ''
@@ -6697,22 +6715,9 @@ _category.key_id                        '_goniometer_axis.id'
 loop_
   _category_key.name
          '_goniometer_axis.id' 
-loop_
-  _method.purpose
-  _method.expression
-         Evaluation          
-;
-loop ax as axis {
-    if (ax.equipment == 'goniometer') {
-        goniometer_axis (.id = ax.id,
-                           .vector = ax.vector,
-                           .offset = ax.offset,
-                           .type = ax.type
-                          )
-    }
-}
-
-; 
+_category_construct.type                Filter
+_category_construct.components ['_axis.equipment']
+_category_construct.text_filter [goniometer]
 
 save_
 
@@ -6725,6 +6730,8 @@ _name.category_id                       goniometer_axis
 _definition.class                       Datum
 _description.text                       'PLEASE DEFINE ME'
 _name.linked_item_id                    '_axis.id'
+_type.purpose                           Link
+_type.source                            Related
 
 save_
 
@@ -6775,13 +6782,9 @@ Not all items have been defined but in general a series of items analogous to th
 be defined.
 
 ;
-loop_
-  _category_key.name
-         '_scan_array.id' 
 _category.key_id                        '_scan_array_data.scan_id'
 _name.linked_item_id                    ''
 _category_construct.new_ids             ''
-_category_construct.type                Pullback
 _category_construct.components          ''
 loop_
   _method.purpose
@@ -6794,6 +6797,9 @@ scan_array_data (.scan_id = dss.scan_id
 }
 
 ; 
+loop_
+  _category_key.name
+         '_scan_array_data.scan_id' 
 
 save_
 
@@ -6860,6 +6866,7 @@ _type.purpose                           Key
 _type.source                            Assigned
 _type.container                         Single
 _type.contents                          Text
+_name.linked_item_id                    '_diffrn_scan.id'
 
 save_
 
@@ -7044,9 +7051,7 @@ _description.text
 _category.key_id                        '_simple_data_axis.id'
 loop_
   _category_key.name
-         '_data_axis.id' 
-_name.linked_item_id                    ''
-_category_construct.new_ids             ''
+         '_simple_data_axis.id' 
 loop_
   _method.purpose
   _method.expression
@@ -7098,7 +7103,7 @@ _name.linked_item_id                    '_axis.id'
 _type.purpose                           Link
 _type.source                            Related
 _type.container                         Single
-_type.contents                          Text
+_type.contents                          Code
 
 save_
 
@@ -7114,6 +7119,10 @@ _description.text
 this proof of concept assumes that only one axis is changed for each scan, the highest-precedence axis
 will be the scan axis. 
 ;
+_type.purpose                           Number
+_type.source                            Assigned
+_type.container                         Single
+_type.contents                          Integer
 
 save_
 
@@ -7125,5 +7134,10 @@ _name.object_id                         scan_id
 _name.category_id                       simple_data_axis
 _definition.class                       Datum
 _description.text                       'PLEASE DEFINE ME'
+_type.purpose                           Link
+_type.source                            Related
+_type.container                         Single
+_type.contents                          Code
+_name.linked_item_id                    '_diffrn_scan.id'
 
 save_

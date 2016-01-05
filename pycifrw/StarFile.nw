@@ -2426,7 +2426,7 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
                stringsink.write("'"+key+"'"+":",canbreak=True)
                self.format_value(value,stringsink)   #never break between key and value
        stringsink.write('}',unindent=True)
-    elif isinstance(itemvalue,(float,int)):  #TODO - handle uncertainties
+    elif isinstance(itemvalue,(float,int,long)):  #TODO - handle uncertainties
        stringsink.write(str(itemvalue),canbreak=True,startcol=startcol)   #numbers
     else:
        raise ValueError, 'Value in unexpected format for output: %s' % `itemvalue`
