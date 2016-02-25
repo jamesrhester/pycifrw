@@ -24,7 +24,7 @@ loop_
          0.0.8     2015-12-14          'Changed to use pullbacks()()()'        
          0.0.9     2015-12-21          'Added pullbacks for simple scans and input routines as well()()()()()()()()()()'        
          0.1.0     2016-01-05          'Started adding multiple methods(James Hester)()()'        
-         0.1.1     2016-01-05          'Added detector axis and goniometer axis derived categories(James Hester)'
+         0.1.1     2016-01-05          'Added detector axis and goniometer axis derived categories(James Hester)()()()()()()()'
 
 save_DEMO_DIC_HEAD
 
@@ -2266,6 +2266,29 @@ _type.contents                          Code
 save_
 
 
+save__axis.key
+
+_definition.id                          '_axis.key'
+_name.object_id                         key
+_name.category_id                       axis
+_definition.class                       Datum
+_description.text                       'The key for the axis category.'
+_type.purpose                           Key
+_type.source                            Assigned
+_type.container                         Multiple
+_type.contents                          Code
+loop_
+  _method.purpose
+  _method.expression
+         Evaluation          
+;
+_axis.key = [_axis.id,_axis.equipment]
+
+; 
+
+save_
+
+
 save__axis.offset
 
 _definition.id                          '_axis.offset'
@@ -2664,25 +2687,59 @@ attached to detectors. This category is a filtered version of the AXIS
 category that exists purely to cater to file formats that distinguish
 detector axes from other axes.
 ;
-_category.key_id                        '_detector_axis.axis_id'
+_category.key_id                        '_detector_axis.id'
 loop_
   _category_key.name
          '_detector_axis.axis_id' 
 _category_construct.type                Filter
 _category_construct.text_filter [detector]
 _category_construct.components ['_axis.equipment']
-_category_construct.new_ids [axis_id]
+_category_construct.new_ids [id]
 
 save_
 
 
-save__detector_axis.axis_id
+save__detector_axis.id
 
-_definition.id                          '_detector_axis.axis_id'
-_name.object_id                         axis_id
+_definition.id                          '_detector_axis.id'
+_name.object_id                         id
 _name.category_id                       detector_axis
 _definition.class                       Datum
 _description.text                       'PLEASE DEFINE ME'
+_type.purpose                           Key
+_type.source                            Assigned
+_type.container                         Multiple
+_type.contents                          Code
+
+save_
+
+
+save__detector_axis.offset
+
+_definition.id                          '_detector_axis.offset'
+_name.object_id                         offset
+_name.category_id                       detector_axis
+_definition.class                       Datum
+_description.text                       'see _axis.offset'
+_type.purpose                           Number
+_type.source                            Assigned
+_type.container                         Matrix
+_type.contents                          Real
+
+save_
+
+
+save__detector_axis.type
+
+_definition.id                          '_detector_axis.type'
+_name.object_id                         type
+_name.category_id                       detector_axis
+_definition.class                       Datum
+_description.text                       'see _axis.type'
+_type.purpose                           State
+_type.source                            Assigned
+_type.container                         Single
+_type.contents                          Text
 
 save_
 
@@ -2693,7 +2750,12 @@ _definition.id                          '_detector_axis.vector'
 _name.object_id                         vector
 _name.category_id                       detector_axis
 _definition.class                       Datum
-_description.text                       'PLEASE DEFINE ME'
+_description.text                       'see _axis.vector'
+_type.purpose                           Number
+_type.source                            Assigned
+_type.container                         Matrix
+_type.contents                          Real
+_type.dimension                         3
 
 save_
 
@@ -6718,6 +6780,7 @@ loop_
 _category_construct.type                Filter
 _category_construct.components ['_axis.equipment']
 _category_construct.text_filter [goniometer]
+_category_construct.new_ids [id]
 
 save_
 
@@ -6732,6 +6795,8 @@ _description.text                       'PLEASE DEFINE ME'
 _name.linked_item_id                    '_axis.id'
 _type.purpose                           Link
 _type.source                            Related
+_type.container                         Multiple
+_type.contents                          Code
 
 save_
 
@@ -6742,7 +6807,12 @@ _definition.id                          '_goniometer_axis.offset'
 _name.object_id                         offset
 _name.category_id                       goniometer_axis
 _definition.class                       Datum
-_description.text                       'PLEASE DEFINE ME'
+_description.text                       'See _axis.offset'
+_type.purpose                           Number
+_type.source                            Assigned
+_type.container                         Matrix
+_type.contents                          Real
+_type.dimension                         3
 
 save_
 
@@ -6753,7 +6823,11 @@ _definition.id                          '_goniometer_axis.type'
 _name.object_id                         type
 _name.category_id                       goniometer_axis
 _definition.class                       Datum
-_description.text                       'PLEASE DEFINE ME'
+_description.text                       'See _axis.type'
+_type.purpose                           State
+_type.source                            Assigned
+_type.container                         Single
+_type.contents                          Text
 
 save_
 
@@ -6764,7 +6838,12 @@ _definition.id                          '_goniometer_axis.vector'
 _name.object_id                         vector
 _name.category_id                       goniometer_axis
 _definition.class                       Datum
-_description.text                       'PLEASE DEFINE ME'
+_description.text                       'See _axis.vector'
+_type.purpose                           Number
+_type.source                            Recorded
+_type.container                         Matrix
+_type.contents                          Real
+_type.dimension                         3
 
 save_
 

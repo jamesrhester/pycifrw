@@ -207,6 +207,8 @@ def __init__(self,datasource=None,standard='CIF',blocktype = StarBlock,
  
 def set_grammar(self,new_grammar):
     """Set the syntax and grammar for output to `new_grammar`"""
+    if new_grammar not in ['1.1','1.0','2.0','STAR2']:
+        raise StarError, 'Unrecognised output grammar %s' % new_grammar
     self.grammar = new_grammar
 
 def set_characterset(self,characterset):
@@ -828,7 +830,7 @@ initialising the file.
                     outstring.write('\n\n' + 'save_' + '\n')
                     all_names.remove(child_ref.lower())
             else:
-                raise CifError, 'Grammar %s is not recognised for output' % self.grammar
+                raise StarError, 'Grammar %s is not recognised for output' % self.grammar
             if self.standard != 'Dic':              #put contents after save frames
                 outstring.write(str(self[blockref]))
             else:
@@ -2325,8 +2327,8 @@ def set_grammar(self,new_grammar):
         self.list_delimiter = "  "
     elif new_grammar == 'STAR2':
         self.list_delimiter = ", "
-    else:
-        self.list_delimiter = "*ERROR*"
+    elif new_grammar not in ['1.0','1.1']:
+        raise StarError,'Request to set unknown grammar %s' % new_grammar
 
 @ Printing a section.  We allow an optional order list to be given, in
 case the caller wants to order things in some nice way.  By default, we

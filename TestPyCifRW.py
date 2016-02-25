@@ -1772,7 +1772,7 @@ class DicStructureTestCase(unittest.TestCase):
     def unpullbacksetup(self):
         """Initial values when setting up a pullback"""
         dic_info = CifFile.CifDic("pycifrw/tests/full_demo_0.0.6.dic",grammar="auto")
-        start_data = CifFile.CifFile("pycifrw/tests/multi-image-test.cif.pulledback",grammar="auto")
+        start_data = CifFile.CifFile("pycifrw/tests/multi-image-test.cif.pulled_back",grammar="auto")
         start_data = start_data['Merged_scans']
         start_data.assign_dictionary(dic_info)
         return start_data
@@ -1795,11 +1795,19 @@ class DicStructureTestCase(unittest.TestCase):
         self.failUnless(['scan1','frame1'] in q)
         self.failUnless(['scan1','frame3'] in q)
 
-    def testFilter(self):
+    def testIntegerFilter(self):
         """Test construction of a block that is filtered from another category"""
         start_data = self.pullbacksetup()
         q = start_data['_diffrn_detector_monolithic.id']
         self.failUnless(q == ['ADSCQ210-SN457'])
+
+    def testTextFilter(self):
+        """Test construction of a block that is filtered using a text string"""
+        start_data = self.pullbacksetup()
+        q = start_data['_detector_axis.id']
+        print 'q is ' + `q`
+        self.failUnless(['detector_y','detector'] in q)
+        self.failUnless(['goniometer_phi','goniometer'] not in q)
         
     def testPopulateFromPullback(self):
         """Test population of a category with id items from a pulled-back category"""
@@ -1813,9 +1821,19 @@ class DicStructureTestCase(unittest.TestCase):
         start_data = self.unpullbacksetup()
         q = start_data['_diffrn_detector.id']
         r = start_data['_diffrn_detector.number_of_elements']
+        print 'q,r = ' + `q` + ' , ' + `r`
         self.failUnless(q==['ADSCQ210-SN457'])
         self.failUnless(r == [1])
 
+    def testPopulateFromMultiFilters(self):
+        """Test population of a category that is filtered into multiple
+        streams"""
+        start_data = self.unpullbacksetup()
+        q = start_data['_axis.key']
+        print 'q ends up as:' + `q`
+        self.failUnless(['detector_x','detector'] in q)
+        self.failUnless(['GONIOMETER_PHI','goniometer'] in q)
+        
     def testPopulateNonIDFromFilter(self):
         """Test that duplicate datanames are populated"""
         start_data = self.unpullbacksetup()

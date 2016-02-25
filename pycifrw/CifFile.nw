@@ -455,7 +455,6 @@ def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
     print '%s is a %s dictionary' % (self.dicname,self.diclang)
     self.scopes_mandatory = {}
     self.scopes_naughty = {}
-    self.grammar = grammar # remember for importing dictionaries correctly
     # rename and expand out definitions using "_name" in DDL dictionaries
     if self.diclang == "DDL1":
         self.DDL1_normalise()   #this removes any non-definition entries
@@ -2612,6 +2611,8 @@ def derive_item(self,start_key,cifdata,store_value = False,allow_defaults=True):
     def_index_val = self[key].get("_enumeration.def_index_id","")
     if len(has_cat_names)==0: # try category method
         <<Populate a category>>
+    # Recalculate in case it actually worked
+    has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
     the_funcs = self[key].get('_method.py_expression',"")
     if the_funcs:   #attempt to calculate it
         <<Execute pythonised dREL method>>
@@ -2649,6 +2650,7 @@ if self[the_category].get('_definition.class','Set')=='Loop':
             out_result = [result]*loop_len
             result = out_result
     else:   #nothing exists in this category, we can't store this at all
+        print 'Resetting result %s for %s to null list as category is empty' % (key,result)
         result = []
                         
 @ Storing a dREL-derived value back into our CifFile.  The dREL value (or potentially
@@ -2695,8 +2697,8 @@ def store_new_looped_value(self,key,cifdata,result,default_result):
       else:
           cifdata[key] = out_result
           cifdata.CreateLoop([key])
-      # print 'Loop info:' + `cifdata.loops`
-      return result
+      print 'Loop info:' + `cifdata.loops`
+      return out_result
 
 def store_new_unlooped_value(self,key,cifdata,result):
       """Store a single value from the dREL system"""
@@ -2806,7 +2808,9 @@ if self[the_category].has_key('_category_construct.type'):
         cat_result = self.construct_category(the_category,cifdata,store_value=True)
     except (CifRecursionError,StarFile.StarDerivationError):
         print '** Failed to construct category %s (error)' % the_category
-if len(pulled_to_cats)>0 and not cat_result.has_key(key):
+# Trying a pull-back when the category is partially populated
+# will not work, hence we test that cat_result has no keys
+if len(pulled_to_cats)>0 and len(cat_result)==0:
     print "**Now populating category %s from pulled-back category %s" % (the_category,`pulled_to_cats`)
     try:
         cat_result = self.push_from_pullback(the_category,pulled_to_cats,cifdata,store_value=True)
@@ -2882,6 +2886,7 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
     the target_category"""
     target_key = self[target_category]['_category.key_id']
     result = {target_key:[]}
+    first_time = True
     # for each source category, determine which element goes to the target
     for sc in source_categories:
         components = self[sc]['_category_construct.components']
@@ -2892,29 +2897,50 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
             element_pos = comp_cats.index(target_category)
             old_id = source_ids[element_pos]
             print 'Using %s to populate %s' % (old_id,target_key)
-            result[target_key] = cifdata[old_id]
+            result[target_key].extend(cifdata[old_id])
             # project through all identical names
             extra_result = self.duplicate_datanames(cifdata,sc,target_category,skip_names=new_ids+[target_key])
-            result.update(extra_result)
-        else:
-            result[target_key] = cifdata[source_ids[0]]
-            result.update(self.duplicate_datanames(cifdata,sc,target_category,skip_names=new_ids))
-            # Bonus derivation if there is a singleton filter
-            if self[sc]['_category_construct.type'] == 'Filter':
-                int_filter = self[sc].get('_category_construct.integer_filter',None)
-                text_filter = self[sc].get('_category_construct.text_filter',None)
-                if int_filter is not None:
-                    filter_values = int_filter
-                else:
-                    filter_values = text_filter
-                if len(filter_values)==1:    #a singleton
-                    extra_dataname = self[sc]['_category_construct.components'][0]
-                    if int_filter is not None:
-                        result[extra_dataname] = [int(filter_values[0])] * len(result.values()[0])
-                    else:
-                        result[extra_dataname] = filter_values * len(result.values()[0])
+            # we only include keys that are common to all categories
+            if first_time:
+                result.update(extra_result)
             else:
-                raise ValueError,'Unexpected category construct type' + self[sc]['_category_construct.type']
+                for k in extra_result.keys():
+                    if result.has_key(k):
+                        result[k].extend(extra_result[k])
+        else:
+            extra_result = self.duplicate_datanames(cifdata,sc,target_category,skip_names=new_ids)
+            if len(extra_result)>0 or cifdata.has_key(source_ids[0]):  #something is present
+                result[target_key].extend(cifdata[source_ids[0]])
+                for k in extra_result.keys():
+                    if result.has_key(k):
+                        result[k].extend(extra_result[k])
+                    else:
+                        result[k]=extra_result[k]
+# Bonus derivation if there is a singleton filter
+                if self[sc]['_category_construct.type'] == 'Filter':
+                    int_filter = self[sc].get('_category_construct.integer_filter',None)
+                    text_filter = self[sc].get('_category_construct.text_filter',None)
+                    if int_filter is not None:
+                        filter_values = int_filter
+                    else:
+                        filter_values = text_filter
+                    if len(filter_values)==1:    #a singleton
+                        extra_dataname = self[sc]['_category_construct.components'][0]
+                        if int_filter is not None:
+                            new_value = [int(filter_values[0])] * len(cifdata[source_ids[0]])
+                        else:
+                            new_value = filter_values * len(cifdata[source_ids[0]])
+                        if not result.has_key(extra_dataname):
+                            result[extra_dataname] = new_value
+                        else:
+                            result[extra_dataname].extend(new_value) 
+                else:
+                    raise ValueError,'Unexpected category construct type' + self[sc]['_category_construct.type']
+        first_time = False
+    # check for sanity - all dataname lengths must be identical
+    datalen = len(set([len(a) for a in result.values()]))
+    if datalen != 1:
+        raise AssertionError,'Failed to construct equal-length category items,'+ `result`
     if store_value:
         print 'Now storing ' + `result`
         self.store_new_cat_values(cifdata,result,target_category)
@@ -2935,11 +2961,17 @@ def duplicate_datanames(self,cifdata,from_category,to_category,key_vals=None,ski
         full_from_name = self.cat_obj_lookup_table[(from_category.lower(),project_name.lower())][0]
         full_to_name = self.cat_obj_lookup_table[(to_category.lower(),project_name.lower())][0]
         if key_vals is None:
-            result[full_to_name] = cifdata[full_from_name]
+            try:
+                result[full_to_name] = cifdata[full_from_name]
+            except StarFile.StarDerivationError:
+                pass
         else:
             all_key_vals = cifdata[source_key]
             filter_pos = [all_key_vals.index(a) for a in key_vals]
-            all_data_vals = cifdata[full_from_name]
+            try:
+                all_data_vals = cifdata[full_from_name]
+            except StarFile.StarDerivationError:
+                pass
             result[full_to_name] = [all_data_vals[i] for i in filter_pos]
     return result
 
@@ -3151,15 +3183,19 @@ def get_full_child_list(self):
     if len(root_cat) == 1:
         all_names = [top_block] + self.recurse_child_list(root_cat[0])
         unrooted = self.ddlm_danglers()
+        double_names =  set(unrooted).intersection(set(all_names))
+        if len(double_names)>0:
+            raise CifError,'Names are children of internal and external categories:%s' % `double_names`
+        remaining = unrooted[:]
         for no_root in unrooted:
             if self[no_root].get('_definition.scope','Item')=='Category':
-                new_names = self.recurse_child_list(no_root)
-                double_names = set(new_names).intersection(set(all_names))
-                if len(double_names)>0:
-                    raise CifError,'Chasing root %s gave double names %s' % (no_root,`double_names`)
-                all_names += new_names
-            else:   #simple addition to some category
                 all_names += [no_root]
+                remaining.remove(no_root)
+                these_children = [n for n in unrooted if self[n]['_name.category_id'].lower()==no_root.lower()]
+                all_names += these_children
+                [remaining.remove(n) for n in these_children]
+        for r in remaining:   #simple addition to some category
+                all_names += [r]
         print 'Final block order: ' + `all_names`
         return all_names
     raise ValueError, 'Dictionary contains no/multiple Head categories, please print as plain CIF instead'
