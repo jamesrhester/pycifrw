@@ -2786,7 +2786,7 @@ for one_func in the_funcs:
 
 A category can be created from scratch (i.e. the identifiers produced)
 if the appropriate DDLm attributes are defined - currently,
-experimental attributes 'category_construct' are included in the test
+experimental attributes 'category_construct_local' are included in the test
 dictionaries for this purpose. They define two types of 'pullback'
 (see any category theory textbook), which we can use to create a
 category.  If these attributes are absent, we can instead execute a
@@ -2797,12 +2797,12 @@ exact match for the set of datanames already present.
 
 <<Populate a category>>=
 cat_result = {}
-pulled_from_cats = [k for k in self.keys() if self[k].has_key('_category_construct.components')]
+pulled_from_cats = [k for k in self.keys() if self[k].has_key('_category_construct_local.components')]
 pulled_from_cats = [(k,[
-                      self[n]['_name.category_id'] for n in self[k]['_category_construct.components']]
+                      self[n]['_name.category_id'] for n in self[k]['_category_construct_local.components']]
                    ) for k in pulled_from_cats]
 pulled_to_cats = [k[0] for k in pulled_from_cats if the_category in k[1]]
-if self[the_category].has_key('_category_construct.type'):
+if self[the_category].has_key('_category_construct_local.type'):
     print "**Now constructing category %s using DDLm attributes**" % the_category
     try:
         cat_result = self.construct_category(the_category,cifdata,store_value=True)
@@ -2834,18 +2834,18 @@ have an 'index' method.
 <<Construct a category>>=
 def construct_category(self,category,cifdata,store_value=True):
     """Construct a category using DDLm attributes"""
-    con_type = self[category].get('_category_construct.type',None)
+    con_type = self[category].get('_category_construct_local.type',None)
     if con_type == None:
         return {}
     if con_type == 'Pullback' or con_type == 'Filter':
-        morphisms  = self[category]['_category_construct.components']
+        morphisms  = self[category]['_category_construct_local.components']
         morph_values = [cifdata[a] for a in morphisms] # the mapped values for each cat
         cats = [self[a]['_name.category_id'] for a in morphisms]
         cat_keys = [self[a]['_category.key_id'] for a in cats]
         cat_values = [list(cifdata[a]) for a in cat_keys] #the category key values for each cat
         if con_type == 'Filter':
-            int_filter = self[category].get('_category_construct.integer_filter',None)
-            text_filter = self[category].get('_category_construct.text_filter',None)
+            int_filter = self[category].get('_category_construct_local.integer_filter',None)
+            text_filter = self[category].get('_category_construct_local.text_filter',None)
             if int_filter is not None:
                 morph_values.append([int(a) for a in int_filter])
             if text_filter is not None:
@@ -2857,7 +2857,7 @@ def construct_category(self,category,cifdata,store_value=True):
         # now prepare for return
         if len(pullback_ids)==0:
             return {}
-        newids = self[category]['_category_construct.new_ids']
+        newids = self[category]['_category_construct_local.new_ids']
         fullnewids = [self.cat_obj_lookup_table[(category,n)][0] for n in newids]
         if con_type == 'Pullback':
             final_results = {fullnewids[0]:[x[0] for x in pullback_ids],fullnewids[1]:[x[1] for x in pullback_ids]}
@@ -2877,7 +2877,7 @@ a filter function with a single element, we can automatically populate the
 whole commutative square.  We also by default populate identically-named
 datanames. 
 
-The projection datanames are given in _category_construct.new_ids, and they always
+The projection datanames are given in _category_construct_local.new_ids, and they always
 map to the key of the projected-to category.
 
 <<Insert category items from pullback information>>=
@@ -2889,9 +2889,9 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
     first_time = True
     # for each source category, determine which element goes to the target
     for sc in source_categories:
-        components = self[sc]['_category_construct.components']
+        components = self[sc]['_category_construct_local.components']
         comp_cats = [self[c]['_name.category_id'] for c in components]
-        new_ids = self[sc]['_category_construct.new_ids']
+        new_ids = self[sc]['_category_construct_local.new_ids']
         source_ids = [self.cat_obj_lookup_table[(sc,n)][0] for n in new_ids]
         if len(components) == 2:  # not a filter
             element_pos = comp_cats.index(target_category)
@@ -2917,15 +2917,15 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
                     else:
                         result[k]=extra_result[k]
 # Bonus derivation if there is a singleton filter
-                if self[sc]['_category_construct.type'] == 'Filter':
-                    int_filter = self[sc].get('_category_construct.integer_filter',None)
-                    text_filter = self[sc].get('_category_construct.text_filter',None)
+                if self[sc]['_category_construct_local.type'] == 'Filter':
+                    int_filter = self[sc].get('_category_construct_local.integer_filter',None)
+                    text_filter = self[sc].get('_category_construct_local.text_filter',None)
                     if int_filter is not None:
                         filter_values = int_filter
                     else:
                         filter_values = text_filter
                     if len(filter_values)==1:    #a singleton
-                        extra_dataname = self[sc]['_category_construct.components'][0]
+                        extra_dataname = self[sc]['_category_construct_local.components'][0]
                         if int_filter is not None:
                             new_value = [int(filter_values[0])] * len(cifdata[source_ids[0]])
                         else:
@@ -2935,7 +2935,7 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
                         else:
                             result[extra_dataname].extend(new_value) 
                 else:
-                    raise ValueError,'Unexpected category construct type' + self[sc]['_category_construct.type']
+                    raise ValueError,'Unexpected category construct type' + self[sc]['_category_construct_local.type']
         first_time = False
     # check for sanity - all dataname lengths must be identical
     datalen = len(set([len(a) for a in result.values()]))
