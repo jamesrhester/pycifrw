@@ -17,7 +17,7 @@ YappsStarParser.html           Programming notes for the grammar
 YappsStarParser.nw             Literate format grammar with notes from which grammars are
 			       generated.
 Makefile                       How to derive .html, .py and .g files from .nw files
-StarScan.so                    Compiled Python extension module for Linux
+StarScan.so                    Compiled Python extension module for rapid input
 
 drel/                          Routines for processing dREL methods
 Files derived from other programs:

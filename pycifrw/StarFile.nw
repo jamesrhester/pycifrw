@@ -1099,12 +1099,22 @@ def unassign_dictionary(self):
 @ \section{Collection datatype}
 
 DDLm introduced data values which could be lists, tuples or hash tables. We define
-a distinct StarList class to distinguish them from loop lists.
+a distinct StarList class to distinguish them from loop lists, and take the
+opportunity to expand the getitem method to allow multiple arguments.
 
 <<Define a collection datatype>>=
 class StarList(list):
-    pass
+    def __getitem__(self,args):
+        if isinstance(args,int):
+            return super(StarList,self).__getitem__(args)
+        elif isinstance(args,tuple) and len(args)>1:   #extended comma notation
+            return super(StarList,self).__getitem__(args[0]).__getitem__(args[1:])
+        else:
+            return super(StarList,self).__getitem__(args[0])
 
+    def __str__(self):
+        return "SL("+super(StarList,self).__str__() + ")"
+        
 class StarDict(dict):
     pass
 

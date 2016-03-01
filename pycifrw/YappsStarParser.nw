@@ -246,7 +246,7 @@ token dat_val_internal_sq: "\[([^\s\[\]]*)\]"
 # For tests of new DDLm syntax - no quotes or apostrophes in strings, no commas, braces or square brackets in undelimited data values
 # This token for triple-quote delimited strings must come before single-quote delimited strings to avoid the opening quotes being
 # interpreted as a single-quote delimited string
-token triple_quote_data_value: "(?s)'''.*?'''|\"\"\".*\"\"\""
+token triple_quote_data_value: "(?s)'''.*?'''|\"\"\".*?\"\"\""
 token single_quote_data_value: "'([^\n\r\f'])*'+|\"([^\n\r\"])*\"+"
 
 @ Currently just a single line but we allow a whole block just in case.

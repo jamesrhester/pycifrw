@@ -125,6 +125,11 @@ class BasicUtilitiesTestCase(unittest.TestCase):
         self.assertEqual(CifFile.check_stringiness(['1',['2',['3','4','5'],'6','7'],'8']),True)
         p = numpy.array([[1,2,3],[4,5,6]])
         self.assertEqual(CifFile.check_stringiness(p),False)
+
+    def testStarList(self):
+        """Test that starlists allow comma-based access"""
+        p = StarList([StarList([1,2,3]),StarList([4,5,6])])
+        self.failUnless(p[1,0]==4)
         
 # Test basic setting and reading of the CifBlock
 
@@ -304,6 +309,29 @@ class BlockChangeTestCase(unittest.TestCase):
        self.cf["_Item_NaMe_1"] = "the quick pewse fox"
        self.assertEqual(self.cf["_Item_NaMe_1"],self.cf["_item_name_1"])
 
+class SyntaxErrorTestCase(unittest.TestCase):
+    """Check that files with syntax errors are found"""
+    def tearDown(self):
+        import os
+        try:
+            os.remove("syntax_check.cif")
+        except:
+            pass
+        
+    def testTripleApostropheCase(self):
+        teststrg = "#\#CIF_2.0\ndata_testblock\n _item_1 ''' ''' '''\n"
+        f = open("syntax_check.cif","w")
+        f.write(teststrg)
+        f.close()
+        self.assertRaises(CifFile.StarError, CifFile.ReadCif,"syntax_check.cif",grammar="2.0")
+                
+    def testTripleQuoteCase(self):
+        teststrg = '#\#CIF_2.0\ndata_testblock\n _item_1 """ """ """\n'
+        f = open("syntax_check.cif","w")
+        f.write(teststrg)
+        f.close()
+        self.assertRaises(CifFile.StarError, CifFile.ReadCif,"syntax_check.cif",grammar="2.0")
+        
 class LoopBlockTestCase(unittest.TestCase):
    """Check operations on loop blocks"""
    def setUp(self):
@@ -1586,59 +1614,6 @@ class FakeDicTestCase(unittest.TestCase):
         self.assertRaises(CifFile.ValidCifError,CifFile.ValidCifFile,
                            diclist=["pycifrw/dictionaries/novel.dic"],datasource=self.testcif)
           
-class DicMergeTestCase(unittest.TestCase):
-    def setUp(self):
-        self.offdic = CifFile.CifFile("pycifrw/dictionaries/dict_official",standard=None)
-        self.adic = CifFile.CifFile("pycifrw/dictionaries/dict_A",standard=None)
-        self.bdic = CifFile.CifFile("pycifrw/dictionaries/dict_B",standard=None)
-        self.cdic = CifFile.CifFile("pycifrw/dictionaries/dict_C",standard=None)
-        self.cvdica = CifFile.CifFile("pycifrw/dictionaries/cvdica.dic",standard=None)
-        self.cvdicb = CifFile.CifFile("pycifrw/dictionaries/cvdicb.dic",standard=None)
-        self.cvdicc = CifFile.CifFile("pycifrw/dictionaries/cvdicc.dic",standard=None)
-        self.cvdicd = CifFile.CifFile("pycifrw/dictionaries/cvdicd.dic",standard=None)
-        self.testcif = CifFile.CifFile("pycifrw/dictionaries/merge_test.cif",standard=None)
-       
-    def testAStrict(self):
-        self.assertRaises(CifFile.StarError,CifFile.merge_dic,[self.offdic,self.adic],mergemode="strict")
-        
-    def testAOverlay(self):
-        newdic = CifFile.merge_dic([self.offdic,self.adic],mergemode='overlay')
-        # print newdic.__str__()
-        self.assertRaises(CifFile.ValidCifError,CifFile.ValidCifFile,
-                                  datasource="pycifrw/dictionaries/merge_test.cif",
-                                  dic=newdic)
-        
-#    def testAReverseO(self):
-#        # the reverse should be OK!
-#        newdic = CifFile.merge_dic([self.adic,self.offdic],mergemode='overlay')
-#        jj = CifFile.ValidCifFile(datasource="pycifrw/dictionaries/merge_test.cif",
-#                                 dic = newdic)
-
-#    def testCOverlay(self):
-#        self.offdic = CifFile.merge_dic([self.offdic,self.cdic],mergemode='replace') 
-#        print "New dic..."
-#        print self.offdic.__str__()
-#        self.assertRaises(CifFile.ValidCifError,CifFile.ValidCifFile,
-#                          datasource="pycifrw/dictionaries/merge_test.cif",
-#                          dic = self.offdic)
-
-    # now for the final example in "maintenance.html"
-    def testCVOverlay(self):
-        jj = open("merge_debug","w")
-        newdic = CifFile.merge_dic([self.cvdica,self.cvdicb,self.cvdicc,self.cvdicd],mergemode='overlay')
-        jj.write(newdic.__str__())
-
-#    def testKeyOverlay(self):
-#        """Test that duplicate key values are not overlayed in loops"""
-#        ff = CifFile.CifFile("dictionaries/merge_test_2.cif")["block_a"]
-#        gg = CifFile.CifFile("dictionaries/merge_test_2.cif")["block_b"]
-#        ff.merge(gg,mode="overlay",rel_keys = ["_loop_key"])
-#        target_loop = ff.GetLoop("_loop_key")
-#        print ff.__str__()
-
-    def tearDown(self):
-        pass
-
 class DicEvalTestCase(unittest.TestCase):
     def setUp(self):
         cc = CifFile.CifFile("pycifrw/drel/testing/data/nick.cif",grammar="STAR2")
@@ -1842,7 +1817,7 @@ class DicStructureTestCase(unittest.TestCase):
 
 if __name__=='__main__':
      global testdic
-     testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.cif2.dic",grammar="2.0")
+     #testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.cif2.dic",grammar="2.0")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
@@ -1850,6 +1825,7 @@ if __name__=='__main__':
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
+     suite = unittest.TestLoader().loadTestsFromTestCase(SyntaxErrorTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(LoopBlockTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase) 
@@ -1858,6 +1834,6 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     #unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     unittest.TextTestRunner(verbosity=2).run(suite)
+     #unittest.main()
 

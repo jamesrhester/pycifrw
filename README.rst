@@ -9,13 +9,14 @@ Information Format) files using Python.  It was developed at the
 Australian National Beamline Facility (ANBF), run by the Australian
 Synchrotron Research Program (ASRP), as part of a larger project to
 provide CIF input/output capabilities for data collection.  It is
-now (Jan 2015) maintained and developed within the Australian Nuclear Science and
-Technology Organisation (ANSTO).
+currently (Mar 2016) maintained and developed by James Hester
+with support from the Australian Nuclear Science and Technology 
+Organisation (ANSTO).
 
 Conformance
 -----------
 
-The CIF 1.1 and 2.0 working specifications were used as a reference,
+The CIF 1.1 and 2.0 working specifications were used as a reference.
 
 PyCifRW has been tested on the IUCr sample CIF trip files located at
 http://www.iucr.org/iucr-top/cif/developers/trip and fails or 

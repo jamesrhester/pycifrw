@@ -272,6 +272,22 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
        """
        self.create_test(teststrg,25)
 
+    def test_list_indices(self):
+        """Test that multi-dimensional indices are accessed correctly"""
+        teststrg = """
+        m = [[1,2,3],[4,5,6],[7,8,9]]
+        _a.b = m[1,2]
+        """
+        self.create_test(teststrg,6,debug=True)
+
+    def test_matrix_indices(self):
+        """Test that multi-dimensional indices work for matrices too"""
+        teststrg = """
+        m = matrix([[1,2,3],[4,5,6],[7,8,9]])
+        _a.b = m[1,2]
+        """
+        self.create_test(teststrg,6,debug=True)
+        
 class SimpleCompoundStatementTestCase(unittest.TestCase):
    def setUp(self):
        #create our lexer and parser

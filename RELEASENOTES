@@ -1,41 +1,22 @@
-Release Notes for PyCIFRW-4.1.1  
-===============================
-
-Version 4.1.1 is a bugfix release for 4.1. 
-
-Changes since 4.1
-=================
-
-* Unicode range reduced: 
-
-Most Mac and Windows builds of Python are the so-called 'narrow' builds, which 
-raise an exception when presented with Unicode code points outside
-the Basic Multilingual Plane, meaning that on Windows systems Version 4.1
-failed to run.  The Yapps system
-used for parsing CIF files does not allow us to gracefully degrade Unicode
-support depending on OS, so support for non BMP code points has been 
-removed in this release. It will be added back in when PyCIFRW is ported to Python 3.
-Note that non-BMP characters are generally quite obscure (e.g. runes, domino tiles) 
-and that the BMP includes almost all modern scripts.
-
-* Tables added to dREL: Tables were missing from the dREL implementation
-* Various DDLm validation additions (a work in progress)
-* Output template improvements- datanames and loop_ position also templateable
-* Output formatting tweaks
-* STAR2 to CIF2 conversion utility in the Programs subdirectory
-
-
-Release Notes for PyCIFRW-4.1
+Release Notes for PyCIFRW-4.2 
 =============================
 
-Version 4.1 is the first stable release in the next major version of
-PyCIFRW.  It includes support for CIF 2.0 (including unicode), dREL
-and DDLm, with expanded documentation.  A number of major
-simplifications have gone on under the hood leading to slightly faster
-CIF file input and much simpler construction and interaction with loops.
+Changes since 4.1.1
+===================
 
-Templates have been added for finer control over the layout of output
-CIF files.
+* Up to two orders of magnitude improvement in reading speed
+  for large files (several Mb). Note that PyCIFRW reads the
+  entire file into memory, so you must have sufficient RAM.
+
+* Continuous bugfixes and improvements to dREL system
+  - Allow multiple dREL methods per definition
+  - Detect and handle recursion in dREL methods
+
+* Understands DDLm use of _import.get to merge dictionaries
+
+* Experimental DDLm attributes for category construction
+
+* Fixed bug in triple-quoted string interpretation
 
 Incompatible changes (since 3.0 series)
 =======================================

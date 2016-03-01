@@ -2673,20 +2673,19 @@ def store_new_looped_value(self,key,cifdata,result,default_result):
           # find any numpy arrays
           numpy_objs = [a for a in result if hasattr(a,'dtype')]    #numpy object
           if len(numpy_objs)>0:
-              if numpy_objs[0].size > 1:   #so is not a float
-                  def conv_from_numpy(one_elem):
-                     try:
-                        return StarFile.StarList(one_elem.tolist())
-                     except:
+              def conv_from_numpy(one_elem):
+                  if not hasattr(one_elem,'dtype'):
+                     if isinstance(one_elem,(list,tuple)):
+                        return StarFile.StarList([conv_from_numpy(a) for a in one_elem])
+                     return one_elem
+                  if one_elem.size > 1:   #so is not a float
+                     return StarFile.StarList([conv_from_numpy(a) for a in one_elem.tolist()])
+                  else:
+                      try:
+                        return one_elem.item(0)
+                      except:
                         return one_elem
-                  out_result = [conv_from_numpy(a) for a in result]
-              else:
-                def conv_from_numpy(maybe_numpy):
-                  try:
-                      return maybe_numpy.item(0)
-                  except:
-                      return maybe_numpy
-                out_result = [conv_from_numpy(a) for a in result]
+              out_result = [conv_from_numpy(a) for a in result]
       # so out_result now contains a value suitable for storage
       cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
       has_cat_names = [a for a in cat_names if cifdata.has_key(a)]

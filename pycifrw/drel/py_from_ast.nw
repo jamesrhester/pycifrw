@@ -312,6 +312,9 @@ It is also possible for a delayed attribute lookup to occur, for example,
 a = atom_site[label] and later b = a.position, so we catch any subscriptions applied to
 loop category names.
 
+We convert list-valued subscriptions to a sequence of Python subscriptions in order
+to catch the valid numpy a[1,2,1...] style multi-dimensional array access.
+
 In all other cases we have a plain subscription as for normal Python.  
 
 <<Process subscriptions>>=
