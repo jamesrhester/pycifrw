@@ -31,7 +31,14 @@ KeyError: 'No such item: _cell.volume'
 635.2977003095574          # Note this is a floating-point number
 ~~~
 
-### Limitations on dREL methods
+## PyCIFRW extensions
+
+PyCIFRW will understand multiple methods for a single definition, and run through
+each until a successful evaluation occurs.  If recursion is detected (defined
+as a second request to evaluate a dataname in a single evaluation sequence) the
+current definition is abandoned and the next one tried.
+
+## Limitations on dREL methods
 
 dREL is a rich specification and, while the PyCIFRW implementation is relatively comprehensive,
 a number of functionalities are not yet implemented, and testing is not complete.
@@ -39,11 +46,7 @@ a number of functionalities are not yet implemented, and testing is not complete
 1. No standard uncertainty (su) propagation.  The CIF standards provide for
 su, which would allow propagation.  To be implemented. 
 
-2. Category methods.  If an entire loop ('category') is missing, PyCIFRW will not attempt to
-create the category, even though the methods to do so are provided in the dictionary (see for example
-'geom_bond')
-
-3. Values that have been calculated are stored as their native type (not necessarily strings).
+2. Values that have been calculated are stored as their native type (not necessarily strings).
 These values may be formatted unusually (e.g. too many decimal places) when output to a file. A
 method will be introduced in later versions to properly format native values.
 

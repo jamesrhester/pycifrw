@@ -22,7 +22,9 @@ then be used for checking or simply to fill in missing information.
 DDL dictionaries can be read into `CifFile` objects just like CIF data
 files. For this purpose, `CifFile` objects automatically support save
 frames (used in DDL2 and DDLm dictionaries), which are accessed just
-like `CifBlock`s using their save frame name.
+like `CifBlock`s using their save frame name.  By default save frames
+are not listed as keys in `CifFile`s as they do not form part of the
+CIF standard.
 
 The more powerful `CifDic` object creats a unified interface to DDL1,
 DDL2 and DDLm dictionaries. A `CifDic` is initialised with a single file name
@@ -57,7 +59,7 @@ A top level function is provided for convenient validation of CIF
 files:
 
 ~~~{.python}
-    CifFile.validate("mycif.cif",dic = "cif_core.dic")
+    CifFile.Validate("mycif.cif",dic = "cif_core.dic")
 ~~~
 
 This returns a tuple `(valid_result, no_matches)`. `valid_result` and 
@@ -102,4 +104,5 @@ respectively.
   file are not machine-readable, so values cannot be checked for 
   consistency
 
-3. DDLm validation methods are not yet implemented
+3. DDLm validation methods are still in development so are not
+   comprehensive.

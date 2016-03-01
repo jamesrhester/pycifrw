@@ -12,7 +12,7 @@ older versions, see the documentation provided with those versions).
 As of version 4.0, it is sufficient to install the PyCIFRW “wheel” 
 using `pip`, for example: 
 
-    pip install --use-wheel PyCifRW-4.1-cp27-none-linux_i686.whl
+    pip install --use-wheel PyCifRW-4.2-cp27-none-linux_i686.whl
 
 or using the platform independent source package found on PyPI:
 
@@ -67,6 +67,7 @@ particular version to use is possible with the grammar keyword:
          cf = CifFile.ReadCif('unknown.cif',grammar='auto') #try 2.0->1.1->1.0
 
 Reading of STAR2 files is also possible by setting `grammar='STAR2'`.
+Currently, the default is set to '1.1'.
 
 ### Creating a new CifFile
 
@@ -450,14 +451,8 @@ method, which actually performs the merging operation:
 
 #### Limitations on merging
 
-In overlay mode, the COMCIFS recommendations require that, when 
-both definitions contain identical unlooped attributes which can 
-be looped, the merging process should construct those loops and 
-include both sets of data in the new loop. 
-
-This is not yet implemented in PyCIFRW, as it involves checking 
-the DDL1/DDL2 spec to determine which attributes may be looped 
-together.
+Overlay mode is no longer supported, and should not in any
+case be used.
 
 # Example programs
 

@@ -16,10 +16,12 @@ Changes since 4.1.1
 
 * Experimental DDLm attributes for category construction
 
-* Fixed bug in triple-quoted string interpretation
+* Fixed bug in embedded triple-quoted string interpretation
 
-Incompatible changes (since 3.0 series)
-=======================================
+* Output block order defaults to input block order
+
+Incompatible changes (since 3.0 series, unchanged since 4.1)
+============================================================
 
 * Function "validate" has been renamed to Validate for consistency
 * Nested loops (only allowed in STAR files) are no longer supported
