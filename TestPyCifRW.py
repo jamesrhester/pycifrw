@@ -1836,7 +1836,7 @@ _item4 4
 """
         f = open("order_test.cif","w")
         f.write(outstrg)
-        f.close
+        f.close()
         q = CifFile.CifFile("order_test.cif",grammar="auto")
         print `q.block_input_order`
         self.failUnless(q.block_input_order[1] == "testb")
