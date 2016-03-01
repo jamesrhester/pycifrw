@@ -192,6 +192,7 @@ def __init__(self,datasource=None,standard='CIF',blocktype = StarBlock,
     self.PC = collections.namedtuple('PC',['block_id','parent'])
     self.child_table = {}
     self.visible_keys = []            # for efficiency
+    self.block_input_order = []       # to output in same order
     self.scoping = scoping  #will trigger setting of child table
     self.blocktype = blocktype
     self.master_template = {}   #for outputting
@@ -300,6 +301,7 @@ def __delitem__(self,key):
     except KeyError:
         pass
     self.lower_keys.remove(lowerkey)
+    self.block_input_order.remove(lowerkey)
 
 def __len__(self):
     return len(self.visible_keys)
@@ -335,6 +337,7 @@ def clear(self):
     self.lower_keys = set()
     self.child_table = {}
     self.visible_keys = []
+    self.block_input_order = []
 
 def copy(self):   
     newcopy = self.dictionary.copy()  #all blocks
@@ -343,6 +346,7 @@ def copy(self):
     newcopy = BlockCollection(newcopy)
     newcopy.child_table = self.child_table.copy()
     newcopy.lower_keys = self.lower_keys.copy()
+    newcopy.block_input_order = self.block_input_order.copy()
     newcopy.characterset = self.characterset
     newcopy.master_template = self.master_template.copy()
     newcopy.scoping = self.scoping  #this sets visible keys
@@ -519,6 +523,7 @@ def NewBlock(self,blockname,blockcontents=None,fix=True,parent=None):
            del self[new_lowerbn]
     self.dictionary.update({new_lowerbn:blockcontents})
     self.lower_keys.add(new_lowerbn)
+    self.block_input_order.append(new_lowerbn)
     if parent is None:
        self.child_table[new_lowerbn]=self.PC(newblockname,None)
        self.visible_keys.append(new_lowerbn)
@@ -555,6 +560,7 @@ def _rekey(self,oldname,newname,block_id=''):
     del self[oldname]   #do this after updating child table so we don't delete children
     self.dictionary.update({newname:move_block})
     self.lower_keys.add(newname)
+    self.block_input_order[self.block_input_order.index(oldname)]=newname
     if block_id == '':
        self.child_table.update({newname:move_block_info})
     else:
@@ -664,6 +670,8 @@ def merge_fast(self,new_bc,parent=None):
     self.dictionary.update(new_bc.dictionary) 
     self.lower_keys.update(new_bc.lower_keys)
     self.visible_keys += (list(new_bc.lower_keys))
+    self.block_input_order += new_bc.block_input_order
+    print 'Updated block input order to ' + `self.block_input_order`
     self.child_table.update(new_bc.child_table)
     if parent is not None:     #redo the child_table entries
           reparent_list = [(a[0],a[1].block_id) for a in new_bc.child_table.items() if a[1].parent==None]
@@ -781,7 +789,8 @@ initialising the file.
         characters and restricting maximum line length to `maxoutlength`.  Delimiters and
         save frame nesting are controlled by `self.grammar`. If `blockorder` is
         provided, blocks are output in this order unless nested save frames have been
-        requested (STAR2). `saves_after` inserts all save frames after the given dataname,
+        requested (STAR2). The default block order is the order in which blocks were input.
+        `saves_after` inserts all save frames after the given dataname,
         which allows less important items to appear later.  Useful in conjunction with a
         template for dictionary files."""
         import cStringIO
@@ -802,9 +811,8 @@ initialising the file.
         # monitor output
         all_names = self.child_table.keys()   #i.e. lower case
         if blockorder is None:
-            top_block_names = [(a[0],a[1].block_id) for a in self.child_table.items() if a[1].parent is None]
-        else:
-            top_block_names = [(a,self.child_table[a].block_id) for a in blockorder if self.child_table[a].parent is None]
+            blockorder = self.block_input_order
+        top_block_names = [(a,self.child_table[a].block_id) for a in blockorder if self.child_table[a].parent is None]
         for blockref,blockname in top_block_names:
             print 'Writing %s, ' % blockname + `self[blockref]`
             outstring.write('\n' + 'data_' +blockname+'\n')
@@ -819,10 +827,7 @@ initialising the file.
                     self.block_to_string_nested(child_ref,child_name,outstring,4)    
                     outstring.write('\n' + 'save_'+ '\n')   
             elif self.grammar in ('1.0','1.1','2.0'):                   #non-nested save frames
-                if blockorder is None:
-                    child_refs = self.get_child_list(blockref)
-                else:
-                    child_refs = [a for a in blockorder if self.is_child_of_parent(blockref,a)]
+                child_refs = [a for a in blockorder if self.is_child_of_parent(blockref,a)]
                 for child_ref in child_refs:
                     child_name = self.child_table[child_ref].block_id
                     outstring.write('\n\n' + 'save_' + child_name + '\n')

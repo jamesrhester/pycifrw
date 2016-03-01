@@ -1815,9 +1815,37 @@ class DicStructureTestCase(unittest.TestCase):
         q = start_data['_diffrn_data_frame.binary_id']
         self.failUnless('3' in q)
 
+class BlockOutputOrderTestCase(unittest.TestCase):
+    def tearDown(self):
+        import os
+        #try:
+        #    os.remove("order_test.cif")
+        #except:
+        #    pass
+        
+    def testOutputOrder(self):
+        outstrg = """#\#CIF_2.0
+data_testa
+_item1 1
+data_testb
+_item2 2
+data_testc
+_item3 3
+data_testd
+_item4 4
+"""
+        f = open("order_test.cif","w")
+        f.write(outstrg)
+        f.close
+        q = CifFile.CifFile("order_test.cif",grammar="auto")
+        print `q.block_input_order`
+        self.failUnless(q.block_input_order[1] == "testb")
+        f = open("round_trip_test.cif","w")
+        f.write(str(q))
+        
 if __name__=='__main__':
      global testdic
-     #testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.cif2.dic",grammar="2.0")
+     testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.cif2.dic",grammar="2.0")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
@@ -1825,7 +1853,8 @@ if __name__=='__main__':
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
-     suite = unittest.TestLoader().loadTestsFromTestCase(SyntaxErrorTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(BlockOutputOrderTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(SyntaxErrorTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(LoopBlockTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase) 
@@ -1834,6 +1863,6 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     unittest.TextTestRunner(verbosity=2).run(suite)
-     #unittest.main()
+     #unittest.TextTestRunner(verbosity=2).run(suite)
+     unittest.main()
 
