@@ -730,6 +730,7 @@ to use as we need to cover array structures as well.
 
 <<Maths operator conversion table>>=
 mathop_table = {"+":None, "-":None, "<":"<", "*":None, "/":None,
+                "&":"&", "|":"|",
                 ">":">", "<=":"<=", ">=":">=", "!=":"!=",
                 "or":" or ", "and":" and ",
                 "==":"==", "in":" in ", "not in":" not in ",
@@ -776,7 +777,9 @@ def get_function_name(in_name):
                 "min":"min",
                 "strip":"drel_runtime.drel_strip",
                 "int":"drel_runtime.drel_int",
-                "eigen":"drel_runtime.drel_eigen"}
+                "eigen":"drel_runtime.drel_eigen",
+                "hash":"hash"  #dREL extension
+    }
     test_name = in_name.lower()
     target_name = builtins.get(test_name,None)
     if target_name is not None:

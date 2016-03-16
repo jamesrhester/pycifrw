@@ -2905,6 +2905,7 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
             else:
                 for k in extra_result.keys():
                     if result.has_key(k):
+                        print 'Updating %s: was %s' % (k,`result[k]`)
                         result[k].extend(extra_result[k])
         else:
             extra_result = self.duplicate_datanames(cifdata,sc,target_category,skip_names=new_ids)
@@ -2912,6 +2913,7 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
                 result[target_key].extend(cifdata[source_ids[0]])
                 for k in extra_result.keys():
                     if result.has_key(k):
+                        print 'Reverse filter: Updating %s: was %s' % (k,`result[k]`)
                         result[k].extend(extra_result[k])
                     else:
                         result[k]=extra_result[k]

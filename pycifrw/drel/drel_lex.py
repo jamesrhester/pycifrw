@@ -55,7 +55,7 @@ tokens = (
     'CLOSE_PAREN'
      )
 
-literals = '+*-/;[],:^<>{}=.`'
+literals = '+*-/;[],:^<>{}=.`&|'  #'&' and '|' are pycifrw extensions
 t_INITIAL_ignore = ' \t'
 t_paren_ignore = ' \t\n'
 

@@ -557,7 +557,6 @@ def _rekey(self,oldname,newname,block_id=''):
     move_block_children = [a for a in self.child_table.items() if a[1].parent==oldname]
     # now rewrite the necessary bits
     self.child_table.update(dict([(a[0],self.PC(a[1].block_id,newname)) for a in move_block_children]))
-    print 'Block input order should contain %s: %s' % (oldname,`self.block_input_order`)
     oldpos = self.block_input_order.index(oldname)
     del self[oldname]   #do this after updating child table so we don't delete children
     self.dictionary.update({newname:move_block})
@@ -674,7 +673,7 @@ def merge_fast(self,new_bc,parent=None):
     self.lower_keys.update(new_bc.lower_keys)
     self.visible_keys += (list(new_bc.lower_keys))
     self.block_input_order += new_bc.block_input_order
-    print 'Block input order now:' + `self.block_input_order`
+    # print 'Block input order now:' + `self.block_input_order`
     self.child_table.update(new_bc.child_table)
     if parent is not None:     #redo the child_table entries
           reparent_list = [(a[0],a[1].block_id) for a in new_bc.child_table.items() if a[1].parent==None]

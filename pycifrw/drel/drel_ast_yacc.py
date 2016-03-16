@@ -164,11 +164,13 @@ def p_a_expr(p):
     else: 
         p[0] = ["MATHOP",p[2], p[1], p[3]]
 
-def p_m_expr(p):
+def p_m_expr(p):   #note bitwise and and or are pycifrw extensions
     '''m_expr : u_expr
                | m_expr "*" u_expr
                | m_expr "/" u_expr 
-               | m_expr "^" u_expr '''
+               | m_expr "^" u_expr
+               | m_expr "&" u_expr
+               | m_expr "|" u_expr '''
     if len(p) == 2:
         p[0] = p[1]
     else: 
