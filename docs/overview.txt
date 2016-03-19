@@ -385,7 +385,10 @@ user desires. The layout elements that are picked up from this template are:
 
 1. order (overrides current order of `CifBlock`)
 2. column position of datavalues (only the first row of a loop block is inspected) 
-3. delimiters 
+3. delimiters
+4. If a semicolon-delimited string outside a loop contains 3 or more spaces in a row
+   at the beginning of a line, that
+   datavalue will be wrapped and indented by the same amount on output
 
 Constraints on the template:
 
