@@ -795,6 +795,8 @@ data_TEST_DIC
        self.failUnless(p.master_template[2]['delimiter']=='\n;')
        self.failUnless(p.master_template[11]['column']==11)
        self.failUnless(p.master_template[12]['delimiter']=='"')
+       self.failUnless(p.master_template[2]['reformat']==True)
+       self.failUnless(p.master_template[2]['reformat_indent']==5)
 
    def testTemplateOutputOrder(self):
        """Test that items are output in the correct order"""
@@ -811,7 +813,13 @@ data_TEST_DIC
           'cat only'  category 1
           'whatever'  item 2
        _name.category_id   blahblah
-       _description.text  'whatevers'
+       _description.text  
+;a nice long string that we would like
+to be formatted really nicely with an appropriate indent and so forth. Note
+that the template specifies an indent of 5 characters for this particular
+data item, and we shouldn't have more than two spaces in a row if we want it
+to work properly.
+;
        """
        f = open("temp_test_file.cif","w")
        f.write(test_file)

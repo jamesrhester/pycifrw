@@ -79,6 +79,7 @@ access to loops.
 from urllib import *         # for arbitrary opening
 import re
 import copy
+import textwrap
 # For Python 2.6 or higher compatibility
 try: 
     set
@@ -1393,6 +1394,7 @@ def __init__(self,data = (), maxoutlength=2048, wraplength=80, overwrite=True,
     self.overwrite = overwrite
     self.string_delimiters = ["'",'"',"\n;"]   #universal CIF set
     self.list_delimiter = "  "                 #CIF2 default
+    self.wrapper = textwrap.TextWrapper()
     if isinstance(data,(tuple,list)):
         for item in data:
             self.AddLoopItem(item)
@@ -2205,6 +2207,7 @@ grammar to use.
 <<Format a data value>>
 <<Create a proper ordering>>
 <<Convert value to string>>
+<<Do wrapping>>
 
 @ We adjust the write method to intelligently output lines, taking
 care with CIF/STAR rules for output.  We allow the caller to specify:
@@ -2424,7 +2427,7 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
     delimiter = hints.get('delimiter',None)
     startcol = hints.get('column',-1)
     if isinstance(itemvalue,basestring):  #need to sanitize
-       stringsink.write(self._formatstring(itemvalue,delimiter=delimiter),canbreak = True,startcol=startcol)
+        stringsink.write(self._formatstring(itemvalue,delimiter=delimiter,hints=hints),canbreak = True,startcol=startcol)
     elif isinstance(itemvalue,(list)) or (hasattr(itemvalue,'dtype') and hasattr(itemvalue,'__iter__')): #numpy
        stringsink.set_tab(0)
        stringsink.write('[',canbreak=True,newindent=True,mustbreak=compound,startcol=startcol)
@@ -2540,8 +2543,10 @@ express long lines, and 'pref_protocol' allows use of the CIF2
 text-prefix protocol.
 
 <<Format a string>>=
-def _formatstring(self,instring,delimiter=None,standard='CIF1',indent=0):
+def _formatstring(self,instring,delimiter=None,standard='CIF1',indent=0,hints={}):
     import string
+    if hints.get("reformat",False) and "\n" in instring:
+        instring = "\n"+self.do_wrapping(instring,hints["reformat_indent"])
     allowed_delimiters = set(self.string_delimiters)
     if len(instring)==0: allowed_delimiters.difference_update([None])
     if len(instring) > (self.maxoutlength-2) or '\n' in instring:
@@ -2589,6 +2594,24 @@ def convert_to_string(self,dataname):
     if check_stringiness(v): return v   #already strings
     # TODO...something else
     return v
+
+@  Wrapping a string
+
+If our formatting hints dictionary allows us to reformat a string, *and* the string does
+not contain at least three spaces in a row (implying that it is already formatted), we
+insert appropriate spaces and line feeds.
+
+<<Do wrapping>>=
+def do_wrapping(self,instring,indent=3):
+    """Wrap the provided string"""
+    if "   " in instring:   #already formatted
+        return instring
+    self.wrapper.initial_indent = ' '*indent
+    self.wrapper.subsequent_indent = ' '*indent
+    # split into paragraphs
+    paras = instring.split("\n\n")
+    wrapped_paras = [self.wrapper.fill(p) for p in paras]
+    return "\n".join(wrapped_paras)
 
 @ \subsection{Line folding protocol}
 
@@ -2708,6 +2731,11 @@ formatting_hints table which are then consulted when writing out.
 Note that the order from formatting_hints will override the item_order
 information.
 
+Additionally, if a semicolon-delimited value has a tab or sequence of 2 or
+more spaces after a line ending, it is assumed to be free
+text and the text values will be neatly formatted with the same
+indentation as found after the first line ending in the value.
+
 Constraints on the template:
 (1) There should only ever be one dataname on each line
 (2) loop_  and datablock tokens should appear as the only non-blank 
@@ -2715,7 +2743,7 @@ characters on their lines
 (3) Comments are flagged by a '#' as the first character
 (4) Blank lines are acceptable
 (5) Datavalues should use only alphanumeric characters
-(6) Semicolon-delimited strings are not allowed in loops
+(6) Semicolon-delimited strings are not recognised in loops
 
 <<Input a guide template>>=
 def process_template(template_file):
@@ -2727,6 +2755,7 @@ def process_template(template_file):
     #template_as_lines = [l for l in template_as_lines if l.split()[0] != 'loop_']
     #template_full_lines = dict([(l.split()[0],l) for l in template_as_lines if len(l.split())>0])
     form_hints = []   #ordered array of hint dictionaries
+    find_indent = "^ +"
     for item in template_as_cif.item_order:  #order of input
         if not isinstance(item,int):    #not nested
             hint_dict = {"dataname":item}
@@ -2743,6 +2772,13 @@ def process_template(template_file):
                     hint_dict.update({"column":spec_pos})
                 else:                  #need to put in the carriage return
                     hint_dict.update({"delimiter":"\n;"})
+                    # can we format the text?
+                    text_val = template_as_cif[item]
+                    hint_dict["reformat"] = "\n\t" in text_val or "\n  " in text_val
+                    if hint_dict["reformat"]:   #find the indentation
+                        p = re.search(find_indent,text_val,re.M)
+                        if p.group() is not None:
+                            hint_dict["reformat_indent"]=p.end() - p.start()
                 if start_pos.group('name') != None:
                     name_pos = start_pos.start('name') - start_pos.start(0)
                     hint_dict.update({"name_pos":name_pos})
