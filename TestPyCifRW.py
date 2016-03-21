@@ -835,6 +835,16 @@ to work properly.
        self.assertEqual(g.loops[1][-1],'_enumeration_set.dummy')
        self.assertEqual(g.loops[1][0],'_enumeration_set.state')
        self.assertEqual(g.item_order[-1],'_crazy_dummy_dataname')
+
+   def testStringInput(self):
+        """Test that it works when passed a stringIO object"""
+        import StringIO
+        s = open("cif_template.cif","r").read()
+        ss = StringIO.StringIO(s)
+        p = CifFile.CifFile()
+        p.SetTemplate(ss)
+        self.failUnless(p.master_template[12]['delimiter']=='"')
+
        # TODO: check position in loop packets
        # TODO: check delimiters
 

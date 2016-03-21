@@ -3569,7 +3569,10 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
     to the results of merging the `CifDic` objects in `diclist` according to `mergemode`.  Flag
     `isdic` indicates that `ciffile` is a CIF dictionary meaning that save frames should be
     accessed for validation and that mandatory_category should be interpreted differently for DDL2."""
-    check_file = CifFile(ciffile)
+    if not isinstance(ciffile,CifFile):
+        check_file = CifFile(ciffile)
+    else:
+        check_file = ciffile
     if not dic:
         fulldic = merge_dic(diclist,mergemode)
     else:

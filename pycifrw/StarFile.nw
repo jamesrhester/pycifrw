@@ -349,7 +349,7 @@ def copy(self):
     newcopy.lower_keys = self.lower_keys.copy()
     newcopy.block_input_order = self.block_input_order.copy()
     newcopy.characterset = self.characterset
-    newcopy.master_template = self.master_template.copy()
+    newcopy.SetTemplate(self.master_template.copy())
     newcopy.scoping = self.scoping  #this sets visible keys
     return newcopy
 
@@ -539,6 +539,7 @@ def NewBlock(self,blockname,blockcontents=None,fix=True,parent=None):
            print 'Warning:Parent block %s does not exist for child %s' % (parent,newblockname)  
     self[new_lowerbn].set_grammar(self.grammar)
     self[new_lowerbn].set_characterset(self.characterset)
+    self[new_lowerbn].formatting_hints = self.master_template
     return new_lowerbn  #in case calling routine wants to know
 
 @ Renaming a block.  This is a slightly intricate operation as we have to
@@ -866,13 +867,16 @@ initialising the file.
         if self.standard != 'Dic':
             outstring.write(str(self[block_ref]))
 
-@  Output template.  We process the template file and store the results for use in the
-WriteOut method.
+@  Output template.  We process the template file and immediately set all blocks
+to this value.  New blocks will not see this template, so we store the template
+for application after the blocks are created.
       
 <<Set output template>>=
 def SetTemplate(self,template_file):
         """Use `template_file` as a template for all block output"""
         self.master_template = process_template(template_file)
+        for b in self.dictionary.values():
+            b.formatting_hints = self.master_template
 
 @ \section{StarFile}
 
@@ -2608,6 +2612,8 @@ def do_wrapping(self,instring,indent=3):
         return instring
     self.wrapper.initial_indent = ' '*indent
     self.wrapper.subsequent_indent = ' '*indent
+    # remove leading and trailing space
+    instring = instring.strip()
     # split into paragraphs
     paras = instring.split("\n\n")
     wrapped_paras = [self.wrapper.fill(p) for p in paras]
@@ -2749,7 +2755,11 @@ characters on their lines
 def process_template(template_file):
     """Process a template datafile to formatting instructions"""
     template_as_cif = StarFile(template_file,grammar="2.0").first_block()
-    template_string = open(template_file).read()
+    if isinstance(template_file,basestring):
+        template_string = open(template_file).read()
+    else:   #a StringIO object
+        template_file.seek(0)   #reset
+        template_string = template_file.read()
     #template_as_lines = template_string.split("\n")
     #template_as_lines = [l for l in template_as_lines if len(l)>0 and l[0]!='#']
     #template_as_lines = [l for l in template_as_lines if l.split()[0] != 'loop_']
