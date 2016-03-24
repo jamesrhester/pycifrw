@@ -1,5 +1,10 @@
-Release Notes for PyCIFRW-4.2 
-=============================
+Release Notes for PyCIFRW-4.2.1
+===============================
+
+Changes since 4.2
+=================
+* Improved templating of semicolon-delimited strings
+* Added non-standard hash functions to dREL
 
 Changes since 4.1.1
 ===================
