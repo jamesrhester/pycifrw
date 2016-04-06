@@ -3,6 +3,12 @@ Noweb literate programming file for the DDLm _type.contents type
 specification using Yapps3.
 
 <<TypeContents_syntax>>=
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
 <<Helper functions>>
 %%
 parser TypeParser:

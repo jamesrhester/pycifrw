@@ -345,7 +345,7 @@ class CifRecursionError(Exception):
         self.key_value = key_value
         self.call_stack = call_stack
     def __str__(self):
-        return "Derivation has recursed, %s seen twice (call stack %s)" % (self.key_value,`self.call_stack`)
+        return "Derivation has recursed, %s seen twice (call stack %s)" % (self.key_value,repr(self.call_stack))
 
 
 @ \section {Dictionaries}
@@ -885,7 +885,7 @@ for item_def in dodgy_defs:
          old_parents = self[parent_name].get('_item_linked.parent_name',[])
          oldfamily = zip(old_parents,old_children)
          newfamily = []
-         print('Old parents -> %s' % `old_parents`)
+         print('Old parents -> %s' % repr(old_parents))
          for jj, childname in mychildren:
              alreadythere = filter(lambda a:a[0]==parent_name and a[1] ==childname,oldfamily)
              if len(alreadythere)>0: continue
@@ -900,7 +900,7 @@ for item_def in dodgy_defs:
          del self[parent_name]['_item_linked.parent_name']
          del self[parent_name]['_item_linked.child_name']
          self[parent_name].insert_loop(newloop)
-         print('New parents -> %s' % `self[parent_name]['_item_linked.parent_name']`)
+         print('New parents -> %s' % repr(self[parent_name]['_item_linked.parent_name']))
          # now make a new,smaller list
 	 notmychildren = filter(lambda a:a[0]!=mychildren[0][0],notmychildren)
 
@@ -1045,11 +1045,11 @@ def create_cat_obj_table(self):
                        for a in self.keys() if self[a].get('_definition.scope','Item')=='Item'])
     self.loopable_cats = [a.lower() for a in self.keys() if self[a].get('_definition.class','')=='Loop']
     loopers = [self.ddlm_immediate_children(a) for a in self.loopable_cats]
-    print('Loopable cats:' + `self.loopable_cats`)
-    print('Of atom_type:' + `self.ddlm_immediate_children('atom_type')`)
+    print('Loopable cats:' + repr(self.loopable_cats))
+    print('Of atom_type:' + repr(self.ddlm_immediate_children('atom_type')))
     loop_children = [[b for b in a if b.lower() in self.loopable_cats ] for a in loopers]
     expand_list = dict([(a,b) for a,b in zip(self.loopable_cats,loop_children) if len(b)>0])
-    print("Expansion list:" + `expand_list`)
+    print("Expansion list:" + repr(expand_list))
     extra_table = {}   #for debugging we keep it separate from base_table until the end
     def expand_base_table(parent_cat,child_cats):
         extra_names = []
@@ -1074,7 +1074,7 @@ def create_cat_obj_table(self):
                             self[n].get('_type.purpose','')!='Key']
         return child_names
     [expand_base_table(parent,child) for parent,child in expand_list.items()]
-    print('Expansion cat/obj values: ' + `extra_table`)
+    print('Expansion cat/obj values: ' + repr(extra_table))
     # append repeated ones
     non_repeats = dict([a for a in extra_table.items() if a[0] not in base_table])
     repeats = [a for a in extra_table.keys() if a in base_table]
@@ -1098,7 +1098,7 @@ def create_cat_key_table(self):
             return kk
     for k,v in self.loop_expand_list.items():
         collect_keys(k,v)
-    print('Keys for categories' + `self.cat_key_table`)
+    print('Keys for categories' + repr(self.cat_key_table))
 
 @  For convenience we provide ways of interrogating the semantic tree of categories. Note that if
 we are passed the top-level datablock, the semantic children are the syntactic children.  An additional method finds the 'dangling' definitions, which
@@ -1208,10 +1208,10 @@ def change_category_name(self,oldname,newname):
             self[child_def]['_definition.id']=newid
             self.rename(child_def,newid[1:])  #no underscore at the beginning
     # update categories
-    print(`self.cat_map.values()`)
+    print(repr(self.cat_map.values()))
     oldid = [a[0] for a in self.cat_map.items() if a[1].lower()==oldname.lower()]
     if len(oldid)!=1:
-        raise CifError, 'Unable to find old category name in category map: %s not in %s' % (oldname.lower(),`self.cat_map.items()`)
+        raise CifError, 'Unable to find old category name in category map: %s not in %s' % (oldname.lower(),repr(self.cat_map.items()))
     del self.cat_map[oldid[0]]
     self.cat_map[newname.lower()] = newname
     self.lock()
@@ -1562,7 +1562,7 @@ def get_one_cat(self,source_dict,source_cat,on_dupl,on_miss):
         all_ext_defns = source_dict.keys()
         cat_list = filter(lambda a:source_dict[a].get("_name.category_id","").lower()==source_cat.lower(),
                            all_ext_defns) 
-        print("Items: %s" % `cat_list`)
+        print("Items: %s" % repr(cat_list))
         if this_cat:     # The category block itself is duplicated
             if on_dupl=="Ignore":
                 pass
@@ -2056,7 +2056,7 @@ def validate_exclusion(self,item_name,item_value,whole_block,provisional_items={
    item_name_list.extend(map(lambda a:a.lower(),provisional_items.keys()))
    bad = filter(lambda a:a in item_name_list,alternates)
    if len(bad)>0:
-       print("Bad: %s, alternates %s" % (`bad`,`alternates`))
+       print("Bad: %s, alternates %s" % (repr(bad),repr(alternates)))
        return {"result":False,"bad_items":bad}
    else: return {"result":True}
 
@@ -2095,7 +2095,7 @@ def validate_parent(self,item_name,item_value,whole_block,provisional_items={},g
 	    return {"result":None}
 	else: 
             self.done_parents.append(parent_item)
-            print("Done parents %s" % `self.done_parents`)
+            print("Done parents %s" % repr(self.done_parents))
     # initialise parent/child values
     if isinstance(item_value,basestring):
 	child_values = [item_value]
@@ -2156,7 +2156,7 @@ def validate_child(self,item_name,item_value,whole_block,provisional_items={},gl
 	        return {"result":None}
 	    else: 
                 self.done_children.append(child_item)
-                print("Done children %s" % `self.done_children`)
+                print("Done children %s" % repr(self.done_children))
         if provisional_items.has_key(child_item):
             child_values = provisional_items[child_item][:]
         elif whole_block.has_key(child_item):
@@ -2543,7 +2543,7 @@ def transform_drel(self):
             except:
                 print('Syntax error in method for %s; leaving as is' % derivable)
                 a,b = sys.exc_info()[:2]
-                print((`a`,`b`))
+                print((repr(a),repr(b)))
                 print(traceback.print_tb(sys.exc_info()[-1],None,sys.stdout))
                 # reset the lexer
                 lexer.begin('INITIAL')
@@ -2640,7 +2640,7 @@ def derive_item(self,start_key,cifdata,store_value = False,allow_defaults=True):
         <<Work out default value of dataname>>
     # read it in
     if result is None:   #can't do anything else
-        print('Warning: no way of deriving item %s, allow_defaults is %s' % (key,`allow_defaults`))
+        print('Warning: no way of deriving item %s, allow_defaults is %s' % (key,repr(allow_defaults)))
         raise StarFile.StarDerivationError(start_key)
     <<Adjust value to be appropriate length>>
     # now try to insert the new information into the right place
@@ -2709,14 +2709,14 @@ def store_new_looped_value(self,key,cifdata,result,default_result):
       # so out_result now contains a value suitable for storage
       cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
       has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
-      print('Adding {}, found pre-existing names: '.format(key) + `has_cat_names`)
+      print('Adding {}, found pre-existing names: '.format(key) + repr(has_cat_names))
       if len(has_cat_names)>0:   #this category already exists
           cifdata[key] = out_result      #lengths must match or else!!
           cifdata.AddLoopName(has_cat_names[0],key)
       else:
           cifdata[key] = out_result
           cifdata.CreateLoop([key])
-      print('Loop info:' + `cifdata.loops`)
+      print('Loop info:' + repr(cifdata.loops))
       return out_result
 
 def store_new_unlooped_value(self,key,cifdata,result):
@@ -2747,7 +2747,7 @@ def store_new_cat_values(self,cifdata,result,the_category):
     if len(double_names)>0:
         already_present = [a for a in self.names_in_cat(the_category) if cifdata.has_key(a)]
         if set(already_present) != set(result.keys()):
-            print("Category %s not updated, mismatched datanames: %s" % (the_category, `set(already_present)^set(result.keys())`))
+            print("Category %s not updated, mismatched datanames: %s" % (the_category, repr(set(already_present)^set(result.keys()))))
             return
         #check key values
         old_keys = set(cifdata[the_key])
@@ -2762,9 +2762,9 @@ def store_new_cat_values(self,cifdata,result,the_category):
         try:
             self.store_new_looped_value(one_name,cifdata,one_value,False)
         except StarFile.StarError:
-            print('%s: Not replacing %s with calculated %s' % (one_name,`cifdata[one_name]`,`one_value`))
+            print('%s: Not replacing %s with calculated %s' % (one_name,repr(cifdata[one_name]),repr(one_value)))
     #put the key as the first item
-    print('Fixing item order for {}'.format(`the_key`))
+    print('Fixing item order for {}'.format(repr(the_key)))
     for one_key in the_key:  #should only be one
         cifdata.ChangeItemOrder(one_key,0)
                         
@@ -2830,7 +2830,7 @@ if self[the_category].has_key('_category_construct_local.type'):
 # Trying a pull-back when the category is partially populated
 # will not work, hence we test that cat_result has no keys
 if len(pulled_to_cats)>0 and len(cat_result)==0:
-    print("**Now populating category %s from pulled-back category %s" % (the_category,`pulled_to_cats`))
+    print("**Now populating category %s from pulled-back category %s" % (the_category,repr(pulled_to_cats)))
     try:
         cat_result = self.push_from_pullback(the_category,pulled_to_cats,cifdata,store_value=True)
     except (CifRecursionError,StarFile.StarDerivationError):
@@ -2838,7 +2838,7 @@ if len(pulled_to_cats)>0 and len(cat_result)==0:
 if self[the_category].has_key('_method.py_expression') and not cat_result.has_key(key):
     print("**Now applying category method for %s in search of %s**" % (the_category,key))
     cat_result = self.derive_item(the_category,cifdata,store_value=True)
-print("**Obtained for %s " % the_category + `cat_result`)        
+print("**Obtained for %s " % the_category + repr(cat_result))        
 # do we now have our value?
 if cat_result.has_key(key):
     return cat_result[key]
@@ -2925,7 +2925,7 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
             else:
                 for k in extra_result.keys():
                     if result.has_key(k):
-                        print('Updating %s: was %s' % (k,`result[k]`))
+                        print('Updating %s: was %s' % (k,repr(result[k])))
                         result[k].extend(extra_result[k])
         else:
             extra_result = self.duplicate_datanames(cifdata,sc,target_category,skip_names=new_ids)
@@ -2933,7 +2933,7 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
                 result[target_key].extend(cifdata[source_ids[0]])
                 for k in extra_result.keys():
                     if result.has_key(k):
-                        print('Reverse filter: Updating %s: was %s' % (k,`result[k]`))
+                        print('Reverse filter: Updating %s: was %s' % (k,repr(result[k])))
                         result[k].extend(extra_result[k])
                     else:
                         result[k]=extra_result[k]
@@ -2961,9 +2961,9 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
     # check for sanity - all dataname lengths must be identical
     datalen = len(set([len(a) for a in result.values()]))
     if datalen != 1:
-        raise AssertionError,'Failed to construct equal-length category items,'+ `result`
+        raise AssertionError,'Failed to construct equal-length category items,'+ repr(result)
     if store_value:
-        print('Now storing ' + `result`)
+        print('Now storing ' + repr(result))
         self.store_new_cat_values(cifdata,result,target_category)
     return result
 
@@ -2975,9 +2975,9 @@ def duplicate_datanames(self,cifdata,from_category,to_category,key_vals=None,ski
     can_project = s_names_in_cat & t_names_in_cat
     can_project -= set(skip_names)  #already dealt with
     source_key = self[from_category]['_category.key_id']
-    print('Source dataname set: ' + `s_names_in_cat`)
-    print('Target dataname set: ' + `t_names_in_cat`)
-    print('Projecting through following datanames from %s to %s' % (from_category,to_category) + `can_project`)
+    print('Source dataname set: ' + repr(s_names_in_cat))
+    print('Target dataname set: ' + repr(t_names_in_cat))
+    print('Projecting through following datanames from %s to %s' % (from_category,to_category) + repr(can_project))
     for project_name in can_project:
         full_from_name = self.cat_obj_lookup_table[(from_category.lower(),project_name.lower())][0]
         full_to_name = self.cat_obj_lookup_table[(to_category.lower(),project_name.lower())][0]
@@ -3023,7 +3023,7 @@ if len(found_it)>0:
     return corrected_type
 # now do the reverse check - any alternative form
 alias_name = [a for a in self.alias_table.items() if key in a[1]]
-print('Aliases for %s: %s' % (key,`alias_name`))
+print('Aliases for %s: %s' % (key,repr(alias_name)))
 if len(alias_name)==1:
     key = alias_name[0][0]   #actual definition name
     if cifdata.has_key(key): return self.change_type(key,cifdata[key])
@@ -3031,7 +3031,7 @@ if len(alias_name)==1:
     if len(found_it)>0:
         return self.change_type(key,cifdata[found_it[0]])
 elif len(alias_name)>1:
-    raise CifError, 'Dictionary error: dataname alias appears in different definitions: ' + `alias_name`
+    raise CifError, 'Dictionary error: dataname alias appears in different definitions: ' + repr(alias_name)
 
 @ Using the defaults system. We also check out any default values
 which we could return in case of error.  Note that ddlm adds the
@@ -3067,7 +3067,7 @@ elif def_index_val:            #derive a default value
         result = self[key]["_enumeration_default.value"][keypos]
         default_result = True   #flag that it must be extended
     result = self.change_type(key,result)
-    print("Indexed on %s to get %s for %s" % (def_index_val,`result`,`val_to_index`))
+    print("Indexed on %s to get %s for %s" % (def_index_val,repr(result),repr(val_to_index)))
 
 @  Generating keys.  Keys are a slighlty special case, because on the one
 hand they can be any arbitrary unique string, but on the other hand they are crucial
@@ -3206,7 +3206,7 @@ def get_full_child_list(self):
         unrooted = self.ddlm_danglers()
         double_names =  set(unrooted).intersection(set(all_names))
         if len(double_names)>0:
-            raise CifError,'Names are children of internal and external categories:%s' % `double_names`
+            raise CifError,'Names are children of internal and external categories:%s' % repr(double_names)
         remaining = unrooted[:]
         for no_root in unrooted:
             if self[no_root].get('_definition.scope','Item')=='Category':
@@ -3217,7 +3217,7 @@ def get_full_child_list(self):
                 [remaining.remove(n) for n in these_children]
         for r in remaining:   #simple addition to some category
                 all_names += [r]
-        print('Final block order: ' + `all_names`)
+        print('Final block order: ' + repr(all_names))
         return all_names
     raise ValueError, 'Dictionary contains no/multiple Head categories, please print as plain CIF instead'
 
@@ -3421,7 +3421,7 @@ def AddItem(self,key,value,**kwargs):
 def report_if_invalid(self,valid,bad_list,data_name):
     if not valid:
         error_string = reduce(lambda a,b: a + "," + b[0], bad_list, "") 
-        error_string = `data_name` + " fails following validity checks: "  + error_string
+        error_string = repr(data_name) + " fails following validity checks: "  + error_string
         raise ValidCifError( error_string)
 
 def __delitem__(self,key):
@@ -3631,7 +3631,7 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
            block_scope = 'Datablock'
         no_matches[block] = [a for a in check_file[block].keys() if not fulldic.has_key(a)]
         # remove non-matching items
-        print("Not matched: " + `no_matches[block]`)
+        print("Not matched: " + repr(no_matches[block]))
         for nogood in no_matches[block]:
              del check_file[block][nogood]
         print("Validating block %s, scope %s" % (block,block_scope))
@@ -3750,14 +3750,14 @@ def error_report(error_name,error_explanation,error_dics):
    for error in error_dics:
       bodystring += "\n%-32s" % error["item_name"]
       if error.has_key("bad_values"):
-          out_vals = map(lambda a:`a`[:50],error["bad_values"])
+          out_vals = map(lambda a:repr(a)[:50],error["bad_values"])
           bodystring += "%-20s" % out_vals 
       if error.has_key("bad_items"):
-          bodystring += "%-20s" % `error["bad_items"]`
+          bodystring += "%-20s" % repr(error["bad_items"])
       if error.has_key("child"):
-          bodystring += "%-20s" % `error["child"]`
+          bodystring += "%-20s" % repr(error["child"])
       if error.has_key("parent"):
-          bodystring += "%-20s" % `error["parent"]`
+          bodystring += "%-20s" % repr(error["parent"])
    return retstring + headstring + bodystring 
 
 #  This lays out an HTML error report
@@ -4057,11 +4057,11 @@ def track_recursion(in_this_func):
             raise CifRecursionError, (key_arg,wrapper.called_list[:])    #failure
         if len(wrapper.called_list) == 0:   #first time
             wrapper.stored_use_defaults = kwargs.get("allow_defaults",False)
-            print('All recursive calls will set allow_defaults to ' + `wrapper.stored_use_defaults`)
+            print('All recursive calls will set allow_defaults to ' + repr(wrapper.stored_use_defaults))
         else:
             kwargs["allow_defaults"] = wrapper.stored_use_defaults
         wrapper.called_list.append(key_arg)
-        print('Recursion watch: call stack: ' + `wrapper.called_list`)
+        print('Recursion watch: call stack: ' + repr(wrapper.called_list))
         try:
             result = in_this_func(*args,**kwargs)
         except StarFile.StarDerivationError,s:

@@ -19,7 +19,13 @@ and CIF2/STAR2 differ in their treatment of unquoted data values beginning
 with brackets.
 
 <<1.0_syntax>>=
-from StarFile import StarBlock,StarFile
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
+from .StarFile import StarBlock,StarFile
 from cStringIO import StringIO
 <<Helper functions>>
 %%
@@ -29,7 +35,13 @@ parser StarParser:
 %%
 
 <<1.1_syntax>>=
-from StarFile import StarBlock,StarFile
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
+from .StarFile import StarBlock,StarFile
 from cStringIO import StringIO
 <<Helper functions>>
 %%
@@ -40,7 +52,13 @@ parser StarParser:
 @ The following two recipes produce CIF2 and STAR2 syntax.
 
 <<CIF2_syntax>>=
-from StarFile import StarBlock,StarFile,StarList,StarDict
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
+from .StarFile import StarBlock,StarFile,StarList,StarDict
 from StringIO import StringIO  #must be unicode-aware
 <<Helper functions>>
 %%
@@ -50,7 +68,13 @@ parser StarParser:
 %%
 @ The STAR2 syntax
 <<STAR2_syntax>>=
-from StarFile import StarBlock,StarFile,StarList,StarDict
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
+from .StarFile import StarBlock,StarFile,StarList,StarDict
 from StringIO import StringIO
 <<Helper functions>>
 %%
@@ -75,14 +99,14 @@ getting rid of the inverted commas.
 lastval = ''
 def monitor(location,value):
     global lastval
-    #print 'At %s: %s' % (location,`value`)
-    lastval = `value`
+    #print 'At %s: %s' % (location,repr(value))
+    lastval = repr(value)
     return value
 
 # Strip extras gets rid of leading and trailing whitespace, and
 # semicolons.
 def stripextras(value):
-     from StarFile import remove_line_folding, remove_line_prefix
+     from .StarFile import remove_line_folding, remove_line_prefix
      # we get rid of semicolons and leading/trailing terminators etc.
      import re
      jj = re.compile("[\n\r\f \t\v]*")
@@ -133,17 +157,17 @@ def striptriple(value):
 def makeloop(target_block,loopdata):
     loop_seq,itemlists = loopdata
     if itemlists[-1] == []: itemlists.pop(-1)
-    # print 'Making loop with %s' % `itemlists`
+    # print 'Making loop with %s' % repr(itemlists)
     step_size = len(loop_seq)
     for col_no in range(step_size):
        target_block.AddItem(loop_seq[col_no], itemlists[col_no::step_size],precheck=True)
-    # print 'Makeloop constructed %s' % `loopstructure`
+    # print 'Makeloop constructed %s' % repr(loopstructure)
     # now construct the loop
     try:
         target_block.CreateLoop(loop_seq)  #will raise ValueError on problem
     except ValueError:
-        error_string =  'Incorrect number of loop values for loop containing %s' % `loop_seq`
-        print >>sys.stderr, error_string
+        error_string =  'Incorrect number of loop values for loop containing %s' % repr(loop_seq)
+        print(error_string, file=sys.stderr)
         raise ValueError, error_string
 
 # return an object with the appropriate amount of nesting
@@ -172,7 +196,7 @@ def make_empty(nestlevel):
 def cif_update(old_dict,new_dict,loops):
     old_keys = map(lambda a:a.lower(),old_dict.keys())
     if new_dict != {}:    # otherwise we have a new loop
-        #print 'Comparing %s to %s' % (`old_keys`,`new_dict.keys()`)
+        #print 'Comparing %s to %s' % (repr(old_keys),repr(new_dict.keys()))
         for new_key in new_dict.keys():
             if new_key.lower() in old_keys:
 	        raise CifError, "Duplicate dataname or blockname %s in input file" % new_key
