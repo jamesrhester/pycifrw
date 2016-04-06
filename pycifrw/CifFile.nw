@@ -71,14 +71,20 @@ We build upon the objects defined in the StarFile class, by imposing a few
 extra restrictions where necessary. 
 
 <<*>>=
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
 <<Copyright statement>>
 
 import re,sys
-import StarFile
-from StarFile import StarList  #put in global scope for exec statement
+from . import StarFile
+from .StarFile import StarList  #put in global scope for exec statement
 try:
     import numpy                   #put in global scope for exec statement
-    from drel import drel_runtime  #put in global scope for exec statement
+    from .drel import drel_runtime  #put in global scope for exec statement
 except ImportError:
     pass                       #will fail when using dictionaries for calcs
 from copy import copy          #must be in global scope for exec statement
@@ -452,7 +458,7 @@ def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
     self.standard = 'Dic'    #for correct output order
     self.scoping = 'dictionary'
     (self.dicname,self.diclang) = self.dic_determine()
-    print '%s is a %s dictionary' % (self.dicname,self.diclang)
+    print('%s is a %s dictionary' % (self.dicname,self.diclang))
     self.scopes_mandatory = {}
     self.scopes_naughty = {}
     # rename and expand out definitions using "_name" in DDL dictionaries
@@ -470,7 +476,7 @@ def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
         self.create_cat_obj_table()
         self.create_cat_key_table()
         if do_dREL:
-            print "Doing full dictionary initialisation" 
+            print('Doing full dictionary initialisation') 
             self.initialise_drel()
     self.add_category_info()
     # initialise type information
@@ -498,6 +504,7 @@ def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
         self.validate_mandatory_category]
       self.global_remove_validation_funs = [
         self.validate_remove_parent_child] # removal is quicker with special checks
+      self.dic_validation_funs = []
     elif self.diclang == 'DDLm':
         self.item_validation_funs = [
             self.validate_item_enum,
@@ -514,6 +521,7 @@ def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
             self.check_prohibited_items
             ]
         self.global_remove_validation_funs = []
+        self.dic_validation_funs = []
     self.optimize = False        # default value
     self.done_parents = []
     self.done_children = []
@@ -569,7 +577,7 @@ def dic_determine(self):
 	name = self[self.master_key]["_dictionary.title"]
 	version = self[self.master_key]["_dictionary.version"]
 	if name != self.master_key:
-	    print "Warning: DDL2 blockname %s not equal to dictionary name %s" % (self.master_key,name)
+	    print("Warning: DDL2 blockname %s not equal to dictionary name %s" % (self.master_key,name))
         if self[self.master_key].has_key("_dictionary.class"):   #DDLm
             self.enum_spec = '_enumeration_set.state'
             self.key_spec = '_category.key_id'
@@ -831,7 +839,7 @@ target_defs = filter(lambda a:self[a].has_key('_item_linked.child_name') or \
 # now dodgy_defs contains all definition blocks with more than one child/parent link
 for item_def in dodgy_defs: self.create_pcloop(item_def)           #regularise appearance
 for item_def in dodgy_defs:
-      print 'Processing %s' % item_def
+      print('Processing %s' % item_def)
       thisdef = self[item_def]
       child_list = thisdef['_item_linked.child_name']
       parents = thisdef['_item_linked.parent_name']
@@ -842,14 +850,14 @@ for item_def in dodgy_defs:
       while len(notmychildren):
          # get all children of first entry
          mychildren = filter(lambda a:a[0]==notmychildren[0][0],family)
-         print "Parent %s: %d children" % (notmychildren[0][0],len(mychildren))
+         print("Parent %s: %d children" % (notmychildren[0][0],len(mychildren)))
          for parent,child in mychildren:   #parent is the same for all
 	          # Make sure that we simply add in the new entry for the child, not replace it,
 		  # otherwise we might spoil the child entry loop structure
 		  try:
 		      childloop = self[child].GetLoop('_item_linked.parent_name')
 		  except KeyError:
-                      print 'Creating new parent entry %s for definition %s' % (parent,child)
+                      print('Creating new parent entry %s for definition %s' % (parent,child))
 	              self[child]['_item_linked.parent_name'] = [parent]
                       childloop = self[child].GetLoop('_item_linked.parent_name')
                       childloop.AddLoopItem(('_item_linked.child_name',[child]))
@@ -860,9 +868,9 @@ for item_def in dodgy_defs:
 		      pars = [a for a in childloop if getattr(a,'_item_linked.child_name','')==child]
 		      goodpars = [a for a in pars if getattr(a,'_item_linked.parent_name','')==parent]
 		      if len(goodpars)>0:   #no need to add it
-                          print 'Skipping duplicated parent - child entry in %s: %s - %s' % (child,parent,child)
+                          print('Skipping duplicated parent - child entry in %s: %s - %s' % (child,parent,child))
 			  continue
-                      print 'Adding %s to %s entry' % (parent,child)
+                      print('Adding %s to %s entry' % (parent,child))
 		      newpacket = childloop.GetPacket(0)   #essentially a copy, I hope
 		      setattr(newpacket,'_item_linked.child_name',child)
 		      setattr(newpacket,'_item_linked.parent_name',parent)
@@ -877,7 +885,7 @@ for item_def in dodgy_defs:
          old_parents = self[parent_name].get('_item_linked.parent_name',[])
          oldfamily = zip(old_parents,old_children)
          newfamily = []
-         print 'Old parents -> %s' % `old_parents`
+         print('Old parents -> %s' % `old_parents`)
          for jj, childname in mychildren:
              alreadythere = filter(lambda a:a[0]==parent_name and a[1] ==childname,oldfamily)
              if len(alreadythere)>0: continue
@@ -892,7 +900,7 @@ for item_def in dodgy_defs:
          del self[parent_name]['_item_linked.parent_name']
          del self[parent_name]['_item_linked.child_name']
          self[parent_name].insert_loop(newloop)
-         print 'New parents -> %s' % `self[parent_name]['_item_linked.parent_name']`
+         print('New parents -> %s' % `self[parent_name]['_item_linked.parent_name']`)
          # now make a new,smaller list
 	 notmychildren = filter(lambda a:a[0]!=mychildren[0][0],notmychildren)
 
@@ -1037,11 +1045,11 @@ def create_cat_obj_table(self):
                        for a in self.keys() if self[a].get('_definition.scope','Item')=='Item'])
     self.loopable_cats = [a.lower() for a in self.keys() if self[a].get('_definition.class','')=='Loop']
     loopers = [self.ddlm_immediate_children(a) for a in self.loopable_cats]
-    print 'Loopable cats:' + `self.loopable_cats`
-    print 'Of atom_type:' + `self.ddlm_immediate_children('atom_type')`
+    print('Loopable cats:' + `self.loopable_cats`)
+    print('Of atom_type:' + `self.ddlm_immediate_children('atom_type')`)
     loop_children = [[b for b in a if b.lower() in self.loopable_cats ] for a in loopers]
     expand_list = dict([(a,b) for a,b in zip(self.loopable_cats,loop_children) if len(b)>0])
-    print "Expansion list:" + `expand_list`
+    print("Expansion list:" + `expand_list`)
     extra_table = {}   #for debugging we keep it separate from base_table until the end
     def expand_base_table(parent_cat,child_cats):
         extra_names = []
@@ -1066,7 +1074,7 @@ def create_cat_obj_table(self):
                             self[n].get('_type.purpose','')!='Key']
         return child_names
     [expand_base_table(parent,child) for parent,child in expand_list.items()]
-    print 'Expansion cat/obj values: ' + `extra_table`
+    print('Expansion cat/obj values: ' + `extra_table`)
     # append repeated ones
     non_repeats = dict([a for a in extra_table.items() if a[0] not in base_table])
     repeats = [a for a in extra_table.keys() if a in base_table]
@@ -1090,7 +1098,7 @@ def create_cat_key_table(self):
             return kk
     for k,v in self.loop_expand_list.items():
         collect_keys(k,v)
-    print 'Keys for categories' + `self.cat_key_table`
+    print('Keys for categories' + `self.cat_key_table`)
 
 @  For convenience we provide ways of interrogating the semantic tree of categories. Note that if
 we are passed the top-level datablock, the semantic children are the syntactic children.  An additional method finds the 'dangling' definitions, which
@@ -1200,7 +1208,7 @@ def change_category_name(self,oldname,newname):
             self[child_def]['_definition.id']=newid
             self.rename(child_def,newid[1:])  #no underscore at the beginning
     # update categories
-    print `self.cat_map.values()`
+    print(`self.cat_map.values()`)
     oldid = [a[0] for a in self.cat_map.items() if a[1].lower()==oldname.lower()]
     if len(oldid)!=1:
         raise CifError, 'Unable to find old category name in category map: %s not in %s' % (oldname.lower(),`self.cat_map.items()`)
@@ -1216,10 +1224,10 @@ def change_category(self,itemname,catname):
     """Move itemname into catname, return new handle"""
     defid = self[itemname]
     if defid['_name.category_id'].lower()==catname.lower():
-        print 'Already in category, no change'
+        print('Already in category, no change')
         return itemname
     if catname not in self:    #don't have it
-        print 'No such category %s' % catname
+        print('No such category %s' % catname)
         return itemname
     self.unlock()
     objid = defid['_name.object_id']
@@ -1300,7 +1308,7 @@ def add_definition(self,itemname,catparent,def_text='PLEASE DEFINE ME',allow_dan
     if not allow_dangler and (catparent not in self or self[catparent]['_definition.scope']!='Category'):
         raise CifError, 'No category %s in dictionary' % catparent
     fullname = '_'+catparent.lower()+'.'+objname
-    print 'New name: %s' % fullname
+    print('New name: %s' % fullname)
     syntactic_root = self.get_roots()[0][0]
     realname = self.NewBlock(fullname, fix=False, parent=syntactic_root)
     self[realname]['_definition.id']=fullname
@@ -1439,6 +1447,8 @@ DDLm relationships.  We add all blocks as the children of the top-level dictiona
 and then in the case of a new 'Head' block we simply reparent the immediate semantic
 children of the old 'Head' block. 
 
+We assume that 'Contents' and 'Full' modes are not mixed in a single definition. 
+
 <<Perform DDLm imports>>=
 <<Master import routine>>
 
@@ -1447,7 +1457,8 @@ def ddlm_import(self,import_mode='All'):
     import urllib
     import_frames = [(a,self[a]['_import.get']) for a in self.keys() if self[a].has_key('_import.get')]
     if import_mode is not 'All':
-       import_frames = [b for b in import_frames if b[1].get('mode','Contents')==import_mode]
+       #following line assumes that 'Contents' and 'Full' are not mixed, so we can use the first import to determine the mode
+       import_frames = [b for b in import_frames if b[1][0].get('mode','Contents')==import_mode]
     #resolve all references
     for parent_block,import_list in import_frames:
       for import_ref in import_list:
@@ -1456,7 +1467,7 @@ def ddlm_import(self,import_mode='All'):
         if full_uri not in self.template_cache:
             dic_as_cif = CifFile(urllib.urlopen(full_uri),grammar=self.grammar)
             self.template_cache[full_uri] = CifDic(dic_as_cif,do_minimum=True)  #this will recurse internal imports
-            print 'Added %s to cached dictionaries' % full_uri
+            print('Added %s to cached dictionaries' % full_uri)
         import_from = self.template_cache[full_uri]
         dupl = import_ref.get('dupl','Exit') 
         miss = import_ref.get('miss','Exit')
@@ -1490,8 +1501,8 @@ def ddlm_import(self,import_mode='All'):
                   child_frames.remove(from_cat_head)
             child_frames = import_from.makebc(child_frames)
             self.merge_fast(child_frames,parent=syntactic_head)      #
-            print 'Syntactic merge of %s (%d defs) in %s mode, now have %d defs' % (target_key,len(child_frames),
-               mode,len(self))
+            print('Syntactic merge of %s (%d defs) in %s mode, now have %d defs' % (target_key,len(child_frames),
+               mode,len(self)))
             # Now the semantic merge
             merging_cat = self[parent_block]['_name.object_id']      #new parent
             if head_to_head:
@@ -1503,12 +1514,12 @@ def ddlm_import(self,import_mode='All'):
                     self[f].overwrite = False
                 # remove the old head
                 del self[from_cat_head]
-                print 'Semantic merge: %d defs reparented from %s to %s' % (len(child_frames),from_cat_head,merging_cat)
+                print('Semantic merge: %d defs reparented from %s to %s' % (len(child_frames),from_cat_head,merging_cat))
             else:  #imported category is only child
                 from_frame = import_from[target_key]['_definition.id'] #so we can find it
                 child_frame = [d for d in self.keys() if self[d]['_definition.id']==from_frame][0]
                 self[child_frame]['_name.category_id'] = merging_cat
-                print 'Semantic merge: category for %s : now %s' % (from_frame,merging_cat)
+                print('Semantic merge: category for %s : now %s' % (from_frame,merging_cat))
         # it will never happen again... 
         del self[parent_block]["_import.get"]
                 
@@ -1525,7 +1536,7 @@ the purposes of merging (later we may want to keep some audit information).
 
 <<Add another DDLM dictionary>>=
 def get_whole_dict(self,source_dict,on_dupl,on_miss):
-    print "Cat_map: `%s`" % source_dict.cat_map.values()
+    print("Cat_map: `%s`" % source_dict.cat_map.values())
     for source_cat in source_dict.cat_map.values():
         self.get_one_cat(source_dict,source_cat,on_dupl,on_miss)
    
@@ -1541,7 +1552,7 @@ it or die a horrible death.
 def get_one_cat(self,source_dict,source_cat,on_dupl,on_miss):
     ext_cat = source_dict.get(source_cat,"")
     this_cat = self.get(source_cat,"")
-    print "Adding category %s" % source_cat
+    print("Adding category %s" % source_cat)
     if not ext_cat:
         if on_miss == "Ignore":
            pass
@@ -1551,7 +1562,7 @@ def get_one_cat(self,source_dict,source_cat,on_dupl,on_miss):
         all_ext_defns = source_dict.keys()
         cat_list = filter(lambda a:source_dict[a].get("_name.category_id","").lower()==source_cat.lower(),
                            all_ext_defns) 
-        print "Items: %s" % `cat_list`
+        print("Items: %s" % `cat_list`)
         if this_cat:     # The category block itself is duplicated
             if on_dupl=="Ignore":
                 pass
@@ -1572,7 +1583,7 @@ def add_one_defn(self,source_dict,cat_defn,on_dupl):
                raise CifError, "Duplicate definition %s" % cat_defn
        else: self[cat_defn] = source_dict[cat_defn]
     else: self[cat_defn] = source_dict[cat_defn]
-    print "    "+cat_defn
+    print("    "+cat_defn)
     
 @ This actually follows the children of the category down.  We get a list of
 child categories and add them one by one recursively.
@@ -1594,7 +1605,7 @@ def import_attributes(self,mykey,source_dict,source_def,on_dupl,on_miss):
             raise CifError, 'Missing definition for import %s' % source_def
         else: return          #nothing else to do
     # now do the import
-    print 'Adding attributes from %s to %s' % (source_def,mykey)
+    print('Adding attributes from %s to %s' % (source_def,mykey))
     self[mykey].merge(source_dict[source_def],mode='replace',match_att= \
           ['_definition.id','_name.category_id','_name.object_id'])
 
@@ -1604,7 +1615,7 @@ def import_loop(self,mykey,source_dict,source_def,loop_name,on_miss):
         if on_miss == 'Exit':
             raise CifError, 'Missing definition for import %s' % source_def
         else: return          #nothing else to do
-    print 'Adding %s attributes from %s to %s' % (loop_name,source_def,mykey)
+    print('Adding %s attributes from %s to %s' % (loop_name,source_def,mykey))
     state_loop = source_dict[source_def].GetLoop(loop_name)
     self[mykey].insert_loop(state_loop) 
    
@@ -1631,6 +1642,10 @@ def run_block_validation(self,whole_block,block_scope='Item'):
     results = [(f.__name__,f(whole_block)) for f in self.block_validation_funs]
     # fix up the return values
     return {"whole_block":results}
+
+def run_dic_validation(self,one_def,whole_dict):
+    """Run tests that require access to all definition blocks"""
+    results = [(f.__name__,f(one_def,whole_dict)) for f in self.dic_validation_funs]
 
 @ Optimization: the dictionary validation routines normally retain no history
 of what has been checked, as they are executed on a per-item basis.  This
@@ -2041,7 +2056,7 @@ def validate_exclusion(self,item_name,item_value,whole_block,provisional_items={
    item_name_list.extend(map(lambda a:a.lower(),provisional_items.keys()))
    bad = filter(lambda a:a in item_name_list,alternates)
    if len(bad)>0:
-       print "Bad: %s, alternates %s" % (`bad`,`alternates`)
+       print("Bad: %s, alternates %s" % (`bad`,`alternates`))
        return {"result":False,"bad_items":bad}
    else: return {"result":True}
 
@@ -2080,7 +2095,7 @@ def validate_parent(self,item_name,item_value,whole_block,provisional_items={},g
 	    return {"result":None}
 	else: 
             self.done_parents.append(parent_item)
-            print "Done parents %s" % `self.done_parents`
+            print("Done parents %s" % `self.done_parents`)
     # initialise parent/child values
     if isinstance(item_value,basestring):
 	child_values = [item_value]
@@ -2141,7 +2156,7 @@ def validate_child(self,item_name,item_value,whole_block,provisional_items={},gl
 	        return {"result":None}
 	    else: 
                 self.done_children.append(child_item)
-                print "Done children %s" % `self.done_children`
+                print("Done children %s" % `self.done_children`)
         if provisional_items.has_key(child_item):
             child_values = provisional_items[child_item][:]
         elif whole_block.has_key(child_item):
@@ -2229,7 +2244,7 @@ def validate_uniqueness(self,item_name,item_value,whole_block,provisional_items=
                                                               globals={}):
     category = self[item_name].get(self.cat_spec)
     if category == None:
-	print "No category found for %s" % item_name
+	print("No category found for %s" % item_name)
 	return {"result":None}
     # print "Category %s for item %s" % (`category`,item_name)
     catentry = self.cat_map[category]
@@ -2394,6 +2409,11 @@ def check_prohibited_items(self,whole_block,default_scope='Item'):
         return {"result":False,"bad_items":present}
 
 
+@ Dictionary validation
+
+The validation functions presented above operate on single items or single
+blocks.  Complete dictionaries however involve interactions between multiple
+definitions: for example, a dataname defined as a key 
 @ Preparing our type expressions
 
 In DDL2 dictionaries our type expressions are given in the main
@@ -2486,8 +2506,8 @@ statement is the _enumeration.default specified in ddl.dic.
 
 <<Transform drel to python>>=
 def transform_drel(self):
-    from drel import drel_ast_yacc
-    from drel import py_from_ast
+    from .drel import drel_ast_yacc
+    from .drel import py_from_ast
     import traceback
     parser = drel_ast_yacc.parser
     lexer = drel_ast_yacc.lexer
@@ -2505,7 +2525,7 @@ def transform_drel(self):
         target_id = derivable
         # reset the list of visible names for parser
         special_ids = [dict(map(None,self.keys(),self.keys()))]
-        print "Target id: %s" % derivable
+        print("Target id: %s" % derivable)
         drel_exprs = self[derivable]["_method.expression"]
         drel_purposes = self[derivable]["_method.purpose"]
         all_methods = []
@@ -2521,10 +2541,10 @@ def transform_drel(self):
             try:
                 meth_ast = parser.parse(drel_expr+"\n",lexer=lexer)
             except:
-                print 'Syntax error in method for %s; leaving as is' % derivable
+                print('Syntax error in method for %s; leaving as is' % derivable)
                 a,b = sys.exc_info()[:2]
-                print `a`,`b`
-                print traceback.print_tb(sys.exc_info()[-1],None,sys.stdout)
+                print((`a`,`b`))
+                print(traceback.print_tb(sys.exc_info()[-1],None,sys.stdout))
                 # reset the lexer
                 lexer.begin('INITIAL')
                 continue
@@ -2550,8 +2570,8 @@ we convert the input text as required.
 
 <<Store dREL functions>>=
 def add_drel_funcs(self):
-    from drel import drel_ast_yacc
-    from drel import py_from_ast
+    from .drel import drel_ast_yacc
+    from .drel import py_from_ast
     funclist = [a for a in self.keys() if self[a].get("_name.category_id","")=='function']
     funcnames = [(self[a]["_name.object_id"],
                   getattr(self[a].GetKeyedPacket("_method.purpose","Evaluation"),"_method.expression")) for a in funclist]
@@ -2620,7 +2640,7 @@ def derive_item(self,start_key,cifdata,store_value = False,allow_defaults=True):
         <<Work out default value of dataname>>
     # read it in
     if result is None:   #can't do anything else
-        print 'Warning: no way of deriving item %s, allow_defaults is %s' % (key,`allow_defaults`)
+        print('Warning: no way of deriving item %s, allow_defaults is %s' % (key,`allow_defaults`))
         raise StarFile.StarDerivationError(start_key)
     <<Adjust value to be appropriate length>>
     # now try to insert the new information into the right place
@@ -2650,7 +2670,7 @@ if self[the_category].get('_definition.class','Set')=='Loop':
             out_result = [result]*loop_len
             result = out_result
     else:   #nothing exists in this category, we can't store this at all
-        print 'Resetting result %s for %s to null list as category is empty' % (key,result)
+        print('Resetting result %s for %s to null list as category is empty' % (key,result))
         result = []
                         
 @ Storing a dREL-derived value back into our CifFile.  The dREL value (or potentially
@@ -2689,14 +2709,14 @@ def store_new_looped_value(self,key,cifdata,result,default_result):
       # so out_result now contains a value suitable for storage
       cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
       has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
-      print 'Adding {}, found pre-existing names: '.format(key) + `has_cat_names`
+      print('Adding {}, found pre-existing names: '.format(key) + `has_cat_names`)
       if len(has_cat_names)>0:   #this category already exists
           cifdata[key] = out_result      #lengths must match or else!!
           cifdata.AddLoopName(has_cat_names[0],key)
       else:
           cifdata[key] = out_result
           cifdata.CreateLoop([key])
-      print 'Loop info:' + `cifdata.loops`
+      print('Loop info:' + `cifdata.loops`)
       return out_result
 
 def store_new_unlooped_value(self,key,cifdata,result):
@@ -2727,13 +2747,13 @@ def store_new_cat_values(self,cifdata,result,the_category):
     if len(double_names)>0:
         already_present = [a for a in self.names_in_cat(the_category) if cifdata.has_key(a)]
         if set(already_present) != set(result.keys()):
-            print "Category %s not updated, mismatched datanames: %s" % (the_category, `set(already_present)^set(result.keys())`)
+            print("Category %s not updated, mismatched datanames: %s" % (the_category, `set(already_present)^set(result.keys())`))
             return
         #check key values
         old_keys = set(cifdata[the_key])
         common_keys = old_keys & set(result[the_key])
         if len(common_keys)>0:
-            print "Category %s not updated, key values in common:" % (common_keys)
+            print("Category %s not updated, key values in common:" % (common_keys))
             return
         #extend result values with old values
         for one_name,one_value in result.items():
@@ -2742,9 +2762,9 @@ def store_new_cat_values(self,cifdata,result,the_category):
         try:
             self.store_new_looped_value(one_name,cifdata,one_value,False)
         except StarFile.StarError:
-            print '%s: Not replacing %s with calculated %s' % (one_name,`cifdata[one_name]`,`one_value`)
+            print('%s: Not replacing %s with calculated %s' % (one_name,`cifdata[one_name]`,`one_value`))
     #put the key as the first item
-    print 'Fixing item order for {}'.format(`the_key`)
+    print('Fixing item order for {}'.format(`the_key`))
     for one_key in the_key:  #should only be one
         cifdata.ChangeItemOrder(one_key,0)
                         
@@ -2761,7 +2781,7 @@ of the module file (as done here) seems to be a reliable way to go.
 #global_table = globals()
 #global_table.update(self.ddlm_functions)
 for one_func in the_funcs:
-    print 'Executing function for %s:' % key
+    print('Executing function for %s:' % key)
     #print one_func
     exec one_func in globals()  #will access dREL functions, puts "pyfunc" in scope
     # print 'in following global environment: ' + `global_table`
@@ -2770,10 +2790,10 @@ for one_func in the_funcs:
     try:
         result = pyfunc(cifdata)
     except CifRecursionError,s:
-        print s
+        print(s)
         result = None
     except StarFile.StarDerivationError,s:
-        print s
+        print(s)
         result = None
     finally:
         cifdata.provide_value = stored_setting
@@ -2802,23 +2822,23 @@ pulled_from_cats = [(k,[
                    ) for k in pulled_from_cats]
 pulled_to_cats = [k[0] for k in pulled_from_cats if the_category in k[1]]
 if self[the_category].has_key('_category_construct_local.type'):
-    print "**Now constructing category %s using DDLm attributes**" % the_category
+    print("**Now constructing category %s using DDLm attributes**" % the_category)
     try:
         cat_result = self.construct_category(the_category,cifdata,store_value=True)
     except (CifRecursionError,StarFile.StarDerivationError):
-        print '** Failed to construct category %s (error)' % the_category
+        print('** Failed to construct category %s (error)' % the_category)
 # Trying a pull-back when the category is partially populated
 # will not work, hence we test that cat_result has no keys
 if len(pulled_to_cats)>0 and len(cat_result)==0:
-    print "**Now populating category %s from pulled-back category %s" % (the_category,`pulled_to_cats`)
+    print("**Now populating category %s from pulled-back category %s" % (the_category,`pulled_to_cats`))
     try:
         cat_result = self.push_from_pullback(the_category,pulled_to_cats,cifdata,store_value=True)
     except (CifRecursionError,StarFile.StarDerivationError):
-        print '** Failed to construct category %s from pullback information (error)' % the_category
+        print('** Failed to construct category %s from pullback information (error)' % the_category)
 if self[the_category].has_key('_method.py_expression') and not cat_result.has_key(key):
-    print "**Now applying category method for %s in search of %s**" % (the_category,key)
+    print("**Now applying category method for %s in search of %s**" % (the_category,key))
     cat_result = self.derive_item(the_category,cifdata,store_value=True)
-print "**Obtained for %s " % the_category + `cat_result`        
+print("**Obtained for %s " % the_category + `cat_result`)        
 # do we now have our value?
 if cat_result.has_key(key):
     return cat_result[key]
@@ -2895,7 +2915,7 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
         if len(components) == 2:  # not a filter
             element_pos = comp_cats.index(target_category)
             old_id = source_ids[element_pos]
-            print 'Using %s to populate %s' % (old_id,target_key)
+            print('Using %s to populate %s' % (old_id,target_key))
             result[target_key].extend(cifdata[old_id])
             # project through all identical names
             extra_result = self.duplicate_datanames(cifdata,sc,target_category,skip_names=new_ids+[target_key])
@@ -2905,7 +2925,7 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
             else:
                 for k in extra_result.keys():
                     if result.has_key(k):
-                        print 'Updating %s: was %s' % (k,`result[k]`)
+                        print('Updating %s: was %s' % (k,`result[k]`))
                         result[k].extend(extra_result[k])
         else:
             extra_result = self.duplicate_datanames(cifdata,sc,target_category,skip_names=new_ids)
@@ -2913,7 +2933,7 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
                 result[target_key].extend(cifdata[source_ids[0]])
                 for k in extra_result.keys():
                     if result.has_key(k):
-                        print 'Reverse filter: Updating %s: was %s' % (k,`result[k]`)
+                        print('Reverse filter: Updating %s: was %s' % (k,`result[k]`))
                         result[k].extend(extra_result[k])
                     else:
                         result[k]=extra_result[k]
@@ -2943,7 +2963,7 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
     if datalen != 1:
         raise AssertionError,'Failed to construct equal-length category items,'+ `result`
     if store_value:
-        print 'Now storing ' + `result`
+        print('Now storing ' + `result`)
         self.store_new_cat_values(cifdata,result,target_category)
     return result
 
@@ -2955,9 +2975,9 @@ def duplicate_datanames(self,cifdata,from_category,to_category,key_vals=None,ski
     can_project = s_names_in_cat & t_names_in_cat
     can_project -= set(skip_names)  #already dealt with
     source_key = self[from_category]['_category.key_id']
-    print 'Source dataname set: ' + `s_names_in_cat`
-    print 'Target dataname set: ' + `t_names_in_cat`
-    print 'Projecting through following datanames from %s to %s' % (from_category,to_category) + `can_project`
+    print('Source dataname set: ' + `s_names_in_cat`)
+    print('Target dataname set: ' + `t_names_in_cat`)
+    print('Projecting through following datanames from %s to %s' % (from_category,to_category) + `can_project`)
     for project_name in can_project:
         full_from_name = self.cat_obj_lookup_table[(from_category.lower(),project_name.lower())][0]
         full_to_name = self.cat_obj_lookup_table[(to_category.lower(),project_name.lower())][0]
@@ -3003,7 +3023,7 @@ if len(found_it)>0:
     return corrected_type
 # now do the reverse check - any alternative form
 alias_name = [a for a in self.alias_table.items() if key in a[1]]
-print 'Aliases for %s: %s' % (key,`alias_name`)
+print('Aliases for %s: %s' % (key,`alias_name`))
 if len(alias_name)==1:
     key = alias_name[0][0]   #actual definition name
     if cifdata.has_key(key): return self.change_type(key,cifdata[key])
@@ -3047,7 +3067,7 @@ elif def_index_val:            #derive a default value
         result = self[key]["_enumeration_default.value"][keypos]
         default_result = True   #flag that it must be extended
     result = self.change_type(key,result)
-    print "Indexed on %s to get %s for %s" % (def_index_val,`result`,`val_to_index`)
+    print("Indexed on %s to get %s for %s" % (def_index_val,`result`,`val_to_index`))
 
 @  Generating keys.  Keys are a slighlty special case, because on the one
 hand they can be any arbitrary unique string, but on the other hand they are crucial
@@ -3156,7 +3176,7 @@ def getmaxmin(self,rangeexp):
         minimum = regexp.group(1)
         maximum = regexp.group(7)
     except AttributeError:
-        print "Can't match %s" % rangeexp
+        print("Can't match %s" % rangeexp)
     if minimum == None: minimum = "." 
     else: minimum = float(minimum)
     if maximum == None: maximum = "." 
@@ -3197,7 +3217,7 @@ def get_full_child_list(self):
                 [remaining.remove(n) for n in these_children]
         for r in remaining:   #simple addition to some category
                 all_names += [r]
-        print 'Final block order: ' + `all_names`
+        print('Final block order: ' + `all_names`)
         return all_names
     raise ValueError, 'Dictionary contains no/multiple Head categories, please print as plain CIF instead'
 
@@ -3250,7 +3270,7 @@ according to mergemode.  Both cannot be provided.
 def __init__(self,dic = None, diclist=[], mergemode = "replace",*args,**kwords):
     CifBlock.__init__(self,*args,**kwords)    
     if dic and diclist:
-        print "Warning: diclist argument ignored when initialising ValidCifBlock"
+        print("Warning: diclist argument ignored when initialising ValidCifBlock")
     if isinstance(dic,CifDic):
         self.fulldic = dic
     else:
@@ -3299,7 +3319,7 @@ def report(self):
    outstr = cStringIO.StringIO()
    outstr.write( "Validation results\n")
    outstr.write( "------------------\n")
-   print "%d invalid items found\n" % len(self.v_result)
+   print("%d invalid items found\n" % len(self.v_result))
    for item_name,val_func_list in self.v_result.items():
        outstr.write("%s fails following tests:\n" % item_name)
        for val_func in val_func_list:
@@ -3592,7 +3612,7 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
                 new_vals.extend(curr_parent)
                 if len(new_vals)>0:
                     check_file[parent] = new_vals
-	        print "Added %s (len %d)" % (parent,len(check_file[parent]))
+	        print("Added %s (len %d)" % (parent,len(check_file[parent])))
 	    # next dictionary problem: the main DDL2 dictionary has what
 	    # I would characterise as a mandatory_category problem, but
 	    # in order to gloss over it, we allow a different 
@@ -3611,10 +3631,10 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
            block_scope = 'Datablock'
         no_matches[block] = [a for a in check_file[block].keys() if not fulldic.has_key(a)]
         # remove non-matching items
-        print "Not matched: " + `no_matches[block]`
+        print("Not matched: " + `no_matches[block]`)
         for nogood in no_matches[block]:
              del check_file[block][nogood]
-        print "Validating block %s, scope %s" % (block,block_scope)
+        print("Validating block %s, scope %s" % (block,block_scope))
         valid_result[block] = run_data_checks(check_file[block],fulldic,block_scope=block_scope)
     return valid_result,no_matches
 
@@ -3934,7 +3954,7 @@ def convert_list_values(structure,dimension):
                 func_def +=".lower()"
             func_def +=")\n"  # close append
         func_def +=      "   return final_val\n"
-    print func_def
+    print(func_def)
     exec func_def in globals() #(re)defines element_convert in global namespace
     if len(dimension)> 0 and int(dimension[0]) != 1:
         return lambda a: map(element_convert,a)
@@ -3974,7 +3994,7 @@ a simple list.  We have written a simple parser to interpret this.
 <<Parse the structure specification>>=
 def interpret_structure(struc_spec):
     """Interpret a DDLm structure specification"""
-    import TypeContentsParser as t
+    from . import TypeContentsParser as t
     p = t.TypeParser(t.TypeParserScanner(struc_spec))
     return getattr(p,"input")()
     
@@ -4033,15 +4053,15 @@ def track_recursion(in_this_func):
     def wrapper(*args,**kwargs):
         key_arg = args[1]
         if key_arg in wrapper.called_list:
-            print 'Recursion watch: %s already called %d times' % (key_arg,wrapper.called_list.count(key_arg))
+            print('Recursion watch: %s already called %d times' % (key_arg,wrapper.called_list.count(key_arg)))
             raise CifRecursionError, (key_arg,wrapper.called_list[:])    #failure
         if len(wrapper.called_list) == 0:   #first time
             wrapper.stored_use_defaults = kwargs.get("allow_defaults",False)
-            print 'All recursive calls will set allow_defaults to ' + `wrapper.stored_use_defaults`
+            print('All recursive calls will set allow_defaults to ' + `wrapper.stored_use_defaults`)
         else:
             kwargs["allow_defaults"] = wrapper.stored_use_defaults
         wrapper.called_list.append(key_arg)
-        print 'Recursion watch: call stack: ' + `wrapper.called_list`
+        print('Recursion watch: call stack: ' + `wrapper.called_list`)
         try:
             result = in_this_func(*args,**kwargs)
         except StarFile.StarDerivationError,s:

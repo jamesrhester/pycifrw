@@ -74,7 +74,14 @@ which datanames are grouped together.  LoopBlocks are still used to provide pack
 access to loops.
 
 <<*>>=
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
 <<Copyright statement>>
+
 
 from urllib import *         # for arbitrary opening
 import re
@@ -536,7 +543,7 @@ def NewBlock(self,blockname,blockcontents=None,fix=True,parent=None):
              self.child_table[new_lowerbn]=self.PC(newblockname,parent.lower())
              self.visible_keys.append(new_lowerbn)
        else:
-           print 'Warning:Parent block %s does not exist for child %s' % (parent,newblockname)  
+           print('Warning:Parent block %s does not exist for child %s' % (parent,newblockname)) 
     self[new_lowerbn].set_grammar(self.grammar)
     self[new_lowerbn].set_characterset(self.characterset)
     self[new_lowerbn].formatting_hints = self.master_template
@@ -818,7 +825,7 @@ initialising the file.
             blockorder = self.block_input_order
         top_block_names = [(a,self.child_table[a].block_id) for a in blockorder if self.child_table[a].parent is None]
         for blockref,blockname in top_block_names:
-            print 'Writing %s, ' % blockname + `self[blockref]`
+            print('Writing %s, ' % blockname + repr(self[blockref]))
             outstring.write('\n' + 'data_' +blockname+'\n')
             all_names.remove(blockref)
             if self.standard == 'Dic':              #put contents before save frames
@@ -847,9 +854,9 @@ initialising the file.
         returnstring =  outstring.getvalue()
         outstring.close()
         if len(all_names)>0:
-            print 'WARNING: following blocks not output: %s' % `all_names`
+            print('WARNING: following blocks not output: %s' % repr(all_names))
         else:
-            print 'All blocks output.'
+            print('All blocks output.')
         return returnstring
 
     def block_to_string_nested(self,block_ref,block_id,outstring,indentlevel=0):
@@ -987,10 +994,10 @@ def ReadStar(filename,prepared = None, maxlength=-1,
     import codecs
     # save desired scoping
     save_scoping = prepared.scoping
-    import YappsStarParser_1_1 as Y11
-    import YappsStarParser_1_0 as Y10
-    import YappsStarParser_2_0 as Y20
-    import YappsStarParser_STAR2 as YST
+    from . import YappsStarParser_1_1 as Y11
+    from . import YappsStarParser_1_0 as Y10
+    from . import YappsStarParser_2_0 as Y20
+    from . import YappsStarParser_STAR2 as YST
     if prepared is None:
         prepared = StarFile()
     if grammar == "auto" or grammar is None:
@@ -1004,7 +1011,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
     elif grammar == 'STAR2':
         try_list = [('STAR2',YST)]
     else:
-        raise AttributeError, 'Unknown STAR/CIF grammar requested, %s' % `grammar`
+        raise AttributeError, 'Unknown STAR/CIF grammar requested, %s' % repr( grammar )
     if isinstance(filename,basestring):
         filestream = urlopen(filename)
     else:
@@ -1062,7 +1069,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
            print >>sys.stderr, 'Could not complete parsing; stopped around here:'
            print >>sys.stderr, parser._scanner
        except ValueError:
-           print 'Unexpected error:'
+           print('Unexpected error:')
            import traceback
            traceback.print_exc()
        if proto_star is not None: 
@@ -1070,7 +1077,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
            break
     if proto_star is None:
         errorstring = 'Syntax error in input file: last value parsed was %s' % Y.lastval
-        errorstring = errorstring + '\nParser status: %s' % `parser._scanner`
+        errorstring = errorstring + '\nParser status: %s' % repr( parser._scanner )
         raise StarError( errorstring)
     # set visibility correctly
     proto_star.scoping = 'dictionary'
@@ -1102,7 +1109,7 @@ automatically converted to the type given in the dictionary.
 <<Assigning a dictionary>>=
 def assign_dictionary(self,dic):
     if not dic.diclang=="DDLm":
-        print "Warning: ignoring dictionary %s" % dic.dic_as_cif.my_uri
+        print ("Warning: ignoring dictionary %s" % dic.dic_as_cif.my_uri)
         return
     self.dictionary = dic
 
@@ -1415,7 +1422,7 @@ def setmaxnamelength(self,maxlength):
     if maxlength > 0:
         bad_names = [a for a in self.keys() if len(a)>self.maxnamelength]
         if len(bad_names)>0:
-            raise StarError, 'Datanames too long: ' + `bad_names`
+            raise StarError, 'Datanames too long: ' + repr( bad_names )
 
 def set_characterset(self,characterset):
     """Set the characterset for checking datanames: may be `ascii` or `unicode`"""
@@ -1466,20 +1473,20 @@ the enclosing block collection (e.g. CIF or STAR file object)""")
                try: 
                    new_value = self.dictionary.derive_item(key,self,store_value=self.cache_vals,allow_defaults=True)
                except StarDerivationFailure,s:
-                   print "In StarBlock.__getitem__, " + `s`
+                   print ("In StarBlock.__getitem__, " + repr( s ))
                    raise KeyError, 'No such item: %s' % key
-           print 'Set %s to derived value %s' % (key, `new_value`)
+           print('Set %s to derived value %s' % (key, repr(new_value)))
            return new_value
        else:
            raise KeyError, 'No such item: %s' % key
     # we now have an item, we can try to convert it to a number if that is appropriate
     # note numpy values are never stored but are converted to lists
     if not self.dictionary or not self.dictionary.has_key(key): return rawitem
-    print '%s: is_value %s provide_value %s value %s' % (key,`is_value`,`self.provide_value`,`rawitem`)
+    print('%s: is_value %s provide_value %s value %s' % (key,repr( is_value ),repr( self.provide_value ),repr( rawitem )))
     if is_value:
         if self.provide_value: return rawitem
         else:
-           print 'Turning %s into string' % `rawitem`
+           print('Turning %s into string' % repr( rawitem ))
            return self.convert_to_string(key)
     else:    # a string
         if self.provide_value and ((not isinstance(rawitem,list) and rawitem != '?' and rawitem != ".") or \
@@ -1503,10 +1510,10 @@ the enclosing block collection (e.g. CIF or STAR file object)""")
                        new_value = self.dictionary.derive_item(key,self,store_value=True,allow_defaults=True)
                    except StarDerivationFailure,s:
                    
-                       print "Could not turn %s into a value:" + `s`
+                       print ("Could not turn %s into a value:" + repr( s ))
                        return rawitem
                else:
-                   print 'Set %s to derived value %s' % (key, `new_value`)
+                   print('Set %s to derived value %s' % (key, repr( new_value )))
                    return new_value
         return rawitem   #can't do anything
        
@@ -1628,7 +1635,7 @@ def AddItem(self,key,value,precheck=False):
     """Add dataname `key` to block with value `value`.  `value` may be
     a single value, a list or a tuple."""
     if not isinstance(key,basestring):
-         raise TypeError, 'Star datanames are strings only (got %s)' % `key`
+         raise TypeError, 'Star datanames are strings only (got %s)' % repr( key )
     if not precheck:
          self.check_data_name(key,self.maxnamelength)    # make sure no nasty characters   
     # check for overwriting
@@ -1674,7 +1681,7 @@ def AddLoopItem(self,incomingdata,precheck=False,maxlength=-1):
            self.AddItem(key,value)
        self.CreateLoop(incomingdata[0])
     elif not isinstance(incomingdata[0],basestring):
-         raise TypeError, 'Star datanames are strings only (got %s)' % `incomingdata[0]`
+         raise TypeError, 'Star datanames are strings only (got %s)' % repr( incomingdata[0] )
     else:
         self.AddItem(incomingdata[0],incomingdata[1])
 
@@ -1713,9 +1720,9 @@ def check_data_name(self,dataname,maxlength=-1):
         if len (filter (lambda a: ord(a) == 0xFFFE or ord(a) == 0xFFFF, dataname)) > 0:
             raise StarError( 'Dataname ' + dataname + ' contains unsupported characters (U+FFFE and/or U+FFFF)')
         if len (filter (lambda a: ord(a) > 0x10000 and (ord(a) & 0xE == 0xE) , dataname)) > 0:
-            print '%s fails' % dataname
-            for a in dataname: print '%x' % ord(a),
-            print
+            print('%s fails' % dataname)
+            for a in dataname: print('%x' % ord(a),end="")
+            print()
             raise StarError( u'Dataname ' + dataname + u' contains unsupported characters (U+xFFFE and/or U+xFFFF)')
 
 def check_name_length(self,dataname,maxlength):
@@ -1733,12 +1740,12 @@ def check_item_value(self,item):
             if it=='': return
             me = self.char_check.match(it)            
             if not me:
-                print "Fail value check: %s" % it
+                print ("Fail value check: %s" % it)
                 raise StarError, u'Bad character in %s' % it
             else:
                 if me.span() != (0,len(it)):
-                    print "Fail value check, match only %d-%d in string %s" % (me.span()[0],me.span()[1],`it`)
-                    raise StarError,u'Data item "' + `it` +  u'"... contains forbidden characters'
+                    print ("Fail value check, match only %d-%d in string %s" % (me.span()[0],me.span()[1],repr( it )))
+                    raise StarError,u'Data item "' + repr( it ) +  u'"... contains forbidden characters'
     map(check_one,test_item)
 
 @ Regularising data.  We want the copy.deepcopy operation to work, so
@@ -1815,7 +1822,7 @@ def check_stringiness(data):
            else: return False
        else:
            for one_item in numpy.nditer(data):
-               print 'numpy data: ' + `one_item`
+               print('numpy data: ' + repr( one_item ))
                if not check_stringiness(one_item): return False
            return True
 
@@ -1932,7 +1939,7 @@ def CreateLoop(self,datanames,order=-1,length_check=True):
            if len(listed_values) == len(datanames):
                len_set = set([len(self[a]) for a in datanames])
                if len(len_set)>1:
-                   raise ValueError, 'Request to loop datanames %s with different lengths: %s' % (`datanames`,`len_set`)
+                   raise ValueError, 'Request to loop datanames %s with different lengths: %s' % (repr( datanames ),repr( len_set ))
            elif len(listed_values) != 0:
                raise ValueError, 'Request to loop datanames where some are single values and some are not'
        # store as lower case
@@ -2064,7 +2071,7 @@ def AddToLoop(self,dataname,loopdata):
     bad_vals = [a for a in loopdata.items() if len(a[1])!=loop_len]
     if len(bad_vals)>0:
        raise StarLengthError, "Number of values for looped datanames %s not equal to %d" \
-           % (`bad_vals`,loop_len)
+           % (repr( bad_vals ),loop_len)
     self.update(loopdata)
     self.loops[thisloop]+=loopdata.keys()
 
@@ -2092,7 +2099,7 @@ def GetKeyedPacket(self,keyname,keyvalue,no_case=False):
        one_pack= [a for a in my_loop if getattr(a,keyname)==keyvalue]
     if len(one_pack)!=1:
         raise ValueError, "Bad packet key %s = %s: returned %d packets" % (keyname,keyvalue,len(one_pack))
-    print "Keyed packet: %s" % one_pack[0]
+    print ("Keyed packet: %s" % one_pack[0])
     return one_pack[0]
 
 @  Semantic loops.  These are loops defined by a dictionary,
@@ -2150,10 +2157,10 @@ def GetKeyedSemanticPacket(self,keyvalue,cat_id):
         except KeyError:        #missing key
             try:
                 test_key = self[cat_key]  #generate key if possible
-                print 'Test key is %s' % `test_key`
+                print('Test key is %s' % repr( test_key ))
                 if test_key is not None and\
                 not (isinstance(test_key,list) and (None in test_key or len(test_key)==0)):
-                    print 'Getting packet for key %s' % `keyvalue`
+                    print('Getting packet for key %s' % repr( keyvalue ))
                     extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
             except:             #can't be generated
                 continue
@@ -2255,7 +2262,7 @@ class CIFStringIO(StringIO):
         # do we need to break?
         if delimiter:
             if len(outstring)>1:
-                raise ValueError, 'Delimiter %s is longer than one character' % `outstring`
+                raise ValueError, 'Delimiter %s is longer than one character' % repr( outstring )
             output_delimiter = True
         if mustbreak:    #insert a new line and indent
             temp_string = '\n' + ' ' * self.indentlist[-1]
@@ -2278,7 +2285,7 @@ class CIFStringIO(StringIO):
                 self.currentpos = startcol
                 self.last_char = ' '
             else:
-                print 'Could not format %s at column %d as already at %d' % (outstring,startcol,self.currentpos)
+                print('Could not format %s at column %d as already at %d' % (outstring,startcol,self.currentpos))
                 startcol = -1   #so that tabbing works as a backup
         #handle tabs
         if self.tabwidth >0 and do_tab and startcol < 0:
@@ -2299,7 +2306,7 @@ class CIFStringIO(StringIO):
             if len(self.indentlist)>1:
                 self.indentlist.pop()
             else:
-                print 'Warning: cannot unindent any further'
+                print('Warning: cannot unindent any further')
         #check that we still need a delimiter
         if self.last_char in [' ','\n','\t']:
             output_delimiter = False
@@ -2457,7 +2464,7 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
     elif isinstance(itemvalue,(float,int,long)):  #TODO - handle uncertainties
        stringsink.write(str(itemvalue),canbreak=True,startcol=startcol)   #numbers
     else:
-       raise ValueError, 'Value in unexpected format for output: %s' % `itemvalue`
+       raise ValueError, 'Value in unexpected format for output: %s' % repr( itemvalue )
 
 @ Formatting a loop section.  We are passed an indent and destination string,
 and are expected to append a list of item names to the string indented by
@@ -2689,11 +2696,11 @@ def apply_line_prefix(instring,prefix):
     if prefix[0] != ";" and "\\" not in prefix:
         header = re.match(r"(\\[ \v\t\f]*" +"\n)",instring)
         if header is not None:
-            print 'Found line folded string for prefixing...'
+            print('Found line folded string for prefixing...')
             not_header = instring[header.end():]
             outstring = prefix + "\\\\\n" + prefix
         else:
-            print 'No folding in input string...'
+            print('No folding in input string...')
             not_header = instring
             outstring = prefix + "\\\n" + prefix
         outstring = outstring + not_header.replace("\n","\n"+prefix)
@@ -2711,7 +2718,7 @@ def remove_line_prefix(instring):
     prefix_match = re.match("(?P<prefix>[^;\\\n][^\n\\\\]+)(?P<folding>\\\\{1,2}[ \t\v\f]*\n)",instring)
     if prefix_match is not None:
         prefix_text = prefix_match.group('prefix')
-        print 'Found prefix %s' % prefix_text
+        print('Found prefix %s' % prefix_text)
         prefix_end = prefix_match.end('folding')
         # keep any line folding instructions
         if prefix_match.group('folding')[:2]=='\\\\':  #two backslashes
@@ -2822,10 +2829,10 @@ def process_template(template_file):
                     try: 
                         last_end = next_end
                         next_end = line_end_pos.next().start()
-                        print 'next end %d' % next_end
+                        print('next end %d' % next_end)
                     except StopIteration:
                         break
-                print 'Start %d, last_end %d' % (thismatch.start('all'),last_end)
+                print('Start %d, last_end %d' % (thismatch.start('all'),last_end))
                 col_pos = thismatch.start('all') - last_end + 1
                 if thismatch.group('none') is None:
                     if thismatch.group('sqqq') is not None:
@@ -2833,7 +2840,7 @@ def process_template(template_file):
                     else:
                         hint_dict.update({'delimiter':thismatch.groups()[0][0]})
                 hint_dict.update({'column':col_pos})
-                print '%s: %s' % (loopname,`hint_dict`)
+                print('%s: %s' % (loopname,repr( hint_dict )))
                 form_hints.append(hint_dict)
     return form_hints
 
@@ -2867,7 +2874,7 @@ def create_ordering(self,finish_at,start_from):
     # now handle partial output
     if start_from != '':
         loop_no = self.FindLoop(start_from)
-        print '%s, loop_no is %d' % (start_from, loop_no)
+        print('%s, loop_no is %d' % (start_from, loop_no))
         if self.output_order.count(start_from):
            self.output_order = self.output_order[self.output_order.index(start_from):]
         elif loop_no >= 0:
@@ -2880,7 +2887,7 @@ def create_ordering(self,finish_at,start_from):
             self.output_order = self.output_order[:self.output_order.index(finish_at)]
         elif loop_no >= 0:
            self.output_order = self.output_order[:self.output_order.index(loop_no)]
-    print 'Final order: ' + `self.output_order`
+    print('Final order: ' + repr( self.output_order ))
 
 @ Merging.  Normally merging of dictionaries is done at the data file 
 level, i.e. a whole block is replaced or added.  However, in 'overlay'
@@ -2943,7 +2950,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
        # we have lost case information
        self.true_case.update(new_block.true_case)
     elif mode == 'overlay':
-       print 'Overlay mode, current overwrite is %s' % self.overwrite
+       print('Overlay mode, current overwrite is %s' % self.overwrite)
        raise StarError, 'Overlay block merge mode not implemented'
        save_overwrite = self.overwrite
        self.overwrite = True
@@ -2971,7 +2978,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
               # make the arbitrary choice that the old data stays
               if newkeypos:
                   # get matching values in new list
-                  print "Old, new data:\n%s\n%s" % (`overlap_data[newkeypos]`,`new_data[newkeypos]`)
+                  print ("Old, new data:\n%s\n%s" % (repr( overlap_data[newkeypos] ),repr( new_data[newkeypos] )))
                   key_matches = filter(lambda a:a in overlap_data[newkeypos],new_data[newkeypos])
                   # filter out any new data with these key values
                   new_p_data = filter(lambda a:a[newkeypos] not in key_matches,new_p_data)
@@ -2980,7 +2987,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
                   else: new_data = []
               # wipe out the old data and enter the new stuff
               byebyeloop = self.GetLoop(overlaps[0])
-              # print "Removing '%s' with overlaps '%s'" % (`byebyeloop`,`overlaps`)
+              # print "Removing '%s' with overlaps '%s'" % (repr( byebyeloop ),repr( overlaps ))
               # Note that if, in the original dictionary, overlaps are not
               # looped, GetLoop will return the block itself.  So we check
               # for this case...
@@ -3142,12 +3149,12 @@ def recursive_iter(self,dict_so_far={},coord=[]):
         if len(drill_values)>0:            #this block has values
             drill_values=drill_values[0]   #drill in
         else:
-            raise StarError("Malformed loop packet %s" % `top_items[0]`)
+            raise StarError("Malformed loop packet %s" % repr( top_items[0] ))
     my_length = len(drill_values[0])       #length of 'string' entry
     if self.dimension == 0:                #top level
         for aloop in self.loops:
             for apacket in aloop.recursive_iter():
-                # print "Recursive yielding %s" % `dict(top_items + apacket.items())`
+                # print "Recursive yielding %s" % repr( dict(top_items + apacket.items()) )
                 prep_yield = StarPacket(top_values+apacket.values())  #straight list
                 for name,value in top_items + apacket.items():
                     setattr(prep_yield,name,value)
@@ -3156,17 +3163,17 @@ def recursive_iter(self,dict_so_far={},coord=[]):
         for i in range(my_length):
             kvpairs = map(lambda a:(a,self.coord_to_group(a,coord)[i]),self.block.keys())
             kvvals = map(lambda a:a[1],kvpairs)   #just values
-            # print "Recursive kvpairs at %d: %s" % (i,`kvpairs`)
+            # print "Recursive kvpairs at %d: %s" % (i,repr( kvpairs ))
             if self.loops:
               for aloop in self.loops:
                 for apacket in aloop.recursive_iter(coord=coord+[i]):
-                    # print "Recursive yielding %s" % `dict(kvpairs + apacket.items())`
+                    # print "Recursive yielding %s" % repr( dict(kvpairs + apacket.items()) )
                     prep_yield = StarPacket(kvvals+apacket.values())
                     for name,value in kvpairs + apacket.items():
                         setattr(prep_yield,name,value)
                     yield prep_yield
             else:           # we're at the bottom of the tree
-                # print "Recursive yielding %s" % `dict(kvpairs)`
+                # print "Recursive yielding %s" % repr( dict(kvpairs) )
                 prep_yield = StarPacket(kvvals)
                 for name,value in kvpairs:
                     setattr(prep_yield,name,value)
@@ -3178,9 +3185,9 @@ def coord_to_group(self,dataname,coords):
          return dataname     # flag inner loop processing
       newm = self[dataname]          # newm must be a list or tuple
       for c in coords:
-          # print "Coord_to_group: %s ->" % (`newm`),
+          # print "Coord_to_group: %s ->" % (repr( newm )),
           newm = newm[c]
-          # print `newm`
+          # print repr( newm )
       return newm 
 
 @ Return a series of LoopBlocks with the appropriate packet chosen. This
