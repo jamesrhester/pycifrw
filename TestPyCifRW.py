@@ -1,8 +1,15 @@
 # Testing of the PyCif module using the PyUnit framework
-# 
+#
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
 import sys
-sys.path[0] = '.'
-import unittest, CifFile
+#sys.path[0] = '.'
+import unittest
+import CifFile
 from CifFile import StarFile
 from CifFile.StarFile import StarDict, StarList
 import re
@@ -14,7 +21,7 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        test_string = "1234567890123456789012"
        outstring = CifFile.apply_line_folding(test_string,5,10)
        out_lines = outstring.split('\n')
-       #print outstring
+       #print(outstring)
        self.failUnless(out_lines[0]=="\\")
        self.failUnless(len(out_lines[1])==10)
 
@@ -49,9 +56,9 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        test_string = "123456  7890123  45678\n90 12\n\n"
        outstring = CifFile.apply_line_folding(test_string,5,10)
        old_string = CifFile.remove_line_folding(outstring)
-       #print "Test:" + `test_string`
-       #print "Fold:" + `outstring`
-       #print "UnFo:" + `old_string`
+       #print "Test:" + repr(test_string)
+       #print "Fold:" + repr(outstring)
+       #print "UnFo:" + repr(old_string)
        self.failUnless(old_string == test_string)
 
     def testTrickyFoldingRemoval(self):
@@ -59,9 +66,9 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        test_string = "\n1234567890\\\n r t s 345 19\n\nlife don't talk to me about life"
        outstring = CifFile.apply_line_folding(test_string,5,10)
        old_string = CifFile.remove_line_folding(outstring)
-       #print "Test:" + `test_string`
-       #print "Fold:" + `outstring`
-       #print "UnFo:" + `old_string`
+       #print "Test:" + repr(test_string)
+       #print "Fold:" + repr(outstring)
+       #print "UnFo:" + repr(old_string)
        self.failUnless(old_string == test_string)
 
     def testTrailingBackslash(self):
@@ -69,9 +76,9 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        test_string = "\n123\\\n 456\\n\n"
        outstring = CifFile.apply_line_folding(test_string,5,10)
        old_string = CifFile.remove_line_folding(outstring)
-       #print "Test:" + `test_string`
-       #print "Fold:" + `outstring`
-       #print "UnFo:" + `old_string`
+       #print "Test:" + repr(test_string)
+       #print "Fold:" + repr(outstring)
+       #print "UnFo:" + repr(old_string)
        self.failUnless(old_string == test_string)
 
     def testFinalBackslash(self):
@@ -86,14 +93,14 @@ class BasicUtilitiesTestCase(unittest.TestCase):
         """Test insertion of a line prefix"""
         test_string = "\n12345\n678910\n\n"
         outstring = CifFile.apply_line_prefix(test_string,"abc>")
-        print "Converted %s to %s " %(test_string,outstring)
+        print("Converted %s to %s " %(test_string,outstring))
         self.failUnless(outstring == "abc>\\\nabc>\nabc>12345\nabc>678910\nabc>\nabc>")
 
     def testRemoveIndent(self):
         """Test removal of a line prefix"""
         test_string = "abc>\\\nabc>12345\nabc>678910\nabc>\nabc>"
         outstring = CifFile.remove_line_prefix(test_string)
-        print "Removed indent: " + `outstring`
+        print("Removed indent: " + repr(outstring))
         self.failUnless(outstring == "12345\n678910\n\n")
 
     def testReverseIndent(self):
@@ -101,9 +108,9 @@ class BasicUtilitiesTestCase(unittest.TestCase):
         test_string = "12345\n678910\n\n"
         outstring = CifFile.apply_line_prefix(test_string,"cif><")
         newtest = CifFile.remove_line_prefix(outstring)
-        print 'Before indenting: ' + `test_string`
-        print 'After indenting: ' + `outstring`
-        print 'After unindent: ' + `newtest`
+        print('Before indenting: ' + repr(test_string))
+        print('After indenting: ' + repr(outstring))
+        print('After unindent: ' + repr(newtest))
         self.failUnless(newtest == test_string)
 
     def testPrefixAndFold(self):
@@ -113,7 +120,7 @@ class BasicUtilitiesTestCase(unittest.TestCase):
         indoutstring = CifFile.apply_line_prefix(outstring,"CIF>")
         newoutstring = CifFile.remove_line_prefix(indoutstring)
         newtest_string = CifFile.remove_line_folding(newoutstring)
-        print "%s -> %s -> %s -> %s -> %s" % (`test_string`,`outstring`,`indoutstring`,`newoutstring`,`newtest_string`)
+        print("%s -> %s -> %s -> %s -> %s" % (repr(test_string),repr(outstring),repr(indoutstring),repr(newoutstring),repr(newtest_string)))
         self.failUnless(newtest_string == test_string)
 
     def testStringiness(self):
@@ -142,7 +149,7 @@ class BlockRWTestCase(unittest.TestCase):
 
     def tearDown(self):
         # get rid of our test object
-	del self.cf
+        del self.cf
 	
     def testTupleNumberSet(self):
         """Test tuple setting with numbers"""
@@ -152,18 +159,18 @@ class BlockRWTestCase(unittest.TestCase):
 
     def testTupleComplexSet(self):
         """DEPRECATED: Test setting multiple names in loop"""
-	names = (('_item_name_1','_item_name#2','_item_%$#3'),)
-	values = (((1,2,3,4),('hello','good_bye','a space','# 4'),
-	          (15.462, -99.34,10804,0.0001)),)
+        names = (('_item_name_1','_item_name#2','_item_%$#3'),)
+        values = (((1,2,3,4),('hello','good_bye','a space','# 4'),
+              (15.462, -99.34,10804,0.0001)),)
         self.cf.AddCifItem((names,values))
-	self.failUnless(tuple(map(float, self.cf[names[0][0]])) == values[0][0])
-	self.failUnless(tuple(self.cf[names[0][1]]) == values[0][1])
-	self.failUnless(tuple(map(float, self.cf[names[0][2]])) == values[0][2])
+        self.failUnless(tuple(map(float, self.cf[names[0][0]])) == values[0][0])
+        self.failUnless(tuple(self.cf[names[0][1]]) == values[0][1])
+        self.failUnless(tuple(map(float, self.cf[names[0][2]])) == values[0][2])
 
     def testStringSet(self):
         """test string setting"""
         self.cf['_test_string_'] = 'A short string'
-	self.failUnless(self.cf['_test_string_'] == 'A short string')
+        self.failUnless(self.cf['_test_string_'] == 'A short string')
 
     def testTooLongSet(self):
         """test setting overlong data names"""
@@ -215,12 +222,12 @@ class BlockRWTestCase(unittest.TestCase):
 class BlockChangeTestCase(unittest.TestCase):
    def setUp(self):
         self.cf = CifFile.CifBlock()
-	self.names = (('_item_name_1','_item_name#2','_item_%$#3'),)
-	self.values = (((1,2,3,4),('hello','good_bye','a space','# 4'),
-	          (15.462, -99.34,10804,0.0001)),)
+        self.names = (('_item_name_1','_item_name#2','_item_%$#3'),)
+        self.values = (((1,2,3,4),('hello','good_bye','a space','# 4'),
+                (15.462, -99.34,10804,0.0001)),)
         self.cf.AddCifItem((self.names,self.values))
-	self.cf['_non_loop_item'] = 'Non loop string item'
-	self.cf['_number_item'] = 15.65
+        self.cf['_non_loop_item'] = 'Non loop string item'
+        self.cf['_number_item'] = 15.65
         self.cf['_planet'] = 'Saturn'
         self.cf['_satellite'] = 'Titan'
         self.cf['_rings']  = 'True'
@@ -245,11 +252,11 @@ class BlockChangeTestCase(unittest.TestCase):
 
    def testLoopRemove(self):
        """Check item deletion inside loop"""
-       print "Before:\n"
-       print self.cf.printsection()
+       print("Before:\n")
+       print(self.cf.printsection())
        self.cf.RemoveCifItem(self.names[0][1])
-       print "After:\n"
-       print self.cf.printsection()
+       print("After:\n")
+       print(self.cf.printsection())
        try:
            a = self.cf[self.names[0][1]]
        except KeyError: pass
@@ -258,7 +265,7 @@ class BlockChangeTestCase(unittest.TestCase):
    def testFullLoopRemove(self):
        """Check removal of all loop items"""
        for name in self.names[0]: self.cf.RemoveCifItem(name)
-       self.failUnless(len(self.cf.loops)==0, `self.cf.loops`)
+       self.failUnless(len(self.cf.loops)==0, repr(self.cf.loops))
 
 # test adding data to a loop.  We test straight addition, then make sure the errors
 # happen at the right time
@@ -268,7 +275,7 @@ class BlockChangeTestCase(unittest.TestCase):
        adddict = {'_address':['1 high street','2 high street','3 high street','4 high st'],
                   '_address2':['Ecuador','Bolivia','Colombia','Mehico']}
        self.cf.AddToLoop('_item_name#2',adddict)
-       print self.cf
+       print(self.cf)
        newkeys = self.cf.GetLoopNames('_item_name#2')
        self.failUnless(adddict.keys()[0] in newkeys)
        self.assertEqual(len(self.cf['_item_name#2']),len(self.values[0][0]))
@@ -336,12 +343,12 @@ class LoopBlockTestCase(unittest.TestCase):
    """Check operations on loop blocks"""
    def setUp(self):
         self.cf = CifFile.CifBlock()
-	self.names = (('_Item_Name_1','_item_name#2','_item_%$#3'),)
-	self.values = (((1,2,3,4),('hello','good_bye','a space','# 4'),
-	          (15.462, -99.34,10804,0.0001)),)
+        self.names = (('_Item_Name_1','_item_name#2','_item_%$#3'),)
+        self.values = (((1,2,3,4),('hello','good_bye','a space','# 4'),
+            (15.462, -99.34,10804,0.0001)),)
         self.cf.AddCifItem((self.names,self.values))
-	self.cf['_non_loop_item'] = 'Non loop string item'
-	self.cf['_number_item'] = 15.65
+        self.cf['_non_loop_item'] = 'Non loop string item'
+        self.cf['_number_item'] = 15.65
         self.cf['_planet'] = 'Saturn'
         self.cf['_satellite'] = 'Titan'
         self.cf['_rings']  = 'True'
@@ -351,11 +358,11 @@ class LoopBlockTestCase(unittest.TestCase):
    
    def testLoop(self):
         """Check GetLoop returns values and names in matching order"""
-   	results = self.cf.GetLoop(self.names[0][2])
+        results = self.cf.GetLoop(self.names[0][2])
         lowernames = [a.lower() for a in self.names[0]]
-	for key in results.keys():
-	    self.failUnless(key.lower() in lowernames)
-	    self.failUnless(tuple(results[key]) == self.values[0][lowernames.index(key.lower())])
+        for key in results.keys():
+            self.failUnless(key.lower() in lowernames)
+            self.failUnless(tuple(results[key]) == self.values[0][lowernames.index(key.lower())])
 
    def testLoopCharCase(self):
        """Test that upper/lower case names in loops works correctly"""
@@ -407,7 +414,7 @@ class LoopBlockTestCase(unittest.TestCase):
        it_order = testloop.GetItemOrder()
        itn_pos = it_order.index("_item_name_1")
        for test_pack in testloop:
-           print 'Test pack: ' + `test_pack`
+           print('Test pack: ' + repr(test_pack))
            self.assertEqual(test_pack._item_name_1,test_pack[itn_pos])
 
    def testPacketAttr(self):
@@ -432,18 +439,18 @@ class LoopBlockTestCase(unittest.TestCase):
        
    def testRemovePacket(self):
        """Test that removing a packet works properly"""
-       print 'Before packet removal'
-       print str(self.cf)
+       print('Before packet removal')
+       print(str(self.cf))
        testloop = self.cf.GetLoop("_item_name_1")
        testloop.RemoveKeyedPacket("_item_name_1",3)
-       print 'After packet 3 removal:'
+       print('After packet 3 removal:')
        jj = testloop.GetKeyedPacket("_item_name_1",2)
        kk = testloop.GetKeyedPacket("_item_name_1",4)
        self.assertEqual(getattr(jj,"_item_name#2"),"good_bye")
        self.assertEqual(getattr(kk,"_item_name#2"),"# 4")
        self.assertRaises(ValueError,testloop.GetKeyedPacket,"_item_name_1",3)
-       print 'After packet removal:'
-       print str(self.cf)
+       print('After packet removal:')
+       print(str(self.cf))
 
    def testAddPacket(self):
        """Test that we can add a packet"""
@@ -501,7 +508,7 @@ class BlockNameTestCase(unittest.TestCase):
        cf = CifFile.CifFile(standard=None)
        df['_random_1'] = 'oldval'
        ef['_random_1'] = 'newval'
-       print 'cf.standard is ' + `cf.standard`
+       print('cf.standard is ' + repr(cf.standard))
        cf['_lowercaseblock'] = df
        cf['_LowerCaseBlock'] = ef
        assert(cf['_Lowercaseblock']['_random_1'] == 'newval')
@@ -736,7 +743,7 @@ class SimpleWriteTestCase(unittest.TestCase):
         self.bf['_a_vector'] = vector
         open(self.testfile,"w").write(self.cf.WriteOut())
         df = CifFile.CifFile(self.testfile,grammar="auto").first_block()
-        print 'vector is ' + `df['_a_vector']`
+        print('vector is ' + repr(df['_a_vector']))
         self.failUnless(df['_a_vector'] == ['1','2','3'])
         
     def testNumpyLoop(self):
@@ -747,7 +754,7 @@ class SimpleWriteTestCase(unittest.TestCase):
         self.bf.CreateLoop(["_a_vector"])
         open(self.testfile,"w").write(self.cf.WriteOut())
         df = CifFile.CifFile(self.testfile,grammar="auto").first_block()
-        print 'vector is ' + `df['_a_vector']`
+        print('vector is ' + repr(df['_a_vector']))
         self.failUnless(df['_a_vector'][2] == ['-1.0','1.0','0.0'])
         
 class TemplateTestCase(unittest.TestCase):
@@ -887,7 +894,7 @@ class GrammarTestCase(unittest.TestCase):
        f.close()
 
    def tearDown(self):
-	pass
+       pass
 
    def testold(self):
        """Read in 1.0 conformant file; should not fail"""
@@ -1019,7 +1026,7 @@ data_Toplevel
        self.failUnless(self.testcif.get_parent('21')=='timey-wimey')
        self.failUnless(self.testcif.has_key('timey-wimey'))
        self.failUnless(self.testcif['timey-wimey']['_s2_item1']=='f')
-       print str(self.testcif)
+       print(str(self.testcif))
  
    def testRename2(self):
        """Test that renamng a block works"""
@@ -1077,7 +1084,7 @@ class DDLmTestCase(unittest.TestCase):
        f.close()
 
    def tearDown(self):
-	pass
+       pass
 
    def testold(self):
        """Read in 1.2 nonconformant file; should fail"""
@@ -1108,7 +1115,7 @@ class DDLmTestCase(unittest.TestCase):
    def testTripleQuote(self):
        """Test that triple quoted values are treated correctly"""
        f = CifFile.ReadCif("goodtest_1.2",grammar="STAR2")
-       print f["test"]["_triple_quote_test"]
+       print(f["test"]["_triple_quote_test"])
        self.failUnless(f["test"]["_triple_quote_test"][:9] == 'The comma')
 
    def testRoundTrip(self):
@@ -1157,16 +1164,16 @@ class DDLmImportCase(unittest.TestCase):
 
 class DictTestCase(unittest.TestCase):
     def setUp(self):
-	self.ddldic = CifFile.CifDic("pycifrw/tests/ddl.dic",grammar='2.0',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
+        self.ddldic = CifFile.CifDic("pycifrw/tests/ddl.dic",grammar='2.0',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
     
     def tearDown(self):
-	pass
+        pass
 
     def testnum_and_esd(self):
         """Test conversion of numbers with esds"""
         testnums = ["5.65","-76.24(3)","8(2)","6.24(3)e3","55.2(2)d4"]
         res = map(CifFile.get_number_with_esd,testnums)
-        print `res`
+        print(repr(res))
         self.failUnless(res[0]==(5.65,None))
         self.failUnless(res[1]==(-76.24,0.03))
         self.failUnless(res[2]==(8,2))
@@ -1221,7 +1228,7 @@ class DictTestCase(unittest.TestCase):
     def testNewDefinition(self):
         """Test that we can add a new definition"""
         realname = self.ddldic.add_definition('_junkety._junkjunk','description')
-        print 'Real name for new definition is %s' % realname
+        print('Real name for new definition is %s' % realname)
         self.failUnless('_description.junkjunk' in self.ddldic)
         self.failUnless(self.ddldic['_description.junkjunk']['_name.category_id'].lower()=='description')
         self.failUnless(self.ddldic['_description.junkjunk']['_name.object_id']=='junkjunk')
@@ -1327,11 +1334,11 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
         import CifFile.TypeContentsParser as t
         p = t.TypeParser(t.TypeParserScanner('List(Real,Real,Real)'))
         q = getattr(p,"input")()
-        print `q`
+        print(repr(q))
         self.failUnless(q == ['Real','Real','Real'])
         p = t.TypeParser(t.TypeParserScanner('List(Real,List(Integer,Real),Real)'))
         q = getattr(p,"input")()
-        print `q`
+        print(repr(q))
         self.failUnless(q == ['Real',['Integer','Real'],'Real'])
 
     def testSingleConversion(self):
@@ -1347,7 +1354,7 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
         namedef['_type.contents'] = 'List(Text,Real)'
         namedef['_type.dimension'] = CifFile.StarList([3])
         result = CifFile.convert_type(namedef)(self.testblock['_list2.value'])
-        print 'Result: ' + `result`
+        print('Result: ' + repr(result))
         self.failUnless(result ==  [['i',4.2],['j',1.5],['lmnop',-4.5]])
 
     def testSimpleListConversion(self):
@@ -1379,16 +1386,16 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
 class DDL1TestCase(unittest.TestCase):
 
     def setUp(self):
-	self.ddl1dic = CifFile.CifDic("pycifrw/dictionaries/cif_core.dic")
-	#items = (("_atom_site_label","S1"),
-	#	 ("_atom_site_fract_x","0.74799(9)"),
+        self.ddl1dic = CifFile.CifDic("pycifrw/dictionaries/cif_core.dic")
+        #items = (("_atom_site_label","S1"),
+        #	 ("_atom_site_fract_x","0.74799(9)"),
         #         ("_atom_site_adp_type","Umpe"),
-	#	 ("_this_is_not_in_dict","not here"))
-	bl = CifFile.CifBlock()
-	self.cf = CifFile.ValidCifFile(dic=self.ddl1dic)
-	self.cf["test_block"] = bl
-	self.cf["test_block"].AddCifItem(("_atom_site_label",
-	      ["C1","Cr2","H3","U4"]))	
+        #	 ("_this_is_not_in_dict","not here"))
+        bl = CifFile.CifBlock()
+        self.cf = CifFile.ValidCifFile(dic=self.ddl1dic)
+        self.cf["test_block"] = bl
+        self.cf["test_block"].AddCifItem(("_atom_site_label",
+              ["C1","Cr2","H3","U4"]))	
 
     def tearDown(self):
         del self.cf
@@ -1453,17 +1460,17 @@ class DDL1TestCase(unittest.TestCase):
         else: self.fail()
 
     def testParentChild(self):
-	"""Test that non-matching values are reported"""
+        """Test that non-matching values are reported"""
         self.assertRaises(CifFile.ValidCifError,
-	    self.cf["test_block"].AddCifItem,
+            self.cf["test_block"].AddCifItem,
 	    (("_geom_bond_atom_site_label_1","_geom_bond_atom_site_label_2"),
-	      [["C1","C2","H3","U4"],
-	      ["C1","Cr2","H3","U4"]]))	
-	# now we test that a missing parent is flagged
+            [["C1","C2","H3","U4"],
+            ["C1","Cr2","H3","U4"]]))	
+        # now we test that a missing parent is flagged
         # self.assertRaises(CifFile.ValidCifError,
-	#     self.cf["test_block"].AddCifItem,
-	#     (("_atom_site_type_symbol","_atom_site_label"),
-	#       [["C","C","N"],["C1","C2","N1"]]))
+        #     self.cf["test_block"].AddCifItem,
+        #     (("_atom_site_type_symbol","_atom_site_label"),
+        #       [["C","C","N"],["C1","C2","N1"]]))
 
     def testReport(self):
         CifFile.validate_report(CifFile.Validate("pycifrw/tests/C13H2203_with_errors.cif",dic=self.ddl1dic))
@@ -1644,10 +1651,10 @@ class DicEvalTestCase(unittest.TestCase):
         del self.fb[dataname]
         result = self.fb[dataname]
         if scalar:
-            print 'Target: %f  Result %f' % (float(target),float(result))
+            print('Target: %f  Result %f' % (float(target),float(result)))
             self.failUnless(abs(float(target)-float(result))<0.01)
         else:
-            self.assertEqual(target,result,"Target = %s, Result = %s" % (`target`,`result`))
+            self.assertEqual(target,result,"Target = %s, Result = %s" % (repr(target),repr(result)))
 
     def testCellVolume(self):
         self.check_value('_cell.volume')
@@ -1671,7 +1678,7 @@ class DicEvalTestCase(unittest.TestCase):
         """Test that question marks are seen as missing values"""
         self.fb.provide_value = True
         result = self.fb['_model_site.adp_eigen_system']
-        print 'adp eigensystem is: ' + `result`
+        print('adp eigensystem is: ' + repr(result))
         
     def testCategoryMethod(self):
         """Test that a category method calculates and updates"""
@@ -1681,8 +1688,8 @@ class DicEvalTestCase(unittest.TestCase):
         self.fb.provide_value = True
         result = self.fb['model_site']
         self.fb.provide_value = False
-        print '**Updated block:'
-        print str(self.fb)
+        print('**Updated block:')
+        print(str(self.fb))
         self.failUnless(self.fb.has_key('_model_site.Cartn_xyz'))
         self.failUnless(self.fb.has_key('_model_site.mole_index'))
 
@@ -1751,8 +1758,8 @@ class DicStructureTestCase(unittest.TestCase):
                          ['_atom_site.type_symbol','_atom_site_aniso.type_symbol'])
 
     def testPrintOut(self):
-        """Test that a block with dictionary attached can print out string values"""
-        print self.fb
+        """Test that a block with dictionary attached can print(out string values"""
+        print(self.fb)
 
     def pullbacksetup(self):
         """Initial steps when setting up a pullback"""
@@ -1775,7 +1782,7 @@ class DicStructureTestCase(unittest.TestCase):
         start_data = self.pullbacksetup()
         q = start_data['_diffrn_detector_monolithic_element.key']
         p = start_data['_diffrn_detector_monolithic_element.detector_id']
-        print 'p,q = ' + `p` + '\n' + `q`
+        print('p,q = ' + repr(p) + '\n' + repr(q))
         self.failUnless(q==[['element1','adscq210-sn457']])
         self.failUnless(p==['ADSCQ210-SN457'])
 
@@ -1784,7 +1791,7 @@ class DicStructureTestCase(unittest.TestCase):
         start_data = self.pullbacksetup()
         q = start_data['_full_frame.id']
         r = start_data['_full_frame.detector_element_id']
-        print 'Frames from monolithic detector:' + `q`
+        print('Frames from monolithic detector:' + repr(q))
         self.failUnless(['scan1','frame1'] in q)
         self.failUnless(['scan1','frame3'] in q)
 
@@ -1798,7 +1805,7 @@ class DicStructureTestCase(unittest.TestCase):
         """Test construction of a block that is filtered using a text string"""
         start_data = self.pullbacksetup()
         q = start_data['_detector_axis.id']
-        print 'q is ' + `q`
+        print('q is ' + repr(q))
         self.failUnless(['detector_y','detector'] in q)
         self.failUnless(['goniometer_phi','goniometer'] not in q)
         
@@ -1814,7 +1821,7 @@ class DicStructureTestCase(unittest.TestCase):
         start_data = self.unpullbacksetup()
         q = start_data['_diffrn_detector.id']
         r = start_data['_diffrn_detector.number_of_elements']
-        print 'q,r = ' + `q` + ' , ' + `r`
+        print('q,r = ' + repr(q) + ' , ' + repr(r))
         self.failUnless(q==['ADSCQ210-SN457'])
         self.failUnless(r == [1])
 
@@ -1823,7 +1830,7 @@ class DicStructureTestCase(unittest.TestCase):
         streams"""
         start_data = self.unpullbacksetup()
         q = start_data['_axis.key']
-        print 'q ends up as:' + `q`
+        print('q ends up as:' + repr(q))
         self.failUnless(['detector_x','detector'] in q)
         self.failUnless(['GONIOMETER_PHI','goniometer'] in q)
         
@@ -1856,7 +1863,7 @@ _item4 4
         f.write(outstrg)
         f.close()
         q = CifFile.CifFile("order_test.cif",grammar="auto")
-        print `q.block_input_order`
+        print(repr(q.block_input_order))
         self.failUnless(q.block_input_order[1] == "testb")
         f = open("round_trip_test.cif","w")
         f.write(str(q))

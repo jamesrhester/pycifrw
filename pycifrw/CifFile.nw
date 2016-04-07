@@ -269,7 +269,7 @@ def AddCifItem(self,data):
     """ *DEPRECATED*. Use `AddItem` instead."""
     # we accept only tuples, strings and lists!!
     if not (isinstance(data[0],(basestring,tuple,list))):
-              raise TypeError, 'Cif datanames are either a string, tuple or list'
+              raise TypeError('Cif datanames are either a string, tuple or list')
     # we catch single item loops as well...
     if isinstance(data[0],basestring):
         self.AddSingleCifItem(data[0],list(data[1]))
@@ -604,7 +604,7 @@ def dic_determine(self):
             self.dep_spec = "_item_dependent.dependent_name"
             return (name+version,"DDL2")
     else:
-	raise CifError, "Unable to determine dictionary DDL version"
+	raise CifError("Unable to determine dictionary DDL version")
     
 @ DDL1 differences.  Firstly, in DDL1 you can loop a [[_name]] to get
 definitions of related names (e.g. x,y,z).  Secondly, the data block
@@ -985,7 +985,7 @@ def get_ddl1_entry(self,cat_name):
     chop_len = len(cat_name) 
     possibles = filter(lambda a:a[1:chop_len+3]==cat_name+"_[",self.keys())
     if len(possibles) > 1 or possibles == []:
-        raise ValidCifError, "Category name %s can't be matched to category entry" % cat_name
+        raise ValidCifError("Category name %s can't be matched to category entry" % cat_name)
     else:
         return possibles[0]
 
@@ -1194,9 +1194,9 @@ def change_category_name(self,oldname,newname):
     self.unlock()
     """Change the category name from [[oldname]] to [[newname]]"""
     if not self.has_key(oldname):
-        raise KeyError,'Cannot rename non-existent category %s to %s' % (oldname,newname)
+        raise KeyError('Cannot rename non-existent category %s to %s' % (oldname,newname))
     if self.has_key(newname):
-        raise KeyError,'Cannot rename %s to %s as %s already exists' % (oldname,newname,oldname)
+        raise KeyError('Cannot rename %s to %s as %s already exists' % (oldname,newname,oldname))
     child_defs = self.ddlm_immediate_children(oldname)
     self.rename(oldname,newname)   #NB no name integrity checks
     self[newname]['_name.object_id']=newname
@@ -1211,7 +1211,7 @@ def change_category_name(self,oldname,newname):
     print(repr(self.cat_map.values()))
     oldid = [a[0] for a in self.cat_map.items() if a[1].lower()==oldname.lower()]
     if len(oldid)!=1:
-        raise CifError, 'Unable to find old category name in category map: %s not in %s' % (oldname.lower(),repr(self.cat_map.items()))
+        raise CifError('Unable to find old category name in category map: %s not in %s' % (oldname.lower(),repr(self.cat_map.items())))
     del self.cat_map[oldid[0]]
     self.cat_map[newname.lower()] = newname
     self.lock()
@@ -1267,7 +1267,7 @@ def add_category(self,catname,catparent=None,is_loop=True,allow_dangler=False):
        [[is_loop]] is false, a Set category is created. If [[allow_dangler]]
        is true, the parent category does not have to exist."""
     if catname in self:
-        raise CifError, 'Attempt to add existing category %s' % catname
+        raise CifError('Attempt to add existing category %s' % catname)
     self.unlock()
     syntactic_root = self.get_roots()[0][0]
     if catparent is None:
@@ -1306,7 +1306,7 @@ def add_definition(self,itemname,catparent,def_text='PLEASE DEFINE ME',allow_dan
         objname = itemname
     objname = objname.strip('_')
     if not allow_dangler and (catparent not in self or self[catparent]['_definition.scope']!='Category'):
-        raise CifError, 'No category %s in dictionary' % catparent
+        raise CifError('No category %s in dictionary' % catparent)
     fullname = '_'+catparent.lower()+'.'+objname
     print('New name: %s' % fullname)
     syntactic_root = self.get_roots()[0][0]
@@ -1360,7 +1360,7 @@ def get_name_by_cat_obj(self,category,object,give_default=False):
     except KeyError:
         if give_default:
            return '_'+true_cat+'.'+object
-    raise KeyError, 'No such category,object in the dictionary: %s %s' % (true_cat,object)
+    raise KeyError('No such category,object in the dictionary: %s %s' % (true_cat,object))
 
 @ Dictionaries have the category-wide information in the category
 definition area.  We create a map from data block / save frame header to
@@ -1476,13 +1476,13 @@ def ddlm_import(self,import_mode='All'):
             import_target = import_from[target_key]
         except KeyError:
             if miss == 'Exit':
-               raise CifError,'Import frame %s not found in %s' % (target_key,full_uri)
+               raise CifError('Import frame %s not found in %s' % (target_key,full_uri))
             else: continue
         # now import appropriately
         mode = import_ref.get("mode",'Contents').lower()
         if self.has_key(target_key) and mode=='full':  #so blockname will be duplicated
             if dupl == 'Exit':
-                raise CifError, 'Import frame %s already in dictionary' % target_key
+                raise CifError('Import frame %s already in dictionary' % target_key)
             elif dupl == 'Ignore':
                 continue
         if mode == 'contents':   #merge attributes only
@@ -1557,7 +1557,7 @@ def get_one_cat(self,source_dict,source_cat,on_dupl,on_miss):
         if on_miss == "Ignore":
            pass
         else:
-           raise CifError, "Missing category %s" % source_cat 
+           raise CifError("Missing category %s" % source_cat)
     else:
         all_ext_defns = source_dict.keys()
         cat_list = filter(lambda a:source_dict[a].get("_name.category_id","").lower()==source_cat.lower(),
@@ -1567,7 +1567,7 @@ def get_one_cat(self,source_dict,source_cat,on_dupl,on_miss):
             if on_dupl=="Ignore":
                 pass
             elif on_dupl == "Exit":
-                raise CifError, "Duplicate category %s" % source_cat
+                raise CifError("Duplicate category %s" % source_cat)
             else: 
                 self[source_cat] = ext_cat
         else:
@@ -1580,7 +1580,7 @@ def add_one_defn(self,source_dict,cat_defn,on_dupl):
     if self.has_key(cat_defn):
        if on_dupl == "Ignore": pass
        elif on_dupl == "Exit": 
-               raise CifError, "Duplicate definition %s" % cat_defn
+               raise CifError("Duplicate definition %s" % cat_defn)
        else: self[cat_defn] = source_dict[cat_defn]
     else: self[cat_defn] = source_dict[cat_defn]
     print("    "+cat_defn)
@@ -1602,7 +1602,7 @@ def import_attributes(self,mykey,source_dict,source_def,on_dupl,on_miss):
     # process missing 
     if not source_dict.has_key(source_def): 
         if on_miss == 'Exit':
-            raise CifError, 'Missing definition for import %s' % source_def
+            raise CifError('Missing definition for import %s' % source_def)
         else: return          #nothing else to do
     # now do the import
     print('Adding attributes from %s to %s' % (source_def,mykey))
@@ -1613,7 +1613,7 @@ def import_loop(self,mykey,source_dict,source_def,loop_name,on_miss):
     # process imssing
     if not source_dict.has_key(source_def): 
         if on_miss == 'Exit':
-            raise CifError, 'Missing definition for import %s' % source_def
+            raise CifError('Missing definition for import %s' % source_def)
         else: return          #nothing else to do
     print('Adding %s attributes from %s to %s' % (loop_name,source_def,mykey))
     state_loop = source_dict[source_def].GetLoop(loop_name)
@@ -2789,10 +2789,10 @@ for one_func in the_funcs:
     cifdata.provide_value = True
     try:
         result = pyfunc(cifdata)
-    except CifRecursionError,s:
+    except CifRecursionError as s:
         print(s)
         result = None
-    except StarFile.StarDerivationError,s:
+    except StarFile.StarDerivationError as s:
         print(s)
         result = None
     finally:
@@ -2956,12 +2956,12 @@ def push_from_pullback(self,target_category,source_categories,cifdata,store_valu
                         else:
                             result[extra_dataname].extend(new_value) 
                 else:
-                    raise ValueError,'Unexpected category construct type' + self[sc]['_category_construct_local.type']
+                    raise ValueError('Unexpected category construct type' + self[sc]['_category_construct_local.type'])
         first_time = False
     # check for sanity - all dataname lengths must be identical
     datalen = len(set([len(a) for a in result.values()]))
     if datalen != 1:
-        raise AssertionError,'Failed to construct equal-length category items,'+ repr(result)
+        raise AssertionError('Failed to construct equal-length category items,'+ repr(result))
     if store_value:
         print('Now storing ' + repr(result))
         self.store_new_cat_values(cifdata,result,target_category)
@@ -3031,7 +3031,7 @@ if len(alias_name)==1:
     if len(found_it)>0:
         return self.change_type(key,cifdata[found_it[0]])
 elif len(alias_name)>1:
-    raise CifError, 'Dictionary error: dataname alias appears in different definitions: ' + repr(alias_name)
+    raise CifError('Dictionary error: dataname alias appears in different definitions: ' + repr(alias_name))
 
 @ Using the defaults system. We also check out any default values
 which we could return in case of error.  Note that ddlm adds the
@@ -3206,7 +3206,7 @@ def get_full_child_list(self):
         unrooted = self.ddlm_danglers()
         double_names =  set(unrooted).intersection(set(all_names))
         if len(double_names)>0:
-            raise CifError,'Names are children of internal and external categories:%s' % repr(double_names)
+            raise CifError('Names are children of internal and external categories:%s' % repr(double_names))
         remaining = unrooted[:]
         for no_root in unrooted:
             if self[no_root].get('_definition.scope','Item')=='Category':
@@ -3219,7 +3219,7 @@ def get_full_child_list(self):
                 all_names += [r]
         print('Final block order: ' + repr(all_names))
         return all_names
-    raise ValueError, 'Dictionary contains no/multiple Head categories, please print as plain CIF instead'
+    raise ValueError('Dictionary contains no/multiple Head categories, please print as plain CIF instead')
 
 def recurse_child_list(self,parentname):
     """Recursively expand the logical child list of [[parentname]]"""
@@ -3982,7 +3982,7 @@ def convert_matrix_values(valtype):
     elif valtype == 'Complex':
         func_def +="    return p.astype('complex')\n"
     else:
-        raise ValueError, 'Unknown matrix value type'
+        raise ValueError('Unknown matrix value type')
     exec func_def  #matrix convert is defined
     return matrix_convert    
         
@@ -4054,7 +4054,7 @@ def track_recursion(in_this_func):
         key_arg = args[1]
         if key_arg in wrapper.called_list:
             print('Recursion watch: %s already called %d times' % (key_arg,wrapper.called_list.count(key_arg)))
-            raise CifRecursionError, (key_arg,wrapper.called_list[:])    #failure
+            raise CifRecursionError( (key_arg,wrapper.called_list[:]))    #failure
         if len(wrapper.called_list) == 0:   #first time
             wrapper.stored_use_defaults = kwargs.get("allow_defaults",False)
             print('All recursive calls will set allow_defaults to ' + repr(wrapper.stored_use_defaults))
@@ -4064,9 +4064,9 @@ def track_recursion(in_this_func):
         print('Recursion watch: call stack: ' + repr(wrapper.called_list))
         try:
             result = in_this_func(*args,**kwargs)
-        except StarFile.StarDerivationError,s:
+        except StarFile.StarDerivationError as s:
             if len(wrapper.called_list) == 1: #no more
-                raise StarFile.StarDerivationFailure,wrapper.called_list[0]
+                raise StarFile.StarDerivationFailure(wrapper.called_list[0])
             else:
                 raise
         finally:
@@ -4094,7 +4094,7 @@ def merge_dic(diclist,mergemode="replace",ddlspec=None):
     for dic in diclist:
         if not isinstance(dic,CifFile) and \
            not isinstance(dic,basestring):
-               raise TypeError, "Require list of CifFile names/objects for dictionary merging"
+               raise TypeError("Require list of CifFile names/objects for dictionary merging")
 	if not isinstance(dic,CifFile): dic_as_cif_list.append(CifFile(dic))
 	else: dic_as_cif_list.append(dic)
     # we now merge left to right

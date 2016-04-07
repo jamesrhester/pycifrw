@@ -168,7 +168,7 @@ def makeloop(target_block,loopdata):
     except ValueError:
         error_string =  'Incorrect number of loop values for loop containing %s' % repr(loop_seq)
         print(error_string, file=sys.stderr)
-        raise ValueError, error_string
+        raise ValueError(error_string)
 
 # return an object with the appropriate amount of nesting
 def make_empty(nestlevel):
@@ -199,7 +199,7 @@ def cif_update(old_dict,new_dict,loops):
         #print 'Comparing %s to %s' % (repr(old_keys),repr(new_dict.keys()))
         for new_key in new_dict.keys():
             if new_key.lower() in old_keys:
-	        raise CifError, "Duplicate dataname or blockname %s in input file" % new_key
+	        raise CifError("Duplicate dataname or blockname %s in input file" % new_key)
             old_dict[new_key] = new_dict[new_key]
 #
 # this takes two lines, so we couldn't fit it into a one line execution statement...

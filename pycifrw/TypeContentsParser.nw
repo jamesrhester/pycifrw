@@ -31,8 +31,8 @@ getting rid of the inverted commas.
 lastval = ''
 def monitor(location,value):
     global lastval
-    #print 'At %s: %s' % (location,`value`)
-    lastval = `value`
+    #print 'At %s: %s' % (location,repr(value))
+    lastval = repr(value)
     return value
 
 @

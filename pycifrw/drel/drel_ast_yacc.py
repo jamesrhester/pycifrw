@@ -566,9 +566,9 @@ def p_empty(p):
 
 def p_error(p):
     try:
-        print 'Syntax error at position %d, line %d token %s, value %s' % (p.lexpos,p.lineno,p.type,p.value)
-        print 'Surrounding text: ' + p.lexer.lexdata[max(p.lexpos - 100,0): p.lexpos] + "*" + \
-           p.lexer.lexdata[p.lexpos:min(p.lexpos + 100,len(p.lexer.lexdata))]
+        print('Syntax error at position %d, line %d token %s, value %s' % (p.lexpos,p.lineno,p.type,p.value))
+        print('Surrounding text: ' + p.lexer.lexdata[max(p.lexpos - 100,0): p.lexpos] + "*" + \
+           p.lexer.lexdata[p.lexpos:min(p.lexpos + 100,len(p.lexer.lexdata))])
     except:
         pass
     parser.restart()

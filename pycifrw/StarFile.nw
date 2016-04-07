@@ -217,7 +217,7 @@ def __init__(self,datasource=None,standard='CIF',blocktype = StarBlock,
 def set_grammar(self,new_grammar):
     """Set the syntax and grammar for output to `new_grammar`"""
     if new_grammar not in ['1.1','1.0','2.0','STAR2']:
-        raise StarError, 'Unrecognised output grammar %s' % new_grammar
+        raise StarError('Unrecognised output grammar %s' % new_grammar)
     self.grammar = new_grammar
 
 def set_characterset(self,characterset):
@@ -289,7 +289,7 @@ def __getitem__(self,key):
        #print 'Visible keys:' + `self.visible_keys`
        #print 'All keys' + `self.lower_keys`
        #print 'Child table' + `self.child_table`
-       raise KeyError,'No such item %s' % key
+       raise KeyError('No such item %s' % key)
 
 # we have to get an ordered list of the current keys,
 # as we'll have to delete one of them anyway.
@@ -508,7 +508,7 @@ def NewBlock(self,blockname,blockcontents=None,fix=True,parent=None):
     if self.standard == "CIF":
         blockcontents.setmaxnamelength(75)
     if len(blockname)>75:
-             raise StarError , 'Blockname %s is longer than 75 characters' % blockname
+             raise StarError('Blockname %s is longer than 75 characters' % blockname)
     if fix:
         newblockname = re.sub('[  \t]','_',blockname)
     else: newblockname = blockname
@@ -584,9 +584,9 @@ def rename(self,oldname,newname):
     realoldname = oldname.lower()
     realnewname = newname.lower()
     if realnewname in self.lower_keys:
-        raise StarError,'Cannot change blockname %s to %s as %s already present' % (oldname,newname,newname)
+        raise StarError('Cannot change blockname %s to %s as %s already present' % (oldname,newname,newname))
     if realoldname not in self.lower_keys:
-        raise KeyError,'Cannot find old block %s' % realoldname
+        raise KeyError('Cannot find old block %s' % realoldname)
     self._rekey(realoldname,realnewname,block_id=newname)
     
 @ Merging.  Originally, this package envisaged Cif and STAR files as collections
@@ -846,7 +846,7 @@ initialising the file.
                     outstring.write('\n\n' + 'save_' + '\n')
                     all_names.remove(child_ref.lower())
             else:
-                raise StarError, 'Grammar %s is not recognised for output' % self.grammar
+                raise StarError('Grammar %s is not recognised for output' % self.grammar)
             if self.standard != 'Dic':              #put contents after save frames
                 outstring.write(str(self[blockref]))
             else:
@@ -1011,7 +1011,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
     elif grammar == 'STAR2':
         try_list = [('STAR2',YST)]
     else:
-        raise AttributeError, 'Unknown STAR/CIF grammar requested, %s' % repr( grammar )
+        raise AttributeError('Unknown STAR/CIF grammar requested, %s' % repr( grammar ))
     if isinstance(filename,basestring):
         filestream = urlopen(filename)
     else:
@@ -1048,7 +1048,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
     if text[:10] != "#\#CIF_2.0" and ('2.0',Y20) in try_list:
         try_list.remove(('2.0',Y20),)
         if not try_list:
-            raise StarError, 'File %s missing CIF2.0 header' % (filename)
+            raise StarError('File %s missing CIF2.0 header' % (filename))
     for grammar_name,Y in try_list:
        if scantype == 'standard' or grammar_name in ['2.0','STAR2']:
             parser = Y.StarParser(Y.StarParserScanner(text))
@@ -1062,7 +1062,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
        proto_star = None
        try:
            proto_star = getattr(parser,"input")(prepared)
-       except Y.yappsrt.SyntaxError,e:
+       except Y.yappsrt.SyntaxError as e:
            input = parser._scanner.input
            Y.yappsrt.print_error(input, e, parser._scanner)
        except Y.yappsrt.NoMoreTokens:
@@ -1171,7 +1171,7 @@ this has been done by the creating routine.
 def __init__(self,parent_block,dataname):
     self.loop_no = parent_block.FindLoop(dataname)
     if self.loop_no < 0:
-        raise KeyError, '%s is not in a loop structure' % dataname
+        raise KeyError('%s is not in a loop structure' % dataname)
     self.parent_block = parent_block
 
 <<Add emulation of a mapping type>>=
@@ -1190,7 +1190,7 @@ def __getitem__(self,dataname):
     if dataname in self.keys():
         return self.parent_block[dataname]
     else:
-        raise KeyError, '%s not in loop block' % dataname
+        raise KeyError('%s not in loop block' % dataname)
 
 def __setitem__(self,dataname,value):
     self.parent_block[dataname] = value
@@ -1245,7 +1245,7 @@ class StarPacket(list):
         if att_name.lower() in self.__dict__:
             return getattr(self,att_name.lower())
         if att_name in ('cif_dictionary','fulldata','key'):
-            raise AttributeError, 'Programming error: can only assign value of %s' % att_name
+            raise AttributeError('Programming error: can only assign value of %s' % att_name)
         d = self.cif_dictionary
         c = self.fulldata
         k = self.key
@@ -1309,7 +1309,7 @@ def GetLoopNames(self,keyname):
             return aloop.GetLoopNames(keyname)
         except KeyError:
             pass
-    raise KeyError, 'Item does not exist'
+    raise KeyError('Item does not exist')
 
 @ Adding to a loop.  We find the loop containing the dataname that
 we have been passed, and then append all of the (key,values) pairs that we
@@ -1422,7 +1422,7 @@ def setmaxnamelength(self,maxlength):
     if maxlength > 0:
         bad_names = [a for a in self.keys() if len(a)>self.maxnamelength]
         if len(bad_names)>0:
-            raise StarError, 'Datanames too long: ' + repr( bad_names )
+            raise StarError('Datanames too long: ' + repr( bad_names ))
 
 def set_characterset(self,characterset):
     """Set the characterset for checking datanames: may be `ascii` or `unicode`"""
@@ -1472,13 +1472,13 @@ the enclosing block collection (e.g. CIF or STAR file object)""")
            except StarDerivationFailure:   #try now with defaults included
                try: 
                    new_value = self.dictionary.derive_item(key,self,store_value=self.cache_vals,allow_defaults=True)
-               except StarDerivationFailure,s:
+               except StarDerivationFailure as s:
                    print ("In StarBlock.__getitem__, " + repr( s ))
-                   raise KeyError, 'No such item: %s' % key
+                   raise KeyError('No such item: %s' % key)
            print('Set %s to derived value %s' % (key, repr(new_value)))
            return new_value
        else:
-           raise KeyError, 'No such item: %s' % key
+           raise KeyError('No such item: %s' % key)
     # we now have an item, we can try to convert it to a number if that is appropriate
     # note numpy values are never stored but are converted to lists
     if not self.dictionary or not self.dictionary.has_key(key): return rawitem
@@ -1505,10 +1505,10 @@ the enclosing block collection (e.g. CIF or STAR file object)""")
                del self[key]
                try:
                    new_value = self.dictionary.derive_item(key,self,store_value=True,allow_defaults=False)
-               except StarDerivationFailure,s:
+               except StarDerivationFailure as s:
                    try:
                        new_value = self.dictionary.derive_item(key,self,store_value=True,allow_defaults=True)
-                   except StarDerivationFailure,s:
+                   except StarDerivationFailure as s:
                    
                        print ("Could not turn %s into a value:" + repr( s ))
                        return rawitem
@@ -1586,7 +1586,7 @@ def GetItemPosition(self,itemname):
         # return loop position
         return (-1, self.item_order.index(itemname))
     if not self.has_key(itemname):
-        raise ValueError, 'No such dataname %s' % itemname
+        raise ValueError('No such dataname %s' % itemname)
     testname = itemname.lower()
     if testname in self.item_order:
         return (-1,self.item_order.index(testname))
@@ -1635,7 +1635,7 @@ def AddItem(self,key,value,precheck=False):
     """Add dataname `key` to block with value `value`.  `value` may be
     a single value, a list or a tuple."""
     if not isinstance(key,basestring):
-         raise TypeError, 'Star datanames are strings only (got %s)' % repr( key )
+         raise TypeError('Star datanames are strings only (got %s)' % repr( key ))
     if not precheck:
          self.check_data_name(key,self.maxnamelength)    # make sure no nasty characters   
     # check for overwriting
@@ -1681,7 +1681,7 @@ def AddLoopItem(self,incomingdata,precheck=False,maxlength=-1):
            self.AddItem(key,value)
        self.CreateLoop(incomingdata[0])
     elif not isinstance(incomingdata[0],basestring):
-         raise TypeError, 'Star datanames are strings only (got %s)' % repr( incomingdata[0] )
+         raise TypeError('Star datanames are strings only (got %s)' % repr( incomingdata[0] ))
     else:
         self.AddItem(incomingdata[0],incomingdata[1])
 
@@ -1741,11 +1741,11 @@ def check_item_value(self,item):
             me = self.char_check.match(it)            
             if not me:
                 print ("Fail value check: %s" % it)
-                raise StarError, u'Bad character in %s' % it
+                raise StarError('Bad character in %s' % it)
             else:
                 if me.span() != (0,len(it)):
                     print ("Fail value check, match only %d-%d in string %s" % (me.span()[0],me.span()[1],repr( it )))
-                    raise StarError,u'Data item "' + repr( it ) +  u'"... contains forbidden characters'
+                    raise StarError('Data item "' + repr( it ) +  u'"... contains forbidden characters')
     map(check_one,test_item)
 
 @ Regularising data.  We want the copy.deepcopy operation to work, so
@@ -1765,7 +1765,7 @@ def regularise_data(self,dataitem):
     # so try to make into a list
     try:
         regval = list(dataitem)
-    except TypeError, value:
+    except TypeError as value:
         raise StarError( str(dataitem) + ' is wrong type for data value\n' )
     return regval,[None]*len(regval)
     
@@ -1883,7 +1883,7 @@ def GetFullItemValue(self,itemname):
     try:
 	s,v = self.block[itemname.lower()]
     except KeyError:
-        raise KeyError, 'Itemname %s not in datablock' % itemname
+        raise KeyError('Itemname %s not in datablock' % itemname)
     # prefer string value unless all are None
     # are we a looped value?
     if not isinstance(s,(tuple,list)) or isinstance(s,StarList):
@@ -1939,9 +1939,9 @@ def CreateLoop(self,datanames,order=-1,length_check=True):
            if len(listed_values) == len(datanames):
                len_set = set([len(self[a]) for a in datanames])
                if len(len_set)>1:
-                   raise ValueError, 'Request to loop datanames %s with different lengths: %s' % (repr( datanames ),repr( len_set ))
+                   raise ValueError('Request to loop datanames %s with different lengths: %s' % (repr( datanames ),repr( len_set )))
            elif len(listed_values) != 0:
-               raise ValueError, 'Request to loop datanames where some are single values and some are not'
+               raise ValueError('Request to loop datanames where some are single values and some are not')
        # store as lower case
        lc_datanames = [d.lower() for d in datanames]
        # remove these datanames from all other loops
@@ -1990,7 +1990,7 @@ def AddLoopName(self,oldname, newname):
     lower_newname = newname.lower()
     loop_no = self.FindLoop(oldname)
     if loop_no < 0:
-        raise KeyError, '%s not in loop' % oldname
+        raise KeyError('%s not in loop' % oldname)
     if lower_newname in self.loops[loop_no]:
         return
     # check length
@@ -1999,7 +1999,7 @@ def AddLoopName(self,oldname, newname):
     loop_len = len(self[oldname])
     self.provide_value = old_provides
     if len(self[newname]) != loop_len:
-        raise ValueError, 'Mismatch of loop column lengths for %s: should be %d' % (newname,loop_len)
+        raise ValueError('Mismatch of loop column lengths for %s: should be %d' % (newname,loop_len))
     # remove from any other loops
     [self.loops[a].remove(lower_newname) for a in self.loops if lower_newname in self.loops[a]]
     # and add to this loop
@@ -2048,7 +2048,7 @@ def GetLoopNames(self,keyname):
     if loop_no >= 0:
         return self.loops[loop_no]
     else:
-        raise KeyError, '%s is not in any loop' % keyname
+        raise KeyError('%s is not in any loop' % keyname)
 
 @ Adding to a loop.  We find the loop containing the dataname that
 we have been passed, and then append all of the (key,values) pairs that we
@@ -2070,8 +2070,8 @@ def AddToLoop(self,dataname,loopdata):
     loop_len = len(self[dataname])
     bad_vals = [a for a in loopdata.items() if len(a[1])!=loop_len]
     if len(bad_vals)>0:
-       raise StarLengthError, "Number of values for looped datanames %s not equal to %d" \
-           % (repr( bad_vals ),loop_len)
+       raise StarLengthError("Number of values for looped datanames %s not equal to %d" \
+           % (repr( bad_vals ),loop_len))
     self.update(loopdata)
     self.loops[thisloop]+=loopdata.keys()
 
@@ -2098,7 +2098,7 @@ def GetKeyedPacket(self,keyname,keyvalue,no_case=False):
     else:
        one_pack= [a for a in my_loop if getattr(a,keyname)==keyvalue]
     if len(one_pack)!=1:
-        raise ValueError, "Bad packet key %s = %s: returned %d packets" % (keyname,keyvalue,len(one_pack))
+        raise ValueError("Bad packet key %s = %s: returned %d packets" % (keyname,keyvalue,len(one_pack)))
     print ("Keyed packet: %s" % one_pack[0])
     return one_pack[0]
 
@@ -2174,7 +2174,7 @@ def GetKeyedSemanticPacket(self,keyvalue,cat_id):
             p.key = keyname
             break
     if not hasattr(p,"key"):
-        raise ValueError, "No key found for %s, packet is %s" % (cat_id,str(p))
+        raise ValueError("No key found for %s, packet is %s" % (cat_id,str(p)))
     p.cif_dictionary = self.dictionary
     p.fulldata = self
     return p
@@ -2262,7 +2262,7 @@ class CIFStringIO(StringIO):
         # do we need to break?
         if delimiter:
             if len(outstring)>1:
-                raise ValueError, 'Delimiter %s is longer than one character' % repr( outstring )
+                raise ValueError('Delimiter %s is longer than one character' % repr( outstring ))
             output_delimiter = True
         if mustbreak:    #insert a new line and indent
             temp_string = '\n' + ' ' * self.indentlist[-1]
@@ -2361,7 +2361,7 @@ def set_grammar(self,new_grammar):
     elif new_grammar == 'STAR2':
         self.list_delimiter = ", "
     elif new_grammar not in ['1.0','1.1']:
-        raise StarError,'Request to set unknown grammar %s' % new_grammar
+        raise StarError('Request to set unknown grammar %s' % new_grammar)
 
 @ Printing a section.  We allow an optional order list to be given, in
 case the caller wants to order things in some nice way.  By default, we
@@ -2464,7 +2464,7 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
     elif isinstance(itemvalue,(float,int,long)):  #TODO - handle uncertainties
        stringsink.write(str(itemvalue),canbreak=True,startcol=startcol)   #numbers
     else:
-       raise ValueError, 'Value in unexpected format for output: %s' % repr( itemvalue )
+       raise ValueError('Value in unexpected format for output: %s' % repr( itemvalue ))
 
 @ Formatting a loop section.  We are passed an indent and destination string,
 and are expected to append a list of item names to the string indented by
@@ -2705,7 +2705,7 @@ def apply_line_prefix(instring,prefix):
             outstring = prefix + "\\\n" + prefix
         outstring = outstring + not_header.replace("\n","\n"+prefix)
         return outstring
-    raise StarError, "Requested prefix starts with semicolon or contains a backslash: " + prefix
+    raise StarError("Requested prefix starts with semicolon or contains a backslash: " + prefix)
 
 @ Line indents are signalled by one or two backslashes at the end of
 the first line.  If this is detected,the text before the backslash is
@@ -2951,7 +2951,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
        self.true_case.update(new_block.true_case)
     elif mode == 'overlay':
        print('Overlay mode, current overwrite is %s' % self.overwrite)
-       raise StarError, 'Overlay block merge mode not implemented'
+       raise StarError('Overlay block merge mode not implemented')
        save_overwrite = self.overwrite
        self.overwrite = True
        for attribute in new_block.keys():
