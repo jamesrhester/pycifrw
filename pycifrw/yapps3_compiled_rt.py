@@ -10,6 +10,12 @@
 #
 # Modified for PyCIFRW by JRH to allow external scanner
 #
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
 """ Detail of JRH modifications.
 
 The compiled module handles all token administration by itself, but
@@ -86,19 +92,19 @@ class Scanner:
         self.input = input
         self.pos = 0
         self.ignore = ignore
-	self.scantype = scantype
+        self.scantype = scantype
         self.first_line_number = 1
-	if self.scantype == "flex" and have_star_scan:
-	    StarScan.prepare(input)
-	    self.scan = self.compiled_scan
-	    self.token = self.compiled_token
-	    self.__del__ = StarScan.cleanup
+        if self.scantype == "flex" and have_star_scan:
+            StarScan.prepare(input)
+            self.scan = self.compiled_scan
+            self.token = self.compiled_token
+            self.__del__ = StarScan.cleanup
         elif self.scantype == "flex":
-	    print "Warning: using Python scanner"
-	    self.scantype = "standard"
+            print("Warning: using Python scanner")
+            self.scantype = "standard"
         if self.scantype != "flex":
-	    self.scan = self.interp_scan
-	    self.token = self.interp_token
+            self.scan = self.interp_scan
+            self.token = self.interp_token
         
         if patterns is not None:
             # Compile the regex strings into regex objects
@@ -166,20 +172,20 @@ class Scanner:
         raise NoMoreTokens()
     
     def compiled_token(self,i,restrict=0):
-	try:
-	    return StarScan.token(i)
+        try:
+            return StarScan.token(i)
         except IndexError:
-	    raise NoMoreTokens()
+            raise NoMoreTokens()
     
     def __repr__(self):
         """Print the last 10 tokens that have been scanned in"""
         output = ''
-	if self.scantype != "flex":
+        if self.scantype != "flex":
             for t in self.tokens[-10:]:
                 output = '%s\n  (@%s)  %s  =  %s' % (output,t[0],t[2],repr(t[3]))
         else:
-	    out_tokens = StarScan.last_ten()
-	    for t in out_tokens:
+            out_tokens = StarScan.last_ten()
+            for t in out_tokens:
                 output = '%s\n  (~line %s)  %s  =  %s' % (output,t[0],t[2],repr(t[3]))
         return output
     
@@ -236,16 +242,16 @@ class Scanner:
                 self.pos = self.pos + best_match
 
     def compiled_scan(self,restrict):
-	token = StarScan.scan()
-	print "Calling compiled scan, got %s" % `token`
-	if token[2] not in restrict:
-	    msg = "Bad Token"
-	    if restrict:
-		msg = "Trying to find one of "+join(restrict,", ")
+        token = StarScan.scan()
+        print("Calling compiled scan, got %s" % repr(token))
+        if token[2] not in restrict:
+            msg = "Bad Token"
+            if restrict:
+               msg = "Trying to find one of "+join(restrict,", ")
             raise SyntaxError(self.pos,msg)
         self.tokens.append(token)
-	self.restrictions.append(restrict)
-	return
+        self.restrictions.append(restrict)
+        return
 
 class Parser:
     """Base class for Yapps-generated parsers.
@@ -364,7 +370,7 @@ def print_error(input, err, scanner):
 def wrap_error_reporter(parser, rule):
     try:
         return getattr(parser, rule)()
-    except SyntaxError, e:
+    except SyntaxError as e:
         input = parser._scanner.input
         print_error(input, e, parser._scanner)
     except NoMoreTokens:

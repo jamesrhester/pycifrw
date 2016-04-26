@@ -1,2 +1,2 @@
-from CifFile import *
-from StarFile import *
+from __future__ import absolute_import
+from .CifFile import CifFile,CifDic
