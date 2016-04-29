@@ -19,14 +19,7 @@ and CIF2/STAR2 differ in their treatment of unquoted data values beginning
 with brackets.
 
 <<1.0_syntax>>=
-# To maximize python3/python2 compatibility
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
-
-from .StarFile import StarBlock,StarFile
-from cStringIO import StringIO
+<<Python2-3 compatibility>>
 <<Helper functions>>
 %%
 parser StarParser:
@@ -35,14 +28,7 @@ parser StarParser:
 %%
 
 <<1.1_syntax>>=
-# To maximize python3/python2 compatibility
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
-
-from .StarFile import StarBlock,StarFile
-from cStringIO import StringIO
+<<Python2-3 compatibility>>
 <<Helper functions>>
 %%
 parser StarParser:
@@ -52,14 +38,7 @@ parser StarParser:
 @ The following two recipes produce CIF2 and STAR2 syntax.
 
 <<CIF2_syntax>>=
-# To maximize python3/python2 compatibility
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
-
-from .StarFile import StarBlock,StarFile,StarList,StarDict
-from StringIO import StringIO  #must be unicode-aware
+<<Python2-3 compatibility>>
 <<Helper functions>>
 %%
 parser StarParser:
@@ -68,14 +47,7 @@ parser StarParser:
 %%
 @ The STAR2 syntax
 <<STAR2_syntax>>=
-# To maximize python3/python2 compatibility
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
-
-from .StarFile import StarBlock,StarFile,StarList,StarDict
-from StringIO import StringIO
+<<Python2-3 compatibility>>
 <<Helper functions>>
 %%
 parser StarParser:
@@ -209,9 +181,9 @@ def order_update(order_array,new_name):
 
 # and finally...turn a sequence into a python dict (thanks to Stackoverflow)
 def pairwise(iterable):
-    itnext = iter(iterable).next
+    it = iter(iterable)
     while 1:
-        yield itnext(), itnext()
+        yield next(it), next(it)
 
 @
 
@@ -578,3 +550,15 @@ rule input@<<prepared>>: ( ((
                       save_end           {{return monitor('save_frame',savebc)}}
 
 
+@  Python 2/3 compatibility. We try to keep the code as
+portable across the 2-3 divide as we can.
+
+<<Python2-3 compatibility>>=
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
+from .StarFile import StarBlock,StarFile,StarList,StarDict
+from io import StringIO

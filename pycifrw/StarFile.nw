@@ -82,28 +82,33 @@ from __future__ import absolute_import
 
 <<Copyright statement>>
 
-
-from urllib import *         # for arbitrary opening
-import re
+# Python 2,3 compatibility
+try:
+    from urllib import urlopen         # for arbitrary opening
+    from urlparse import urlparse, urlunparse
+except:
+    from urllib.request import urlopen
+    from urllib.parse import urlparse,urlunparse
+import re,os
 import copy
 import textwrap
-# For Python 2.6 or higher compatibility
-try: 
-    set
-except NameError:
-    import sets
-    set = sets.Set
-# For python 3.5 compatibility
+
 try:
     import cStringIO
-except:    #python 3.5
+except:    #python 3
     import io as cStringIO
 
 try:
     from StringIO import StringIO
 except:
     from io import StringIO
-    
+
+try:
+    import numpy
+    have_numpy = True
+except ImportError:
+    have_numpy = False
+
 <<Define a collection datatype>>
 <<LoopBlock class>>
 <<StarBlock class>>
@@ -292,7 +297,7 @@ def __setitem__(self,key,value):
     self.NewBlock(key,value,parent=None)
 
 def __getitem__(self,key):
-    if isinstance(key,basestring):
+    if isinstance(key,str):
        lowerkey = key.lower()
        if lowerkey in self.lower_keys:
            return self.dictionary[lowerkey]
@@ -326,7 +331,10 @@ def __len__(self):
 
 def __contains__(self,item):
     """Support the 'in' operator"""
-    return self.has_key(item)
+    if not isinstance(item,str): return False
+    if item.lower() in self.visible_keys:
+        return True
+    return False
 
 # We iterate over all visible
 def __iter__(self):
@@ -337,15 +345,12 @@ def __iter__(self):
 def keys(self):
     return self.visible_keys
 
-# changes to take case independence into account
+# Note that has_key does not exist in 3.5
 def has_key(self,key):
-    if not isinstance(key,basestring): return 0
-    if key.lower() in self.visible_keys:
-        return 1
-    return 0
+    return key in self
 
 def get(self,key,default=None):
-    if self.has_key(key):     # take account of case
+    if key in self:     # take account of case
         return self.__getitem__(key)
     else:
         return default
@@ -390,11 +395,11 @@ def get_parent(self,blockname):
     """Return the name of the block enclosing [[blockname]] in canonical form (lower case)"""
     possibles = (a for a in self.child_table.items() if a[0] == blockname.lower())
     try:
-        first = possibles.next()   #get first one
+        first = next(possibles)   #get first one
     except:
         raise StarError('no parent for %s' % blockname)
     try:
-       second = possibles.next()
+       second = next(possibles)
     except StopIteration:
        return first[1].parent
     raise StarError('More than one parent for %s' % blockname)
@@ -736,7 +741,7 @@ def merge(self,new_bc,mode=None,parent=None,single_block=[],
 	          basekey = base_keys.pop(ii)
                   block_to_item.remove(thisatt)
                   break
-        if not self.has_key(basekey) or mode=="replace":
+        if not basekey in self or mode=="replace":
             new_parent = new_bc.get_parent(key)
             if parent is not None and new_parent is None:
                new_parent = parent
@@ -829,7 +834,7 @@ initialising the file.
             b.SetOutputLength(wraplength,self.maxoutlength)
         # loop over top-level
         # monitor output
-        all_names = self.child_table.keys()   #i.e. lower case
+        all_names = list(self.child_table.keys())   #i.e. lower case
         if blockorder is None:
             blockorder = self.block_input_order
         top_block_names = [(a,self.child_table[a].block_id) for a in blockorder if self.child_table[a].parent is None]
@@ -925,7 +930,7 @@ line.
         else:
             self.maxoutlength = maxoutlength
         self.scoping = scoping
-        if isinstance(datasource,basestring) or hasattr(datasource,"read"):
+        if isinstance(datasource,str) or hasattr(datasource,"read"):
             ReadStar(datasource,prepared=self,grammar=grammar,scantype=scantype,
             maxlength = maxinlength)
         self.header_comment = \
@@ -1021,18 +1026,28 @@ def ReadStar(filename,prepared = None, maxlength=-1,
         try_list = [('STAR2',YST)]
     else:
         raise AttributeError('Unknown STAR/CIF grammar requested, %s' % repr( grammar ))
-    if isinstance(filename,basestring):
-        filestream = urlopen(filename)
+    if isinstance(filename,str):
+        # create an absolute URL
+        relpath = urlparse(filename)
+        if relpath.scheme == "":
+            if not os.path.isabs(filename):
+                fullpath = os.path.join(os.getcwd(),filename)
+            else:
+                fullpath = filename
+            newrel = list(relpath)
+            newrel[0] = "file"
+            newrel[2] = fullpath
+            my_uri = urlunparse(newrel)
+        else:
+            my_uri = urlunparse(relpath)
+        print("Full URL is: " + my_uri)
+        filestream = urlopen(my_uri)
+        text = filestream.read().decode('utf-8')
+        filestream.close()
     else:
 	filestream = filename   #already opened for us
-    my_uri = ""
-    if hasattr(filestream,"geturl"): 
-        my_uri = filestream.geturl()
-    text = filestream.read()
-    if not isinstance(text,unicode):
-        text = unicode(text,"utf8")
-    if isinstance(filename,basestring): #we opened it, we close it
-        filestream.close()
+        text = filestream.read() #encoding already there
+        my_uri = ""
     if not text:      # empty file, return empty block
         return prepared.set_uri(my_uri)
     # filter out non-ASCII characters in CBF files if required.  We assume
@@ -1044,10 +1059,10 @@ def ReadStar(filename,prepared = None, maxlength=-1,
        for section in range(2,len(text_bits),2):
            text = text+" (binary omitted)"+text_bits[section]
     # we recognise ctrl-Z as end of file
-    endoffile = text.find('\x1a')
+    endoffile = text.find(chr(26))
     if endoffile >= 0: 
         text = text[:endoffile]
-    split = string.split(text,'\n')
+    split = text.split('\n')
     if maxlength > 0:
         toolong = filter(lambda a:len(a)>maxlength,split)
         if toolong:
@@ -1060,9 +1075,9 @@ def ReadStar(filename,prepared = None, maxlength=-1,
             raise StarError('File %s missing CIF2.0 header' % (filename))
     for grammar_name,Y in try_list:
        if scantype == 'standard' or grammar_name in ['2.0','STAR2']:
-            parser = Y.StarParser(Y.StarParserScanner(text))
+            parser = Y.StarParser(Y.StarParserScanner(text,scantype='standard'))
        else:
-	    parser = Y.StarParser(Y.yappsrt.Scanner(None,[],text,scantype='flex'))
+	    parser = Y.StarParser(Y.StarParserScanner(text,scantype='flex'))
        # handle encoding switch
        if grammar_name in ['2.0','STAR2']:
            prepared.set_characterset('unicode')
@@ -1075,8 +1090,8 @@ def ReadStar(filename,prepared = None, maxlength=-1,
            input = parser._scanner.input
            Y.yappsrt.print_error(input, e, parser._scanner)
        except Y.yappsrt.NoMoreTokens:
-           print >>sys.stderr, 'Could not complete parsing; stopped around here:'
-           print >>sys.stderr, parser._scanner
+           print('Could not complete parsing; stopped around here:',file=sys.stderr)
+           print(parser._scanner,file=sys.stderr)
        except ValueError:
            print('Unexpected error:')
            import traceback
@@ -1205,8 +1220,11 @@ def __setitem__(self,dataname,value):
     self.parent_block[dataname] = value
     self.parent_block.AddLoopName(self.keys()[0],dataname)
 
-def has_key(self,key):
+def __contains__(self,key):
     return key in self.parent_block.loops[self.loop_no]
+
+def has_key(self,key):
+    return key in self
 
 def __iter__(self):
     packet_list = zip(*self.values())
@@ -1490,7 +1508,7 @@ the enclosing block collection (e.g. CIF or STAR file object)""")
            raise KeyError('No such item: %s' % key)
     # we now have an item, we can try to convert it to a number if that is appropriate
     # note numpy values are never stored but are converted to lists
-    if not self.dictionary or not self.dictionary.has_key(key): return rawitem
+    if not self.dictionary or not key in self.dictionary: return rawitem
     print('%s: is_value %s provide_value %s value %s' % (key,repr( is_value ),repr( self.provide_value ),repr( rawitem )))
     if is_value:
         if self.provide_value: return rawitem
@@ -1547,13 +1565,16 @@ def values(self):
 def items(self):
     return [a for a in zip(self.keys(),self.values())]
 
+def __contains__(self,key):
+    if isinstance(key,str) and key.lower() in self.keys():
+        return True
+    return False
+
 def has_key(self,key):
-    if isinstance(key,basestring) and key.lower() in self.keys():
-        return 1
-    return 0
+    return key in self
 
 def get(self,key,default=None):
-    if self.has_key(key):
+    if key in self:
         retval = self.__getitem__(key)
     else:
         retval = default
@@ -1594,7 +1615,7 @@ def GetItemPosition(self,itemname):
     if isinstance(itemname,int):
         # return loop position
         return (-1, self.item_order.index(itemname))
-    if not self.has_key(itemname):
+    if not itemname in self:
         raise ValueError('No such dataname %s' % itemname)
     testname = itemname.lower()
     if testname in self.item_order:
@@ -1610,7 +1631,7 @@ only move an item within the loop in which it appears.
 def ChangeItemOrder(self,itemname,newpos):
     """Move the printout order of `itemname` to `newpos`. If `itemname` is
     in a loop, `newpos` refers to the order within the loop."""
-    if isinstance(itemname,basestring):
+    if isinstance(itemname,str):
         true_name = itemname.lower()
     else:
         true_name = itemname
@@ -1643,12 +1664,12 @@ checked, or will be checked in bulk at the end.
 def AddItem(self,key,value,precheck=False):
     """Add dataname `key` to block with value `value`.  `value` may be
     a single value, a list or a tuple."""
-    if not isinstance(key,basestring):
+    if not isinstance(key,str):
          raise TypeError('Star datanames are strings only (got %s)' % repr( key ))
     if not precheck:
          self.check_data_name(key,self.maxnamelength)    # make sure no nasty characters   
     # check for overwriting
-    if self.has_key(key):
+    if key in self:
          if not self.overwrite:
              raise StarError( 'Attempt to insert duplicate item name %s' % key)
     # put the data in the right container
@@ -1659,7 +1680,7 @@ def AddItem(self,key,value,precheck=False):
         self.check_item_value(regval)
     # update ancillary information first
     lower_key = key.lower()
-    if not self.has_key(lower_key) and self.FindLoop(lower_key)<0:      #need to add to order
+    if not lower_key in self and self.FindLoop(lower_key)<0:      #need to add to order
         self.item_order.append(lower_key)
     # always remove from our case table in case the case is different
     try:
@@ -1689,7 +1710,7 @@ def AddLoopItem(self,incomingdata,precheck=False,maxlength=-1):
        for key,value in keyvallist:
            self.AddItem(key,value)
        self.CreateLoop(incomingdata[0])
-    elif not isinstance(incomingdata[0],basestring):
+    elif not isinstance(incomingdata[0],str):
          raise TypeError('Star datanames are strings only (got %s)' % repr( incomingdata[0] ))
     else:
         self.AddItem(incomingdata[0],incomingdata[1])
@@ -1714,21 +1735,21 @@ def check_data_name(self,dataname,maxlength=-1):
     if dataname[0]!='_':
         raise StarError( 'Dataname ' + dataname + ' does not begin with _')
     if self.characterset=='ascii':
-        if len (filter (lambda a: ord(a) < 33 or ord(a) > 126, dataname)) > 0:
+        if len ([a for a in dataname if ord(a) < 33 or ord(a) > 126]) > 0:
             raise StarError( 'Dataname ' + dataname + ' contains forbidden characters')
     else:
         # print 'Checking %s for unicode characterset conformance' % dataname
-        if len (filter (lambda a: ord(a) < 33, dataname)) > 0:
+        if len ([a for a in dataname if ord(a) < 33]) > 0:
             raise StarError( 'Dataname ' + dataname + ' contains forbidden characters (below code point 33)')
-        if len (filter (lambda a: ord(a) > 126 and ord(a) < 160, dataname)) > 0:
+        if len ([a for a in dataname if ord(a) > 126 and ord(a) < 160]) > 0:
             raise StarError( 'Dataname ' + dataname + ' contains forbidden characters (between code point 127-159)')
-        if len (filter (lambda a: ord(a) > 0xD7FF and ord(a) < 0xE000, dataname)) > 0:
+        if len ([a for a in dataname if ord(a) > 0xD7FF and ord(a) < 0xE000]) > 0:
             raise StarError( 'Dataname ' + dataname + ' contains unsupported characters (between U+D800 and U+E000)')
-        if len (filter (lambda a: ord(a) > 0xFDCF and ord(a) < 0xFDF0, dataname)) > 0:
+        if len ([a for a in dataname if ord(a) > 0xFDCF and ord(a) < 0xFDF0]) > 0:
             raise StarError( 'Dataname ' + dataname + ' contains unsupported characters (between U+FDD0 and U+FDEF)')
-        if len (filter (lambda a: ord(a) == 0xFFFE or ord(a) == 0xFFFF, dataname)) > 0:
+        if len ([a for a in dataname if ord(a) == 0xFFFE or ord(a) == 0xFFFF]) > 0:
             raise StarError( 'Dataname ' + dataname + ' contains unsupported characters (U+FFFE and/or U+FFFF)')
-        if len (filter (lambda a: ord(a) > 0x10000 and (ord(a) & 0xE == 0xE) , dataname)) > 0:
+        if len ([a for a in dataname if ord(a) > 0x10000 and (ord(a) & 0xE == 0xE)]) > 0:
             print('%s fails' % dataname)
             for a in dataname: print('%x' % ord(a),end="")
             print()
@@ -1745,7 +1766,7 @@ def check_item_value(self,item):
     if not isinstance(item,(list,dict,tuple)):
        test_item = [item]         #single item list
     def check_one (it):
-        if isinstance(it,basestring):
+        if isinstance(it,str):
             if it=='': return
             me = self.char_check.match(it)            
             if not me:
@@ -1767,7 +1788,7 @@ so that the value/string alternate is correctly initialised/reset.
 def regularise_data(self,dataitem):
     """Place dataitem into a list if necessary"""
     from numbers import Number
-    if isinstance(dataitem,(Number,basestring,StarList,StarDict)):
+    if isinstance(dataitem,(Number,str,StarList,StarDict)):
         return dataitem,None
     if isinstance(dataitem,(tuple,list)):
         return dataitem,[None]*len(dataitem)
@@ -1796,7 +1817,7 @@ This is a method of the module, rather than belonging to any particular class.
 
 <<Get data dimension>>=
 def get_dim(dataitem,current=0,packlen=0):
-    zerotypes = [int, long, float, basestring]
+    zerotypes = [int, float, str]
     if type(dataitem) in zerotypes:
         return current, packlen
     if not dataitem.__class__ == ().__class__ and \
@@ -1818,14 +1839,13 @@ def check_stringiness(data):
    if not hasattr(data,'dtype'):   #so not Numpy
        from numbers import Number
        if isinstance(data,Number): return False
-       elif isinstance(data,basestring): return True
+       elif isinstance(data,str): return True
        elif data is None:return False  #should be data are None :)
        else:
            for one_item in data:
                if not check_stringiness(one_item): return False
            return True   #all must be strings
    else:   #numerical python
-       import numpy
        if data.ndim == 0:    #a bare value
            if data.dtype.kind in ['S','U']: return True
            else: return False
@@ -1845,7 +1865,7 @@ def RemoveItem(self,itemname):
     # first check any loops
     loop_no = self.FindLoop(itemname)
     testkey = itemname.lower()
-    if self.has_key(testkey):
+    if testkey in self:
         del self.block[testkey]
         del self.true_case[testkey]
         # now remove from loop
@@ -2160,7 +2180,7 @@ def GetKeyedSemanticPacket(self,keyvalue,cat_id):
         lcase = True
     for cat_key in target_keys:
         self.dictionary.generate_key(self,cat_key)
-        if not self.has_key(cat_key): continue   #couldn't be generated
+        if not cat_key in self: continue   #couldn't be generated
         try:
             extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
         except KeyError:        #missing key
@@ -2443,11 +2463,12 @@ containing an entry 'delimiter' that requests a particular delimiter.
 <<Format a data value>>=
 def format_value(self,itemvalue,stringsink,compound=False,hints={}):
     """Format a Star data value"""
+    global have_numpy
     delimiter = hints.get('delimiter',None)
     startcol = hints.get('column',-1)
-    if isinstance(itemvalue,basestring):  #need to sanitize
+    if isinstance(itemvalue,str):  #need to sanitize
         stringsink.write(self._formatstring(itemvalue,delimiter=delimiter,hints=hints),canbreak = True,startcol=startcol)
-    elif isinstance(itemvalue,(list)) or (hasattr(itemvalue,'dtype') and hasattr(itemvalue,'__iter__')): #numpy
+    elif isinstance(itemvalue,(list)) or (have_numpy and hasattr(itemvalue,'__iter__')): #numpy
        stringsink.set_tab(0)
        stringsink.write('[',canbreak=True,newindent=True,mustbreak=compound,startcol=startcol)
        if len(itemvalue)>0:
@@ -2469,7 +2490,8 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
                stringsink.write("'"+key+"'"+":",canbreak=True)
                self.format_value(value,stringsink)   #never break between key and value
        stringsink.write('}',unindent=True)
-    elif isinstance(itemvalue,(float,int,long)):  #TODO - handle uncertainties
+    elif isinstance(itemvalue,(float,int)) or \
+         (have_numpy and isinstance(itemvalue,(numpy.number))):  #TODO - handle uncertainties
        stringsink.write(str(itemvalue),canbreak=True,startcol=startcol)   #numbers
     else:
        raise ValueError('Value in unexpected format for output: %s' % repr( itemvalue ))
@@ -2497,12 +2519,11 @@ recognised.
 
 <<Format loop packets>>=
 def format_packets(self,outstring,indent=0,loop_no=-1):
-   import cStringIO
    import string
    alldata = [self[a] for a in self.loops[loop_no]]
    loopnames = self.loops[loop_no]
    #print 'Alldata: %s' % `alldata`
-   packet_data = apply(zip,alldata)
+   packet_data = list(zip(*alldata))
    #print 'Packet data: %s' % `packet_data`
    #create a dictionary for quick lookup of formatting requirements
    format_hints = dict([(i['dataname'],i) for i in self.formatting_hints if i['dataname'] in loopnames])
@@ -2520,7 +2541,7 @@ def format_packets(self,outstring,indent=0,loop_no=-1):
 <<Format a single packet item>>=
 def format_packet_item(self,pack_item,indent,outstring,format_hint):
        # print 'Formatting %s' % `pack_item`
-       if isinstance(pack_item,basestring):
+       if isinstance(pack_item,str):
            delimiter = format_hint.get('delimiter',None)
            startcol = format_hint.get('column',-1)
            outstring.write(self._formatstring(pack_item,delimiter=delimiter),startcol=startcol) 
@@ -2770,7 +2791,7 @@ characters on their lines
 def process_template(template_file):
     """Process a template datafile to formatting instructions"""
     template_as_cif = StarFile(template_file,grammar="2.0").first_block()
-    if isinstance(template_file,basestring):
+    if isinstance(template_file,str):
         template_string = open(template_file).read()
     else:   #a StringIO object
         template_file.seek(0)   #reset
@@ -2823,7 +2844,7 @@ def process_template(template_file):
             packet_regex = "[ \t]*(?P<all>(?P<sqqq>'''([^\n\r\f']*)''')|(?P<sq>'([^\n\r\f']*)'+)|(?P<dq>\"([^\n\r\"]*)\"+)|(?P<none>[^\s]+))"
             packet_pos = re.finditer(packet_regex,packet_text)
             line_end_pos = re.finditer("^",packet_text,re.M)
-            next_end = line_end_pos.next().end()
+            next_end = next(line_end_pos).end()
             last_end = next_end
             for loopname in testnames:
                 #find the name in the file for name pos
@@ -2832,11 +2853,11 @@ def process_template(template_file):
                 loop_name_indent = name_match.start('name')-name_match.start(0)
                 hint_dict = {"dataname":loopname,"name_pos":loop_name_indent}
                 #find the value
-                thismatch = packet_pos.next()
+                thismatch = next(packet_pos)
                 while thismatch.start('all') > next_end:
                     try: 
                         last_end = next_end
-                        next_end = line_end_pos.next().start()
+                        next_end = next(line_end_pos).start()
                         print('next end %d' % next_end)
                     except StopIteration:
                         break
@@ -2866,9 +2887,9 @@ def create_ordering(self,finish_at,start_from):
     requested_order = [i['dataname'] for i in self.formatting_hints if i['dataname']!='loop']
     new_order = []
     for item in requested_order:
-       if isinstance(item,basestring) and item.lower() in self.item_order:
+       if isinstance(item,str) and item.lower() in self.item_order:
            new_order.append(item.lower())
-       elif self.has_key(item):    #in a loop somewhere
+       elif item in self:    #in a loop somewhere
            target_loop = self.FindLoop(item)
            if target_loop not in new_order:
                new_order.append(target_loop)
@@ -2932,7 +2953,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
                rel_keys = []):
     if mode == 'strict':
        for key in new_block.keys(): 
-           if self.has_key(key) and key not in match_att:
+           if key in self and key not in match_att:
               raise StarError( "Identical keys %s in strict merge mode" % key)
            elif key not in match_att:           #a new dataname
                self[key] = new_block[key]
@@ -2943,14 +2964,14 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
        # we have lost case information
        self.true_case.update(new_block.true_case)
     elif mode == 'replace':
-       newkeys = new_block.keys()
+       newkeys = list(new_block.keys())
        for ma in match_att:
           try:
                newkeys.remove(ma)        #don't touch the special ones
           except ValueError:
                pass
        for key in new_block.keys(): 
-              if isinstance(key,basestring):
+              if isinstance(key,str):
                   self[key] = new_block[key] 
        # creating the loop will remove items from other loops
        for one_loop in new_block.loops.values():
@@ -3055,7 +3076,7 @@ operate on a string instead of a list.
 
 <<List manipulations>>=
 def listify(item):
-    if isinstance(item,basestring): return [item]
+    if isinstance(item,str): return [item]
     else: return item
 
 #Transpose the list of lists passed to us
@@ -3189,7 +3210,7 @@ def recursive_iter(self,dict_so_far={},coord=[]):
 
 # small function to use the coordinates. 
 def coord_to_group(self,dataname,coords):
-      if not isinstance(dataname,basestring):
+      if not isinstance(dataname,str):
          return dataname     # flag inner loop processing
       newm = self[dataname]          # newm must be a list or tuple
       for c in coords:

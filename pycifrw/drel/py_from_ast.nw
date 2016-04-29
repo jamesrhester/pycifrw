@@ -36,7 +36,7 @@ pycifrw_func_table = {   #how to use PyCIFRW CifFile objects
          "element_no": "%s[%s]", # accessing a particular element of the result of data_access
          "count_data": "len(%s)", # number of elements for result of data_access
          "cat_names":"ciffile.dictionary.names_in_cat(%s)", #names in category %s
-         "has_name":"ciffile.has_key(%s)",
+         "has_name":"%s in ciffile",
          "semantic_packet":"ciffile.GetKeyedSemanticPacket(%s,%s)" #get a packet for key, value
                      }
 
@@ -202,7 +202,7 @@ def start_traverse(in_node,api_table,target_id=None,loopable={},cat_meth=False,d
           special_info["special_id"][-1]["_"+cat][1] = "looped_cat"
   <<Maths operator conversion table>>
   def traverse_ast(in_node,debug=debug):
-    if isinstance(in_node,basestring):
+    if isinstance(in_node,str):
         return in_node
     if isinstance(in_node[0],list):
         raise SyntaxError('First element of AST Node must be string: ' + repr(in_node))
@@ -252,7 +252,7 @@ mentioned so that we can create a dependency tree.
     
 <<Other primaries>>=
     elif node_type == "ATOM":
-        if isinstance(in_node[1],basestring):
+        if isinstance(in_node[1],str):
             # pick up built-in literals
             if in_node[1].lower() == 'twopi':
                 return "(2.0 * math.pi)"
@@ -400,7 +400,7 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
             if newid[1]:  # a loop statement requires an index
                 outstring += "[" + newid[1]+ "]"
         else:   # a with statement; capture the name and create a dummy variable        
-            if not special_info["withtable"].has_key(true_name):  #new
+            if true_name not in special_info["withtable"]:  #new
                 position = len(special_info["withtable"])
                 new_var = "__w%d" % position
                 special_info["withtable"][true_name] = (new_var,position)
@@ -417,7 +417,7 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
             outstring = api_table["data_access"] % ("'" + fullname + "'")
     else: # default to Python attribute access
         # check for packet variables
-        if special_info["packet_vars"].has_key(primary):
+        if primary in special_info["packet_vars"]:
             real_cat = special_info["packet_vars"][primary]
             fullname = cif_dic.get_name_by_cat_obj(real_cat,in_node[2])
             special_info['depends'].add(fullname)
@@ -615,7 +615,7 @@ Ultimately we end up with a list of statements.
         for one_statement in in_node[1]:
 #            try:
                 next_bit = traverse_ast(one_statement)
-                if not isinstance(next_bit,basestring):
+                if not isinstance(next_bit,str):
                     print("Unable to traverse AST for %s" % one_statement[0])
                 else:
                     outstring = outstring + next_bit + "\n" 

@@ -260,13 +260,13 @@ class Generator:
         self.write("from . import yapps3_compiled_rt as yappsrt\n")
         self.write("\n")
         self.write("class ", self.name, "Scanner(yappsrt.Scanner):\n")
-        self.write("    patterns = [\n")
+        self.write("    def __init__(self, *args,**kwargs):\n")
+        self.write("        patterns = [\n")
         for p in self.terminals:
-            self.write("        (%s, re.compile(%s)),\n" % (
+            self.write("         (%s, %s),\n" % (
                 repr(p), repr(self.tokens[p])))
-        self.write("    ]\n")
-        self.write("    def __init__(self, str):\n")
-        self.write("        yappsrt.Scanner.__init__(self,None,%s,str)\n" %
+        self.write("        ]\n")
+        self.write("        yappsrt.Scanner.__init__(self,patterns,%s,*args,**kwargs)\n" %
                    repr(self.ignore))
         self.write("\n")
         

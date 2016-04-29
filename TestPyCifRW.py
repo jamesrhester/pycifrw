@@ -13,6 +13,10 @@ import CifFile
 from CifFile import StarFile
 from CifFile.StarFile import StarDict, StarList
 import re
+try:
+    from StringIO import StringIO
+except:
+    from io import StringIO
 
 # Test general string and number manipulation functions
 class BasicUtilitiesTestCase(unittest.TestCase):
@@ -663,9 +667,9 @@ class FileWriteTestCase(unittest.TestCase):
        newitems = self.df.GetLoop('_string_1')
        flexnewitems = self.flf.GetLoop('_string_1')
        for key,value in olditems.items():
-           compstringa = map(lambda a:re.sub('\n','',a),value)
-           compstringb = map(lambda a:re.sub('\n','',a),self.df[key])
-           compstringc = map(lambda a:re.sub('\n','',a),self.flf[key])
+           compstringa = [re.sub('\n','',a) for a in value]
+           compstringb = [re.sub('\n','',a) for a in self.df[key]]
+           compstringc = [re.sub('\n','',a) for a in self.flf[key]]
            self.failUnless(compstringa==compstringb and compstringa==compstringc)
 
    def testGetLoopData(self):
@@ -845,9 +849,8 @@ to work properly.
 
    def testStringInput(self):
         """Test that it works when passed a stringIO object"""
-        import StringIO
         s = open("cif_template.cif","r").read()
-        ss = StringIO.StringIO(s)
+        ss = StringIO(s)
         p = CifFile.CifFile()
         p.SetTemplate(ss)
         self.failUnless(p.master_template[12]['delimiter']=='"')

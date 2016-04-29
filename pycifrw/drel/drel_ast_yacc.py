@@ -8,9 +8,13 @@
 # consultation with Doug du Boulay's JsCifBrowser
 # grammar (also derived from a Python grammar).
 
-import drel_lex
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import absolute_import
+
+from .drel_lex import lexer,tokens
 import ply.yacc as yacc
-tokens = drel_lex.tokens
 
 # Overall translation unit
 
@@ -574,5 +578,5 @@ def p_error(p):
     parser.restart()
     raise SyntaxError
 
-lexer = drel_lex.lexer
+#lexer = drel_lex.lexer
 parser = yacc.yacc()    
