@@ -722,9 +722,9 @@ def merge(self,new_bc,mode=None,parent=None,single_block=[],
     if match_att:
         #make a blockname -> item name map
         if match_function:
-            block_to_item = map(lambda a:match_function(self[a]),self.keys())
+            block_to_item = [match_function(self[a]) for a in self.keys()]
 	else:
-            block_to_item = map(lambda a:self[a].get(match_att[0],None),self.keys())
+            block_to_item = [self[a].get(match_att[0],None) for a in self.keys()]
 	#print `block_to_item`
     for key in new_keys:        #run over incoming blocknames
         if key == idblock: continue    #skip dictionary id
@@ -766,10 +766,10 @@ def checknamelengths(self,target_block,maxlength=-1):
     if maxlength < 0:
         return
     else:
-        toolong = filter(lambda a:len(a)>maxlength, target_block.keys())
+        toolong = [a for a in target_block.keys() if len(a)>maxlength]
     outstring = ""
-    for it in toolong: outstring += "\n" + it
     if toolong:
+       outstring = "\n".join(toolong)
        raise StarError( 'Following data names too long:' + outstring)
 
 @ When validating DDL2-type dictionaries against the DDL spec file, we have
@@ -786,8 +786,8 @@ it occurs or what it occurs with.  We also remove duplicate values.
 
 <<Collect all values of a single key in all blocks>>=
 def get_all(self,item_name):
-    raw_values = map(lambda a:self[a].get(item_name),self.keys())
-    raw_values = filter(lambda a:a != None, raw_values)
+    raw_values = [self[a].get(item_name) for a in self.keys()]
+    raw_values = [a for a in raw_values if a != None]
     ret_vals = []
     for rv in raw_values:
         if isinstance(rv,list):
@@ -1064,7 +1064,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
         text = text[:endoffile]
     split = text.split('\n')
     if maxlength > 0:
-        toolong = filter(lambda a:len(a)>maxlength,split)
+        toolong = [a for a in split if len(a)>maxlength]
         if toolong:
             pos = split.index(toolong[0])
             raise StarError( 'Line %d contains more than %d characters' % (pos+1,maxlength))
@@ -1150,7 +1150,7 @@ opportunity to expand the getitem method to allow multiple arguments.
 <<Define a collection datatype>>=
 class StarList(list):
     def __getitem__(self,args):
-        if isinstance(args,int):
+        if isinstance(args,(int,slice)):
             return super(StarList,self).__getitem__(args)
         elif isinstance(args,tuple) and len(args)>1:   #extended comma notation
             return super(StarList,self).__getitem__(args[0]).__getitem__(args[1:])
@@ -1205,8 +1205,9 @@ def keys(self):
 def values(self):
     return [self.parent_block[a] for a in self.keys()]
 
+#Avoid iterator even though that is Python3-esque
 def items(self):
-    return zip(self.keys(),self.values())
+    return list(zip(self.keys(),self.values()))
 
 def __getitem__(self,dataname):
     if isinstance(dataname,int):   #a packet request
@@ -1557,13 +1558,13 @@ def __nonzero__(self):
 
 # keys returns all internal keys
 def keys(self):
-    return self.block.keys()    #always lower case
+    return list(self.block.keys())    #always lower case
 
 def values(self):
     return [self[a] for a in self.keys()]
 
 def items(self):
-    return [a for a in zip(self.keys(),self.values())]
+    return list(zip(self.keys(),self.values()))
 
 def __contains__(self,key):
     if isinstance(key,str) and key.lower() in self.keys():
@@ -1776,10 +1777,10 @@ def check_item_value(self,item):
                 if me.span() != (0,len(it)):
                     print ("Fail value check, match only %d-%d in string %s" % (me.span()[0],me.span()[1],repr( it )))
                     raise StarError('Data item "' + repr( it ) +  u'"... contains forbidden characters')
-    map(check_one,test_item)
+    [check_one(a) for a in test_item]
 
 @ Regularising data.  We want the copy.deepcopy operation to work, so
-we can't have any arrays passed into the master dictionary.  We make
+we cannot have any arrays passed into the master dictionary.  We make
 sure everything goes in either as a single item or as a dict/list/tuple. We
 provide an empty datavalue with the same structure as the returned value
 so that the value/string alternate is correctly initialised/reset.
@@ -1802,7 +1803,7 @@ def regularise_data(self,dataitem):
 @ Dimension of data.  This would ordinarily be the number of nested levels, 
 and if we have a naked string, we have to return zero.  
 We recursively burrow down to the lowest level.  If a list is of zero length,
-we can't burrow any further, so simply return one more than the current level.
+we cannot burrow any further, so simply return one more than the current level.
 
 We return as well the length of the received packet.  Note that we consider
 dataitems which are *not* tuples or lists to be primitive.  This includes
@@ -2120,8 +2121,10 @@ def GetKeyedPacket(self,keyname,keyvalue,no_case=False):
     """Return the loop packet (a `StarPacket` object) where `keyname` has value 
     `keyvalue`. Ignore case in `keyvalue` if `no_case` is True.  `ValueError`
     is raised if no packet is found or more than one packet is found."""
-    #print "Looking for %s in %s" % (keyvalue, self.parent_block[keyname])
     my_loop = self.GetLoop(keyname)
+    #print("Looking for %s in %s" % (keyvalue, my_loop.parent_block))
+    #print('Packet check on:' + keyname)
+    #[print(repr(getattr(a,keyname))) for a in my_loop]
     if no_case:
        one_pack= [a for a in my_loop if getattr(a,keyname).lower()==keyvalue.lower()]
     else:
@@ -2180,7 +2183,7 @@ def GetKeyedSemanticPacket(self,keyvalue,cat_id):
         lcase = True
     for cat_key in target_keys:
         self.dictionary.generate_key(self,cat_key)
-        if not cat_key in self: continue   #couldn't be generated
+        if not cat_key in self: continue   #could not be generated
         try:
             extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
         except KeyError:        #missing key
@@ -2191,7 +2194,7 @@ def GetKeyedSemanticPacket(self,keyvalue,cat_id):
                 not (isinstance(test_key,list) and (None in test_key or len(test_key)==0)):
                     print('Getting packet for key %s' % repr( keyvalue ))
                     extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
-            except:             #can't be generated
+            except:             #cannot be generated
                 continue
         except ValueError:      #none/more than one, assume none
             continue
@@ -2468,7 +2471,7 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
     startcol = hints.get('column',-1)
     if isinstance(itemvalue,str):  #need to sanitize
         stringsink.write(self._formatstring(itemvalue,delimiter=delimiter,hints=hints),canbreak = True,startcol=startcol)
-    elif isinstance(itemvalue,(list)) or (have_numpy and hasattr(itemvalue,'__iter__')): #numpy
+    elif isinstance(itemvalue,(list)) or (hasattr(itemvalue,'dtype') and hasattr(itemvalue,'__iter__')): #numpy
        stringsink.set_tab(0)
        stringsink.write('[',canbreak=True,newindent=True,mustbreak=compound,startcol=startcol)
        if len(itemvalue)>0:
@@ -2481,7 +2484,7 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
     elif isinstance(itemvalue,dict):
        stringsink.set_tab(0)
        stringsink.write('{',newindent=True,mustbreak=compound,startcol=startcol)  #start a new line inside
-       items = itemvalue.items()
+       items = list(itemvalue.items())
        if len(items)>0:
            stringsink.write("'"+items[0][0]+"'"+':',canbreak=True)
            self.format_value(items[0][1],stringsink)
@@ -2981,55 +2984,6 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
     elif mode == 'overlay':
        print('Overlay mode, current overwrite is %s' % self.overwrite)
        raise StarError('Overlay block merge mode not implemented')
-       save_overwrite = self.overwrite
-       self.overwrite = True
-       for attribute in new_block.keys():
-           if attribute in match_att: continue      #ignore this one
-           new_value = new_block[attribute]
-           #non-looped items
-           if new_block.FindLoop(attribute)<0:     #not looped
-              self[attribute] = new_value 
-       my_loops = self.loops.values()
-       perfect_overlaps = [a for a in new_block.loops if a in my_loops]
-       for po in perfect_overlaps:
-          loop_keys = [a for a in po if a in rel_keys]  #do we have a key?
-          try:
-              newkeypos = map(lambda a:newkeys.index(a),loop_keys)
-              newkeypos = newkeypos[0]      #one key per loop for now
-              loop_keys = loop_keys[0] 
-          except (ValueError,IndexError):
-              newkeypos = []
-              overlap_data = map(lambda a:listify(self[a]),overlaps) #old packet data
-              new_data = map(lambda a:new_block[a],overlaps) #new packet data
-              packet_data = transpose(overlap_data)
-              new_p_data = transpose(new_data)
-              # remove any packets for which the keys match between old and new; we
-              # make the arbitrary choice that the old data stays
-              if newkeypos:
-                  # get matching values in new list
-                  print ("Old, new data:\n%s\n%s" % (repr( overlap_data[newkeypos] ),repr( new_data[newkeypos] )))
-                  key_matches = filter(lambda a:a in overlap_data[newkeypos],new_data[newkeypos])
-                  # filter out any new data with these key values
-                  new_p_data = filter(lambda a:a[newkeypos] not in key_matches,new_p_data)
-                  if new_p_data:
-                      new_data = transpose(new_p_data)
-                  else: new_data = []
-              # wipe out the old data and enter the new stuff
-              byebyeloop = self.GetLoop(overlaps[0])
-              # print "Removing '%s' with overlaps '%s'" % (repr( byebyeloop ),repr( overlaps ))
-              # Note that if, in the original dictionary, overlaps are not
-              # looped, GetLoop will return the block itself.  So we check
-              # for this case...
-              if byebyeloop != self:
-                  self.remove_loop(byebyeloop)
-              self.AddLoopItem((overlaps,overlap_data))  #adding old packets
-              for pd in new_p_data:                             #adding new packets
-                 if pd not in packet_data:
-                    for i in range(len(overlaps)):
-                        #don't do this at home; we are appending
-                        #to something in place
-                        self[overlaps[i]].append(pd[i]) 
-       self.overwrite = save_overwrite
 
 <<Define an error class>>=
 class StarError(Exception):
@@ -3102,7 +3056,7 @@ a "stop_" token is found - this is communicated via the "popout"
 attribute changing to True.  We save the __iter__ method for
 iterating over packets.  Also, when a new packet is begun, all
 subloops should be extended correspondingly.  We are in a special
-situation where we don't enforce length matching, as we assume
+situation where we do not enforce length matching, as we assume
 that things will be loaded in as we go. 
 
 Each yield returns a list which should be appended to with a unitary

@@ -77,6 +77,19 @@ from __future__ import unicode_literals
 from __future__ import division
 from __future__ import absolute_import
 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+# Python 2,3 compatibility
+try:
+    from urllib import urlopen         # for arbitrary opening
+    from urlparse import urlparse, urlunparse
+except:
+    from urllib.request import urlopen
+    from urllib.parse import urlparse,urlunparse,urljoin
+    
 <<Copyright statement>>
 
 import re,sys
@@ -844,12 +857,12 @@ for item_def in dodgy_defs:
       child_list = thisdef['_item_linked.child_name']
       parents = thisdef['_item_linked.parent_name']
       # for each parent, find the list of children.
-      family = zip(parents,child_list)
+      family = list(zip(parents,child_list))
       notmychildren = family         #We aim to remove non-children
       # Loop over the parents, relocating as necessary
       while len(notmychildren):
          # get all children of first entry
-         mychildren = filter(lambda a:a[0]==notmychildren[0][0],family)
+         mychildren = [a for a in family if a[0]==notmychildren[0][0]]
          print("Parent %s: %d children" % (notmychildren[0][0],len(mychildren)))
          for parent,child in mychildren:   #parent is the same for all
 	          # Make sure that we simply add in the new entry for the child, not replace it,
@@ -887,7 +900,7 @@ for item_def in dodgy_defs:
          newfamily = []
          print('Old parents -> %s' % repr(old_parents))
          for jj, childname in mychildren:
-             alreadythere = filter(lambda a:a[0]==parent_name and a[1] ==childname,oldfamily)
+             alreadythere = [a for a in oldfamily if a[0]==parent_name and a[1] ==childname]
              if len(alreadythere)>0: continue
              'Adding new child %s to parent definition at %s' % (childname,parent_name)
              old_children.append(childname)
@@ -902,7 +915,7 @@ for item_def in dodgy_defs:
          self[parent_name].insert_loop(newloop)
          print('New parents -> %s' % repr(self[parent_name]['_item_linked.parent_name']))
          # now make a new,smaller list
-	 notmychildren = filter(lambda a:a[0]!=mychildren[0][0],notmychildren)
+	 notmychildren = [a for a in notmychildren if a[0]!=mychildren[0][0]]
 
 @ In order to handle parent-child relationships in a regular way, we want to assume
 that all parent-child entries occur in a loop, with both members present.  This 
@@ -969,7 +982,7 @@ def ddl1_cat_load(self):
             if new_unique not in uis: uis.append(new_unique)
             cat_unique_dic[thiscat] = uis
         
-    map(get_cat_info,deflist)       # apply the above function
+    [get_cat_info(a) for a in deflist] # apply the above function
     for cat in cat_mand_dic.keys():
         cat_entry = self.get_ddl1_entry(cat)
         self[cat_entry]["_category_mandatory.name"] = cat_mand_dic[cat]
@@ -983,7 +996,7 @@ def ddl1_cat_load(self):
 
 def get_ddl1_entry(self,cat_name):
     chop_len = len(cat_name) 
-    possibles = filter(lambda a:a[1:chop_len+3]==cat_name+"_[",self.keys())
+    possibles = [a for a in self.keys() if a[1:chop_len+3]==cat_name+"_["]
     if len(possibles) > 1 or possibles == []:
         raise ValidCifError("Category name %s can't be matched to category entry" % cat_name)
     else:
@@ -1405,7 +1418,7 @@ def names_in_cat(self,cat,names_only=False):
     if not names_only:
         return ["_" + self[a]["_name.category_id"]+"." + self[a]["_name.object_id"] for a in nameblocks if self[a].get('_definition.scope','Item')=='Item']
     else:
-        return map(lambda a:self[a]["_name.object_id"],nameblocks)
+        return [self[a]["_name.object_id"] for a in nameblocks]
     
 @ This method was added for DDLm support.  We are passed a category and a
 value, and must find a packet which has a matching key.  We use the keyname
@@ -1454,7 +1467,6 @@ We assume that 'Contents' and 'Full' modes are not mixed in a single definition.
 
 <<Master import routine>>=
 def ddlm_import(self,import_mode='All'):
-    import urllib
     import_frames = [(a,self[a]['_import.get']) for a in self.keys() if '_import.get' in self[a]]
     if import_mode is not 'All':
        #following line assumes that 'Contents' and 'Full' are not mixed, so we can use the first import to determine the mode
@@ -1465,7 +1477,7 @@ def ddlm_import(self,import_mode='All'):
         file_loc = import_ref["file"]
         full_uri = self.resolve_path(file_loc)
         if full_uri not in self.template_cache:
-            dic_as_cif = CifFile(urllib.urlopen(full_uri),grammar=self.grammar)
+            dic_as_cif = CifFile(full_uri,grammar=self.grammar)
             self.template_cache[full_uri] = CifDic(dic_as_cif,do_minimum=True)  #this will recurse internal imports
             print('Added %s to cached dictionaries' % full_uri)
         import_from = self.template_cache[full_uri]
@@ -1524,10 +1536,9 @@ def ddlm_import(self,import_mode='All'):
         del self[parent_block]["_import.get"]
                 
 def resolve_path(self,file_loc):
-    import urlparse
-    url_comps = urlparse.urlparse(file_loc)
+    url_comps = urlparse(file_loc)
     if url_comps[0]: return file_loc    #already full URI
-    new_url = urlparse.urljoin(self.my_uri,file_loc)
+    new_url = urljoin(self.my_uri,file_loc)
     #print "Transformed %s to %s for import " % (file_loc,new_url)
     return new_url
     
@@ -1629,13 +1640,13 @@ relevant keys relating to the error.
 
 <<Run validation tests>>=
 def run_item_validation(self,item_name,item_value):
-    return {item_name:map(lambda f:(f.__name__,f(item_name,item_value)),self.item_validation_funs)}
+    return {item_name:[(f.__name__,f(item_name,item_value)) for f in self.item_validation_funs]}
 
 def run_loop_validation(self,loop_names):
-    return {loop_names[0]:map(lambda f:(f.__name__,f(loop_names)),self.loop_validation_funs)}
+    return {loop_names[0]:[(f.__name__,f(loop_names)) for f in self.loop_validation_funs]}
 
 def run_global_validation(self,item_name,item_value,data_block,provisional_items={},globals={}):
-    results = map(lambda f:(f.__name__,f(item_name,item_value,data_block,provisional_items,globals)),self.global_validation_funs)
+    results = [(f.__name__,f(item_name,item_value,data_block,provisional_items,globals)) for f in self.global_validation_funs]
     return {item_name:results}
 
 def run_block_validation(self,whole_block,block_scope='Item'):
@@ -1708,8 +1719,8 @@ def validate_item_type(self,item_name,item_value):
     #for item in item_values:
         #print "Type match " + item_name + " " + item + ":",
     #skip dots and question marks
-    check_all = filter(lambda a: a !="." and a != "?",item_values)
-    check_all = filter(lambda a: mymatch(matchexpr,a) != a, check_all)
+    check_all = [a for a in item_values if a !="." and a != "?"]
+    check_all = [a for a in check_all if mymatch(matchexpr,a) != a]
     if len(check_all)>0: return {"result":False,"bad_values":check_all}
     else: return {"result":True}
 
@@ -1761,7 +1772,7 @@ def validate_item_esd(self,item_name,item_value):
     can_esd = self[item_name].get(self.esd_spec,"none") == "esd" 
     if can_esd: return {"result":True}         #must be OK!
     item_values = listify(item_value)
-    check_all = filter(lambda a: get_number_with_esd(a)[1] != None, item_values)
+    check_all = [a for a in item_values if get_number_with_esd(a)[1] != None]
     if len(check_all)>0: return {"result":False,"bad_values":check_all}
     return {"result":True}
 
@@ -1797,7 +1808,7 @@ def validate_enum_range(self,item_name,item_value):
         else: return float(a)
     maxvals = map(makefloat, maxvals)
     minvals = map(makefloat, minvals)
-    rangelist = zip(minvals,maxvals)
+    rangelist = list(zip(minvals,maxvals))
     item_values = listify(item_value)
     def map_check(rangelist,item_value):
         if item_value == "?" or item_value == ".": return True
@@ -1812,7 +1823,7 @@ def validate_enum_range(self,item_name,item_value):
         # debug
         # print "Value %s fails range check %d < x < %d" % (item_value,lower,upper)
         return False
-    check_all = filter(lambda a,b=rangelist: map_check(b,a) != True, item_values)
+    check_all = [a for a in item_values if map_check(rangelist,a) != True]
     if len(check_all)>0: return {"result":False,"bad_values":check_all}
     else: return {"result":True}
             
@@ -1926,7 +1937,7 @@ def validate_loop_key(self,loop_names):
                 if alternates == []: 
                     return {"result":False,"bad_items":loop_key}
                 for alt_names in alternates:
-                    alt = filter(lambda a:a in loop_names,alt_names)
+                    alt = [a for a in alt_names if a in loop_names]
                     if len(alt) == 0: 
                         return {"result":False,"bad_items":loop_key}  # no alternates   
     return {"result":True}
@@ -1957,8 +1968,8 @@ is suitable.
 
 <<Validate loop mandatory items>>=
 def validate_loop_references(self,loop_names):
-    must_haves = map(lambda a:self[a].get(self.list_ref_spec,None),loop_names)
-    must_haves = filter(lambda a:a != None,must_haves)
+    must_haves = [self[a].get(self.list_ref_spec,None) for a in loop_names]
+    must_haves = [a for a in must_haves if a != None]
     # build a flat list.  For efficiency we don't remove duplicates,as
     # we expect no more than the order of 10 or 20 looped names.
     def flat_func(a,b): 
@@ -1967,28 +1978,28 @@ def validate_loop_references(self,loop_names):
         else:
            a.extend(b)       #list of names
         return a
-    flat_mh = reduce(flat_func,must_haves,[])
+    flat_mh = []
+    [flat_func(flat_mh,a) for a in must_haves]
     group_mh = filter(lambda a:a[-1]=="_",flat_mh)
     single_mh = filter(lambda a:a[-1]!="_",flat_mh)
-    res = filter(lambda a: a not in loop_names,single_mh)
+    res = [a for a in single_mh if a not in loop_names]
     def check_gr(s_item, name_list):
         nl = map(lambda a:a[:len(s_item)],name_list)
         if s_item in nl: return True
         return False
-    res_g = filter(lambda a:check_gr(a,loop_names),group_mh)
+    res_g = [a for a in group_mh if check_gr(a,loop_names)]
     if len(res) == 0 and len(res_g) == 0: return {"result":True}
     # construct alternate list
     alternates = map(lambda a: (a,self.get_alternates(a)),res)
-    alternates = filter(lambda a:a[1] != [], alternates)
-    # next two lines purely for error reporting
-    missing_alts = filter(lambda a: a[1] == [], alternates)
-    missing_alts = map(lambda a:a[0],missing_alts)
+    alternates = [a for a in alternates if a[1] != []]
+    # next line purely for error reporting
+    missing_alts = [a[0] for a in alternates if a[1] == []]
     if len(alternates) != len(res): 
        return {"result":False,"bad_items":missing_alts}   #short cut; at least one
                                                    #doesn't have an altern
     #loop over alternates
     for orig_name,alt_names in alternates:
-         alt = filter(lambda a:a in loop_names,alt_names)
+         alt = [a for a in alt_names if a in loop_names]
          if len(alt) == 0: return {"result":False,"bad_items":orig_name}# no alternates   
     return {"result":True}        #found alternates
          
@@ -2021,11 +2032,11 @@ def get_alternates(self,main_name,exclusive_only=False):
             alternates = [alternates]
         together = zip(alt_names,alternates)
         if exclusive_only:
-            alt_names = filter(lambda a:a[1]=="alternate_exclusive" \
-                                         or a[1]=="replace", together)
+            alt_names = [a for a in together if a[1]=="alternate_exclusive" \
+                                         or a[1]=="replace"]
         else:
-            alt_names = filter(lambda a:a[1]=="alternate" or a[1]=="replace",together)
-        alt_names = map(lambda a:a[0],alt_names)
+            alt_names = [a for a in together if a[1]=="alternate" or a[1]=="replace"]
+        alt_names = [a[0] for a in alt_names]
     # now do the alias thing
     alias_names = listify(self[main_name].get("_item_aliases.alias_name",[]))
     alt_names.extend(alias_names)
@@ -2051,10 +2062,10 @@ as acting in this way.
 
 <<Validate exclusion rules>>=
 def validate_exclusion(self,item_name,item_value,whole_block,provisional_items={},globals={}):
-   alternates = map(lambda a:a.lower(),self.get_alternates(item_name,exclusive_only=True))
-   item_name_list = map(lambda a:a.lower(),whole_block.keys())
-   item_name_list.extend(map(lambda a:a.lower(),provisional_items.keys()))
-   bad = filter(lambda a:a in item_name_list,alternates)
+   alternates = [a.lower() for a in self.get_alternates(item_name,exclusive_only=True)]
+   item_name_list = [a.lower() for a in whole_block.keys()]
+   item_name_list.extend([a.lower() for a in provisional_items.keys()])
+   bad = [a for a in alternates if a in item_name_list]
    if len(bad)>0:
        print("Bad: %s, alternates %s" % (repr(bad),repr(alternates)))
        return {"result":False,"bad_items":bad}
@@ -2116,7 +2127,7 @@ def validate_parent(self,item_name,item_value,whole_block,provisional_items={},g
         namespace.extend(globals.keys())
         alt_names = filter_present(self.get_alternates(parent_item),namespace)
         if len(alt_names) == 0:
-            if len(filter(lambda a:a != "." and a != "?",child_values))>0:
+            if len([a for a in child_values if a != "." and a != "?"])>0:
 	        return {"result":False,"parent":parent_item}#no parent available -> error
             else:
                 return {"result":None}       #maybe True is more appropriate??
@@ -2176,7 +2187,7 @@ def check_parent_child(self,parent_vals,child_vals):
     # shield ourselves from dots and question marks
     pv = parent_vals[:]
     pv.extend([".","?"])
-    res =  filter(lambda a:a not in pv,child_vals)
+    res =  [a for a in child_vals if a not in pv]
     #print "Missing: %s" % res
     return res
 
@@ -2209,16 +2220,16 @@ def validate_dependents(self,item_name,item_value,whole_block,prov={},globals={}
     actual_names = whole_block.keys()
     actual_names.extend(prov.keys())
     actual_names.extend(globals.keys())
-    missing = filter(lambda a:a not in actual_names,dep_items)
+    missing = [a for a in dep_items if a not in actual_names]
     if len(missing) > 0:
 	alternates = map(lambda a:[self.get_alternates(a),a],missing)
         # compact way to get a list of alternative items which are 
         # present
-        have_check = map(lambda b:[filter_present(b[0],actual_names),
-                                   b[1]],alternates) 
-        have_check = filter(lambda a:len(a[0])==0,have_check)
+        have_check = [(filter_present(b[0],actual_names),
+                                   b[1]) for b in alternates] 
+        have_check = [a for a in have_check if len(a[0])==0]
         if len(have_check) > 0:
-            have_check = map(lambda a:a[1],have_check)
+            have_check = [a[1] for a in have_check]
             return {"result":False,"bad_items":have_check}
     return {"result":True}
     
@@ -2322,16 +2333,14 @@ are checked in the event of a single failure.
 
 <<Validate category presence>>=
 def validate_mandatory_category(self,whole_block):
-    mand_cats = filter(lambda a:self[a].get("_category.mandatory_code","no")=="yes",
-                self.keys())
+    mand_cats = [a for a in self.keys() if self[a].get("_category.mandatory_code","no")=="yes"]
     # map to actual ids
-    catlist = self.cat_map.items()
+    catlist = list(self.cat_map.items())
     # print "Mandatory categories - %s" % `mand_cats`
     all_keys = whole_block.keys() #non-save block keys
     for mand_cat in mand_cats:
-        cat_id = filter(lambda a:a[1]==mand_cat,catlist)[0][0]
-        no_of_items = len(filter(lambda a:self[a].get(self.cat_spec)==cat_id,
-                             all_keys))
+        cat_id = [a for a in catlist if a[1]==mand_cat][0][0]
+        no_of_items = len([a for a in all_keys if self[a].get(self.cat_spec)==cat_id])
         if no_of_items == 0:
             return {"result":False,"bad_items":cat_id}
     return {"result":True}
@@ -2356,14 +2365,11 @@ def find_prob_cats(self,whole_block):
     # map to actual ids
     catlist = self.cat_map.items()
     # find missing categories
-    wbs = whole_block["saves"]
-    abs_all_keys = whole_block.keys()
-    abs_all_keys.extend(reduce(lambda a,b:a+(wbs[b].keys()),wbs.keys(),[]))
+    abs_all_keys = set(whole_block.keys())
     prob_cats = []
     for mand_cat in mand_cats:
-        cat_id = filter(lambda a:a[1]==mand_cat,catlist)[0][0]
-	
-        if len(filter(lambda a:self[a].get(self.cat_spec)==cat_id,abs_all_keys))==0:
+        cat_id = [a for a in catlist if a[1]==mand_cat][0][0]
+        if len([a for a in abs_all_keys if self[a].get(self.cat_spec)==cat_id])==0:
 	    prob_cats.append(cat_id)
     if len(prob_cats) > 0:
 	return (False,{'whole_block':[('validate_mandatory_category',{"result":False,"bad_items":problem_cats})]})
@@ -2464,12 +2470,10 @@ def add_type_info(self):
             #print "Regexp %s becomes %s" % (mm_regex,fixed_regexp)
             return fixed_regexp
         constructs = map(regex_fiddle,constructs)
-        packed_up = zip(types,constructs)
-        for typecode,construct in packed_up:
+        for typecode,construct in zip(types,constructs):
             self.typedic[typecode] = re.compile(construct,re.MULTILINE|re.DOTALL)
         # now make a primitive <-> type construct mapping
-        packed_up = zip(types,prim_types)
-        for typecode,primtype in packed_up:
+        for typecode,primtype in zip(types,prim_types):
             self.primdic[typecode] = primtype
 
 @ \section{Linkage to dREL}
@@ -3060,7 +3064,7 @@ elif def_index_val:            #derive a default value
         if lcase_comp:
             val_to_index = [a.lower() for a in val_to_index]
         keypos = [index_vals.index(a) for a in val_to_index]
-        result = map(lambda a:self[key]["_enumeration_default.value"][a] ,keypos)
+        result = [self[key]["_enumeration_default.value"][a]  for a in keypos]
     else:
         if lcase_comp:
             val_to_index = val_to_index.lower()
@@ -3147,7 +3151,7 @@ def change_type(self,itemname,inval):
     if inval == "?": return inval
     change_function = convert_type(self[itemname])
     if isinstance(inval,list) and not isinstance(inval,StarFile.StarList):   #from a loop
-        newval = map(change_function,inval)
+        newval = [change_function(a) for a in inval]
     else: 
         newval = change_function(inval)
     return newval
@@ -3301,9 +3305,10 @@ def run_data_checks(self,verbose=False):
     update_value(self.v_result,self.fulldic.run_block_validation(self))
     # return false and list of baddies if anything didn't match
     self.fulldic.optimize_off()
-    for test_key in self.v_result.keys():
+    all_keys = list(self.v_result.keys()) #dictionary will change
+    for test_key in all_keys:
         #print "%s: %s" % (test_key,`self.v_result[test_key]`)
-        self.v_result[test_key] = filter(lambda a:a[1]["result"]==False,self.v_result[test_key])
+        self.v_result[test_key] = [a for a in self.v_result[test_key] if a[1]["result"]==False]
         if len(self.v_result[test_key]) == 0: 
             del self.v_result[test_key]
     isvalid = len(self.v_result)==0
@@ -3316,8 +3321,7 @@ is probably broken.
 
 <<Validation report>>=
 def report(self):
-   import cStringIO
-   outstr = cStringIO.StringIO()
+   outstr = StringIO()
    outstr.write( "Validation results\n")
    outstr.write( "------------------\n")
    print("%d invalid items found\n" % len(self.v_result))
@@ -3339,7 +3343,7 @@ def single_item_check(self,item_name,item_value):
         result = {item_name:[]}
     else:
         result = self.fulldic.run_item_validation(item_name,item_value)
-    baddies = filter(lambda a:a[1]["result"]==False, result[item_name])
+    baddies = [a for a in result[item_name] if a[1]["result"]==False]
     # if even one false one is found, this should trigger
     isvalid = (len(baddies) == 0)
     # if not isvalid: print "Failures for %s:" % item_name + `baddies`
@@ -3351,7 +3355,7 @@ def loop_item_check(self,loop_names):
 	result = {loop_names[0]:[]}
     else:
 	result = self.fulldic.run_loop_validation(in_dic_names)
-    baddies = filter(lambda a:a[1]["result"]==False,result[in_dic_names[0]])
+    baddies = [a for a in result[in_dic_names[0]] if a[1]["result"]==False]
     # if even one false one is found, this should trigger
     isvalid = (len(baddies) == 0)
     # if not isvalid: print "Failures for %s:" % `loop_names` + `baddies`
@@ -3363,7 +3367,7 @@ def global_item_check(self,item_name,item_value,provisional_items={}):
     else:
         result = self.fulldic.run_global_validation(item_name,
            item_value,self,provisional_items = provisional_items)
-    baddies = filter(lambda a:a[1]["result"]==False,result[item_name])
+    baddies = [a for a in result[item_name] if a[1]["result"] is False]
     # if even one false one is found, this should trigger
     isvalid = (len(baddies) == 0)
     # if not isvalid: print "Failures for %s:" % item_name + `baddies`
@@ -3374,7 +3378,7 @@ def remove_global_item_check(self,item_name):
         result = {item_name:[]}
     else:
         result = self.fulldic.run_remove_global_validation(item_name,self,False)
-    baddies = filter(lambda a:a[1]["result"]==False,result[item_name])
+    baddies = [a for a in result[item_name] if a[1]["result"]==False]
     # if even one false one is found, this should trigger
     isvalid = (len(baddies) == 0)
     # if not isvalid: print "Failures for %s:" % item_name + `baddies`
@@ -3395,7 +3399,7 @@ def AddCifItem(self,data):
         valid,problems = self.global_item_check(data[0],data[1])
         self.report_if_invalid(valid,problems,data[0])
     elif isinstance(data[0],tuple) or isinstance(data[0],list):
-        paired_data = zip(data[0],data[1])
+        paired_data = list(zip(data[0],data[1]))
         for name,value in paired_data:
             valid,problems = self.single_item_check(name,value) 
             self.report_if_invalid(valid,problems,name)
@@ -3403,11 +3407,13 @@ def AddCifItem(self,data):
         self.report_if_invalid(valid,problems,data[0])
         prov_dict = {}            # for storing temporary items
         for name,value in paired_data: prov_dict[name]=value
-        for name,value in paired_data: 
+        for name,value in paired_data:
             del prov_dict[name]   # remove temporarily
             valid,problems = self.global_item_check(name,value,prov_dict)
             prov_dict[name] = value  # add back in
             self.report_if_invalid(valid,problems,name)
+    else:
+        raise ValueError("Programming error: AddCifItem passed non-tuple,non-string item")
     super(ValidCifBlock,self).AddCifItem(data)
 
 def AddItem(self,key,value,**kwargs):
@@ -3421,7 +3427,8 @@ def AddItem(self,key,value,**kwargs):
 # utility function
 def report_if_invalid(self,valid,bad_list,data_name):
     if not valid:
-        error_string = reduce(lambda a,b: a + "," + b[0], bad_list, "") 
+        bad_tests = [a[0] for a in bad_list]
+        error_string = ",".join(bad_tests)
         error_string = repr(data_name) + " fails following validity checks: "  + error_string
         raise ValidCifError( error_string)
 
@@ -3434,8 +3441,7 @@ def __delitem__(self,key):
         except TypeError:
             loop_items = []
         if loop_items:             #need to check loop conformance
-            loop_names = map(lambda a:a[0],loop_items)
-            loop_names = filter(lambda a:a != key,loop_names)
+            loop_names = [a[0] for a in loop_items if a[0] != key]
             valid,problems = self.loop_item_check(loop_names)
             self.report_if_invalid(valid,problems)
         valid,problems = self.remove_global_item_check(key)
@@ -3640,9 +3646,8 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
     return valid_result,no_matches
 
 def validate_report(val_result,use_html=False):
-    import cStringIO
     valid_result,no_matches = val_result
-    outstr = cStringIO.StringIO()
+    outstr = StringIO()
     if use_html:
         outstr.write("<h2>Validation results</h2>")
     else:
@@ -3670,12 +3675,12 @@ def validate_report(val_result,use_html=False):
                 outstr.write( "<p>The following items were not found in the dictionary")
                 outstr.write(" (note that this does not invalidate the data block):</p>")
                 outstr.write("<p><table>\n")
-                map(lambda it:outstr.write("<tr><td>%s</td></tr>" % it),no_matches[block])
+                [outstr.write("<tr><td>%s</td></tr>" % it) for it in no_matches[block]]
                 outstr.write("</table>\n")
             else:
                 outstr.write( "\n The following items were not found in the dictionary:\n")
                 outstr.write("Note that this does not invalidate the data block\n")
-                map(lambda it:outstr.write("%s\n" % it),no_matches[block])
+                [outstr.write("%s\n" % it) for it in no_matches[block]]
         # now organise our results by type of error, not data item...
         error_type_dic = {}
         for error_item, error_list in block_result[1].items():
@@ -3751,7 +3756,7 @@ def error_report(error_name,error_explanation,error_dics):
    for error in error_dics:
       bodystring += "\n%-32s" % error["item_name"]
       if "bad_values" in error:
-          out_vals = map(lambda a:repr(a)[:50],error["bad_values"])
+          out_vals = [repr(a)[:50] for a in error["bad_values"]]
           bodystring += "%-20s" % out_vals 
       if "bad_items" in error:
           bodystring += "%-20s" % repr(error["bad_items"])
@@ -3806,8 +3811,9 @@ def run_data_checks(check_block,fulldic,block_scope='Item'):
         update_value(v_result, fulldic.run_loop_validation(loopnames))
     update_value(v_result,fulldic.run_block_validation(check_block,block_scope=block_scope))
     # return false and list of baddies if anything didn't match
-    for test_key in v_result.keys():
-        v_result[test_key] = filter(lambda a:a[1]["result"]==False,v_result[test_key])
+    all_keys = list(v_result.keys())
+    for test_key in all_keys:
+        v_result[test_key] = [a for a in v_result[test_key] if a[1]["result"]==False]
         if len(v_result[test_key]) == 0: 
             del v_result[test_key]
     # if even one false one is found, this should trigger
@@ -3847,8 +3853,8 @@ def get_number_with_esd(numstring):
         return None,None
     if dot or q: return None,None     #a dot or question mark
     if exp:          #has exponent 
-       exp = string.replace(exp,"d","e")     # mop up old fashioned numbers
-       exp = string.replace(exp,"D","e")
+       exp = exp.replace("d","e")     # mop up old fashioned numbers
+       exp = exp.replace("D","e")
        base_num = base_num + exp
     #print "Debug: have %s for base_num from %s" % (base_num,numstring)
     base_num = float(base_num)
@@ -3958,7 +3964,7 @@ def convert_list_values(structure,dimension):
     print(func_def)
     exec(func_def, globals()) #(re)defines element_convert in global namespace
     if len(dimension)> 0 and int(dimension[0]) != 1:
-        return lambda a: map(element_convert,a)
+        return lambda a: list(map(element_convert,a))
     else: return element_convert
 
 @  When storing a matrix/array value as a result of a calculation, we remove the
@@ -3984,7 +3990,7 @@ def convert_matrix_values(valtype):
         func_def +="    return p.astype('complex')\n"
     else:
         raise ValueError('Unknown matrix value type')
-    exec(func_def)  #matrix convert is defined
+    exec(func_def,globals())  #matrix convert is defined
     return matrix_convert    
         
 @  DDLm specifies List element composition using a notation of form 'cont(el,el,el...)'
@@ -4029,7 +4035,7 @@ def listify(item):
 # given a list of search items, return a list of items 
 # actually contained in the given data block
 def filter_present(namelist,datablocknames):
-    return filter(lambda a:a in datablocknames,namelist)
+    return [a for a in namelist if a in datablocknames]
 
 # Make an item immutable, used if we want a list to be a key
 def make_immutable(values):
@@ -4037,7 +4043,7 @@ def make_immutable(values):
     if not isinstance(values[0],StarList):
         return values
     else:
-        return map(tuple,values)
+        return [tuple(a) for a in values]
 
 @ Decorators. The following decorator keeps track of calls in order to
 detect recursion.  We raise a special recursion error to allow the
@@ -4055,7 +4061,7 @@ def track_recursion(in_this_func):
         key_arg = args[1]
         if key_arg in wrapper.called_list:
             print('Recursion watch: %s already called %d times' % (key_arg,wrapper.called_list.count(key_arg)))
-            raise CifRecursionError( (key_arg,wrapper.called_list[:]))    #failure
+            raise CifRecursionError( key_arg,wrapper.called_list[:])    #failure
         if len(wrapper.called_list) == 0:   #first time
             wrapper.stored_use_defaults = kwargs.get("allow_defaults",False)
             print('All recursive calls will set allow_defaults to ' + repr(wrapper.stored_use_defaults))
@@ -4128,7 +4134,7 @@ def find_parent(ddl2_def):
         raise CifError("Asked to find parent in block with no child_names")
     if "_item_linked.parent_name" not in ddl2_def:
         raise CifError("Asked to find parent in block with no parent_names")
-    result = filter(lambda a:a not in ddl2_def["_item_linked.child_name"],ddl2_def["_item.name"]) 
+    result = [a for a in ddl2_def["_item.name"] if a not in ddl2_def["_item_linked.child_name"]] 
     if len(result)>1 or len(result)==0:
         raise CifError("Unable to find single unique parent data item")
     return result[0]

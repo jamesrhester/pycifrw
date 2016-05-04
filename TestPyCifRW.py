@@ -158,8 +158,7 @@ class BlockRWTestCase(unittest.TestCase):
     def testTupleNumberSet(self):
         """Test tuple setting with numbers"""
         self.cf['_test_tuple'] = (11,13.5,-5.6)
-        self.failUnless(map(float,
-	     self.cf['_test_tuple']))== [11,13.5,-5.6]
+        self.failUnless([float(a) for a in self.cf['_test_tuple']]== [11,13.5,-5.6])
 
     def testTupleComplexSet(self):
         """DEPRECATED: Test setting multiple names in loop"""
@@ -210,7 +209,7 @@ class BlockRWTestCase(unittest.TestCase):
 
     def testMoreBadStrings(self):
         dataname = "_name_is_ok"
-        val = u"so far, ok, but now we have a " + unichr(128)
+        val = u"so far, ok, but now we have a " + chr(128)
         try:
             self.cf[dataname] = val
         except CifFile.StarError: pass
@@ -281,7 +280,7 @@ class BlockChangeTestCase(unittest.TestCase):
        self.cf.AddToLoop('_item_name#2',adddict)
        print(self.cf)
        newkeys = self.cf.GetLoopNames('_item_name#2')
-       self.failUnless(adddict.keys()[0] in newkeys)
+       self.failUnless(list(adddict.keys())[0] in newkeys)
        self.assertEqual(len(self.cf['_item_name#2']),len(self.values[0][0]))
        
    def testBadAddToLoop(self):
@@ -294,7 +293,7 @@ class BlockChangeTestCase(unittest.TestCase):
        else: self.fail()
        try:
            self.cf.AddToLoop('_item_name#2',adddict)
-       except CifFile.StarLengthError:
+       except StarFile.StarLengthError:
            pass 
        else: self.fail()
 
@@ -1175,7 +1174,7 @@ class DictTestCase(unittest.TestCase):
     def testnum_and_esd(self):
         """Test conversion of numbers with esds"""
         testnums = ["5.65","-76.24(3)","8(2)","6.24(3)e3","55.2(2)d4"]
-        res = map(CifFile.get_number_with_esd,testnums)
+        res = [CifFile.get_number_with_esd(a) for a in testnums]
         print(repr(res))
         self.failUnless(res[0]==(5.65,None))
         self.failUnless(res[1]==(-76.24,0.03))
@@ -1874,7 +1873,7 @@ _item4 4
 if __name__=='__main__':
      global testdic
      testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.cif2.dic",grammar="2.0")
-     #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
+     suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
@@ -1891,6 +1890,6 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     #unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     unittest.TextTestRunner(verbosity=2).run(suite)
+     #unittest.main()
 

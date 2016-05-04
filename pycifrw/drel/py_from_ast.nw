@@ -119,6 +119,8 @@ number of packets during execution of the method.
     if cur_row:
         actual_names+=['__row_id']
     map_names = ",".join(actual_names)
+    if len(actual_names)>1:
+        map_names = "zip("+map_names+")"
     one_pack_names = [func_table["element_no"] % (a,"packet_no") for a in actual_names]
     one_packet_each = ",".join(one_pack_names)
     preamble = "def %s(ciffile,packet_no=-1):\n" % (func_name)
@@ -137,7 +139,7 @@ number of packets during execution of the method.
         end_body += "           __row_id = range(full_length)\n"
         end_body += "       else:\n"
         end_body += "           return []\n"
-    end_body+=      "       return map(lambda %s:drel_func(%s),%s)\n" % (dummy_vars,dummy_vars,map_names)
+    end_body+=      "       return [drel_func(%s) for %s in %s]\n" % (dummy_vars,dummy_vars,map_names)
     end_body+=     "    else:\n"
     end_body+=     "        return drel_func(%s)\n" % one_packet_each
 
@@ -561,13 +563,13 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     catnames = set([a[1][0] for a in cif_dic.cat_obj_lookup_table.items() if a[0][0]==cat_id.lower()])
     outstring = "__pyallitems = " + repr(catnames)
     outstring += "\nprint('names in cat = %s' % repr(__pyallitems))"
-    outstring += "\n" + "__pycitems = filter(lambda a:%s,__pyallitems)" % (api_table["has_name"] % "a")
+    outstring += "\n" + "__pycitems = [a for a in __pyallitems if %s]" % (api_table["has_name"] % "a")
     outstring += "\nprint('names in cat -> %s' % repr(__pycitems))\n"
     cat_key = cif_dic[cat_id]['_category.key_id']   #take official key
     # If there is nothing in the category, provoke category creation by evaluating the key
     outstring += "if len(__pycitems)==0:\n"
     outstring += "    __pydummy = %s\n" % (api_table["data_access"] % repr(cat_key))
-    outstring += "    __pycitems = filter(lambda a:%s,__pyallitems)\n" % (api_table["has_name"] % "a")
+    outstring += "    __pycitems = [a for a in __pyallitems if %s]\n" % (api_table["has_name"] % "a")
     outstring += "    print('After category creation, names in cat ->' + repr(__pycitems))\n"
     special_info["depends"].add(cat_key)  #add key as a dependency
     if var_info[2] == True:

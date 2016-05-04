@@ -136,7 +136,7 @@ def drel_dot(first_arg,second_arg):
 
 def drel_add(first_arg,second_arg):
     """Separate string addition from the rest"""
-    if isinstance(first_arg,basestring) and isinstance(second_arg,basestring):
+    if isinstance(first_arg,str) and isinstance(second_arg,str):
         return first_arg+second_arg
     else:
         result = numpy.add(first_arg,second_arg)
@@ -156,7 +156,7 @@ def drel_eigen(in_matrix):
     move.reverse()
     vals = vals[move]
     vects = vects.transpose()[move]
-    return zip(vals,vects)
+    return list(zip(vals,vects))
 
 def drel_int(in_val):
     """Return in_val as an integer"""
