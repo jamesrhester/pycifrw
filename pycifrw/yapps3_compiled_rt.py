@@ -41,7 +41,7 @@ keeps track of the parse stack.
 
 import sys, re
 try:
-    import StarScan
+    from CifFile import StarScan
     have_star_scan = True
 except ImportError:
     have_star_scan = False

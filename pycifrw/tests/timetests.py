@@ -17,7 +17,7 @@ for file in testfiles:
     start_time = time.time()
     jj = CifFile.ReadCif(file,scantype='flex',standard=None)      # no profiling, approx usage
     finish_time = time.time()
-    print "File %s: wallclock time %8.1f\n" % (file,finish_time - start_time)
+    print ("File %s: wallclock time %8.1f\n" % (file,finish_time - start_time))
     cProfile.run("jj = CifFile.ReadCif(file,scantype='flex',standard=None) ","profout")
     p = pstats.Stats( "profout")
     p.strip_dirs().sort_stats("cumulative").print_stats()
@@ -26,7 +26,7 @@ for file,dic in valfiles:
     start_time = time.time()
     jj = CifFile.Validate(file,dic=dic) 
     finish_time = time.time()
-    print "Validate file %s: %8.1f\n" % (file,finish_time - start_time)
+    print ("Validate file %s: %8.1f\n" % (file,finish_time - start_time))
      
 
 
