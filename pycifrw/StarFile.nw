@@ -3004,7 +3004,11 @@ class StarDerivationError(Exception):
     def __str__(self):
         return "Derivation of %s failed, None returned" % self.fail_name
 
-class StarDerivationFailure(Exception):
+#
+# This is subclassed from AttributeError in order to allow hasattr
+# to work.
+#
+class StarDerivationFailure(AttributeError):
     def __init__(self,fail_name):
         self.fail_name = fail_name
     def __str__(self):
