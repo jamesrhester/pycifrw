@@ -4,9 +4,30 @@ Release Notes for PyCIFRW-4.2.1 Python 3 version
 Regressions
 ===========
 
-* A CifFile will only read successfully from an open
-stream if that stream has decoding set, i.e. is a text
-stream.
+* A CifFile will only read successfully from an already open stream if
+that stream has decoding set, i.e. is a text stream.
+
+Python 3 notes
+==============
+
+* The semantics of key(), items() and values() have not changed for
+CifFile and CifBlock objects, despite the Python 3 dictionary
+semantics requiring them to be iterators rather than lists.
+
+* In Python 2, the top-level CifFile module imported everything from
+the CifFile.py and StarFile.py modules. This meant that it was
+sufficient to go 'from CifFile import x', where x is anything defined
+in CifFile.py or StarFile.py.  This has been replicated in Python 3 by
+explicitly importing those parts of CifFile.py and StarFile.py
+required for the tests to succeed. If your code uses a function not
+included in the tests (note that all methods are included) you will
+need to refer to it as CifFile.CifFile.x (for a function named x).
+
+* Python 3 conversion relied heavily on getting the 166 unit tests to
+conplete successfully.  These tests cover about 80% of the code. If
+your code happens to trigger errors in the remaining code, please let
+me know.  The code that is not covered well is generally DDL1/2
+validation code or unusual error conditions.
 
 Release Notes for PyCIFRW-4.2.1
 ===============================
