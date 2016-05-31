@@ -1,8 +1,10 @@
-Release Notes for PyCIFRW-4.2.1
+Release Notes for PyCIFRW-4.2.2
 ===============================
 
 Changes since 4.2
 =================
+* Fixed bugs in fast merging 
+* Improved DDLm import behaviour
 * Improved templating of semicolon-delimited strings
 * Added non-standard hash functions to dREL
 
