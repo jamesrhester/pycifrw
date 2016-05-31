@@ -439,10 +439,11 @@ def set_parent(self,parentname,childname):
            parentname.lower())
     self.scoping = self.scoping #reset visibility
         
-@ Making a Block Collection from a set of block names.  This is used
-in merging, where we merge with a Block Collection. Any pointers to
+@ Making a Block Collection from a set of our own block names.  This is used
+in merging, where we must merge with a Block Collection. Any pointers to
 parent blocks that are not in the list become None, ie. become top
-level blocks. ::
+level blocks.  We use our own child table to find links between the
+supplied block names and ourself. ::
 
 <<Make a BC from a name list>>=
 def makebc(self,namelist,scoping='dictionary'):
@@ -456,6 +457,7 @@ def makebc(self,namelist,scoping='dictionary'):
     newbc.lower_keys = set([a[0] for a in proto_child_table])
     newbc.dictionary = dict((a[0],self.dictionary[a[0]]) for a in proto_child_table)
     newbc.scoping = scoping
+    newbc.block_input_order = block_lower
     return newbc
 
     
@@ -617,7 +619,7 @@ as before merging.
 The suggested overlay method involves adding to loops, rather than
 replacing them completely.  Identical rows must be removed, and
 any key values with identical values remaining after this have to
-flag an error.  We don't read in the ddl specifications themselves,
+flag an error.  We do not read in the ddl specifications themselves,
 to avoid messing around with hard-coded filenames, so we require the calling
 function to provide us with this file (not yet implemented).  
  
@@ -628,7 +630,7 @@ block names (the default behaviour).
 
 Note also a problem with the overlay protocol as written up in Vol. G:
 if we try matching on item.name, we will run into trouble where _item.name
-is looped in DDL2-style dictionaries.  We can't match on a complete match
+is looped in DDL2-style dictionaries.  We cannot match on a complete match
 against all item names in the list, because we would like to be able to add
 item names in overlay mode.  So we have to deduce the 'main' item name
 from any parent-child information that we have using a helper function which
@@ -638,7 +640,9 @@ Nested save frames are emulated through child table lookups, so we should
 merge this table when merging block collections.  Unless [[parent]] is
 not empty, we put all new blocks on the same level.  Otherwise, any top-level
 blocks in the incoming block collection (parent is None) are given the parent
-specified in [[parent]].
+specified in [[parent]]. In previous versions this was text, but due to the
+inability to specify to future callers that the name has been changed, [[parent]]
+is now itself a datablock.
 
 As for [[NewBlock]], we allow duplicate save frame names in the precise situation
 where one of the blocks is a top-level block.
@@ -653,6 +657,13 @@ def merge_fast(self,new_bc,parent=None):
     else:
         mode = 'strict'
     overlap_flag = not self.lower_keys.isdisjoint(new_bc.lower_keys)
+    if parent is not None:
+        parent_name = [a[0] for a in self.dictionary.items() if a[1] == parent]
+        if len(parent_name)==0 or len(parent_name)>1:
+            raise CifError("Unable to find unique parent block name: have %s" % str(parent_name))
+        parent_name = parent_name[0]
+    else:
+        parent_name = None  #an error will be thrown if we treat as a string
     if overlap_flag and mode != 'replace':
         double_keys = self.lower_keys.intersection(new_bc.lower_keys)
         for dup_key in double_keys:
@@ -663,8 +674,8 @@ def merge_fast(self,new_bc,parent=None):
                 start_key = dup_key
                 while start_key in self.lower_keys: start_key = start_key+'+'
                 self._rekey(dup_key,start_key)
-                if parent.lower() == dup_key:  #we just renamed the prospective parent!
-                    parent = start_key
+                if parent_name.lower() == dup_key:  #we just renamed the prospective parent!
+                    parent_name = start_key
               elif our_parent is not None and their_parent is None and parent is None:
                 start_key = dup_key
                 while start_key in new_bc.lower_keys: start_key = start_key+'+'
@@ -675,11 +686,11 @@ def merge_fast(self,new_bc,parent=None):
     self.lower_keys.update(new_bc.lower_keys)
     self.visible_keys += (list(new_bc.lower_keys))
     self.block_input_order += new_bc.block_input_order
-    # print 'Block input order now:' + `self.block_input_order`
+    #print 'Block input order now:' + `self.block_input_order`
     self.child_table.update(new_bc.child_table)
-    if parent is not None:     #redo the child_table entries
+    if parent_name is not None:     #redo the child_table entries
           reparent_list = [(a[0],a[1].block_id) for a in new_bc.child_table.items() if a[1].parent==None]
-          reparent_dict = [(a[0],self.PC(a[1],parent.lower())) for a in reparent_list]
+          reparent_dict = [(a[0],self.PC(a[1],parent_name.lower())) for a in reparent_list]
           self.child_table.update(dict(reparent_dict))
 
 def merge(self,new_bc,mode=None,parent=None,single_block=[],

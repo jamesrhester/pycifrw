@@ -1634,9 +1634,12 @@ class FakeDicTestCase(unittest.TestCase):
           
 class DicEvalTestCase(unittest.TestCase):
     def setUp(self):
-        cc = CifFile.CifFile("pycifrw/drel/testing/data/nick.cif",grammar="STAR2")
-        self.fb = cc.first_block()
+        c_old = CifFile.CifFile("pycifrw/drel/testing/data/nick_old.cif",grammar="2.0")
+        c_new = CifFile.CifFile("pycifrw/drel/testing/data/nick_new.cif",grammar="2.0")
+        self.fb = c_new.first_block()
         self.fb.assign_dictionary(testdic)
+        self.fb_old = c_old.first_block()
+        self.fb_old.assign_dictionary(testdic)
         
     def check_value(self,dataname,scalar=True):
         """Generic check of value"""
@@ -1667,6 +1670,12 @@ class DicEvalTestCase(unittest.TestCase):
         del self.fb['_cell.volume']
         self.failUnless(abs(self.fb['_cell_volume']-float(target))<0.01)
 
+    def testFullCalcAlias(self):
+        """Test that a calculation is performed if dependent datanames
+        have aliased values"""
+        del self.fb_old['_relfn.F_calc']
+        result = self.fb_old['_refln.F_calc']
+        
     def testEigenSystem(self):
         """Test that question marks are seen as missing values"""
         self.fb.provide_value = True
@@ -1863,7 +1872,7 @@ _item4 4
         
 if __name__=='__main__':
      global testdic
-     testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.cif2.dic",grammar="2.0")
+     testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.dic",grammar="2.0")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)

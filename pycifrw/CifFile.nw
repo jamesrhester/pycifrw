@@ -1411,7 +1411,10 @@ def get_key_pack(self,category,value,data):
  
 @ For help in validation we create a lookup table which matches a category to
 its ultimate parent.  This allows us to quickly check whether or not a data 
-item is allowed to be co-looped with other data items.
+item is allowed to be co-looped with other data items.  Note that we may have
+to draw in external dictionaries to do this properly, but to avoid holding
+the whole lot in memory, we simply stop searching up the parent tree if the
+parent block is missing.
 
 <<Create category parent table>>=
 looped_cats = [a for a in categories if self[a].get('_definition.class','Set') == 'Loop']
@@ -1419,9 +1422,11 @@ self.parent_lookup = {}
 for one_cat in looped_cats:
     parent_cat = one_cat
     parent_def = self[parent_cat]
-    while self[parent_def['_name.category_id']].get('_definition.class','Set') == 'Loop':
-        parent_cat = parent_def['_name.category_id'].lower()
-        parent_def = self[parent_cat]
+    next_up = parent_def['_name.category_id'].lower()
+    while self.has_key(next_up) and self[next_up].get('_definition.class','Set') == 'Loop':
+        parent_def = self[next_up]
+        parent_cat = next_up
+        next_up = parent_def['_name.category_id'].lower()
     self.parent_lookup[one_cat] = parent_cat
 
 @ Section{DDLm functionality}
@@ -1446,8 +1451,13 @@ children of the old 'Head' block.
 def ddlm_import(self,import_mode='All'):
     import urllib
     import_frames = [(a,self[a]['_import.get']) for a in self.keys() if self[a].has_key('_import.get')]
+    print 'Import mode %s applied to following frames' % import_mode
+    print str(import_frames)
     if import_mode is not 'All':
-       import_frames = [b for b in import_frames if b[1].get('mode','Contents')==import_mode]
+       for i in range(len(import_frames)):
+            import_frames[i] = (import_frames[i][0],[a for a in import_frames[i][1] if a.get('mode','Contents') == import_mode])
+       print 'Importing following frames in mode %s' % import_mode
+       print str(import_frames)
     #resolve all references
     for parent_block,import_list in import_frames:
       for import_ref in import_list:
@@ -1478,7 +1488,7 @@ def ddlm_import(self,import_mode='All'):
             self[parent_block].merge(import_target)
         elif mode =="full":
             # Do the syntactic merge
-            syntactic_head = self.get_parent(parent_block) #root frame if no nesting
+            syntactic_head = self[self.get_parent(parent_block)] #root frame if no nesting
             from_cat_head = import_target['_name.object_id']
             child_frames = import_from.ddlm_all_children(from_cat_head)
              # Check for Head merging Head

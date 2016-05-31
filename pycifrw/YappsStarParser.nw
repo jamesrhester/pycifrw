@@ -352,13 +352,13 @@ rule input@<<prepared>>: ( ((
             END                 {{allblocks = prepared}}
             )))                   {{return allblocks}}
 
-     rule dblock@<<prepared>>: ( data_heading {{heading = data_heading[5:];thisbc=StarFile(characterset='unicode',standard=prepared.standard);thisbc.NewBlock(heading,StarBlock(overwrite=False));stored_bc = thisbc[heading]}}# a data heading
+     rule dblock@<<prepared>>: ( data_heading {{heading = data_heading[5:];thisbc=StarFile(characterset='unicode',standard=prepared.standard);act_heading = thisbc.NewBlock(heading,StarBlock(overwrite=False));stored_block = thisbc[act_heading]}}# a data heading
                   (
-                   dataseq@<<stored_bc>>   #because merging may have changed the heading  
+                   dataseq@<<stored_block>>   #because merging may have changed the heading  
                   |
-                  save_frame     {{thisbc.merge_fast(save_frame,parent=heading)}}
+                  save_frame     {{thisbc.merge_fast(save_frame,parent=stored_block)}}
                   )*
-                   )                      {{stored_bc.setmaxnamelength(stored_bc.maxnamelength);return (monitor('dblock',thisbc))}} # but may be empty
+                   )                      {{stored_block.setmaxnamelength(stored_block.maxnamelength);return (monitor('dblock',thisbc))}} # but may be empty
 
      rule dataseq@<<starblock>>:  data@<<starblock>> 
 		       (
@@ -417,11 +417,11 @@ rule input@<<prepared>>: ( ((
                        )*             
 		       )	      {{return dataloop}}
 
-     rule save_frame: save_heading   {{savehead = save_heading[5:];savebc = StarFile();savebc.NewBlock(savehead,StarBlock(overwrite=False)) }} 
+     rule save_frame: save_heading   {{savehead = save_heading[5:];savebc = StarFile();newname = savebc.NewBlock(savehead,StarBlock(overwrite=False));stored_block = savebc[newname] }} 
                       (
                       dataseq@<<savebc[savehead]>> 
                       |
-                      save_frame     {{savebc.merge_fast(save_frame,parent=savehead)}}
+                      save_frame     {{savebc.merge_fast(save_frame,parent=stored_block)}}
                       )*
                       save_end           {{return monitor('save_frame',savebc)}}
 
@@ -492,11 +492,11 @@ rule input@<<prepared>>: ( ((
             END                 {{allblocks = prepared}}
             )))                   {{return allblocks}}
 
-    rule dblock@<<prepared>>: ( data_heading {{heading = data_heading[5:];thisbc=StarFile(characterset='unicode',standard=prepared.standard);thisbc.NewBlock(heading,StarBlock(overwrite=False))}}# a data heading
+    rule dblock@<<prepared>>: ( data_heading {{heading = data_heading[5:];thisbc=StarFile(characterset='unicode',standard=prepared.standard);newname = thisbc.NewBlock(heading,StarBlock(overwrite=False));act_block=thisbc[newname]}}# a data heading
                   (
                    dataseq@<<thisbc[heading]>>  
                   |
-                  save_frame     {{thisbc.merge_fast(save_frame,parent=heading)}}
+                  save_frame     {{thisbc.merge_fast(save_frame,parent=act_block)}}
                   )*
 # A trick to force rechecking of all datanames, which was skipped by the precheck = True option below
                    )                      {{thisbc[heading].setmaxnamelength(thisbc[heading].maxnamelength);return (monitor('dblock',thisbc))}} # but may be empty
@@ -545,11 +545,11 @@ rule input@<<prepared>>: ( ((
                        )*             
 		       )	      {{return dataloop}}
 
-     rule save_frame: save_heading   {{savehead = save_heading[5:];savebc = StarFile();savebc.NewBlock(savehead,StarBlock(overwrite=False)) }} 
+     rule save_frame: save_heading   {{savehead = save_heading[5:];savebc = StarFile();newname=savebc.NewBlock(savehead,StarBlock(overwrite=False));act_block=savebc[newname] }} 
                       (
                       dataseq@<<savebc[savehead]>> 
                       |
-                      save_frame     {{savebc.merge_fast(save_frame,parent=savehead)}}
+                      save_frame     {{savebc.merge_fast(save_frame,parent=act_block)}}
                       )*
                       save_end           {{return monitor('save_frame',savebc)}}
 
