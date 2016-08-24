@@ -1176,6 +1176,7 @@ shifting categories around.
 <<Category manipulation methods>>=
 <<Changing and updating categories>>
 <<Getting category information>>
+<<Find block corresponding to category name>>
 
 @  Changing a category name involves changing the [[_name.category_id]]
 in all children as well as the category definition itself and datablock names, then updating our internal
@@ -1284,7 +1285,7 @@ def add_category(self,catname,catparent=None,is_loop=True,allow_dangler=False):
         self[realname]['_definition.class'] = 'Set'
     self[realname]['_description.text'] = 'No definition provided'
     self.lock()
-    self.cat_map[realname]=realname
+    self.cat_map[realname.lower()]=realname
     return realname
 
 def add_definition(self,itemname,catparent,def_text='PLEASE DEFINE ME',allow_dangler=False):
@@ -1318,8 +1319,8 @@ def remove_definition(self,defname):
     if self[defname].get('_definition.scope')=='Category':
         children = self.ddlm_immediate_children(defname)
         [self.remove_definition(a) for a in children]
-        cat_map_id = self[defname]['_definition.id']
-        del self.cat_map[cat_map_id]        
+        cat_id = self[defname]['_definition.id'].lower()
+        del self.cat_map[cat_id]        
     del self[defname]
 
 @ The DDLm architecture identifies a data definition by (category,object) which
@@ -1369,22 +1370,30 @@ def add_category_info(self):
         <<Get list of DDL1/2 categories>>
         self.parent_lookup = dict(zip(categories,categories))  #dummy
     # match ids and entries in the dictionary
-    catpairs = map(None,category_ids,categories)
+    catpairs = zip([a.lower() for a in category_ids],catblocks)
     self.cat_map = dict(catpairs)
 
 <<Get list of DDL1/2 categories>>=
-categories = filter(lambda a:self[a].has_key("_category.id"),self.keys())
+catblocks = [a for a in self.keys() if self[a].has_key("_category.id")]
 # get the category id
-category_ids = map(lambda a:self[a]["_category.id"],categories)
+category_ids = [self[a]["_category.id"] for a in catblocks]
 
 @ _definition.scope is not mandatory, defaulting to 'Item',
 so we use a get instead of a straight square bracket.
 
 <<Get list of DDLm categories>>=
-categories = [a for a in self.keys() if self[a].get("_definition.scope","Item")=="Category"]
-category_ids = [self[a]["_definition.id"] for a in categories]
+catblocks = [a for a in self.keys() if self[a].get("_definition.scope","Item")=="Category"]
+category_ids = [self[a]["_definition.id"] for a in catblocks]
 
+@ We use the following method instead of accessing cat_map directly so that
+we can hide case differences.
 
+<<Find block corresponding to category name>>=
+def block_from_catname(self,catname):
+    """Return the datablock name corresponding to the requested category name"""
+    lc_catname = catname.lower()
+    return self.cat_map.get(lc_catname,None)
+                                             
 @ This method was added to facilitate running dREL scripts, which treat
 certain variables as having attributes which all belong to a single category.
 We return only the extension in keeping with dREL syntax.  If [[names_only]]
@@ -1907,7 +1916,7 @@ the given category itself.
 def validate_loop_key(self,loop_names):
     category = self[loop_names[0]][self.cat_spec]
     # find any unique values which must be present 
-    entry_name = self.cat_map[category]
+    entry_name = self.block_from_catname(category)
     key_spec = self[entry_name].get(self.key_spec,[])
     for names_to_check in key_spec:
         if isinstance(names_to_check,basestring):   #only one
@@ -2242,7 +2251,7 @@ def validate_uniqueness(self,item_name,item_value,whole_block,provisional_items=
 	print "No category found for %s" % item_name
 	return {"result":None}
     # print "Category %s for item %s" % (`category`,item_name)
-    catentry = self.cat_map[category]
+    catentry = self.block_from_catname(category)
     # we make a copy in the following as we will be removing stuff later!
     unique_i = self[catentry].get("_category_key.name",[])[:]
     if isinstance(unique_i,basestring):
@@ -2312,58 +2321,15 @@ exists.  This interpretation is forced by using the "fake_mand" argument,
 which then assumes that the alternative routine will be used to set the
 error information on a dictionary-wide basis.
 
-Note that this routine is constructed such that not all mandatory categories
-are checked in the event of a single failure.
-
 <<Validate category presence>>=
 def validate_mandatory_category(self,whole_block):
-    mand_cats = filter(lambda a:self[a].get("_category.mandatory_code","no")=="yes",
-                self.keys())
-    # map to actual ids
-    catlist = self.cat_map.items()
+    mand_cats = [self[a]['_category.id'] for a in self.keys() if self[a].get("_category.mandatory_code","no")=="yes"]
     # print "Mandatory categories - %s" % `mand_cats`
-    all_keys = whole_block.keys() #non-save block keys
-    for mand_cat in mand_cats:
-        cat_id = filter(lambda a:a[1]==mand_cat,catlist)[0][0]
-        no_of_items = len(filter(lambda a:self[a].get(self.cat_spec)==cat_id,
-                             all_keys))
-        if no_of_items == 0:
-            return {"result":False,"bad_items":cat_id}
+    all_cats = [whole_block[a].get(self.cat_spec) for a in whole_block.keys()]
+    missing = set(mand_cats) - set(all_cats)
+    if len(missing) > 0:
+        return {"result":False,"bad_items":`missing`}
     return {"result":True}
-
-@  Given a block containing save frames, this routine compiles a
-list of categories which appear in any of the save frames.
-It then returns a list of mandatory categories which are not
-present in the save frames or enclosing block.
-
-This is for efficiency; as the validation routines are constructed
-on a per-block basis, and we try to treat save frames as block
-equivalents, we do not want to repeat checks more than we have to.
-
-As this is run outside the normal procedure, which is block based,
-we return the information in the same way that the run_data_checks
-routine would format it.
-
-<<Fake mandatory category information>>=
-def find_prob_cats(self,whole_block):
-    mand_cats = filter(lambda a:self[a].get("_category.mandatory_code","no")=="yes",
-                self.keys())
-    # map to actual ids
-    catlist = self.cat_map.items()
-    # find missing categories
-    wbs = whole_block["saves"]
-    abs_all_keys = whole_block.keys()
-    abs_all_keys.extend(reduce(lambda a,b:a+(wbs[b].keys()),wbs.keys(),[]))
-    prob_cats = []
-    for mand_cat in mand_cats:
-        cat_id = filter(lambda a:a[1]==mand_cat,catlist)[0][0]
-	
-        if len(filter(lambda a:self[a].get(self.cat_spec)==cat_id,abs_all_keys))==0:
-	    prob_cats.append(cat_id)
-    if len(prob_cats) > 0:
-	return (False,{'whole_block':[('validate_mandatory_category',{"result":False,"bad_items":problem_cats})]})
-    else:
-	return (True,{})
 
 @  Processing DDLm mandatory categories/items
 
@@ -3603,14 +3569,6 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
                 if len(new_vals)>0:
                     check_file[parent] = new_vals
 	        print "Added %s (len %d)" % (parent,len(check_file[parent]))
-	    # next dictionary problem: the main DDL2 dictionary has what
-	    # I would characterise as a mandatory_category problem, but
-	    # in order to gloss over it, we allow a different 
-	    # interpretation, which requires only a single check for one
-	    # block.
-	    #if fake_mand:
-	    #    valid_result[blockname] = fulldic.find_prob_cats(check_file)
-	    #    no_matches[blockname] = [a for a in check_file.keys if not fulldic.has_key(a)]
     # now run the validations
     for block in check_file.keys(): 
         if isdic and block == top_level:
