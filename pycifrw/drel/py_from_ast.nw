@@ -30,7 +30,7 @@ pycifrw_func_table = {   #how to use PyCIFRW CifFile objects
          "element_no": "%s[%s]", # accessing a particular element of the result of data_access
          "count_data": "len(%s)", # number of elements for result of data_access
          "cat_names":"ciffile.dictionary.names_in_cat(%s)", #names in category %s
-         "has_name":"ciffile.has_key(%s)",
+         "has_name":"ciffile.has_key_or_alias(%s)",
          "semantic_packet":"ciffile.GetKeyedSemanticPacket(%s,%s)" #get a packet for key, value
                      }
 

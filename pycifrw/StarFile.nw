@@ -1547,6 +1547,16 @@ def has_key(self,key):
         return 1
     return 0
 
+def has_key_or_alias(self,key):
+    """Check if a dataname or alias is available in the block"""
+    initial_test = self.has_key(key)
+    if initial_test: return True
+    elif self.dictionary:
+        aliases = [k for k in self.dictionary.alias_table.get(key,[]) if self.has_key(k)]
+        if len(aliases)>0:
+           return True
+    return False
+    
 def get(self,key,default=None):
     if self.has_key(key):
         retval = self.__getitem__(key)

@@ -1368,7 +1368,7 @@ def add_category_info(self):
         <<Create category parent table>>
     else:
         <<Get list of DDL1/2 categories>>
-        self.parent_lookup = dict(zip(categories,categories))  #dummy
+        self.parent_lookup = dict(zip(catblocks,catblocks))  #dummy
     # match ids and entries in the dictionary
     catpairs = zip([a.lower() for a in category_ids],catblocks)
     self.cat_map = dict(catpairs)
@@ -1426,7 +1426,7 @@ the whole lot in memory, we simply stop searching up the parent tree if the
 parent block is missing.
 
 <<Create category parent table>>=
-looped_cats = [a for a in categories if self[a].get('_definition.class','Set') == 'Loop']
+looped_cats = [a for a in catblocks if self[a].get('_definition.class','Set') == 'Loop']
 self.parent_lookup = {}
 for one_cat in looped_cats:
     parent_cat = one_cat
@@ -2301,7 +2301,6 @@ def validate_uniqueness(self,item_name,item_value,whole_block,provisional_items=
 
 <<Block-level validation>>=
 <<Validate category presence>>
-<<Fake mandatory category information>>
 <<Process DDLm mandatory information>>
 <<Process DDLm prohibited information>>
 
@@ -2324,8 +2323,11 @@ error information on a dictionary-wide basis.
 <<Validate category presence>>=
 def validate_mandatory_category(self,whole_block):
     mand_cats = [self[a]['_category.id'] for a in self.keys() if self[a].get("_category.mandatory_code","no")=="yes"]
+    if len(mand_cats) == 0:
+        return {"result":True}
     # print "Mandatory categories - %s" % `mand_cats`
-    all_cats = [whole_block[a].get(self.cat_spec) for a in whole_block.keys()]
+    # find which categories each of our datanames belongs to
+    all_cats = [self[a].get(self.cat_spec) for a in whole_block.keys()]
     missing = set(mand_cats) - set(all_cats)
     if len(missing) > 0:
         return {"result":False,"bad_items":`missing`}
@@ -2581,14 +2583,14 @@ def derive_item(self,start_key,cifdata,store_value = False,allow_defaults=True):
     <<Resolve using aliases>>
     the_category = self[key]["_name.category_id"]
     cat_names = [a for a in self.keys() if self[a].get("_name.category_id",None)==the_category]
-    has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
+    has_cat_names = [a for a in cat_names if cifdata.has_key_or_alias(a)]
     # store any default value in case we have a problem
     def_val = self[key].get("_enumeration.default","")
     def_index_val = self[key].get("_enumeration.def_index_id","")
     if len(has_cat_names)==0: # try category method
         <<Populate a category>>
     # Recalculate in case it actually worked
-    has_cat_names = [a for a in cat_names if cifdata.has_key(a)]
+    has_cat_names = [a for a in cat_names if cifdata.has_key_or_alias(a)]
     the_funcs = self[key].get('_method.py_expression',"")
     if the_funcs:   #attempt to calculate it
         <<Execute pythonised dREL method>>
