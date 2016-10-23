@@ -1038,7 +1038,6 @@ def create_cat_obj_table(self):
     self.loopable_cats = [a.lower() for a in self.keys() if self[a].get('_definition.class','')=='Loop']
     loopers = [self.ddlm_immediate_children(a) for a in self.loopable_cats]
     print 'Loopable cats:' + `self.loopable_cats`
-    print 'Of atom_type:' + `self.ddlm_immediate_children('atom_type')`
     loop_children = [[b for b in a if b.lower() in self.loopable_cats ] for a in loopers]
     expand_list = dict([(a,b) for a,b in zip(self.loopable_cats,loop_children) if len(b)>0])
     print "Expansion list:" + `expand_list`
@@ -1053,7 +1052,7 @@ def create_cat_obj_table(self):
             # store child names
             extra_names += nn
           # add all child names to the table
-          child_names = [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) for n in self.names_in_cat(child_cat) if self[n].get('_definition.scope','Item')=='Item' and \
+          child_names = [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) for n in self.blocks_in_cat(child_cat) if self[n].get('_definition.scope','Item')=='Item' and \
                              self[n].get('_type.purpose','') != 'Key']
           child_names += extra_names
           extra_table.update(dict([((parent_cat,obj),[name]) for obj,name in child_names if (parent_cat,name) not in extra_table]))
@@ -1078,14 +1077,15 @@ def create_cat_obj_table(self):
     
 def create_cat_key_table(self):
     """Create a utility table with a list of keys applicable to each category"""
-    self.cat_key_table = dict([(c,[self[c]["_category.key_id"]]) for c in self.loopable_cats])
+    self.cat_key_table = dict([(c,self[c].get("_category_key.names",
+                                              [self[c].get("_category.key_id")])) for c in self.loopable_cats])
     def collect_keys(parent_cat,child_cats):
             kk = []
             for child_cat in child_cats:
                 if self.loop_expand_list.has_key(child_cat):
                     kk += collect_keys(child_cat)
                 # add these keys to our list
-                kk += [self[child_cat]['_category.key_id']]
+                kk += self[child_cat].get('_category_key.names',[self[child_cat].get('_category.key_id')])
             self.cat_key_table[parent_cat] = self.cat_key_table[parent_cat] + kk
             return kk
     for k,v in self.loop_expand_list.items():
@@ -1399,15 +1399,32 @@ certain variables as having attributes which all belong to a single category.
 We return only the extension in keeping with dREL syntax.  If [[names_only]]
 is true, we return only the object part of the dataname.
 
+TODO: this assumes regularly-named datanames, which is incorrect e.g. for
+pdCIF.
+
 <<List all items in a category>>=
 def names_in_cat(self,cat,names_only=False):
-    nameblocks = filter(lambda a:self[a].get("_name.category_id","").lower()
-                         ==cat.lower(),self.keys())
+    nameblocks = self.blocks_in_cat(cat)                  
     if not names_only:
         return ["_" + self[a]["_name.category_id"]+"." + self[a]["_name.object_id"] for a in nameblocks if self[a].get('_definition.scope','Item')=='Item']
     else:
         return map(lambda a:self[a]["_name.object_id"],nameblocks)
-    
+
+def blocks_in_cat(self,cat):
+    """Return a list of datablock names for items in this category"""
+    return filter(lambda a:self[a].get("_name.category_id","").lower()
+                         ==cat.lower(),self.keys())
+
+def obj_from_dataname(self,dataname):
+    """Return the object_id for a given dataname by looking up the
+    definition"""
+    dname_block = [self[a]["_name.object_id"] for a in self.keys() if self[a].get("_definition.id",None)==dataname]
+    if len(dname_block)>1:
+        raise CifError,"Non unique dataname in dictionary: %s" % dataname
+    elif len(dname_block)==0:
+        raise ValueError,"Dataname not found in dictionary: %s" % dataname
+    return dname_block[0]
+                                             
 @ This method was added for DDLm support.  We are passed a category and a
 value, and must find a packet which has a matching key.  We use the keyname
 as a way of finding the loop.
@@ -2470,10 +2487,11 @@ def transform_drel(self):
     parser = drel_ast_yacc.parser
     lexer = drel_ast_yacc.lexer
     my_namespace = self.keys()
-    my_namespace = dict(map(None,my_namespace,my_namespace)) 
-    # we provide a table of loopable categories {cat_name:(key,[item_name,...]),...})
+    my_namespace = dict(map(None,my_namespace,my_namespace))
+    # we provide a table of loopable categories {cat_name:((key1,key2..),[item_name,...]),...})
     loopable_cats = [a for a in self.keys() if self[a].get("_definition.class","Set")=="Loop"]
-    loop_keys = [self[a]["_category.key_id"].split(".")[1] for a in loopable_cats]
+    loop_keys = [listify(self[a]["_category_key.name"]) for a in loopable_cats]
+    loop_keys = [[self.obj_from_dataname(a) for a in b] for b in loop_keys]
     cat_names = [self.names_in_cat(a,names_only=True) for a in loopable_cats]
     loop_info = dict(zip(loopable_cats,zip(loop_keys,cat_names)))
     # parser.listable_items = [a for a in self.keys() if "*" in self[a].get("_type.dimension","")] 
@@ -2537,7 +2555,8 @@ def add_drel_funcs(self):
     parser = drel_ast_yacc.parser
     # we provide a table of loopable categories {cat_name:(key,[item_name,...]),...})
     loopable_cats = [a for a in self.keys() if self[a].get("_definition.class","Set")=="Loop"]
-    loop_keys = [self[a]["_category.key_id"].split(".")[1] for a in loopable_cats]
+    loop_keys = [listify(self[a]["_category_key.name"]) for a in loopable_cats]
+    loop_keys = [[self.obj_from_dataname(a) for a in b] for b in loop_keys]
     cat_names = [self.names_in_cat(a,names_only=True) for a in loopable_cats]
     loop_info = dict(zip(loopable_cats,zip(loop_keys,cat_names)))
     for funcname,funcbody in funcnames:
@@ -3173,11 +3192,26 @@ def get_full_child_list(self):
                 these_children = [n for n in unrooted if self[n]['_name.category_id'].lower()==no_root.lower()]
                 all_names += these_children
                 [remaining.remove(n) for n in these_children]
-        for r in remaining:   #simple addition to some category
-                all_names += [r]
+        # now sort by category
+        ext_cats = set([self[r].get('_name.category_id',self.cat_from_name(r)).lower() for r in remaining])
+        for e in ext_cats:
+            cat_items = [r for r in remaining if self[r].get('_name.category_id',self.cat_from_name(r)).lower() == e]
+            [remaining.remove(n) for n in cat_items]
+            all_names += cat_items
+        if len(remaining)>0:
+            print 'WARNING: following items do not seem to belong to a category??'
+            print `remaining`
+            all_names += remaining
         print 'Final block order: ' + `all_names`
         return all_names
     raise ValueError, 'Dictionary contains no/multiple Head categories, please print as plain CIF instead'
+
+def cat_from_name(self,one_name):
+    """Guess the category from the name. This should be used only when this is not important semantic information,
+    for example, when printing out"""
+    (cat,obj) = one_name.split(".")
+    if cat[0] == "_": cat = cat[1:]
+    return cat
 
 def recurse_child_list(self,parentname):
     """Recursively expand the logical child list of [[parentname]]"""

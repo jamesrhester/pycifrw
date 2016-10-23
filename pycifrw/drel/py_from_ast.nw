@@ -50,7 +50,7 @@ a single value, by setting keyword argument ``packet_no'' to the required packet
 upon is returned as a second item.
 
 The 'loopable' argument is a table of categories that are loopable, with the values
-being (key_id, datanames). 
+being ([key_ids], datanames). 
 
 <<AST builder>>=
 def make_python_function(in_ast,func_name,targetname, special_ids=[{}],
@@ -333,8 +333,9 @@ elif node_type == "SUBSCRIPTION":  # variable, single expression
                 newid = [primary,False,False]
                 break 
     if newid:
-        key_item = "_"+newid[0]+"."+special_info["loopable_cats"][newid[0]][0]   #key name
-        special_info["depends"].add(key_item.lower())
+        #FIXME: the dataname may not be the <cat>.<obj> construction (eg pdCIF)
+        key_items = ["_"+newid[0]+"."+s for s in special_info["loopable_cats"][newid[0]][0]]  #key name
+        special_info["depends"].update([k.lower() for k in key_items])
         get_loop = api_table["semantic_packet"] % (traverse_ast(in_node[2]),"'"+newid[0]+"'")
         special_info["sub_subject"] = newid[0]  #in case of attribute reference following
         print "Set sub_subject to %s" % special_info["sub_subject"]
@@ -557,7 +558,7 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     outstring += "\nprint 'names in cat = %s' % `__pyallitems`"
     outstring += "\n" + "__pycitems = filter(lambda a:%s,__pyallitems)" % (api_table["has_name"] % "a")
     outstring += "\nprint 'names in cat -> %s' % `__pycitems`\n"
-    cat_key = cif_dic[cat_id]['_category.key_id']   #take official key
+    cat_key = cif_dic[cat_id]['_category_key.name'][0]   #take an official key
     # If there is nothing in the category, provoke category creation by evaluating the key
     outstring += "if len(__pycitems)==0:\n"
     outstring += "    __pydummy = %s\n" % (api_table["data_access"] % repr(cat_key))

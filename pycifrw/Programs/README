@@ -10,4 +10,8 @@ IUCr ftp site.
 
 loop_example.py    Small program demonstrating how to pick particular columns from a loop
 
+add_spoke.py       Add a hub-spoke structure to a CIF file by creating a 'hub' category and
+                   keys in spoke categories that refer to the hub category.
 
+output_asciidoc.py Convert a dictionary into an Ascii Doc file that can then be posted
+                   on the web.
