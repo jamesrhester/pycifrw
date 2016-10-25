@@ -2391,6 +2391,8 @@ As an alternative, we may have formatting hints, perhaps from a template that
 we have input through 'process_template'.  The formatting hints specify a desired
 column and delimiter, and an order of output.  We can always satisfy the output order,
 but may have to fiddle with columns and delimiters depending on the datavalue contents.
+The [[finish_at]] and [[start_from]] arguments cause output to stop/start when one of the
+datanames in the arguments is found.
 
 We attempt some nice formatting by printing non-packet items with an apparent
 tab stop at 40 characters.  And of course, we stop providing values.
@@ -2862,8 +2864,8 @@ def process_template(template_file):
 we expect the ordering to consist of a sequence of datanames or loop references.  Our
 templated ordering is essentially a list of datanames, so we now have to find which
 loops each dataname corresponds to and adjust each loops ordering accordingly.  For
-dictionary use we allow only a segment of the file to be output be specifying a
-finish_at/start_from dataname.  For consistency, we default to outputting nothing if
+dictionary use we allow only a segment of the file to be output be specifying
+finish_at/start_from datanames.  For consistency, we default to outputting nothing if
 start_from is not found, and outputting everything if finish_at is not found. 
 
 <<Create a proper ordering>>=
@@ -2887,21 +2889,36 @@ def create_ordering(self,finish_at,start_from):
     self.output_order = new_order + extras
     # now handle partial output
     if start_from != '':
-        loop_no = self.FindLoop(start_from)
-        print '%s, loop_no is %d' % (start_from, loop_no)
-        if self.output_order.count(start_from):
+        if start_from in requested_order:
+            sfi = requested_order.index(start_from)
+            loop_order = [self.FindLoop(k) for k in requested_order[sfi:] if self.FindLoop(k)>0] 
+            candidates = [k for k in self.output_order if k in requested_order[sfi:]]
+            cand_pos = len(new_order)
+            if len(candidates)>0:
+                cand_pos = self.output_order.index(candidates[0])
+            if len(loop_order)>0:
+                cand_pos = min(cand_pos,self.output_order.index(loop_order[0]))
+            print 'Output starts from %s, requested %s' % (self.output_order[cand_pos],start_from)
+            self.output_order = self.output_order[cand_pos:]
+        elif start_from in extras:
            self.output_order = self.output_order[self.output_order.index(start_from):]
-        elif loop_no >= 0:
-           self.output_order = self.output_order[self.output_order.index(loop_no):]
         else:
            self.output_order = []
     if finish_at != '':
-        loop_no = self.FindLoop(finish_at)
-        if self.output_order.count(finish_at):
-            self.output_order = self.output_order[:self.output_order.index(finish_at)]
-        elif loop_no >= 0:
-           self.output_order = self.output_order[:self.output_order.index(loop_no)]
-    print 'Final order: ' + `self.output_order`
+        if finish_at in requested_order:
+            fai = requested_order.index(finish_at)
+            loop_order = [self.FindLoop(k) for k in requested_order[fai:] if self.FindLoop(k)>0] 
+            candidates = [k for k in self.output_order if k in requested_order[fai:]]
+            cand_pos = len(new_order)
+            if len(candidates)>0:
+                cand_pos = self.output_order.index(candidates[0])
+            if len(loop_order)>0:
+                cand_pos = min(cand_pos,self.output_order.index(loop_order[0]))
+            print 'Output finishes before %s, requested %s' % (self.output_order[cand_pos],finish_at)
+            self.output_order = self.output_order[:cand_pos]
+        elif finish_at in extras:
+           self.output_order = self.output_order[:self.output_order.index(finish_at)]
+    #print 'Final order: ' + `self.output_order`
 
 @ Merging.  Normally merging of dictionaries is done at the data file 
 level, i.e. a whole block is replaced or added.  However, in 'overlay'
