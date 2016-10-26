@@ -1076,16 +1076,17 @@ def create_cat_obj_table(self):
     self.loop_expand_list = expand_list
     
 def create_cat_key_table(self):
-    """Create a utility table with a list of keys applicable to each category"""
-    self.cat_key_table = dict([(c,self[c].get("_category_key.names",
-                                              [self[c].get("_category.key_id")])) for c in self.loopable_cats])
+    """Create a utility table with a list of keys applicable to each category. A key is
+    a compound key, that is, it is a list"""
+    self.cat_key_table = dict([(c,[listify(self[c].get("_category_key.name",
+                                  [self[c].get("_category.key_id")]))]) for c in self.loopable_cats])
     def collect_keys(parent_cat,child_cats):
             kk = []
             for child_cat in child_cats:
                 if self.loop_expand_list.has_key(child_cat):
                     kk += collect_keys(child_cat)
                 # add these keys to our list
-                kk += self[child_cat].get('_category_key.names',[self[child_cat].get('_category.key_id')])
+                kk += [listify(self[child_cat].get('_category_key.name',[self[child_cat].get('_category.key_id')]))]
             self.cat_key_table[parent_cat] = self.cat_key_table[parent_cat] + kk
             return kk
     for k,v in self.loop_expand_list.items():
@@ -2476,7 +2477,6 @@ statement is the _enumeration.default specified in ddl.dic.
 <<Construct a category>>
 <<Insert category items from pullback information>>
 <<Storing a whole new dREL-derived category>>
-<<Generating keys>>
 <<Generating default packets>>
 
 <<Transform drel to python>>=
@@ -3045,32 +3045,6 @@ elif def_index_val:            #derive a default value
         default_result = True   #flag that it must be extended
     result = self.change_type(key,result)
     print "Indexed on %s to get %s for %s" % (def_index_val,`result`,`val_to_index`)
-
-@  Generating keys.  Keys are a slighlty special case, because on the one
-hand they can be any arbitrary unique string, but on the other hand they are crucial
-for implementing category merges and linkages.  The draft cif core dictionary
-has methods for generating keys from other datanames, which strictly speaking
-should be seen as suggestions but are of course useful for the human reader (e.g.
-using atom type as a key).  When attempting to create a key, we do not store
-any intermediate values that might be generated - we may simply be working around
-a bug here, but for now this routine avoids the generation of an empty _atom_type_scat.symbol
-which is then assigned to _atom_type_scat.key instead of doing nothing.
-
-<<Generating keys>>=
-def generate_key(self,cifdata,keyname):
-    """Generate keyname if it is not present in [[cifdata]]"""
-    if not cifdata.has_key(keyname):
-        cache_cache = cifdata.cache_vals
-        cifdata.cache_vals = False
-        try:
-            keyvals = cifdata[keyname]
-        except KeyError:
-            pass
-        else:
-            cifdata.cache_vals = True
-            dummy = cifdata[keyname]   #this time keep it
-        cifdata.cache_vals = cache_cache  # restore old value
-    return
 
 @ If a key is missing, we may sometimes fill in default values for it, for example,
 a missing atom type may be assumed to have a number in cell of 0.

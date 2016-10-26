@@ -345,6 +345,11 @@ class LoopBlockTestCase(unittest.TestCase):
         self.cf['_planet'] = 'Saturn'
         self.cf['_satellite'] = 'Titan'
         self.cf['_rings']  = 'True'
+        # A loop with compound keys
+        self.cf['_ck_1'] = ['1','1','1','2','2','2','3','3','3']
+        self.cf['_ck_2'] = ['r','g','b','r','g','b','r','g','b']
+        self.cf['_stuff'] = ['Q','W','E','R','T','Y','U','I','O']
+        self.cf.CreateLoop(['_ck_1','_ck_2','_stuff'])
        
    def tearDown(self):
        del self.cf
@@ -420,6 +425,11 @@ class LoopBlockTestCase(unittest.TestCase):
        testpack = self.cf.GetKeyedPacket("_item_name_1",2)
        self.assertEqual("good_bye",getattr(testpack,"_item_name#2"))
 
+   def testCompoundKeyPacket(self):
+       """Test that a compound key can also be used"""
+       testpack = self.cf.GetCompoundKeyedPacket({"_ck_1":('2',False),"_ck_2":('b',False)})
+       self.assertEqual("Y",getattr(testpack,"_stuff"))
+       
    def testPacketMerge(self):
        """Test that a packet can be merged with another packet"""
        bigcf = CifFile.CifFile("pycifrw/tests/C13H22O3.cif")
@@ -1266,7 +1276,7 @@ class DictTestCase(unittest.TestCase):
         ff = open(ffurl,"w")
         ff.write(final_str)
         ff.close()
-        incif = CifFile.CifDic("file:"+ffurl,grammar='2.0')
+        incif = CifFile.CifDic("file:"+ffurl,grammar='2.0',do_minimum=True)
         self.failUnless(incif.has_key('_description.junkjunk'))
 
     def testSemanticChildren(self):
@@ -1731,7 +1741,7 @@ class DicStructureTestCase(unittest.TestCase):
     def testCatKey(self):
         """Test that we get a complete list of keys for child categories"""
         target = testdic.cat_key_table
-        self.assertEqual(target['atom_site'],['_atom_site.key','_atom_site_aniso.key'])
+        self.assertEqual(target['atom_site'],[['_atom_site.label'],['_atom_site_aniso.label']])
 
     def testChildPacket(self):
         """Test that a case-insensitive child packet is included in attributes of parent category"""
@@ -1752,7 +1762,7 @@ class DicStructureTestCase(unittest.TestCase):
 
     def testCatObjKey(self):
         """Test that keys are correctly handled by the cat/obj table"""
-        self.assertEqual(testdic.get_name_by_cat_obj('atom_site','key'),"_atom_site.key")
+        self.assertEqual(testdic.get_name_by_cat_obj('atom_site','label'),"_atom_site.label")
 
     def testRepeatedName(self):
         """Test that a repeated object_id is handled correctly"""
@@ -1877,7 +1887,7 @@ if __name__=='__main__':
      #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
-     #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
+     suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockOutputOrderTestCase)
@@ -1890,6 +1900,6 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     #unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     unittest.TextTestRunner(verbosity=2).run(suite)
+     #unittest.main()
 

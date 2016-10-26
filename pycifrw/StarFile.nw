@@ -1925,7 +1925,9 @@ operations, a LoopBlock can be created with GetLoop and iterated over.
 <<Add to looped data>>
 <<Remove a packet>>
 <<Get packet by key>>
+<<Get packet by compound key>>
 <<Get semantic packet by key>>
+<<Get semantic packet by compound key>>
 
 @  Creating loops.  In the latest version of PyCIFRW, a loop is simply a collection
 of datanames that together make up the loop.  It is indexed by a number, which goes
@@ -2116,6 +2118,28 @@ def GetKeyedPacket(self,keyname,keyvalue,no_case=False):
     print "Keyed packet: %s" % one_pack[0]
     return one_pack[0]
 
+@  The current version of DDLm allows compound keys.  We implement a routine to return
+a single packet corresponding to the values of the specified datanames.
+
+<<Get packet by compound key>>=
+def GetCompoundKeyedPacket(self,keydict):
+    """Return the loop packet (a `StarPacket` object) where the `{key:(value,caseless)}` pairs
+    in `keydict` take the appropriate values. Ignore case for a given `key` if `caseless` is
+    True.  `ValueError` is raised if no packet is found or more than one packet is found."""
+    #print "Looking for %s in %s" % (keyvalue, self.parent_block[keyname])
+    keynames = keydict.keys()
+    my_loop = self.GetLoop(keynames[0])
+    for one_key in keynames:
+        keyval,no_case = keydict[one_key]
+        if no_case:
+           my_loop = [a for a in my_loop if getattr(a,one_key).lower()==keyval.lower()]
+        else:
+           my_loop = [a for a in my_loop if getattr(a,one_key)==keyval]
+    if len(my_loop)!=1:
+        raise ValueError, "Bad packet keys %s: returned %d packets" % (repr(keydict),len(my_loop))
+    print "Keyed packet: %s" % my_loop[0]
+    return my_loop[0]
+
 @  Semantic loops.  These are loops defined by a dictionary,
 as opposed to the syntax.  dREL requires us to be able to
 extract a packet by key, and then attributes of this packet
@@ -2131,8 +2155,8 @@ packets.
 A packet for dREL use will need to be able to derive further
 values using the dictionary, e.g. when an attribute of that
 packet is requested.  In order to do this derivation, we need
-to store the key name and value, so that the __getattr__ method
-of the packet can properly derive the needed value.
+to store the key names and values, so that the __getattr__ method
+of the packet can properly derive the needed non-key values.
 
 With a deriving dictionary we run the danger that we will generate
 keys for a child category for which no other values are defined.  Such
@@ -2148,6 +2172,52 @@ are missing, then we in principle know that the child keys are a
 subset of the parent keys, but we cannot use the key to derive any values,
 as the keys are opaque. 
 
+<<<Get semantic packet by compound key>>=
+def getMultiKeyedSemanticPacket(self,keydict,cat_id):
+    """Return a complete packet for category `cat_id` where the keyvalues are
+    provided as a dictionary of key:(value,caseless) pairs""".
+    This routine
+    will understand any joined loops, so if separate loops in the
+    datafile belong to the
+    same category hierarchy (e.g. `_atom_site` and `_atom_site_aniso`),
+    the returned `StarPacket` object will contain datanames from
+    both categories."""
+    if len(keyvalues)==1:   #simplification
+        return self.GetKeyedSemanticPacket(keydict[1][0],cat_id)
+    target_keys = self.dictionary.cat_key_table[cat_id]
+    # target_keys is a list of lists, each of which is a compound key
+    p = StarPacket()
+    for cat_keys in target_keys:
+    ########### UNTIL END OF METHOD HAS NOT BEEN CHANGED #########
+        if not self.has_key(cat_key): continue   # try another set
+        try:
+            extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
+        except KeyError:        #missing key
+            try:
+                test_key = self[cat_key]  #generate key if possible
+                print 'Test key is %s' % `test_key`
+                if test_key is not None and\
+                not (isinstance(test_key,list) and (None in test_key or len(test_key)==0)):
+                    print 'Getting packet for key %s' % `keyvalue`
+                    extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
+            except:             #can't be generated
+                continue
+        except ValueError:      #none/more than one, assume none
+            continue
+            #extra_packet = self.dictionary.generate_default_packet(cat_id,cat_key,keyvalue)
+        p.merge_packet(extra_packet)
+    # the following attributes used to calculate missing values
+    for keyname in target_keys:
+        if hasattr(p,keyname):
+            p.key = keyname
+            break
+    if not hasattr(p,"key"):
+        raise ValueError, "No key found for %s, packet is %s" % (cat_id,str(p))
+    p.cif_dictionary = self.dictionary
+    p.fulldata = self
+    return p
+
+    
 <<Get semantic packet by key>>=
 def GetKeyedSemanticPacket(self,keyvalue,cat_id):
     """Return a complete packet for category `cat_id` where the
@@ -2164,7 +2234,6 @@ def GetKeyedSemanticPacket(self,keyvalue,cat_id):
     if self.dictionary[target_keys[0]]['_type.contents'] in ['Code','Tag','Name']:
         lcase = True
     for cat_key in target_keys:
-        self.dictionary.generate_key(self,cat_key)
         if not self.has_key(cat_key): continue   #couldn't be generated
         try:
             extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
