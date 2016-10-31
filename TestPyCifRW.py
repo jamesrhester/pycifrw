@@ -1285,8 +1285,6 @@ class DictTestCase(unittest.TestCase):
         self.failUnless('_enumeration_set.xref_dictionary' in children)
         children = self.ddldic.ddlm_immediate_children('enumeration')
         self.failUnless('enumeration_set' in children)
-        children = self.ddldic.ddlm_immediate_children('ddl_dic')
-        self.failUnless('attributes' in children)
 
     def testDanglers(self):
         """Test that we correctly locate missing categories"""
