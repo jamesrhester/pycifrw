@@ -357,13 +357,9 @@ dictionary is absorbed into special methods (and I am thinking here
 of the [[_item_type_list.construct]] stuff which appears at the
 global level), which we initialise ourselves for a DDL1 dictionary. 
 
-Note that the underscore following the data or save frame header is
-technically not part of the name, and so in DDL2 dictionaries there are
-two underscores after the word "save".  DDL1 people had not figured this
-out yet, so we have to add it in by changing each block name.  DDLm
-reverts to the DDL1 behaviour, perhaps as a way of emphasizing that
-the block name and the contents are semantically different.  Or alternatively,
-that the leading underscore is not part of the name.
+The square bracket notation is repurposed to mean access to the
+appropriate definition, as the save frame name and the definition
+may be slightly (or completely) different.
 
 <<CIF Dictionary type>>=
 class CifDic(StarFile.StarFile):
@@ -384,20 +380,15 @@ class CifDic(StarFile.StarFile):
     
     """
     <<Initialise Cif dictionary>>
-    <<Dictionary determination function>>
-    <<Deal with DDL1 differences>>
-    <<Iron out DDL2 strangeness>> 
-    <<Normalise DDLm save frame names>>
-    <<Get semantic children>>
-    <<Parse DDLm validity information>>
-    <<Perform DDLm imports>>
+    <<DDL-specific initialisation routines>>
+    <<Repurpose standard python methods>>
+    <<Repurpose Starfile methods>>
+    <<Obtaining semantic information from the dictionary>>
     <<Create alias table>>
     <<Create category/object table>>
-    <<Load categories with DDL2-type information>>
     <<Add type information>>
     <<Add category information>>
-    <<List all items in a category>>
-    <<Category manipulation methods>>
+    <<Definition manipulation methods>>
     <<Dictionary output routines>>
     <<Return a single packet by key>>
     <<Extract number and esd>>
@@ -405,14 +396,11 @@ class CifDic(StarFile.StarFile):
     <<Linkage to dREL>>
     <<Switch on numpy arrays>>
     <<Convert string to appropriate type>>
-    <<Item-level validation>>
-    <<Loop-level validation>>
-    <<Cross-item validation>>
-    <<Block-level validation>>
-    <<Run validation tests>>
-    <<Optimisation on/off>>
+    <<Validation routines>>
 
-@ We want to be able to accept strings, giving the file name
+@ \subsection {Initialisation}
+
+We want to be able to accept strings, giving the file name
 of the CIF dictionary, and pre-initialised [[CifFile]] objects.  We do
 not accept [[CifDic]] objects.  Our initialisation procedure 
 first unifies the interface to the Dictionary, and then runs through the
@@ -439,7 +427,7 @@ execution, then turn it off afterwards.
 
 <<Initialise Cif dictionary>>=
 def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
-                                                         grammar='1.1',**kwargs):
+                                                         grammar='auto',**kwargs):
     self.do_minimum = do_minimum
     if do_minimum:
         do_imports = 'No'
@@ -458,12 +446,13 @@ def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
     # rename and expand out definitions using "_name" in DDL dictionaries
     if self.diclang == "DDL1":
         self.DDL1_normalise()   #this removes any non-definition entries
+    self.create_def_block_table() #From now on, [] uses definition_id
+    if self.diclang == "DDL1":
         self.ddl1_cat_load()
     elif self.diclang == "DDL2":
         self.DDL2_normalise()   #iron out some DDL2 tricky bits
     elif self.diclang == "DDLm":
         self.scoping = 'dictionary'   #expose all save frames
-        self.ddlm_normalise()
         if do_imports is not 'No':
            self.ddlm_import(import_mode=do_imports)#recursively calls this routine
         self.create_alias_table()
@@ -477,72 +466,36 @@ def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
     self.typedic={}
     self.primdic = {}   #typecode<->primitive type translation
     self.add_type_info()
-    if self.diclang != 'DDLm':
-      self.item_validation_funs = [
-	self.validate_item_type,
-        self.validate_item_esd,
-	self.validate_item_enum,   # functions which check conformance
-        self.validate_enum_range,
-        self.validate_looping]
-      self.loop_validation_funs = [
-        self.validate_loop_membership,
-        self.validate_loop_key,
-        self.validate_loop_references]    # functions checking loop values
-      self.global_validation_funs = [
-        self.validate_exclusion,
-        self.validate_parent,
-        self.validate_child,
-        self.validate_dependents,
-        self.validate_uniqueness] # where we need to look at other values
-      self.block_validation_funs = [  # where only a full block will do
-        self.validate_mandatory_category]
-      self.global_remove_validation_funs = [
-        self.validate_remove_parent_child] # removal is quicker with special checks
-    elif self.diclang == 'DDLm':
-        self.item_validation_funs = [
-            self.validate_item_enum,
-            self.validate_item_esd_ddlm,
-            ]
-        self.loop_validation_funs = [
-            self.validate_looping_ddlm,
-            self.validate_loop_key_ddlm,
-            self.validate_loop_membership
-            ]
-        self.global_validation_funs = []
-        self.block_validation_funs = [
-            self.check_mandatory_items,
-            self.check_prohibited_items
-            ]
-        self.global_remove_validation_funs = []
-    self.optimize = False        # default value
-    self.done_parents = []
-    self.done_children = []
-    self.done_keys = []
-    # debug
-    # j = open("dic_debug","w")
-    # j.write(self.__str__())
-    # j.close()
+    self.install_validation_functions()
 
-@ Full initialisation. This can take some time so we optionally skip it, but can
-call this function separately at a later stage if needed.
+@ These routines seek to impose a uniform structure on dictionaries
+written in DDL1, DDL2 and DDLm. Historically, the richer and more
+systematic DDL2 approach was used to describe DDL1 definitions. With
+the advent of DDLm, the DDLm paradigm is likely to overtake DDL2. When
+interpreting the following routines, therefore, bear in mind that they
+were originally written with DDL2 in mind, and are gradually shifting
+to DDLm.
 
-<<Initialise dREL functions>>=
-def initialise_drel(self):
-    """Parse drel functions and prepare data structures in dictionary"""
-    self.ddlm_parse_valid() #extract validity information from data block
-    self.transform_drel()   #parse the drel functions
-    self.add_drel_funcs()   #put the drel functions into the namespace
+<<DDL-specific initialisation routines>>=
+<<Dictionary determination function>>
+<<Deal with DDL1 differences>>
+<<Load categories with DDL2-type information>>
+<<Iron out DDL2 strangeness>> 
+<<Parse DDLm validity information>>
+<<Perform DDLm imports>>
 
 @ This function determines whether we have a DDLm, DDL2 or DDL1 dictionary.  We are
-passed a [[CifFile]] object.   The current method looks for an
+built from a [[CifFile]] object.   The current method looks for an
 [[on_this_dictionary]] block, which implies DDL1, or a single block,
 which implies DDL2/DDLM.  This is also where we define some universal
 keys for uniform access to DDL attributes.    
 
 <<Dictionary determination function>>=
 def dic_determine(self):
-    if self.has_key("on_this_dictionary"): 
-        self.master_key = "on_this_dictionary"
+    if super(CifDic,self).has_key("on_this_dictionary"): 
+        self.master_block = super(CifDic,self).__getitem__("on_this_dictionary")
+        self.def_id_spec = "_name"
+        self.cat_id_spec = "_name"
 	self.type_spec = "_type"
 	self.enum_spec = "_enumeration"
 	self.cat_spec = "_category"
@@ -559,25 +512,27 @@ def dic_determine(self):
         self.primitive_type = "_type"
         self.dep_spec = "xxx"
         self.cat_list = []   #to save searching all the time
-	name = self["on_this_dictionary"]["_dictionary_name"]
-	version = self["on_this_dictionary"]["_dictionary_version"]
+	name = super(CifDic,self).__getitem__("on_this_dictionary")["_dictionary_name"]
+	version = super(CifDic,self).__getitem__("on_this_dictionary")["_dictionary_version"]
 	return (name+version,"DDL1")
     elif len(self.get_roots()) == 1:              # DDL2/DDLm
-        self.master_key = self.get_roots()[0][0]	
+        self.master_block = super(CifDic,self).__getitem__(self.get_roots()[0][0])	
         # now change to dictionary scoping
         self.scoping = 'dictionary'
-	name = self[self.master_key]["_dictionary.title"]
-	version = self[self.master_key]["_dictionary.version"]
-	if name != self.master_key:
-	    print "Warning: DDL2 blockname %s not equal to dictionary name %s" % (self.master_key,name)
-        if self[self.master_key].has_key("_dictionary.class"):   #DDLm
+	name = self.master_block["_dictionary.title"]
+	version = self.master_block["_dictionary.version"]
+        if self.master_block.has_key("_dictionary.class"):   #DDLm
             self.enum_spec = '_enumeration_set.state'
             self.key_spec = '_category.key_id'
             self.must_exist_spec = None
             self.cat_spec = '_name.category_id'
             self.primitive_type = '_type.contents'
+            self.cat_id_spec = "_definition.id"
+            self.def_id_spec = "_definition.id"
             return(name+version,"DDLm") 
         else:   #DDL2
+            self.cat_id_spec = "_category.id"
+            self.def_id_spec = "_item.name"
             self.key_spec = "_category_mandatory.name"
             self.type_spec = "_item_type.code" 
             self.enum_spec = "_item_enumeration.value"
@@ -709,7 +664,7 @@ def DDL1_normalise(self):
                 self[fake_name] = newcatdata
                 self.cat_list.append(newcat)
     # write out the type information in DDL2 style
-    self[self.master_key].AddLoopItem((
+    self.master_block.AddLoopItem((
         ("_item_type_list.code","_item_type_list.construct",
           "_item_type_list.primitive_code"),
         (base_types,base_constructs,prim_types)
@@ -926,7 +881,6 @@ def create_pcloop(self,definition):
         pass
     self[definition].insert_loop(newloop)
         
-    
 @ Loading the DDL1 categories with DDL2-type information.  DDL2 people wisely
 put category-wide information in the category definition rather than
 spreading it out between category items.  We collect this information together
@@ -980,23 +934,6 @@ def get_ddl1_entry(self,cat_name):
         raise ValidCifError, "Category name %s can't be matched to category entry" % cat_name
     else:
         return possibles[0]
-
-@ Normalise DDLm datanames.  While there is no strict requirement that the save frame name
-corresponds to the name of the data item defined therein, we make it equivalent so that
-all of our access methods work nicely.  Pending a detailed description of how variable
-names used in dREL methods are derived, we go the harder route and concatenate the category
-name with the object id (although it may be possible to use the _definition.id).  Note
-that we do not alter category definitions, and we operate through the standard __setitem__
-method of the block collection class in order to properly manage the upper/lower case
-and parent-child housekeeping.
-
-<<Normalise DDLm save frame names>>=
-def ddlm_normalise(self):
-    for key,value in self.items():
-       if value.has_key("_definition.id"):
-           real_name = value["_definition.id"]
-           if real_name.lower() != key.lower():
-              self.rename(key,real_name)
     
 @  A dataname can appear in a file under a different name if it has been aliased. We create
 an alias table to speed up lookup.  The table is indexed by true name, with a list of 
@@ -1013,10 +950,6 @@ that child categories of loops can have their objects appear in the parent categ
 this table prepares a complete list of (cat,obj):dataname correspondences, as the
 implementation of parent-child requires looking up a table each time searching for
 children.
-
-The [[base_table]] creation line at the beginning will include the datablock within which
-all the save frames appear; there may be a better alternative e.g. removing access to this
-block altogether.
 
 The recursive [[expand_base_table]] function returns a dictionary of (name,definition_id) pairs
 indexing the corresponding datanames.  We must catch any keys and exclude them from this
@@ -1035,11 +968,11 @@ def create_cat_obj_table(self):
     """Populate a table indexed by (cat,obj) and returning the correct dataname"""
     base_table = dict([((self[a].get('_name.category_id','').lower(),self[a].get('_name.object_id','').lower()),[self[a].get('_definition.id','')]) \
                        for a in self.keys() if self[a].get('_definition.scope','Item')=='Item'])
-    self.loopable_cats = [a.lower() for a in self.keys() if self[a].get('_definition.class','')=='Loop']
-    loopers = [self.ddlm_immediate_children(a) for a in self.loopable_cats]
-    print 'Loopable cats:' + `self.loopable_cats`
-    loop_children = [[b for b in a if b.lower() in self.loopable_cats ] for a in loopers]
-    expand_list = dict([(a,b) for a,b in zip(self.loopable_cats,loop_children) if len(b)>0])
+    loopable = self.get_loopable_cats() 
+    loopers = [self.ddlm_immediate_children(a) for a in loopable]
+    print 'Loopable cats:' + repr(loopable)
+    loop_children = [[b for b in a if b.lower() in loopable ] for a in loopers]
+    expand_list = dict([(a,b) for a,b in zip(loopable,loop_children) if len(b)>0])
     print "Expansion list:" + `expand_list`
     extra_table = {}   #for debugging we keep it separate from base_table until the end
     def expand_base_table(parent_cat,child_cats):
@@ -1052,8 +985,8 @@ def create_cat_obj_table(self):
             # store child names
             extra_names += nn
           # add all child names to the table
-          child_names = [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) for n in self.blocks_in_cat(child_cat) if self[n].get('_definition.scope','Item')=='Item' and \
-                             self[n].get('_type.purpose','') != 'Key']
+          child_names = [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) \
+                         for n in self.names_in_cat(child_cat) if self[n].get('_type.purpose','') != 'Key']
           child_names += extra_names
           extra_table.update(dict([((parent_cat,obj),[name]) for obj,name in child_names if (parent_cat,name) not in extra_table]))
         # and the repeated ones get appended instead
@@ -1061,8 +994,8 @@ def create_cat_obj_table(self):
         for obj,name in repeats:
             extra_table[(parent_cat,obj)] += [name] 
         # and finally, add our own names to the return list
-        child_names += [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) for n in self.names_in_cat(parent_cat) if self[n].get('_definition.scope','Item')=='Item' and \
-                            self[n].get('_type.purpose','')!='Key']
+        child_names += [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) \
+                        for n in self.names_in_cat(parent_cat) if self[n].get('_type.purpose','')!='Key']
         return child_names
     [expand_base_table(parent,child) for parent,child in expand_list.items()]
     print 'Expansion cat/obj values: ' + `extra_table`
@@ -1074,11 +1007,17 @@ def create_cat_obj_table(self):
         base_table[k] += extra_table[k]
     self.cat_obj_lookup_table = base_table
     self.loop_expand_list = expand_list
-    
+
+def get_loopable_cats(self):
+    """A short utility function which returns a list of looped categories. This
+    is preferred to a fixed attribute as that fixed attribute would need to be
+    updated after any edits"""
+    return [a.lower() for a in self.keys() if self[a].get('_definition.class','')=='Loop']
+
 def create_cat_key_table(self):
     """Create a utility table with a list of keys applicable to each category"""
     self.cat_key_table = dict([(c,self[c].get("_category_key.names",
-                                              [self[c].get("_category.key_id")])) for c in self.loopable_cats])
+                                              [self[c].get("_category.key_id")])) for c in self.get_loopable_cats()])
     def collect_keys(parent_cat,child_cats):
             kk = []
             for child_cat in child_cats:
@@ -1092,22 +1031,125 @@ def create_cat_key_table(self):
         collect_keys(k,v)
     print 'Keys for categories' + `self.cat_key_table`
 
-@  For convenience we provide ways of interrogating the semantic tree of categories. Note that if
-we are passed the top-level datablock, the semantic children are the syntactic children.  An additional method finds the 'dangling' definitions, which
-are definitions that have no category definition present - these might
-be definitions added by this dictionary to categories found in other dictionaries.
+@  CIF Dictionaries use the square bracket notation to refer to the definition, as for CifFile
+objects, but the key is the definition itself, rather than the block name.  So we have to create
+a lookup table. However, template dictionaries may not have a _definition.id, which means we
+have to revert to their blockname, so we use blockname as a default.  We also completely
+ignore case, which is a bit liberal, as definitions themselves are case-sensitive.
 
-<<Get semantic children>>=
+<<Repurpose standard python methods>>=
+def create_def_block_table(self):
+    """ Create an internal table matching definition to block id """
+    proto_table = [(super(CifDic,self).__getitem__(a),a) for a in super(CifDic,self).keys()]
+    # now get the actual ids instead of blocks
+    proto_table = [(a[0].get(self.cat_id_spec,a[0].get(self.def_id_spec,a[1])),a[1]) for a in proto_table]
+    # remove non-definitions
+    top_blocks = [a[0].lower() for a in self.get_roots()]
+    self.block_id_table = dict([(a[0].lower(),a[1].lower()) for a in proto_table if a[1].lower() not in top_blocks])
+    
+def __getitem__(self,key):
+    """Access a datablock by definition id, after the lookup has been created"""
+    try:
+        return super(CifDic,self).__getitem__(self.block_id_table[key.lower()])
+    except AttributeError:   #block_id_table not present yet
+        return super(CifDic,self).__getitem__(key)
+    except KeyError: # key is missing
+        # print 'Definition for %s not found, reverting to CifFile' % key
+        return super(CifDic,self).__getitem__(key)
+
+def __setitem__(self,key,value):
+    """Add a new definition block"""
+    super(CifDic,self).__setitem__(key,value)
+    try:
+        self.block_id_table[value['_definition.id']]=key
+    except AttributeError:   #does not exist yet
+        pass
+
+def __delitem__(self,key):
+    """Remove a definition"""
+    try:
+        super(CifDic,self).__delitem__(self.block_id_table[key.lower()])
+        del self.block_id_table[key.lower()]
+    except (AttributeError,KeyError):   #block_id_table not present yet
+        super(CifDic,self).__delitem__(key)
+        return
+    # fix other datastructures
+    # cat_obj table
+    
+def keys(self):
+    """Return all definitions"""
+    try:
+        return self.block_id_table.keys()
+    except AttributeError:
+        return super(CifDic,self).keys()
+
+def has_key(self,key):
+    return self.block_id_table.has_key(key.lower())
+
+def items(self):
+    """Return (key,value) pairs"""
+    return [(a,self[a]) for a in self.keys()]
+
+@ Any Starfile method that uses the square-bracket notation or
+build-in syntax (e.g. del) to access keys may fail if the set of keys
+it uses is not that provided by the keys() method above, as the 
+object delegation using super() does not apply.  As we have set
+up our methods above to 'fall through' to the underlying CifFile,
+the process of renaming may or may not have called our del
+method to remove the definition, so we check.
+
+<<Repurpose Starfile methods>>=
+def unlock(self):
+    """Allow overwriting of all definitions in this collection"""
+    for a in self.keys():
+        self[a].overwrite=True
+
+def lock(self):
+    """Disallow changes in definitions"""
+    for a in self.keys():
+        self[a].overwrite=False
+
+def rename(self,oldname,newname,blockname_as_well=True):
+    """Change a _definition.id from oldname to newname, and if `blockname_as_well` is True,
+    change the underlying blockname too."""
+    if blockname_as_well:
+        super(CifDic,self).rename(self.block_id_table[oldname.lower()],newname)        
+        self.block_id_table[newname.lower()]=newname
+        if self.block_id_table.has_key(oldname.lower()): #not removed
+           del self.block_id_table[oldname.lower()]
+    else:
+        self.block_id_table[newname.lower()]=self.block_id_table[oldname.lower()]
+        del self.block_id_table[oldname.lower()]
+        return
+                                             
+@ \subsection{Semantic information}
+
+<<Obtaining semantic information from the dictionary>>=
+<<Operations with semantic children>>
+<<Get category information>>
+<<List all items in a category>>                           
+
+@ For convenience we provide ways of interrogating the semantic tree
+of categories. Note that if we are passed the top-level datablock, the
+semantic children are the syntactic children.  An additional method
+finds the 'dangling' definitions, which are definitions that have no
+category definition present - these might be definitions added by this
+dictionary to categories found in other dictionaries.
+
+<<Operations with semantic children>>=
+def get_root_category(self):
+    """Get the single 'Head' category of this dictionary"""
+    root_cats = [r for r in self.keys() if self[r].get('_definition.class','Datum')=='Head']
+    if len(root_cats)>1 or len(root_cats)==0:
+        raise CifError("Cannot determine a unique Head category, got" % `root_cats`)
+    return root_cats[0]
+
 def ddlm_immediate_children(self,catname):
-    """Return a list of blocknames for the immediate children of catname.  These are
+    """Return a list of datanames for the immediate children of catname.  These are
     semantic children (i.e. based on _name.category_id), not structural children as
     in the case of StarFile.get_immediate_children"""
-    # check the roots   
-    roots = [a[0] for a in self.get_roots()]
-    if catname in roots:   #a datablock essentially
-        straight_children = [a[0] for a in self.get_immediate_children(catname) if self[a[0]].get('_definition.class') == 'Head']
-    else:
-        straight_children = [a for a in self.keys() if self[a].get('_name.category_id','').lower() == catname.lower()]
+                                             
+    straight_children = [a for a in self.keys() if self[a].get('_name.category_id','').lower() == catname.lower()]
     return straight_children
 
 def ddlm_all_children(self,catname):
@@ -1127,7 +1169,7 @@ def is_semantic_child(self,parent,maybe_child):
 def ddlm_danglers(self):
     """Return a list of definitions that do not have a category defined
     for them, or are children of an unattached category"""
-    top_block = self.get_roots()[0][0]
+    top_block = self.get_root_category()
     connected = set(self.ddlm_all_children(top_block))
     all_keys = set(self.keys())
     unconnected = all_keys - connected
@@ -1137,27 +1179,12 @@ def get_ddlm_parent(self,itemname):
     """Get the parent category of itemname"""
     parent = self[itemname].get('_name.category_id','')
     if parent == '':  # use the top block by default
-        parent = self.get_parent(itemname)
+        raise CifError,"%s has no parent" % itemname
     return parent
 
-@ DDLm introduces validity information in the enclosing datablock.  It is a loop of scope,
-attribute values where the scope is one of dictionary (everywhere), category (whole
-category) and item (just the single definition).  Validity can be mandatory, 
-encouraged or not allowed.  It only appears in the DDLm attributes dictionary, so
-this information is blank unless we are dealing with the DDLm dictionary.
+@  Some methods for interrogating categories for names.
 
-<<Parse DDLm validity information>>=
-def ddlm_parse_valid(self):
-    if not self[self.master_key].has_key("_dictionary_valid.application"):
-        return
-    for scope_pack in self[self.master_key].GetLoop("_dictionary_valid.application"):
-        scope = getattr(scope_pack,"_dictionary_valid.application")
-        valid_info = getattr(scope_pack,"_dictionary_valid.attributes")
-        if scope[1] == "Mandatory":
-            self.scopes_mandatory[scope[0]] = self.expand_category_opt(valid_info)
-        elif scope[1] == "Prohibited":
-            self.scopes_naughty[scope[0]] = self.expand_category_opt(valid_info)
-            
+<<Get category information>>=
 def expand_category_opt(self,name_list):
     """Return a list of all non-category items in a category or return the name
        if the name is not a category"""
@@ -1170,17 +1197,53 @@ def expand_category_opt(self,name_list):
         new_list.append(name)
     return new_list
 
+def get_categories(self):
+    """Return a list of category names"""
+    return [c for c in self.keys() if self[c].get("_definition.scope")=='Category']
+
+@ This method was added to facilitate running dREL scripts, which treat
+certain variables as having attributes which all belong to a single category.
+We return only the extension in keeping with dREL syntax.  If [[names_only]]
+is true, we return only the object part of the dataname.  Note that sub
+categories are excluded.  TODO: use cat-obj table for speed.
+
+<<List all items in a category>>=
+def names_in_cat(self,cat,names_only=False):
+    names = [a for a in self.keys() if self[a].get('_name.category_id','').lower()==cat.lower()]
+    if not names_only:
+        return [a for a in names if self[a].get('_definition.scope','Item')=='Item']
+    else:
+        return map(lambda a:self[a]["_name.object_id"],names)
+
+
+@ DDLm introduces validity information in the enclosing datablock.  It is a loop of scope,
+attribute values where the scope is one of dictionary (everywhere), category (whole
+category) and item (just the single definition).  Validity can be mandatory, 
+encouraged or not allowed.  It only appears in the DDLm attributes dictionary, so
+this information is blank unless we are dealing with the DDLm dictionary.
+
+<<Parse DDLm validity information>>=
+def ddlm_parse_valid(self):
+    if not self.master_block.has_key("_dictionary_valid.application"):
+        return
+    for scope_pack in self.master_block.GetLoop("_dictionary_valid.application"):
+        scope = getattr(scope_pack,"_dictionary_valid.application")
+        valid_info = getattr(scope_pack,"_dictionary_valid.attributes")
+        if scope[1] == "Mandatory":
+            self.scopes_mandatory[scope[0]] = self.expand_category_opt(valid_info)
+        elif scope[1] == "Prohibited":
+            self.scopes_naughty[scope[0]] = self.expand_category_opt(valid_info)
+            
 @  These methods were added when developing interactive editing tools, which allow
 shifting categories around. 
 
-<<Category manipulation methods>>=
+<<Definition manipulation methods>>=
 <<Changing and updating categories>>
 <<Getting category information>>
-<<Find block corresponding to category name>>
 
-@  Changing a category name involves changing the [[_name.category_id]]
-in all children as well as the category definition itself and datablock names, then updating our internal
-structures.
+@ Changing a category name involves changing the [[_name.category_id]]
+in all children as well as the category definition itself and
+datablock names, then updating our internal structures.
 
 <<Changing and updating categories>>=
 def change_category_name(self,oldname,newname):
@@ -1200,13 +1263,6 @@ def change_category_name(self,oldname,newname):
             newid = self.create_catobj_name(newname,self[child_def]['_name.object_id'])
             self[child_def]['_definition.id']=newid
             self.rename(child_def,newid[1:])  #no underscore at the beginning
-    # update categories
-    print `self.cat_map.values()`
-    oldid = [a[0] for a in self.cat_map.items() if a[1].lower()==oldname.lower()]
-    if len(oldid)!=1:
-        raise CifError, 'Unable to find old category name in category map: %s not in %s' % (oldname.lower(),`self.cat_map.items()`)
-    del self.cat_map[oldid[0]]
-    self.cat_map[newname.lower()] = newname
     self.lock()
 
 def create_catobj_name(self,cat,obj):
@@ -1271,22 +1327,22 @@ def add_category(self,catname,catparent=None,is_loop=True,allow_dangler=False):
             semantic_root = syntactic_root
     else:
         semantic_root = catparent
-    realname = self.NewBlock(catname,parent=syntactic_root)
-    self[realname]['_name.object_id'] = realname
+    realname = super(CifDic,self).NewBlock(catname,parent=syntactic_root)
+    self.block_id_table[catname.lower()]=realname
+    self[catname]['_name.object_id'] = catname
     if not allow_dangler or catparent is None:
-        self[realname]['_name.category_id'] = self[semantic_root]['_name.object_id']
+        self[catname]['_name.category_id'] = self[semantic_root]['_name.object_id']
     else:
-        self[realname]['_name.category_id'] = catparent
-    self[realname]['_definition.id'] = realname
-    self[realname]['_definition.scope'] = 'Category'
+        self[catname]['_name.category_id'] = catparent
+    self[catname]['_definition.id'] = catname
+    self[catname]['_definition.scope'] = 'Category'
     if is_loop:
-        self[realname]['_definition.class'] = 'Loop'
+        self[catname]['_definition.class'] = 'Loop'
     else:
-        self[realname]['_definition.class'] = 'Set'
-    self[realname]['_description.text'] = 'No definition provided'
+        self[catname]['_definition.class'] = 'Set'
+    self[catname]['_description.text'] = 'No definition provided'
     self.lock()
-    self.cat_map[realname.lower()]=realname
-    return realname
+    return catname
 
 def add_definition(self,itemname,catparent,def_text='PLEASE DEFINE ME',allow_dangler=False):
     """Add itemname to category [[catparent]]. If itemname contains periods,
@@ -1303,24 +1359,23 @@ def add_definition(self,itemname,catparent,def_text='PLEASE DEFINE ME',allow_dan
     fullname = '_'+catparent.lower()+'.'+objname
     print 'New name: %s' % fullname
     syntactic_root = self.get_roots()[0][0]
-    realname = self.NewBlock(fullname, fix=False, parent=syntactic_root)
-    self[realname]['_definition.id']=fullname
-    self[realname]['_name.object_id']=objname
-    self[realname]['_name.category_id']=catparent
-    self[realname]['_definition.class']='Datum'
-    self[realname]['_description.text']=def_text
-    return realname
+    realname = super(CifDic,self).NewBlock(fullname, fix=False, parent=syntactic_root) #low-level change
+    # update our dictionary structures
+    self.block_id_table[fullname]=realname
+    self[fullname]['_definition.id']=fullname
+    self[fullname]['_name.object_id']=objname
+    self[fullname]['_name.category_id']=catparent
+    self[fullname]['_definition.class']='Datum'
+    self[fullname]['_description.text']=def_text
     
 def remove_definition(self,defname):
-    """Remove a definition from the dictionary. If a category, we have to
-    remove the links in cat_map"""
+    """Remove a definition from the dictionary."""
     if defname not in self:
         return
     if self[defname].get('_definition.scope')=='Category':
         children = self.ddlm_immediate_children(defname)
         [self.remove_definition(a) for a in children]
         cat_id = self[defname]['_definition.id'].lower()
-        del self.cat_map[cat_id]        
     del self[defname]
 
 @ The DDLm architecture identifies a data definition by (category,object) which
@@ -1364,66 +1419,9 @@ to find all entries with a _definition.scope of "Category".
 <<Add category information>>=
 def add_category_info(self):
     if self.diclang == "DDLm":
-        <<Get list of DDLm categories>>
         <<Create category parent table>>
     else:
-        <<Get list of DDL1/2 categories>>
-        self.parent_lookup = dict(zip(catblocks,catblocks))  #dummy
-    # match ids and entries in the dictionary
-    catpairs = zip([a.lower() for a in category_ids],catblocks)
-    self.cat_map = dict(catpairs)
-
-<<Get list of DDL1/2 categories>>=
-catblocks = [a for a in self.keys() if self[a].has_key("_category.id")]
-# get the category id
-category_ids = [self[a]["_category.id"] for a in catblocks]
-
-@ _definition.scope is not mandatory, defaulting to 'Item',
-so we use a get instead of a straight square bracket.
-
-<<Get list of DDLm categories>>=
-catblocks = [a for a in self.keys() if self[a].get("_definition.scope","Item")=="Category"]
-category_ids = [self[a]["_definition.id"] for a in catblocks]
-
-@ We use the following method instead of accessing cat_map directly so that
-we can hide case differences.
-
-<<Find block corresponding to category name>>=
-def block_from_catname(self,catname):
-    """Return the datablock name corresponding to the requested category name"""
-    lc_catname = catname.lower()
-    return self.cat_map.get(lc_catname,None)
-                                             
-@ This method was added to facilitate running dREL scripts, which treat
-certain variables as having attributes which all belong to a single category.
-We return only the extension in keeping with dREL syntax.  If [[names_only]]
-is true, we return only the object part of the dataname.
-
-TODO: this assumes regularly-named datanames, which is incorrect e.g. for
-pdCIF.
-
-<<List all items in a category>>=
-def names_in_cat(self,cat,names_only=False):
-    nameblocks = self.blocks_in_cat(cat)                  
-    if not names_only:
-        return ["_" + self[a]["_name.category_id"]+"." + self[a]["_name.object_id"] for a in nameblocks if self[a].get('_definition.scope','Item')=='Item']
-    else:
-        return map(lambda a:self[a]["_name.object_id"],nameblocks)
-
-def blocks_in_cat(self,cat):
-    """Return a list of datablock names for items in this category"""
-    return filter(lambda a:self[a].get("_name.category_id","").lower()
-                         ==cat.lower(),self.keys())
-
-def obj_from_dataname(self,dataname):
-    """Return the object_id for a given dataname by looking up the
-    definition"""
-    dname_block = [self[a]["_name.object_id"] for a in self.keys() if self[a].get("_definition.id",None)==dataname]
-    if len(dname_block)>1:
-        raise CifError,"Non unique dataname in dictionary: %s" % dataname
-    elif len(dname_block)==0:
-        raise ValueError,"Dataname not found in dictionary: %s" % dataname
-    return dname_block[0]
+        self.parent_lookup = {}
                                              
 @ This method was added for DDLm support.  We are passed a category and a
 value, and must find a packet which has a matching key.  We use the keyname
@@ -1443,6 +1441,7 @@ the whole lot in memory, we simply stop searching up the parent tree if the
 parent block is missing.
 
 <<Create category parent table>>=
+catblocks = [c for c in self.keys() if self[c].get('_definition.scope')=='Category']
 looped_cats = [a for a in catblocks if self[a].get('_definition.class','Set') == 'Loop']
 self.parent_lookup = {}
 for one_cat in looped_cats:
@@ -1463,7 +1462,8 @@ found in the target definition, and is useful as a templating mechanism for comm
 attributes.  "Full" brings in the entire definition block and all child definitions, and
 is useful for including entire dictionaries.  As a special case, if we import a 'Head'
 definition into a 'Head' definition, we actually make all non-Head categories of the
-imported dictionary into child categories of the importing dictionary 'Head' category.
+imported dictionary into child categories of the importing dictionary 'Head' category,
+and the imported 'Head' category disappears.
 
 The merging method of the StarFile object is purely syntactic and so does not understand
 DDLm relationships.  We add all blocks as the children of the top-level dictionary block,
@@ -1477,8 +1477,8 @@ children of the old 'Head' block.
 def ddlm_import(self,import_mode='All'):
     import urllib
     import_frames = [(a,self[a]['_import.get']) for a in self.keys() if self[a].has_key('_import.get')]
-    print 'Import mode %s applied to following frames' % import_mode
-    print str(import_frames)
+    #print 'Import mode %s applied to following frames' % import_mode
+    #print str(import_frames)
     if import_mode is not 'All':
        for i in range(len(import_frames)):
             import_frames[i] = (import_frames[i][0],[a for a in import_frames[i][1] if a.get('mode','Contents') == import_mode])
@@ -1561,8 +1561,7 @@ the purposes of merging (later we may want to keep some audit information).
 
 <<Add another DDLM dictionary>>=
 def get_whole_dict(self,source_dict,on_dupl,on_miss):
-    print "Cat_map: `%s`" % source_dict.cat_map.values()
-    for source_cat in source_dict.cat_map.values():
+    for source_cat in source_dict.get_categories():
         self.get_one_cat(source_dict,source_cat,on_dupl,on_miss)
    
 @ Merging a single category.  If this category does not exist, we simply add
@@ -1616,7 +1615,7 @@ child categories and add them one by one recursively.
 <<Add an external DDLM category with children>>=
 def get_one_cat_with_children(self,source_dict,source_cat,on_dupl,on_miss):
     self.get_one_cat(source_dict,source_cat,on_dupl,on_miss)
-    child_cats = filter(lambda a:source_dict[a]["_category.parent_id"]==source_dict[source_cat]["_definition.id"],source_dict.cat_map.values())
+    child_cats = filter(lambda a:source_dict[a]["_category.parent_id"]==source_dict[source_cat]["_definition.id"],source_dict.get_categories())
     for child_cat in child_cats: self.get_one_cat(source_dict,child_cat,on_dupl,on_miss) 
 
 @ Importing into definitions.  We are adjusting only the attributes of a single
@@ -1644,51 +1643,69 @@ def import_loop(self,mykey,source_dict,source_def,loop_name,on_miss):
     state_loop = source_dict[source_def].GetLoop(loop_name)
     self[mykey].insert_loop(state_loop) 
    
-@ Section{Validation}
+@ \section{Validation}
 
-These validation checks are intended to be called externally.  They return
-a dictionary keyed by item name with value being a list of the
-results of the check functions.  The individual functions return a 
-dictionary which contains at least the key "result", and in case of error
-relevant keys relating to the error.
+A DDL provides lots of information that can be used to check a datafile or dictionary
+for consistency.  Currently, the DDL-appropriate routines are installed at initialisation
+time.
 
-<<Run validation tests>>=
-def run_item_validation(self,item_name,item_value):
-    return {item_name:map(lambda f:(f.__name__,f(item_name,item_value)),self.item_validation_funs)}
+<<Validation routines>>=
+<<Install validation functions>>
+<<Item-level validation>>
+<<Loop-level validation>>
+<<Cross-item validation>>
+<<Block-level validation>>
+<<Run validation tests>>
+<<Optimisation on/off>>
 
-def run_loop_validation(self,loop_names):
-    return {loop_names[0]:map(lambda f:(f.__name__,f(loop_names)),self.loop_validation_funs)}
-
-def run_global_validation(self,item_name,item_value,data_block,provisional_items={},globals={}):
-    results = map(lambda f:(f.__name__,f(item_name,item_value,data_block,provisional_items,globals)),self.global_validation_funs)
-    return {item_name:results}
-
-def run_block_validation(self,whole_block,block_scope='Item'):
-    results = [(f.__name__,f(whole_block)) for f in self.block_validation_funs]
-    # fix up the return values
-    return {"whole_block":results}
-
-@ Optimization: the dictionary validation routines normally retain no history
-of what has been checked, as they are executed on a per-item basis.  This
-leads to duplication of the uniqueness check, when there is more than one
-key, and duplication of the parent-child check, once for the parent and 
-once for the child.  By switching on optimisation, a record is kept and
-these checks will not be repeated.  This is safe only if none of the
-relevant items is altered while optimisation is on, and optimisation
-should be switched off as soon as all the checks are finished.
-
-<<Optimisation on/off>>=
-def optimize_on(self):
-    self.optimize = True
-    self.done_keys = []
-    self.done_children = []
+@ Each dictionary has a set of validation functions associated with it based
+on the information contained in the DDL. The following function is called
+on initialisation.
+                                    
+<<Install validation functions>>=
+def install_validation_functions(self):
+    """Install the DDL-appropriate validation checks"""
+    if self.diclang != 'DDLm':
+      self.item_validation_funs = [
+	self.validate_item_type,
+        self.validate_item_esd,
+	self.validate_item_enum,   # functions which check conformance
+        self.validate_enum_range,
+        self.validate_looping]
+      self.loop_validation_funs = [
+        self.validate_loop_membership,
+        self.validate_loop_key,
+        self.validate_loop_references]    # functions checking loop values
+      self.global_validation_funs = [
+        self.validate_exclusion,
+        self.validate_parent,
+        self.validate_child,
+        self.validate_dependents,
+        self.validate_uniqueness] # where we need to look at other values
+      self.block_validation_funs = [  # where only a full block will do
+        self.validate_mandatory_category]
+      self.global_remove_validation_funs = [
+        self.validate_remove_parent_child] # removal is quicker with special checks
+    elif self.diclang == 'DDLm':
+        self.item_validation_funs = [
+            self.validate_item_enum,
+            self.validate_item_esd_ddlm,
+            ]
+        self.loop_validation_funs = [
+            self.validate_looping_ddlm,
+            self.validate_loop_key_ddlm,
+            self.validate_loop_membership
+            ]
+        self.global_validation_funs = []
+        self.block_validation_funs = [
+            self.check_mandatory_items,
+            self.check_prohibited_items
+            ]
+        self.global_remove_validation_funs = []
+    self.optimize = False        # default value
     self.done_parents = []
-
-def optimize_off(self):
-    self.optimize = False
-    self.done_keys = []
     self.done_children = []
-    self.done_parents = []
+    self.done_keys = []                          
 
 @ Some things are independent of where an item occurs in the file; we
 check those things here.  All functions are expected to return a
@@ -2388,6 +2405,49 @@ def check_prohibited_items(self,whole_block,default_scope='Item'):
     else:
         return {"result":False,"bad_items":present}
 
+@ These validation checks are intended to be called externally.  They return
+a dictionary keyed by item name with value being a list of the
+results of the check functions.  The individual functions return a 
+dictionary which contains at least the key "result", and in case of error
+relevant keys relating to the error.
+
+<<Run validation tests>>=
+def run_item_validation(self,item_name,item_value):
+    return {item_name:map(lambda f:(f.__name__,f(item_name,item_value)),self.item_validation_funs)}
+
+def run_loop_validation(self,loop_names):
+    return {loop_names[0]:map(lambda f:(f.__name__,f(loop_names)),self.loop_validation_funs)}
+
+def run_global_validation(self,item_name,item_value,data_block,provisional_items={},globals={}):
+    results = map(lambda f:(f.__name__,f(item_name,item_value,data_block,provisional_items,globals)),self.global_validation_funs)
+    return {item_name:results}
+
+def run_block_validation(self,whole_block,block_scope='Item'):
+    results = [(f.__name__,f(whole_block)) for f in self.block_validation_funs]
+    # fix up the return values
+    return {"whole_block":results}
+
+@ Optimization: the dictionary validation routines normally retain no history
+of what has been checked, as they are executed on a per-item basis.  This
+leads to duplication of the uniqueness check, when there is more than one
+key, and duplication of the parent-child check, once for the parent and 
+once for the child.  By switching on optimisation, a record is kept and
+these checks will not be repeated.  This is safe only if none of the
+relevant items is altered while optimisation is on, and optimisation
+should be switched off as soon as all the checks are finished.
+
+<<Optimisation on/off>>=
+def optimize_on(self):
+    self.optimize = True
+    self.done_keys = []
+    self.done_children = []
+    self.done_parents = []
+
+def optimize_off(self):
+    self.optimize = False
+    self.done_keys = []
+    self.done_children = []
+    self.done_parents = []
 
 @ Preparing our type expressions
 
@@ -2418,10 +2478,10 @@ this is flagged by the primitive code being of type 'numb'.
 
 <<Add type information>>=
 def add_type_info(self):
-    if self[self.master_key].has_key("_item_type_list.construct"): 
-	types = self[self.master_key]["_item_type_list.code"]
-        prim_types = self[self.master_key]["_item_type_list.primitive_code"]
-	constructs = map(lambda a: a + "$", self[self.master_key]["_item_type_list.construct"])
+    if self.master_block.has_key("_item_type_list.construct"): 
+	types = self.master_block["_item_type_list.code"]
+        prim_types = self.master_block["_item_type_list.primitive_code"]
+	constructs = map(lambda a: a + "$", self.master_block["_item_type_list.construct"])
         # add in \r wherever we see \n, and change \{ to \\{
         def regex_fiddle(mm_regex):
             brack_match = r"((.*\[.+)(\\{)(.*\].*))" 
@@ -2479,6 +2539,16 @@ statement is the _enumeration.default specified in ddl.dic.
 <<Generating keys>>
 <<Generating default packets>>
 
+@ Full initialisation. This can take some time so we optionally skip it, but can
+call this function separately at a later stage if needed.
+
+<<Initialise dREL functions>>=
+def initialise_drel(self):
+    """Parse drel functions and prepare data structures in dictionary"""
+    self.ddlm_parse_valid() #extract validity information from data block
+    self.transform_drel()   #parse the drel functions
+    self.add_drel_funcs()   #put the drel functions into the namespace
+
 <<Transform drel to python>>=
 def transform_drel(self):
     from drel import drel_ast_yacc
@@ -2489,9 +2559,9 @@ def transform_drel(self):
     my_namespace = self.keys()
     my_namespace = dict(map(None,my_namespace,my_namespace))
     # we provide a table of loopable categories {cat_name:((key1,key2..),[item_name,...]),...})
-    loopable_cats = [a for a in self.keys() if self[a].get("_definition.class","Set")=="Loop"]
+    loopable_cats = self.get_loopable_cats()
     loop_keys = [listify(self[a]["_category_key.name"]) for a in loopable_cats]
-    loop_keys = [[self.obj_from_dataname(a) for a in b] for b in loop_keys]
+    loop_keys = [[self[a]['_name.object_id'] for a in b] for b in loop_keys]
     cat_names = [self.names_in_cat(a,names_only=True) for a in loopable_cats]
     loop_info = dict(zip(loopable_cats,zip(loop_keys,cat_names)))
     # parser.listable_items = [a for a in self.keys() if "*" in self[a].get("_type.dimension","")] 
@@ -2554,9 +2624,9 @@ def add_drel_funcs(self):
     # create executable python code...
     parser = drel_ast_yacc.parser
     # we provide a table of loopable categories {cat_name:(key,[item_name,...]),...})
-    loopable_cats = [a for a in self.keys() if self[a].get("_definition.class","Set")=="Loop"]
+    loopable_cats = self.get_loopable_cats()
     loop_keys = [listify(self[a]["_category_key.name"]) for a in loopable_cats]
-    loop_keys = [[self.obj_from_dataname(a) for a in b] for b in loop_keys]
+    loop_keys = [[self[a]['_name.object_id'] for a in b] for b in loop_keys]
     cat_names = [self.names_in_cat(a,names_only=True) for a in loopable_cats]
     loop_info = dict(zip(loopable_cats,zip(loop_keys,cat_names)))
     for funcname,funcbody in funcnames:
@@ -3079,10 +3149,8 @@ a missing atom type may be assumed to have a number in cell of 0.
 def generate_default_packet(self,catname,catkey,keyvalue):
     """Return a StarPacket with items from ``catname`` and a key value
     of ``keyvalue``"""
-    names_in_cat = [a for a in self.keys() if self[a]['_name.category_id'].lower() == catname.lower()]
-    names_in_cat = [n for n in names_in_cat if self[n].get("_definition.scope","Item")=='Item']
     newpack = StarPacket()
-    for na in names_in_cat:
+    for na in self.names_in_cat(catname):
         def_val = self[na].get("_enumeration.default","")
         if def_val:
             final_val = self.change_type(na,def_val)

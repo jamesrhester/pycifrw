@@ -489,7 +489,7 @@ frames have been requested or if the parent block is a top-level block.
 
 [[blockcontents]] cannot be set immediately to [[StarBlock]] as a default,
 because it will evaluate the constructor once and then assign all new blocks
-to the same object.
+to the same object. 
 
 <<Add a new data section>>=
 def NewBlock(self,blockname,blockcontents=None,fix=True,parent=None):

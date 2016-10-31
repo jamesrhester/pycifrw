@@ -1266,7 +1266,7 @@ class DictTestCase(unittest.TestCase):
         ff = open(ffurl,"w")
         ff.write(final_str)
         ff.close()
-        incif = CifFile.CifDic("file:"+ffurl,grammar='2.0')
+        incif = CifFile.CifDic("file:"+ffurl,grammar='2.0',do_minimum=True)
         self.failUnless(incif.has_key('_description.junkjunk'))
 
     def testSemanticChildren(self):
@@ -1275,8 +1275,6 @@ class DictTestCase(unittest.TestCase):
         self.failUnless('_enumeration_set.xref_dictionary' in children)
         children = self.ddldic.ddlm_immediate_children('enumeration')
         self.failUnless('enumeration_set' in children)
-        children = self.ddldic.ddlm_immediate_children('ddl_dic')
-        self.failUnless('attributes' in children)
 
     def testDanglers(self):
         """Test that we correctly locate missing categories"""

@@ -168,7 +168,8 @@ save_CATEGORY_KEY
 ;
     _name.category_id            CATEGORY
     _name.object_id              CATEGORY_KEY
-    _category.key_id             '_category_key.name'
+    loop_
+       _category_key.name             '_category_key.name'
 
 save_
 
