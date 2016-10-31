@@ -495,7 +495,7 @@ def dic_determine(self):
     if super(CifDic,self).has_key("on_this_dictionary"): 
         self.master_block = super(CifDic,self).__getitem__("on_this_dictionary")
         self.def_id_spec = "_name"
-        self.cat_id_spec = "_name"
+        self.cat_id_spec = "_category.id"   #we add this ourselves 
 	self.type_spec = "_type"
 	self.enum_spec = "_enumeration"
 	self.cat_spec = "_category"
@@ -917,23 +917,9 @@ def ddl1_cat_load(self):
         
     map(get_cat_info,deflist)       # apply the above function
     for cat in cat_mand_dic.keys():
-        cat_entry = self.get_ddl1_entry(cat)
-        self[cat_entry]["_category_mandatory.name"] = cat_mand_dic[cat]
+        self[cat]["_category_mandatory.name"] = cat_mand_dic[cat]
     for cat in cat_unique_dic.keys():
-        cat_entry = self.get_ddl1_entry(cat)
-        self[cat_entry]["_category_key.name"] = cat_unique_dic[cat]
-
-# A helper function get find the entry corresponding to a given category name:
-# yes, in DDL1 the actual name is different in the category block due to the
-# addition of square brackets which may or may not contain stuff.
-
-def get_ddl1_entry(self,cat_name):
-    chop_len = len(cat_name) 
-    possibles = filter(lambda a:a[1:chop_len+3]==cat_name+"_[",self.keys())
-    if len(possibles) > 1 or possibles == []:
-        raise ValidCifError, "Category name %s can't be matched to category entry" % cat_name
-    else:
-        return possibles[0]
+        self[cat]["_category_key.name"] = cat_unique_dic[cat]
     
 @  A dataname can appear in a file under a different name if it has been aliased. We create
 an alias table to speed up lookup.  The table is indexed by true name, with a list of 
@@ -1044,7 +1030,10 @@ def create_def_block_table(self):
     # now get the actual ids instead of blocks
     proto_table = [(a[0].get(self.cat_id_spec,a[0].get(self.def_id_spec,a[1])),a[1]) for a in proto_table]
     # remove non-definitions
-    top_blocks = [a[0].lower() for a in self.get_roots()]
+    if self.diclang != "DDL1":
+        top_blocks = [a[0].lower() for a in self.get_roots()]
+    else:
+        top_blocks = ["on_this_dictionary"]
     self.block_id_table = dict([(a[0].lower(),a[1].lower()) for a in proto_table if a[1].lower() not in top_blocks])
     
 def __getitem__(self,key):
@@ -1950,8 +1939,7 @@ the given category itself.
 def validate_loop_key(self,loop_names):
     category = self[loop_names[0]][self.cat_spec]
     # find any unique values which must be present 
-    entry_name = self.block_from_catname(category)
-    key_spec = self[entry_name].get(self.key_spec,[])
+    key_spec = self[category].get(self.key_spec,[])
     for names_to_check in key_spec:
         if isinstance(names_to_check,basestring):   #only one
             names_to_check = [names_to_check]
@@ -2273,9 +2261,8 @@ be unique.
 
 DDL2 dictionaries do away with separate [[_list_mandatory]] and [[_list_uniqueness]]
 attributes, instead using a [[_category_key]].  If multiple keys are specified,
-it appears that they must be unique in combination, judging from the way
-that [[_publ_body.label]] and [[_publ_body.element]] are supposed to copy the cif_core
-dictionary.
+they must be unique in combination, in accordance with standard relational
+database behaviour.
 
 <<Validate list uniqueness>>=
 def validate_uniqueness(self,item_name,item_value,whole_block,provisional_items={},
@@ -2285,9 +2272,8 @@ def validate_uniqueness(self,item_name,item_value,whole_block,provisional_items=
 	print "No category found for %s" % item_name
 	return {"result":None}
     # print "Category %s for item %s" % (`category`,item_name)
-    catentry = self.block_from_catname(category)
     # we make a copy in the following as we will be removing stuff later!
-    unique_i = self[catentry].get("_category_key.name",[])[:]
+    unique_i = self[category].get("_category_key.name",[])[:]
     if isinstance(unique_i,basestring):
         unique_i = [unique_i]
     if item_name not in unique_i:       #no need to verify
