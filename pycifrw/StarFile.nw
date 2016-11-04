@@ -2137,7 +2137,7 @@ def GetCompoundKeyedPacket(self,keydict):
            my_loop = [a for a in my_loop if getattr(a,one_key)==keyval]
     if len(my_loop)!=1:
         raise ValueError, "Bad packet keys %s: returned %d packets" % (repr(keydict),len(my_loop))
-    print "Keyed packet: %s" % my_loop[0]
+    print "Compound keyed packet: %s" % my_loop[0]
     return my_loop[0]
 
 @  Semantic loops.  These are loops defined by a dictionary,
@@ -2172,10 +2172,10 @@ are missing, then we in principle know that the child keys are a
 subset of the parent keys, but we cannot use the key to derive any values,
 as the keys are opaque. 
 
-<<<Get semantic packet by compound key>>=
+<<Get semantic packet by compound key>>=
 def getMultiKeyedSemanticPacket(self,keydict,cat_id):
     """Return a complete packet for category `cat_id` where the keyvalues are
-    provided as a dictionary of key:(value,caseless) pairs""".
+    provided as a dictionary of key:(value,caseless) pairs
     This routine
     will understand any joined loops, so if separate loops in the
     datafile belong to the
@@ -2217,7 +2217,8 @@ def getMultiKeyedSemanticPacket(self,keydict,cat_id):
     p.fulldata = self
     return p
 
-    
+@ Plain single key
+
 <<Get semantic packet by key>>=
 def GetKeyedSemanticPacket(self,keyvalue,cat_id):
     """Return a complete packet for category `cat_id` where the

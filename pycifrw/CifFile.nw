@@ -1004,7 +1004,7 @@ def create_cat_key_table(self):
     """Create a utility table with a list of keys applicable to each category. A key is
     a compound key, that is, it is a list"""
     self.cat_key_table = dict([(c,[listify(self[c].get("_category_key.name",
-                                  [self[c].get("_category.key_id")]))]) for c in self.loopable_cats])
+        [self[c].get("_category.key_id")]))]) for c in self.get_loopable_cats()])
     def collect_keys(parent_cat,child_cats):
             kk = []
             for child_cat in child_cats:
@@ -1401,17 +1401,16 @@ def get_name_by_cat_obj(self,category,object,give_default=False):
     raise KeyError, 'No such category,object in the dictionary: %s %s' % (true_cat,object)
 
 @ Dictionaries have the category-wide information in the category
-definition area.  We create a map from data block / save frame header to
-category id.  For DDL1 the block name has square brackets appended. For DDL2
-the category name is kept in the _category.id attribute.  For DDLm, we need
-to find all entries with a _definition.scope of "Category".
+definition area. 
 
 <<Add category information>>=
 def add_category_info(self):
     if self.diclang == "DDLm":
         <<Create category parent table>>
+        <<Create key hierarchy>>
     else:
         self.parent_lookup = {}
+        self.key_equivs = {}
                                              
 @ This method was added for DDLm support.  We are passed a category and a
 value, and must find a packet which has a matching key.  We use the keyname
@@ -1444,6 +1443,38 @@ for one_cat in looped_cats:
         next_up = parent_def['_name.category_id'].lower()
     self.parent_lookup[one_cat] = parent_cat
 
+@ The key hierarchy. This is in many ways reinventing the parent-child
+relationships that are laid out in DDL2 definitions.  In order to
+access a particular packet using multiple datanames as compound keys,
+we need to be aware of which keys are related to which other
+keys. Relationships are always made explicit via the
+'_name.linked_item_id' attribute in DDLm, which always points to the
+parent.  This is always present, even though it may be often be inferred
+using Loop category parent/child relationships, as compound keys in
+categories might introduce ambiguity.
+
+This datastructure allows us to provide a key, and obtain a list of
+equivalent keys, being all those beneath it in the hierarchy.
+
+<<Create key hierarchy>>=
+self.key_equivs = {}
+for one_cat in looped_cats:   #follow them up
+    linkers = listify(self[one_cat]['_category_key.name'])
+    parent = [a for a in looped_cats if self[one_cat]['_name.category_id'].lower()==a]
+    if len(parent)>1:
+        raise CifError,"Category %s has more than one parent: %s" % (one_cat,`parent`)
+    if len(parent)==0: continue
+    parent = parent[0]
+    parent_keys = listify(self[parent]['_category_key.name'])
+    linked_keys = [self[l]["_name.linked_item_id"] for l in linkers]
+    # sanity check
+    if set(parent_keys) != set(linked_keys):
+        raise CifError,"Parent keys and linked keys are different! %s/%s" % (parent_keys,linked_keys)
+    # now add in our information
+    for l,p in zip(linked_keys,linkers):
+        self.key_equivs[l] = self.key_equivs.get(l,[])+[p]+self.key_equivs.get(p,[])
+
+                                             
 @ Section{DDLm functionality}
 
 DDLm is a far more complex dictionary standard than DDL2.  We are able to import
