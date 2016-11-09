@@ -1744,7 +1744,7 @@ class DicStructureTestCase(unittest.TestCase):
     def testEquivKey(self):
         """Test that we can identify equivalent key datanames"""
         target = testdic.key_equivs
-        self.assertEqual(target['_atom_site.label'],['_atom_site_aniso.label'])
+        self.assertEqual(target['_atom_site_aniso.label'],['_atom_site.label'])
         
     def testChildPacket(self):
         """Test that a case-insensitive child packet is included in attributes of parent category"""

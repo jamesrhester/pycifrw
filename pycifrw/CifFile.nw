@@ -1022,7 +1022,8 @@ def create_cat_key_table(self):
 objects, but the key is the definition itself, rather than the block name.  So we have to create
 a lookup table. However, template dictionaries may not have a _definition.id, which means we
 have to revert to their blockname, so we use blockname as a default.  We also completely
-ignore case, which is a bit liberal, as definitions themselves are case-sensitive.
+ignore case, which is a bit liberal, as definitions themselves are case-sensitive. We catch
+duplicate definitions (e.g. as a result of incorrect merging).
 
 <<Repurpose standard python methods>>=
 def create_def_block_table(self):
@@ -1035,6 +1036,12 @@ def create_def_block_table(self):
         top_blocks = [a[0].lower() for a in self.get_roots()]
     else:
         top_blocks = ["on_this_dictionary"]
+    # catch dodgy duplicates
+    uniques = set([a[0] for a in proto_table])
+    if len(uniques)<len(proto_table):
+        def_names = [a[0] for a in proto_table]
+        dodgy = [a for a in def_names if def_names.count(a)>1]
+        raise CifError, 'Duplicate definitions in dictionary:' + `dodgy`
     self.block_id_table = dict([(a[0].lower(),a[1].lower()) for a in proto_table if a[1].lower() not in top_blocks])
     
 def __getitem__(self,key):
@@ -1454,25 +1461,31 @@ using Loop category parent/child relationships, as compound keys in
 categories might introduce ambiguity.
 
 This datastructure allows us to provide a key, and obtain a list of
-equivalent keys, being all those beneath it in the hierarchy.
+equivalent keys, being all those above it in the hierarchy, that is,
+which it can be replaced by.
 
 <<Create key hierarchy>>=
 self.key_equivs = {}
 for one_cat in looped_cats:   #follow them up
-    linkers = listify(self[one_cat]['_category_key.name'])
-    parent = [a for a in looped_cats if self[one_cat]['_name.category_id'].lower()==a]
-    if len(parent)>1:
-        raise CifError,"Category %s has more than one parent: %s" % (one_cat,`parent`)
-    if len(parent)==0: continue
-    parent = parent[0]
-    parent_keys = listify(self[parent]['_category_key.name'])
-    linked_keys = [self[l]["_name.linked_item_id"] for l in linkers]
-    # sanity check
-    if set(parent_keys) != set(linked_keys):
-        raise CifError,"Parent keys and linked keys are different! %s/%s" % (parent_keys,linked_keys)
-    # now add in our information
-    for l,p in zip(linked_keys,linkers):
-        self.key_equivs[l] = self.key_equivs.get(l,[])+[p]+self.key_equivs.get(p,[])
+    lower_keys = listify(self[one_cat]['_category_key.name'])
+    start_keys = lower_keys[:]
+    while len(lower_keys)>0:
+        this_cat = self[lower_keys[0]]['_name.category_id']
+        parent = [a for a in looped_cats if self[this_cat]['_name.category_id'].lower()==a]
+        #print "Processing %s, keys %s, parent %s" % (this_cat,`lower_keys`,`parent`)
+        if len(parent)>1:
+            raise CifError,"Category %s has more than one parent: %s" % (one_cat,`parent`)
+        if len(parent)==0: break
+        parent = parent[0]
+        parent_keys = listify(self[parent]['_category_key.name'])
+        linked_keys = [self[l]["_name.linked_item_id"] for l in lower_keys]
+        # sanity check
+        if set(parent_keys) != set(linked_keys):
+            raise CifError,"Parent keys and linked keys are different! %s/%s" % (parent_keys,linked_keys)
+            # now add in our information
+        for parent,child in zip(linked_keys,start_keys):
+            self.key_equivs[child] = self.key_equivs.get(child,[])+[parent]
+        lower_keys = linked_keys  #preserves order of start keys
 
                                              
 @ Section{DDLm functionality}
@@ -1498,8 +1511,8 @@ children of the old 'Head' block.
 def ddlm_import(self,import_mode='All'):
     import urllib
     import_frames = [(a,self[a]['_import.get']) for a in self.keys() if self[a].has_key('_import.get')]
-    #print 'Import mode %s applied to following frames' % import_mode
-    #print str(import_frames)
+    print 'Import mode %s applied to following frames' % import_mode
+    print str([a[0] for a in import_frames])
     if import_mode is not 'All':
        for i in range(len(import_frames)):
             import_frames[i] = (import_frames[i][0],[a for a in import_frames[i][1] if a.get('mode','Contents') == import_mode])
@@ -1512,7 +1525,7 @@ def ddlm_import(self,import_mode='All'):
         full_uri = self.resolve_path(file_loc)
         if full_uri not in self.template_cache:
             dic_as_cif = CifFile(urllib.urlopen(full_uri),grammar=self.grammar)
-            self.template_cache[full_uri] = CifDic(dic_as_cif,do_minimum=True)  #this will recurse internal imports
+            self.template_cache[full_uri] = CifDic(dic_as_cif,do_imports=import_mode,do_dREL=False)  #this will recurse internal imports
             print 'Added %s to cached dictionaries' % full_uri
         import_from = self.template_cache[full_uri]
         dupl = import_ref.get('dupl','Exit') 
@@ -1545,11 +1558,21 @@ def ddlm_import(self,import_mode='All'):
             else:
                   head_to_head = False
                   child_frames.remove(from_cat_head)
-            child_frames = import_from.makebc(child_frames)
-            self.merge_fast(child_frames,parent=syntactic_head)      #
+            # As we are in syntax land, we call the CifFile methods
+            child_blocks = [import_from.block_id_table[a.lower()] for a in child_frames]
+            child_blocks = super(CifDic,import_from).makebc(child_blocks)
+            # Prune out any datablocks that have identical definitions
+            from_defs = dict([(a,child_blocks[a].get('_definition.id','').lower()) for a in child_blocks.keys()])
+            double_defs = [b for b in from_defs.items() if self.has_key(b[1])]
+            print 'Definitions for %s superseded' % repr(double_defs)
+            for b in double_defs:
+                del child_blocks[b[0]]
+            super(CifDic,self).merge_fast(child_blocks,parent=syntactic_head)      #
             print 'Syntactic merge of %s (%d defs) in %s mode, now have %d defs' % (target_key,len(child_frames),
                mode,len(self))
             # Now the semantic merge
+            # First expand our definition <-> blockname tree
+            self.create_def_block_table()
             merging_cat = self[parent_block]['_name.object_id']      #new parent
             if head_to_head:
                 child_frames = self.ddlm_immediate_children(from_cat_head)    #old children
