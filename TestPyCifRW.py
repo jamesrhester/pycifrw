@@ -1752,6 +1752,13 @@ class DicStructureTestCase(unittest.TestCase):
         self.failUnless(hasattr(target,'_atom_site_aniso.u_23'))
         self.assertEqual(getattr(target,'_atom_site_aniso.U_33'),'.040(3)')
 
+    def testChildPacketMultiKey(self):
+        """Test that a case-insensitive child packet is included in attributes of parent category
+        using the compound key routine"""
+        target = self.fb.GetMultiKeyedSemanticPacket({'_atom_site.label':("o2",True)},'atom_site')
+        self.assertEqual(getattr(target,'_atom_site_aniso.U_33'),'.040(3)')
+        self.failUnless(hasattr(target,'_atom_site_aniso.u_23'))
+
     def testPacketCalcs(self):
         """Test that a star packet can calculate missing values"""
         target = self.fb.GetKeyedSemanticPacket("O",'atom_type')

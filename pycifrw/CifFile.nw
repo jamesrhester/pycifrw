@@ -461,7 +461,7 @@ def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
         if do_dREL:
             print "Doing full dictionary initialisation" 
             self.initialise_drel()
-    self.add_category_info()
+    self.add_category_info(full=do_dREL)
     # initialise type information
     self.typedic={}
     self.primdic = {}   #typecode<->primitive type translation
@@ -1408,13 +1408,15 @@ def get_name_by_cat_obj(self,category,object,give_default=False):
     raise KeyError, 'No such category,object in the dictionary: %s %s' % (true_cat,object)
 
 @ Dictionaries have the category-wide information in the category
-definition area. 
+definition area.  We do not need to fill all of this in if we are
+not planning on running dREL.
 
 <<Add category information>>=
-def add_category_info(self):
+def add_category_info(self,full=True):
     if self.diclang == "DDLm":
         <<Create category parent table>>
-        <<Create key hierarchy>>
+        if full:
+            <<Create key hierarchy>>
     else:
         self.parent_lookup = {}
         self.key_equivs = {}
@@ -1462,7 +1464,8 @@ categories might introduce ambiguity.
 
 This datastructure allows us to provide a key, and obtain a list of
 equivalent keys, being all those above it in the hierarchy, that is,
-which it can be replaced by.
+which it can be replaced by.  If we are not doing dREL, we can afford
+to skip this.
 
 <<Create key hierarchy>>=
 self.key_equivs = {}
