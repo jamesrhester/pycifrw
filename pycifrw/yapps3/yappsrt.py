@@ -272,8 +272,8 @@ def print_line_with_pointer(text, p):
         p = p - 7
 
     # Now print the string, along with an indicator
-    print >>sys.stderr, '> ',text
-    print >>sys.stderr, '> ',' '*p + '^'
+    print('> ', text, file=sys.stderr)
+    print('> ', ' ' * p + '^', file=sys.stderr)
     
 def print_error(input, err, scanner):
     """Print error messages, the parser stack, and the input text -- for human-readable error messages."""
@@ -281,7 +281,7 @@ def print_error(input, err, scanner):
     # Figure out the line number
     line_number = scanner.get_line_number()
     column_number = scanner.get_column_number()
-    print >>sys.stderr, '%d:%d: %s' % (line_number, column_number, err.msg)
+    print('%d:%d: %s' % (line_number, column_number, err.msg), file=sys.stderr)
 
     context = err.context
     if not context:
@@ -289,16 +289,16 @@ def print_error(input, err, scanner):
         
     while context:
         # TODO: add line number
-        print >>sys.stderr, 'while parsing %s%s:' % (context.rule, tuple(context.args))
+        print('while parsing %s%s:' % (context.rule, tuple(context.args)), file=sys.stderr)
         print_line_with_pointer(input, context.scanner.get_prev_char_pos(context.tokenpos))
         context = context.parent
 
 def wrap_error_reporter(parser, rule):
     try:
         return getattr(parser, rule)()
-    except SyntaxError, e:
+    except SyntaxError as e:
         input = parser._scanner.input
         print_error(input, e, parser._scanner)
     except NoMoreTokens:
-        print >>sys.stderr, 'Could not complete parsing; stopped around here:'
-        print >>sys.stderr, parser._scanner
+        print('Could not complete parsing; stopped around here:', file=sys.stderr)
+        print(parser._scanner, file=sys.stderr)
