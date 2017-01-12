@@ -1133,7 +1133,7 @@ automatically converted to the type given in the dictionary.
 <<Assigning a dictionary>>=
 def assign_dictionary(self,dic):
     if not dic.diclang=="DDLm":
-        print ("Warning: ignoring dictionary %s" % dic.dic_as_cif.my_uri)
+        print("Warning: ignoring dictionary %s" % dic.dic_as_cif.my_uri)
         return
     self.dictionary = dic
 
@@ -1501,7 +1501,7 @@ the enclosing block collection (e.g. CIF or STAR file object)""")
                try: 
                    new_value = self.dictionary.derive_item(key,self,store_value=self.cache_vals,allow_defaults=True)
                except StarDerivationFailure as s:
-                   print ("In StarBlock.__getitem__, " + repr( s ))
+                   print("In StarBlock.__getitem__, " + repr(s))
                    raise KeyError('No such item: %s' % key)
            print('Set %s to derived value %s' % (key, repr(new_value)))
            return new_value
@@ -1538,7 +1538,7 @@ the enclosing block collection (e.g. CIF or STAR file object)""")
                        new_value = self.dictionary.derive_item(key,self,store_value=True,allow_defaults=True)
                    except StarDerivationFailure as s:
                    
-                       print ("Could not turn %s into a value:" + repr( s ))
+                       print("Could not turn %s into a value:" + repr(s))
                        return rawitem
                else:
                    print('Set %s to derived value %s' % (key, repr( new_value )))
@@ -1771,11 +1771,11 @@ def check_item_value(self,item):
             if it=='': return
             me = self.char_check.match(it)            
             if not me:
-                print ("Fail value check: %s" % it)
+                print("Fail value check: %s" % it)
                 raise StarError('Bad character in %s' % it)
             else:
                 if me.span() != (0,len(it)):
-                    print ("Fail value check, match only %d-%d in string %s" % (me.span()[0],me.span()[1],repr( it )))
+                    print("Fail value check, match only %d-%d in string %s" % (me.span()[0],me.span()[1],repr( it )))
                     raise StarError('Data item "' + repr( it ) +  u'"... contains forbidden characters')
     [check_one(a) for a in test_item]
 
@@ -2131,7 +2131,7 @@ def GetKeyedPacket(self,keyname,keyvalue,no_case=False):
        one_pack= [a for a in my_loop if getattr(a,keyname)==keyvalue]
     if len(one_pack)!=1:
         raise ValueError("Bad packet key %s = %s: returned %d packets" % (keyname,keyvalue,len(one_pack)))
-    print ("Keyed packet: %s" % one_pack[0])
+    print("Keyed packet: %s" % one_pack[0])
     return one_pack[0]
 
 @  Semantic loops.  These are loops defined by a dictionary,

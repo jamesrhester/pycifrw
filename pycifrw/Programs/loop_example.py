@@ -1,6 +1,7 @@
 #
 # An example of how to output a subset of looped items.
 #
+import sys
 from CifFile import CifFile, CifBlock
 cf = CifFile("loop_example.cif")["some_stuff"] # open and parse our cif, 
                                       #we want data block named "some_stuff".
@@ -16,8 +17,8 @@ needed_items = [
 
 loopkeys = cf.GetLoopNames("_atom_site_label")  #get co-looped names 
 if len(filter(lambda a,b=loopkeys:a not in b, needed_items)) != 0:
-    print "Error: one or more items missing from atom_site_label loop"
-    exit                        
+    print("Error: one or more items missing from atom_site_label loop")
+    sys.exit()
 #
 # ----- End of optional section
 
@@ -28,4 +29,3 @@ df = CifFile()                    # create a new cif object
 df.NewBlock("changed",nb)             # and add our new block
 outfile = open("updated.cif",'w')      #open a file to write to
 outfile.write (df.WriteOut(comment="# This file has been updated"))
-

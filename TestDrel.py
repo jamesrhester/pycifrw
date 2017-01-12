@@ -98,13 +98,13 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
         if instring[-1]!="\n":
            instring += '\n'
         res = self.parser.parse(instring,debug=debug,lexer=self.lexer)
-        if debug: print "%s\n -> \n%s \n" % (instring,`res`)
+        if debug: print("%s\n -> \n%s \n" % (instring,`res`))
         realfunc = py_from_ast.make_python_function(res,"myfunc",'_a.b',have_sn=False,
                                                     cif_dic=self.dic)
-        if debug: print "-> %s" % realfunc
-        exec realfunc
+        if debug: print("-> %s" % realfunc)
+        exec(realfunc)
         answer = myfunc(self)
-        if debug: print " -> %s" % `answer`
+        if debug: print(" -> %s" % `answer`)
         if not array:
             self.failUnless(answer == right_value)
         else:
@@ -240,12 +240,12 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
        c['bx'] = 25
        _a.b = c
        """
-       print "Table test:"
+       print("Table test:")
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
                                                    cif_dic=self.dic)
-       print realfunc
-       exec realfunc
+       print(realfunc)
+       exec(realfunc)
        b = myfunc(self)
        self.failUnless(b['bx']==25)
 
@@ -255,12 +255,12 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
        c = {'hello':1,'goodbye':2}
        _a.b = c['hello']
        """
-       print "Table test:"
+       print("Table test:")
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
                                                    cif_dic=self.dic)
-       print realfunc
-       exec realfunc
+       print(realfunc)
+       exec(realfunc)
        b = myfunc(self)
        self.failUnless(b==1)
 
@@ -301,11 +301,11 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        if instring[-1]!="\n":
            instring += "\n"   # correct termination
        res = self.parser.parse(instring,debug=debug,lexer=self.lexer)
-       if debug: print "%s\n -> \n%s \n" % (instring,`res`)
+       if debug: print("%s\n -> \n%s \n" % (instring,`res`))
        realfunc = py_from_ast.make_python_function(res,"myfunc",varname,have_sn=False,
                                                    cif_dic=self.dic)
-       if debug: print "-> %s" % realfunc
-       exec realfunc
+       if debug: print("-> %s" % realfunc)
+       exec(realfunc)
        self.failUnless(myfunc(self) == right_value)
        
    def test_multi_assign(self):
@@ -318,7 +318,7 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        """
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc",'_a.b',cif_dic=self.dic)
-       print "-> " + realfunc
+       print("-> " + realfunc)
        
    def test_do_stmt(self):
        """Test how a do statement comes out"""
@@ -406,9 +406,9 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc",None, func_def = True)
        # print "Function -> \n" + realfunc
-       exec realfunc
+       exec(realfunc)
        retval = Closest(0.2,0.8,None)
-       print 'Closest 0.2,0.8 returns ' + ",".join([`retval[0]`,`retval[1]`])
+       print('Closest 0.2,0.8 returns ' + ",".join([`retval[0]`,`retval[1]`]))
        self.failUnless(retval == StarList([1.2,1]))
 
 class MoreComplexTestCase(unittest.TestCase):
@@ -433,7 +433,7 @@ class MoreComplexTestCase(unittest.TestCase):
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
                                                    cif_dic = self.dic)
-       exec realfunc
+       exec(realfunc)
        othertotal = myfunc(self)
        self.failUnless(othertotal==55)
 
@@ -459,9 +459,9 @@ class MoreComplexTestCase(unittest.TestCase):
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
                                                    cif_dic = self.dic)
-       exec realfunc
+       exec(realfunc)
        b = myfunc(self)
-       print "if returns " + `b` 
+       print("if returns " + `b`)
        self.failUnless(b==('B', 'Possible mismatch between cell angles and cell setting'))
 
 
@@ -481,10 +481,10 @@ class MoreComplexTestCase(unittest.TestCase):
        res = self.parser.parse(teststrg + "\n", lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","geom_angle",cat_meth = True,have_sn=False,
                                                    cif_dic = testdic)
-       print "Fancy assign: %s" % res[0]
-       exec realfunc
+       print("Fancy assign: %s" % res[0])
+       exec(realfunc)
        b = myfunc(self)
-       print "Geom_angle.angle = %s" % b['_geom_angle.value']
+       print("Geom_angle.angle = %s" % b['_geom_angle.value'])
        self.failUnless(b['_geom_angle.value']==[1,2,3,4,5])
 
 class WithDictTestCase(unittest.TestCase):
@@ -518,11 +518,11 @@ class WithDictTestCase(unittest.TestCase):
        ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.analytical_mass_percent",
                                                    cif_dic=testdic,loopable=loopable_cats)
-       print "With statement for looped category -> \n" + realfunc
-       exec realfunc
+       print("With statement for looped category -> \n" + realfunc)
+       exec(realfunc)
        #  
        atmass = myfunc(self.testblock)
-       print 'test value now %s' % `atmass`  
+       print('test value now %s' % `atmass`)
        self.failUnless(atmass == [120,280,240])
        
    def test_Lists(self):
@@ -547,12 +547,12 @@ class WithDictTestCase(unittest.TestCase):
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc,dependencies = py_from_ast.make_python_function(res,"myfunc","_geom_bond.id",cat_meth=True,
                 loopable=loop_cats,have_sn=False,depends=True,cif_dic=testdic)
-       print 'Simple function becomes:'
-       print realfunc
-       print 'Depends on: ' + `dependencies`
-       exec realfunc in globals()
+       print('Simple function becomes:')
+       print(realfunc)
+       print('Depends on: ' + `dependencies`)
+       exec(realfunc in globals())
        b = myfunc(self.testblock)
-       print "subscription returns " + `b` 
+       print("subscription returns " + `b` )
 
    def test_with_stmt(self):
        """Test what comes out of a simple flow statement, including
@@ -569,12 +569,12 @@ class WithDictTestCase(unittest.TestCase):
        loopable_cats = {}   #none looped
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_exptl.method",cif_dic=testdic)
-       print "With statement -> \n" + realfunc
-       exec realfunc
+       print("With statement -> \n" + realfunc)
+       exec(realfunc)
        # attach dictionary  
        self.testblock.assign_dictionary(self.testdic)
        newmeth = myfunc(self.testblock)
-       print 'exptl method now %s' % newmeth 
+       print('exptl method now %s' % newmeth)
        self.failUnless(newmeth == "single-crystal diffraction")
 
 
@@ -588,10 +588,10 @@ class WithDictTestCase(unittest.TestCase):
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.analytical_mass_percent",
                                                    loopable=loopable_cats,
                                                    cif_dic=testdic)
-       print "With statement for looped category -> \n" + realfunc
-       exec realfunc
+       print("With statement for looped category -> \n" + realfunc)
+       exec(realfunc)
        atmass = myfunc(self.testblock)
-       print 'test value now %s' % `atmass`  
+       print('test value now %s' % `atmass`)
        self.failUnless(atmass == [120,280,240])
 
    def test_subscription(self):
@@ -601,11 +601,11 @@ class WithDictTestCase(unittest.TestCase):
        """
        loopable_cats = {"model_site":["id",["id","symop"]]}
        res = self.parser.parse(teststrg,lexer=self.lexer)
-       print `res`
+       print(`res`)
        realfunc,dependencies = py_from_ast.make_python_function(res,"myfunc","_model_site.symop",
                                                                 loopable=loopable_cats,depends=True,
                                                                 cif_dic=testdic)
-       print realfunc, `dependencies`
+       print(realfunc, `dependencies`)
        self.failUnless(dependencies == set(['_model_site.id']))
 
    def test_current_row(self):
@@ -617,10 +617,10 @@ class WithDictTestCase(unittest.TestCase):
        ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.description",loopable=loopable_cats,
                                                    cif_dic=testdic)
-       print "Current row statement -> \n" + realfunc
-       exec realfunc
+       print("Current row statement -> \n" + realfunc)
+       exec(realfunc)
        rownums = myfunc(self.testblock)
-       print 'row id now %s' % `rownums`
+       print('row id now %s' % `rownums`)
        self.failUnless(rownums == [1,2,3])
  
    def test_loop_statement(self):
@@ -636,10 +636,10 @@ class WithDictTestCase(unittest.TestCase):
        ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_cell.atomic_mass",loopable=loopable_cats,
                                                    cif_dic=testdic)
-       print "Loop statement -> \n" + realfunc
-       exec realfunc
+       print("Loop statement -> \n" + realfunc)
+       exec(realfunc)
        atmass = myfunc(self.testblock)
-       print 'atomic mass now %f' % atmass  
+       print('atomic mass now %f' % atmass)
        self.failUnless(atmass == 552.488)
        
    def test_complex_f(self):
@@ -672,9 +672,9 @@ class WithDictTestCase(unittest.TestCase):
        ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_refln.F_complex",loopable=loopable_cats,
                                                    cif_dic=testdic)
-       print "Incoming AST: " + `ast`
-       print "F_complex statement -> \n" + realfunc
-       exec realfunc
+       print("Incoming AST: " + `ast`)
+       print("F_complex statement -> \n" + realfunc)
+       exec(realfunc)
 
        # This one also doesn't return anything sensible yet, just a generation check
    def test_fancy_packets(self):
@@ -692,9 +692,9 @@ class WithDictTestCase(unittest.TestCase):
        realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_model_site.adp_matrix_beta",
                                                    depends = True,have_sn=False,
                                                         loopable=loopable,cif_dic=testdic)
-       print 'model_site.adp_matrix_beta becomes...'
-       print realfunc
-       print deps
+       print('model_site.adp_matrix_beta becomes...')
+       print(realfunc)
+       print(deps)
        self.failUnless('_symmetry_equiv.RT' in deps)
 
    def test_array_access(self):
@@ -709,11 +709,11 @@ class WithDictTestCase(unittest.TestCase):
        realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_model_site.symop",
                                                    depends = True,have_sn=False,
                                                         loopable=loopable,cif_dic=testdic)
-       print realfunc
-       exec realfunc
+       print(realfunc)
+       exec(realfunc)
        self.testblock.assign_dictionary(testdic)
        b = myfunc(self.testblock)
-       print 'symops are now ' + `b`
+       print('symops are now ' + `b`)
        self.failUnless(b[1] == '1_555')
       
 if __name__=='__main__':

@@ -45,7 +45,7 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        """Test that internal whitespace is used to break"""
        test_string = "123456  7890123  45678\n90 12\n\n"
        outstring = CifFile.apply_line_folding(test_string,5,10)
-       #print "\n;" + outstring + "\n;"
+       #print("\n;" + outstring + "\n;")
        out_lines = outstring.split('\n')
        self.failUnless(len(out_lines[1]) == 7)
 
@@ -60,9 +60,9 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        test_string = "123456  7890123  45678\n90 12\n\n"
        outstring = CifFile.apply_line_folding(test_string,5,10)
        old_string = CifFile.remove_line_folding(outstring)
-       #print "Test:" + repr(test_string)
-       #print "Fold:" + repr(outstring)
-       #print "UnFo:" + repr(old_string)
+       #print("Test:" + repr(test_string))
+       #print("Fold:" + repr(outstring))
+       #print("UnFo:" + repr(old_string))
        self.failUnless(old_string == test_string)
 
     def testTrickyFoldingRemoval(self):
@@ -70,9 +70,9 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        test_string = "\n1234567890\\\n r t s 345 19\n\nlife don't talk to me about life"
        outstring = CifFile.apply_line_folding(test_string,5,10)
        old_string = CifFile.remove_line_folding(outstring)
-       #print "Test:" + repr(test_string)
-       #print "Fold:" + repr(outstring)
-       #print "UnFo:" + repr(old_string)
+       #print("Test:" + repr(test_string))
+       #print("Fold:" + repr(outstring))
+       #print("UnFo:" + repr(old_string))
        self.failUnless(old_string == test_string)
 
     def testTrailingBackslash(self):
@@ -80,9 +80,9 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        test_string = "\n123\\\n 456\\n\n"
        outstring = CifFile.apply_line_folding(test_string,5,10)
        old_string = CifFile.remove_line_folding(outstring)
-       #print "Test:" + repr(test_string)
-       #print "Fold:" + repr(outstring)
-       #print "UnFo:" + repr(old_string)
+       #print("Test:" + repr(test_string))
+       #print("Fold:" + repr(outstring))
+       #print("UnFo:" + repr(old_string))
        self.failUnless(old_string == test_string)
 
     def testFinalBackslash(self):
@@ -799,7 +799,7 @@ data_TEST_DIC
        """Test that an output template is successfully input"""
        p = CifFile.CifFile()
        p.SetTemplate("cif_template.cif")
-       #print p.master_template
+       #print(p.master_template)
        self.failUnless(p.master_template[0]['dataname']=='_dictionary.title')
        self.failUnless(p.master_template[5]['column']==31)
        self.failUnless(p.master_template[2]['delimiter']=='\n;')
@@ -1127,10 +1127,10 @@ class DDLmTestCase(unittest.TestCase):
        g.write(str(f))
        g.close()
        h = CifFile.ReadCif("newgoodtest_1.2.cif",grammar="STAR2")
-       #print h['Test']
-       #print h['Test']['_import.get']
-       #print h['Test']['_import.get'][2]
-       #print h['Test']['_import.get'][2]['file']
+       #print(h['Test'])
+       #print(h['Test']['_import.get'])
+       #print(h['Test']['_import.get'][2])
+       #print(h['Test']['_import.get'][2]['file'])
        self.failUnless(h['Test']['_import.get'][2]['file']=='core_struc.dic')
 
    def testUnNest(self):

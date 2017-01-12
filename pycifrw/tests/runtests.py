@@ -30,21 +30,21 @@ def runtests(scantype):
         except:
                 sei = sys.exc_info()
                 if testresult == 'OK':
-                    print ("%s causes error where none expected" % filename)
-                    print ("%s\n%s" % (repr(sei[0]),sei[1]))
+                    print("%s causes error where none expected" % filename)
+                    print("%s\n%s" % (repr(sei[0]),sei[1]))
                 else:
                     if sei[0] in testresult:
-                        print ("%s passes" % filename)
+                        print("%s passes" % filename)
                     else:
-                        print ("Unexpected exception %s for %s" % (repr(sei[0]),filename))
+                        print("Unexpected exception %s for %s" % (repr(sei[0]),filename))
         else:     #no exception
                 if testresult == 'OK':
-                    print ("%s passes" % filename)
+                    print("%s passes" % filename)
                 else:
-                    print ("%s: Expected %s, got nothing" % (filename,repr(testresult)))
+                    print("%s: Expected %s, got nothing" % (filename,repr(testresult)))
 
 if __name__ == "__main__":
-    print ("Testing interpreted tokenizer")
+    print("Testing interpreted tokenizer")
     runtests("standard")
-    print ("Testing compiled tokenizer")
+    print("Testing compiled tokenizer")
     runtests("flex")
