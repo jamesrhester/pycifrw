@@ -24,7 +24,7 @@ def generate(inputfilename, outputfilename='', dump=0, **flags):
             outputfilename = inputfilename[:-2] + '.py'
         else:
             raise Exception('Must specify output filename if input filename is not *.g')
-        
+
     DIVIDER = '\n%%\n' # This pattern separates the pre/post parsers
     preparser, postparser = None, None # Code before and after the parser desc
 
@@ -56,7 +56,7 @@ def generate(inputfilename, outputfilename='', dump=0, **flags):
             print('Warning: unrecognized option', f, file=sys.stderr)
     # Add command line options to the set
     for f in flags.keys(): t.options[f] = flags[f]
-            
+
     # Generate the output
     if dump:
         t.dump_information()
@@ -107,5 +107,5 @@ if __name__ == '__main__':
             import yapps_grammar as grammar
         else:
             import grammar
-            
+
         generate(*tuple(args), **flags)

@@ -1,6 +1,6 @@
-""" 
-Convert a data/dictionary file in STAR2 to CIF2 format.  STAR2 and CIF2 differ 
-most markedly in their compound data value delimiters (comma and whitespace 
+"""
+Convert a data/dictionary file in STAR2 to CIF2 format.  STAR2 and CIF2 differ
+most markedly in their compound data value delimiters (comma and whitespace
 respectively).
 
 We read in the file using STAR2 grammar, then output with CIF2 grammar.

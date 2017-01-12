@@ -26,6 +26,6 @@ print("%s  %s" % (allnames[0],data))
 # loop atom sites
 names = my_data_block["_atom_site_label"]
 xsxs = my_data_block["_atom_site_fract_x"]
-processed = zip(names,xsxs) 
-for label, data in processed: 
+processed = zip(names,xsxs)
+for label, data in processed:
     print("%s  %s" % (label,data))

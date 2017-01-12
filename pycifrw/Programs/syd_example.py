@@ -49,6 +49,6 @@ print("%s  %s" % (allnames[0],data))
 names = my_data_block["_atom_site_label"]
 xsxs = my_data_block["_atom_site_fract_x"]
 as_numbers = map(get_number_with_esd,xsxs)
-processed = zip(names,as_numbers) 
-for label, data in processed: 
+processed = zip(names,as_numbers)
+for label, data in processed:
     print("%s  %f  " % (label,data[0]))
