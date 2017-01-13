@@ -13,23 +13,23 @@ def runtests(scantype):
 
     for filename, testresult in test_table:
         try:
-        	ReadCif(filename,scantype=scantype,grammar="2.0")
+            ReadCif(filename,scantype=scantype,grammar="2.0")
         except:
-        	if testresult == 'OK':
-           	    print "%s causes error where none expected" % filename
-	            print "%s\n%s" % (`sys.exc_type`,sys.exc_value)
-        	else:
-        	    if sys.exc_type in testresult:
-        		print "%s passes" % filename
-		    else:
-			print "Unexpected exception %s for %s" % (`sys.exc_type`,filename)
+            if testresult == 'OK':
+                print("%s causes error where none expected" % filename)
+                print("%s\n%s" % (`sys.exc_type`,sys.exc_value))
+            else:
+                if sys.exc_type in testresult:
+                    print("%s passes" % filename)
+                else:
+                    print("Unexpected exception %s for %s" % (`sys.exc_type`,filename))
         else:     #no exception
-        	if testresult == 'OK':
-        	    print "%s passes" % filename
-        	else:
-        	    print "%s: Expected %s, got nothing" % (filename,`testresult`)
+            if testresult == 'OK':
+                print("%s passes" % filename)
+            else:
+                print("%s: Expected %s, got nothing" % (filename,`testresult`))
 if __name__ == "__main__":
-    print "Testing interpreted tokenizer"
+    print("Testing interpreted tokenizer")
     runtests("standard")
-    print "Testing compiled tokenizer"
+    print("Testing compiled tokenizer")
     runtests("flex")

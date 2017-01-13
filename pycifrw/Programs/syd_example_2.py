@@ -21,11 +21,11 @@ allnames = my_data_block.keys()
 data = my_data_block[allnames[0]]
 
 # to print, don't need to check type
-print "%s  %s" % (allnames[0],data)
+print("%s  %s" % (allnames[0],data))
 
 # loop atom sites
 names = my_data_block["_atom_site_label"]
 xsxs = my_data_block["_atom_site_fract_x"]
-processed = zip(names,xsxs) 
-for label, data in processed: 
-    print "%s  %s" % (label,data)
+processed = zip(names,xsxs)
+for label, data in processed:
+    print("%s  %s" % (label,data))

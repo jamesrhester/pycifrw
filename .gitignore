@@ -4,3 +4,6 @@
 *~
 pycifrw/*.py
 pycifrw/drel/*.py
+/PyCifRW.egg-info/
+/build/
+/dist/

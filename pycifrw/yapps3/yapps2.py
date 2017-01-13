@@ -24,7 +24,7 @@ def generate(inputfilename, outputfilename='', dump=0, **flags):
             outputfilename = inputfilename[:-2] + '.py'
         else:
             raise Exception('Must specify output filename if input filename is not *.g')
-        
+
     DIVIDER = '\n%%\n' # This pattern separates the pre/post parsers
     preparser, postparser = None, None # Code before and after the parser desc
 
@@ -53,10 +53,10 @@ def generate(inputfilename, outputfilename='', dump=0, **flags):
         for opt,_,_ in yapps_options:
             if f == opt: break
         else:
-            print >>sys.stderr, 'Warning: unrecognized option', f
+            print('Warning: unrecognized option', f, file=sys.stderr)
     # Add command line options to the set
     for f in flags.keys(): t.options[f] = flags[f]
-            
+
     # Generate the output
     if dump:
         t.dump_information()
@@ -79,13 +79,13 @@ if __name__ == '__main__':
     import getopt
     optlist, args = getopt.getopt(sys.argv[1:], 'f:', ['help', 'dump', 'use-devel-grammar'])
     if not args or len(args) > 2:
-        print >>sys.stderr, 'Usage:'
-        print >>sys.stderr, '  python', sys.argv[0], '[flags] input.g [output.py]'
-        print >>sys.stderr, 'Flags:'
-        print >>sys.stderr, ('  --dump' + ' '*40)[:35] + 'Dump out grammar information'
-        print >>sys.stderr, ('  --use-devel-grammar' + ' '*40)[:35] + 'Use the devel grammar parser from yapps_grammar.py instead of the stable grammar from grammar.py'
+        print('Usage:', file=sys.stderr)
+        print('  python', sys.argv[0], '[flags] input.g [output.py]', file=sys.stderr)
+        print('Flags:', file=sys.stderr)
+        print(('  --dump' + ' '*40)[:35] + 'Dump out grammar information', file=sys.stderr)
+        print(('  --use-devel-grammar' + ' '*40)[:35] + 'Use the devel grammar parser from yapps_grammar.py instead of the stable grammar from grammar.py', file=sys.stderr)
         for flag, _, doc in yapps_options:
-            print >>sys.stderr, ('  -f' + flag + ' '*40)[:35] + doc
+            print(('  -f' + flag + ' '*40)[:35] + doc, file=sys.stderr)
     else:
         # Read in the options and create a list of flags
         flags = {}
@@ -101,11 +101,11 @@ if __name__ == '__main__':
                 elif opt == ('--use-devel-grammar', ''):
                     use_devel_grammar = 1
                 else:
-                    print >>sys.stderr, 'Warning: unrecognized option', opt[0], opt[1]
+                    print('Warning: unrecognized option', opt[0], opt[1], file=sys.stderr)
 
         if use_devel_grammar:
             import yapps_grammar as grammar
         else:
             import grammar
-            
+
         generate(*tuple(args), **flags)
