@@ -7,7 +7,7 @@
 globalvars = {}       # We will store the calculator's variables here
 
 def lookup(map, name):
-    for x,v in map:  
+    for x,v in map:
         if x == name: return v
     if not globalvars.has_key(name): print 'Undefined (defaulting to 0):', name
     return globalvars.get(name, 0)
@@ -39,7 +39,7 @@ parser Calculator:
                      )*                   {{ return v }}
 
     # A term is a number, variable, or an expression surrounded by parentheses
-    rule term<<V>>:   
+    rule term<<V>>:
                  NUM                      {{ return atoi(NUM) }}
                | VAR                      {{ return lookup(V, VAR) }}
                | "\\(" expr "\\)"         {{ return expr }}
@@ -57,8 +57,7 @@ if __name__=='__main__':
     # one expression, get the result, enter another expression, etc.)
     while 1:
         try: s = raw_input('>>> ')
-	except EOFError: break
+        except EOFError: break
         if not strip(s): break
         parse('goal', s)
     print 'Bye.'
-
