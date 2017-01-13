@@ -26,21 +26,21 @@ clean:
 # Note the pythonpath variable as yapps requires its runtime to run
 YappsStarParser_1_0.py: YappsStarParser.nw
 	notangle -R1.0_syntax YappsStarParser.nw > YappsStarParser_1_0.g
-	export PYTHONPATH=.;python ./yapps3/yapps2.py YappsStarParser_1_0.g
+	export PYTHONPATH=.;python3 ./yapps3/yapps2.py YappsStarParser_1_0.g
 #
 YappsStarParser_1_1.py: YappsStarParser.nw
 	notangle -R1.1_syntax YappsStarParser.nw > YappsStarParser_1_1.g
-	export PYTHONPATH=.;python ./yapps3/yapps2.py YappsStarParser_1_1.g
+	export PYTHONPATH=.;python3 ./yapps3/yapps2.py YappsStarParser_1_1.g
 #
 YappsStarParser_2_0.py: YappsStarParser.nw
 	notangle -RCIF2_syntax YappsStarParser.nw > YappsStarParser_2_0.g
-	export PYTHONPATH=.; python ./yapps3/yapps2.py YappsStarParser_2_0.g
+	export PYTHONPATH=.; python3 ./yapps3/yapps2.py YappsStarParser_2_0.g
 #
 YappsStarParser_STAR2.py: YappsStarParser.nw
 	notangle -RSTAR2_syntax YappsStarParser.nw > YappsStarParser_STAR2.g
-	export PYTHONPATH=.; python ./yapps3/yapps2.py YappsStarParser_STAR2.g
+	export PYTHONPATH=.; python3 ./yapps3/yapps2.py YappsStarParser_STAR2.g
 #
 TypeContentsParser.py: TypeContentsParser.nw
 	notangle -RTypeContents_syntax TypeContentsParser.nw > TypeContentsParser.g
-	export PYTHONPATH=.; python ./yapps3/yapps2.py TypeContentsParser.g
+	export PYTHONPATH=.; python3 ./yapps3/yapps2.py TypeContentsParser.g
 
