@@ -2296,7 +2296,7 @@ def validate_uniqueness(self,item_name,item_value,whole_block,provisional_items=
     # so could be fooled if you think that '1.' and '1' are
     # identical
     for i in range(len(item_value)):
-        #print("Value no. %d" % i, end="\n")
+        #print("Value no. %d" % i, end=" ")
         this_entry = item_value[i]
         for j in range(len(other_data)):
             this_entry = " ".join([this_entry,other_data[j][i]])
