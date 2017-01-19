@@ -1040,7 +1040,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
             my_uri = urlunparse(newrel)
         else:
             my_uri = urlunparse(relpath)
-        print("Full URL is: " + my_uri)
+        # print("Full URL is: " + my_uri)
         filestream = urlopen(my_uri)
         text = filestream.read().decode('utf-8')
         filestream.close()
