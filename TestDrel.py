@@ -98,13 +98,13 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
         if instring[-1]!="\n":
            instring += '\n'
         res = self.parser.parse(instring,debug=debug,lexer=self.lexer)
-        if debug: print("%s\n -> \n%s \n" % (instring,`res`))
+        if debug: print("%s\n -> \n%r \n" % (instring, res))
         realfunc = py_from_ast.make_python_function(res,"myfunc",'_a.b',have_sn=False,
                                                     cif_dic=self.dic)
         if debug: print("-> %s" % realfunc)
         exec(realfunc)
         answer = myfunc(self)
-        if debug: print(" -> %s" % `answer`)
+        if debug: print(" -> {!r}".format(answer))
         if not array:
             self.failUnless(answer == right_value)
         else:
@@ -301,7 +301,7 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        if instring[-1]!="\n":
            instring += "\n"   # correct termination
        res = self.parser.parse(instring,debug=debug,lexer=self.lexer)
-       if debug: print("%s\n -> \n%s \n" % (instring,`res`))
+       if debug: print("%s\n -> \n%r \n" % (instring, res))
        realfunc = py_from_ast.make_python_function(res,"myfunc",varname,have_sn=False,
                                                    cif_dic=self.dic)
        if debug: print("-> %s" % realfunc)
@@ -408,7 +408,7 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        # print "Function -> \n" + realfunc
        exec(realfunc)
        retval = Closest(0.2,0.8,None)
-       print('Closest 0.2,0.8 returns ' + ",".join([`retval[0]`,`retval[1]`]))
+       print('Closest 0.2,0.8 returns {!r},{!r}'.format(retval[0], retval[1]))
        self.failUnless(retval == StarList([1.2,1]))
 
 class MoreComplexTestCase(unittest.TestCase):
@@ -461,7 +461,7 @@ class MoreComplexTestCase(unittest.TestCase):
                                                    cif_dic = self.dic)
        exec(realfunc)
        b = myfunc(self)
-       print("if returns " + `b`)
+       print("if returns {!r}".format(b))
        self.failUnless(b==('B', 'Possible mismatch between cell angles and cell setting'))
 
 
@@ -522,7 +522,7 @@ class WithDictTestCase(unittest.TestCase):
        exec(realfunc)
        #
        atmass = myfunc(self.testblock)
-       print('test value now %s' % `atmass`)
+       print('test value now {!r}'.format(atmass))
        self.failUnless(atmass == [120,280,240])
 
    def test_Lists(self):
@@ -549,10 +549,10 @@ class WithDictTestCase(unittest.TestCase):
                 loopable=loop_cats,have_sn=False,depends=True,cif_dic=testdic)
        print('Simple function becomes:')
        print(realfunc)
-       print('Depends on: ' + `dependencies`)
+       print('Depends on: {!r}'.format(dependencies))
        exec(realfunc in globals())
        b = myfunc(self.testblock)
-       print("subscription returns " + `b` )
+       print("subscription returns {!r}".format(b))
 
    def test_with_stmt(self):
        """Test what comes out of a simple flow statement, including
@@ -591,7 +591,7 @@ class WithDictTestCase(unittest.TestCase):
        print("With statement for looped category -> \n" + realfunc)
        exec(realfunc)
        atmass = myfunc(self.testblock)
-       print('test value now %s' % `atmass`)
+       print('test value now {!r}'.format(atmass))
        self.failUnless(atmass == [120,280,240])
 
    def test_subscription(self):
@@ -601,11 +601,11 @@ class WithDictTestCase(unittest.TestCase):
        """
        loopable_cats = {"model_site":["id",["id","symop"]]}
        res = self.parser.parse(teststrg,lexer=self.lexer)
-       print(`res`)
+       print(repr(res))
        realfunc,dependencies = py_from_ast.make_python_function(res,"myfunc","_model_site.symop",
                                                                 loopable=loopable_cats,depends=True,
                                                                 cif_dic=testdic)
-       print(realfunc, `dependencies`)
+       print(realfunc, repr(dependencies))
        self.failUnless(dependencies == set(['_model_site.id']))
 
    def test_current_row(self):
@@ -620,7 +620,7 @@ class WithDictTestCase(unittest.TestCase):
        print("Current row statement -> \n" + realfunc)
        exec(realfunc)
        rownums = myfunc(self.testblock)
-       print('row id now %s' % `rownums`)
+       print('row id now {!r}'.format(rownums))
        self.failUnless(rownums == [1,2,3])
 
    def test_loop_statement(self):
@@ -672,7 +672,7 @@ class WithDictTestCase(unittest.TestCase):
        ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_refln.F_complex",loopable=loopable_cats,
                                                    cif_dic=testdic)
-       print("Incoming AST: " + `ast`)
+       print("Incoming AST: {!r}".format(ast))
        print("F_complex statement -> \n" + realfunc)
        exec(realfunc)
 
@@ -713,7 +713,7 @@ class WithDictTestCase(unittest.TestCase):
        exec(realfunc)
        self.testblock.assign_dictionary(testdic)
        b = myfunc(self.testblock)
-       print('symops are now ' + `b`)
+       print('symops are now {!r}'.format(b))
        self.failUnless(b[1] == '1_555')
 
 if __name__=='__main__':

@@ -1841,7 +1841,7 @@ def validate_item_enum(self,item_name,item_value):
     enum_list.append(".")   #default value
     enum_list.append("?")   #unknown
     item_values = listify(item_value)
-    #print("Enum check: %s in %s" % (`item_values`,`enum_list`))
+    #print("Enum check: {!r} in {!r}".format(item_values, enum_list))
     check_all = [a for a in item_values if a not in enum_list]
     if len(check_all)>0: return {"result":False,"bad_values":check_all}
     else: return {"result":True}
@@ -2040,7 +2040,7 @@ def get_alternates(self,main_name,exclusive_only=False):
     # now do the alias thing
     alias_names = listify(self[main_name].get("_item_aliases.alias_name",[]))
     alt_names.extend(alias_names)
-    # print("Alternates for %s: %s" % (main_name,`alt_names`))
+    # print("Alternates for {}: {!r}".format(main_name, alt_names))
     return alt_names
 
 @ Some checks require access to the entire data block.  These functions
@@ -2112,11 +2112,11 @@ def validate_parent(self,item_name,item_value,whole_block,provisional_items={},g
         child_values = [item_value]
     else: child_values = item_value[:]    #copy for safety
     # track down the parent
-    # print("Looking for %s parent item %s in %s" % (item_name,parent_item,`whole_block`))
+    # print("Looking for {} parent item {} in {!r}".format(item_name, parent_item, whole_block))
     # if globals contains the parent values, we are doing a DDL2 dictionary, and so
     # we have collected all parent values into the global block - so no need to search
     # for them elsewhere.
-    # print("Looking for %s" % `parent_item`)
+    # print("Looking for {!r}".format(parent_item))
     parent_values = globals.get(parent_item)
     if not parent_values:
         parent_values = provisional_items.get(parent_item,whole_block.get(parent_item))
@@ -2137,8 +2137,8 @@ def validate_parent(self,item_name,item_value,whole_block,provisional_items={},g
             parent_values = globals.get(parent_item)
     if isinstance(parent_values,str):
         parent_values = [parent_values]
-    #print("Checking parent %s against %s, values %s/%s" % (parent_item,
-    #                                          item_name,`parent_values`,`child_values`))
+    #print("Checking parent %s against %s, values %r/%r" % (parent_item,
+    #                                          item_name, parent_values, child_values))
     missing = self.check_parent_child(parent_values,child_values)
     if len(missing) > 0:
         return {"result":False,"bad_values":missing,"parent":parent_item}
@@ -2175,8 +2175,8 @@ def validate_child(self,item_name,item_value,whole_block,provisional_items={},gl
         else:  continue
         if isinstance(child_values,str):
             child_values = [child_values]
-            # print("Checking child %s against %s, values %s/%s" % (child_item,
-            #       item_name, `child_values`, `parent_values`))
+            # print("Checking child %s against %s, values %r/%r" % (child_item,
+            #       item_name, child_values, parent_values))
         missing = self.check_parent_child(parent_values,child_values)
         if len(missing)>0:
             return {"result":False,"bad_values":missing,"child":child_item}
@@ -2257,7 +2257,7 @@ def validate_uniqueness(self,item_name,item_value,whole_block,provisional_items=
     if category == None:
         print("No category found for %s" % item_name)
         return {"result":None}
-    # print("Category %s for item %s" % (`category`, item_name))
+    # print("Category {!r} for item {}".format(category, item_name))
     catentry = self.cat_map[category]
     # we make a copy in the following as we will be removing stuff later!
     unique_i = self[catentry].get("_category_key.name",[])[:]
@@ -2267,7 +2267,7 @@ def validate_uniqueness(self,item_name,item_value,whole_block,provisional_items=
         return {"result":None}
     if isinstance(item_value,str):  #not looped
         return {"result":None}
-    # print("Checking %s -> %s -> %s ->Unique: " % (item_name,category,catentry) + `unique_i`)
+    # print("Checking %s -> %s -> %s ->Unique: %r" % (item_name,category,catentry, unique_i))
     # check that we can't optimize by not doing this check
     if self.optimize:
         if unique_i in self.done_keys:
@@ -2300,7 +2300,7 @@ def validate_uniqueness(self,item_name,item_value,whole_block,provisional_items=
         this_entry = item_value[i]
         for j in range(len(other_data)):
             this_entry = " ".join([this_entry,other_data[j][i]])
-        #print("Looking for %s in %s: " % (`this_entry`,`val_list`))
+        #print("Looking for {!r} in {!r}: ".format(this_entry, val_list))
         if this_entry in val_list:
             return {"result":False,"bad_values":this_entry}
         val_list.append(this_entry)
@@ -2336,7 +2336,7 @@ def validate_mandatory_category(self,whole_block):
     mand_cats = [a for a in self.keys() if self[a].get("_category.mandatory_code","no")=="yes"]
     # map to actual ids
     catlist = list(self.cat_map.items())
-    # print("Mandatory categories - %s" % `mand_cats`)
+    # print("Mandatory categories - {!r}".format(mand_cats))
     all_keys = whole_block.keys() #non-save block keys
     for mand_cat in mand_cats:
         cat_id = [a for a in catlist if a[1]==mand_cat][0][0]
@@ -2566,7 +2566,7 @@ def transform_drel(self):
             self[derivable].overwrite = True
             self[derivable]["_method.py_expression"] = all_methods
             self[derivable].overwrite = save_overwrite
-        #print("Final result:\n " + `self[derivable]["_method.py_expression"]`)
+        #print("Final result:\n " + repr(self[derivable]["_method.py_expression"]))
 
 @ Drel functions are all stored in category 'functions' in our final dictionary.  We want to
 convert them to executable python code and store them in an appropriate namespace which we
@@ -2595,7 +2595,7 @@ def add_drel_funcs(self):
         #print('dREL library function ->\n' + py_function)
         global_table = globals()
         exec(py_function, global_table)    #add to namespace
-    #print('Globals after dREL functions added:' + `globals()`)
+    #print('Globals after dREL functions added:' + repr(globals()))
     self.ddlm_functions = globals()  #for outside access
 
 @ When a dictionary is available during CIF file access, we can resolve a missing dataname in
@@ -2789,7 +2789,7 @@ for one_func in the_funcs:
     print('Executing function for %s:' % key)
     #print(one_func)
     exec(one_func, globals())  #will access dREL functions, puts "pyfunc" in scope
-    # print('in following global environment: ' + `global_table`)
+    # print('in following global environment: ' + repr(global_table))
     stored_setting = cifdata.provide_value
     cifdata.provide_value = True
     try:
@@ -2804,7 +2804,7 @@ for one_func in the_funcs:
         cifdata.provide_value = stored_setting
     if result is not None:
         break
-    #print("Function returned %s" % `result`)
+    #print("Function returned {!r}".format(result))
 
 @ \subsection{Creating categories}
 
@@ -3307,13 +3307,13 @@ def run_data_checks(self,verbose=False):
     self.fulldic.optimize_off()
     all_keys = list(self.v_result.keys()) #dictionary will change
     for test_key in all_keys:
-        #print("%s: %s" % (test_key,`self.v_result[test_key]`))
+        #print("%s: %r" % (test_key, self.v_result[test_key]))
         self.v_result[test_key] = [a for a in self.v_result[test_key] if a[1]["result"]==False]
         if len(self.v_result[test_key]) == 0:
             del self.v_result[test_key]
     isvalid = len(self.v_result)==0
     #if not isvalid:
-    #    print("Baddies:" + `self.v_result`)
+    #    print("Baddies: {!r}".format(self.v_result))
     return isvalid,self.v_result
 
 @ Report back.  We summarize the contents of v_result.  This routine
@@ -3346,7 +3346,7 @@ def single_item_check(self,item_name,item_value):
     baddies = [a for a in result[item_name] if a[1]["result"]==False]
     # if even one false one is found, this should trigger
     isvalid = (len(baddies) == 0)
-    # if not isvalid: print("Failures for %s:" % item_name + `baddies`)
+    # if not isvalid: print("Failures for {}: {!r}".format(item_name, baddies))
     return isvalid,baddies
 
 def loop_item_check(self,loop_names):
@@ -3358,7 +3358,7 @@ def loop_item_check(self,loop_names):
     baddies = [a for a in result[in_dic_names[0]] if a[1]["result"]==False]
     # if even one false one is found, this should trigger
     isvalid = (len(baddies) == 0)
-    # if not isvalid: print("Failures for %s:" % `loop_names` + `baddies`)
+    # if not isvalid: print("Failures for {}: {!r}".format(loop_names, baddies))
     return isvalid,baddies
 
 def global_item_check(self,item_name,item_value,provisional_items={}):
@@ -3370,7 +3370,7 @@ def global_item_check(self,item_name,item_value,provisional_items={}):
     baddies = [a for a in result[item_name] if a[1]["result"] is False]
     # if even one false one is found, this should trigger
     isvalid = (len(baddies) == 0)
-    # if not isvalid: print("Failures for %s:" % item_name + `baddies`)
+    # if not isvalid: print("Failures for {}: {!r}".format(item_name, baddies))
     return isvalid,baddies
 
 def remove_global_item_check(self,item_name):
@@ -3381,7 +3381,7 @@ def remove_global_item_check(self,item_name):
     baddies = [a for a in result[item_name] if a[1]["result"]==False]
     # if even one false one is found, this should trigger
     isvalid = (len(baddies) == 0)
-    # if not isvalid: print("Failures for %s:" % item_name + `baddies`)
+    # if not isvalid: print("Failures for {}: {!r}".format(item_name, baddies))
     return isvalid,baddies
 
 @ We need to override the base class methods here to prevent addition of an
@@ -3817,7 +3817,7 @@ def run_data_checks(check_block,fulldic,block_scope='Item'):
         if len(v_result[test_key]) == 0:
             del v_result[test_key]
     # if even one false one is found, this should trigger
-    # print("Baddies:" + `v_result`)
+    # print("Baddies: {!r}".format(v_result))
     isvalid = len(v_result)==0
     return isvalid,v_result
 
@@ -3848,7 +3848,7 @@ def get_number_with_esd(numstring):
     our_match = re.match(numb_re,numstring)
     if our_match:
         a,base_num,b,c,dad,dbd,esd,exp,q,dot = our_match.groups()
-        # print("Debug: %s -> %s" % (numstring, `our_match.groups()`))
+        # print("Debug: {} -> {!r}".format(numstring, our_match.groups()))
     else:
         return None,None
     if dot or q: return None,None     #a dot or question mark

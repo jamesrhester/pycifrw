@@ -20,8 +20,9 @@ class SyntaxError(Exception):
         self.pos = pos
         self.msg = msg
     def __repr__(self):
-        if self.pos < 0: return "#<syntax-error>"
-        else: return "SyntaxError[@ char " + `self.pos` + ": " + self.msg + "]"
+        emsg = ("#<syntax-error>" if self.pos < 0 else
+                "SyntaxError[@ char {!r}: {}]".format(self.pos, self.msg))
+        return emsg
 
 class NoMoreTokens(Exception):
     """Another exception object, for when we run out of tokens"""
@@ -85,7 +86,7 @@ class Scanner:
         """Print the last 10 tokens that have been scanned in"""
         output = ''
         # for t in self.tokens[-10:]:
-        #     output = '%s\n  (@%s)  %s  =  %s' % (output,t[0],t[2],`t[3]`)
+        #     output = '%s\n  (@%s)  %s  =  %r' % (output, t[0], t[2], t[3])
         return output
 
     def compiled_scan(self,restrict):
@@ -169,7 +170,7 @@ def print_error(input, err, scanner):
     p = err.pos
     # Figure out the line number
     line = count(input[:p], '\n')
-    print(err.msg+" on line "+`line+1`+":")
+    print(err.msg, " on line ", line + 1, ":", sep='')
     # Now try printing part of the line
     text = input[max(p-80,0):p+80]
     p = p - max(p-80,0)
