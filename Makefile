@@ -9,11 +9,10 @@ package: setup.py sources drel
 #	python setup.py bdist_wininst
 #
 documentation:
-	cd docs;make
+	$(MAKE) -C docs
 #
 sources:
-	cd pycifrw;make
+	$(MAKE) -C pycifrw
 #
 drel:
-	cd pycifrw/drel;make
-#
+	$(MAKE) -C pycifrw/drel
