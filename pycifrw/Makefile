@@ -1,6 +1,11 @@
 # Makefile for ANBF Python based Cif handling modules
 
+# Customizable variables:
 #
+# Instance of Python to be used for the yapps2.py script.
+PYTHON = python3
+
+
 package: CifFile.py StarFile.py Parsers documentation
 #	python setup.py bdist_wininst
 #
@@ -15,32 +20,36 @@ documentation: CifFile.nw YappsStarParser.nw StarFile.nw
 	noweave -html -index -filter l2h StarFile.nw > StarFile.html
 	noweave -html -index -filter l2h YappsStarParser.nw > YappsStarParser.html
 	noweave -html -index -filter l2h TypeContentsParser.nw > TypeContentsParser.html
-# 
+#
 Parsers: YappsStarParser_STAR2.py YappsStarParser_1_1.py YappsStarParser_1_0.py  TypeContentsParser.py \
 	YappsStarParser_2_0.py
-	
+
 #
-clean: 
+clean:
 	rm -f *.pyc *.g
+
+# Local helper variables:
 #
-# Note the pythonpath variable as yapps requires its runtime to run
+# Command to execute the yapps2.py script.  Note it sets the PYTHONPATH
+# environment variable as yapps requires its runtime to run.
+YAPPS2CMD = PYTHONPATH=. $(PYTHON) ./yapps3/yapps2.py
+
 YappsStarParser_1_0.py: YappsStarParser.nw
 	notangle -R1.0_syntax YappsStarParser.nw > YappsStarParser_1_0.g
-	export PYTHONPATH=.;python3 ./yapps3/yapps2.py YappsStarParser_1_0.g
+	$(YAPPS2CMD) YappsStarParser_1_0.g
 #
 YappsStarParser_1_1.py: YappsStarParser.nw
 	notangle -R1.1_syntax YappsStarParser.nw > YappsStarParser_1_1.g
-	export PYTHONPATH=.;python3 ./yapps3/yapps2.py YappsStarParser_1_1.g
+	$(YAPPS2CMD) YappsStarParser_1_1.g
 #
 YappsStarParser_2_0.py: YappsStarParser.nw
 	notangle -RCIF2_syntax YappsStarParser.nw > YappsStarParser_2_0.g
-	export PYTHONPATH=.; python3 ./yapps3/yapps2.py YappsStarParser_2_0.g
+	$(YAPPS2CMD) YappsStarParser_2_0.g
 #
 YappsStarParser_STAR2.py: YappsStarParser.nw
 	notangle -RSTAR2_syntax YappsStarParser.nw > YappsStarParser_STAR2.g
-	export PYTHONPATH=.; python3 ./yapps3/yapps2.py YappsStarParser_STAR2.g
+	$(YAPPS2CMD) YappsStarParser_STAR2.g
 #
 TypeContentsParser.py: TypeContentsParser.nw
 	notangle -RTypeContents_syntax TypeContentsParser.nw > TypeContentsParser.g
-	export PYTHONPATH=.; python3 ./yapps3/yapps2.py TypeContentsParser.g
-
+	$(YAPPS2CMD) TypeContentsParser.g
