@@ -40,11 +40,21 @@ keeps track of the parse stack.
 # grammar to make a standalone module.
 
 import sys, re
-try:
-    from CifFile import StarScan
+
+
+# For normal installation this module is "CifFile.yapps3_compiled_rt"
+# and StarScan is an extension module within the parent CifFile module.
+if __name__.startswith('CifFile.'):
+    from . import StarScan
     have_star_scan = True
-except ImportError:
+# Otherwise assume this is imported from the yapps3/yapps2.py script
+# that is executed from Makefile to generate YappsStarParser sources.
+else:
+    assert __name__ == 'yapps3_compiled_rt', "Unexpected module name."
+    assert sys.argv[0].endswith('yapps2.py'), (
+        "This should be reached only when running yapps2.py in Makefile.")
     have_star_scan = False
+
 
 class SyntaxError(Exception):
     """When we run into an unexpected token, this is the exception to use"""
