@@ -17,17 +17,17 @@ def runtests(scantype):
         except:
             if testresult == 'OK':
                 print("%s causes error where none expected" % filename)
-                print("%s\n%s" % (`sys.exc_type`,sys.exc_value))
+                print("%r\n%s" % (sys.exc_type, sys.exc_value))
             else:
                 if sys.exc_type in testresult:
                     print("%s passes" % filename)
                 else:
-                    print("Unexpected exception %s for %s" % (`sys.exc_type`,filename))
+                    print("Unexpected exception %r for %s" % (sys.exc_type, filename))
         else:     #no exception
             if testresult == 'OK':
                 print("%s passes" % filename)
             else:
-                print("%s: Expected %s, got nothing" % (filename,`testresult`))
+                print("%s: Expected %r, got nothing" % (filename, testresult))
 if __name__ == "__main__":
     print("Testing interpreted tokenizer")
     runtests("standard")

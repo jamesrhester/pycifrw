@@ -18,10 +18,10 @@ Conformance
 The CIF 1.1 and 2.0 working specifications were used as a reference,
 
 PyCifRW has been tested on the IUCr sample CIF1.1 trip files located at
-http://www.iucr.org/iucr-top/cif/developers/trip and fails or 
+http://www.iucr.org/iucr-top/cif/developers/trip and fails or
 successfully reads as it is supposed to (note that `ciftest5` contains
 characters now forbidden in CIFs). For CIF2.0, only characters in the
-Basic Multilingual Plane are supported due to limitations of Python 2.   
+Basic Multilingual Plane are supported due to limitations of Python 2.
 
 Supported Platforms
 -------------------
@@ -31,9 +31,9 @@ CIF files rather slow, it should run wherever Python runs.  The latest version
 has been tested on Linux and will soon be tested on Windows 7.
 
 The source code of a C extension module is also included in the distribution.
-This module accelerates CIF file reading. From time to time 
+This module accelerates CIF file reading. From time to time
 system-dependent installation packages are generated containing precompiled
-versions of this module. 
+versions of this module.
 
 Installation
 ------------
@@ -48,12 +48,12 @@ PyCIFRW is made available using the Python 2.0 license.  The full text is [here]
 Use
 ---
 
-See the various files in the docs directory for details of the interface.  
-Essentially, CIF files look like python dictionaries, with each 
-entry in the dictionary corresponding to a data block.  The blocks 
-themselves are also dictionaries, with each data name being a 
+See the various files in the docs directory for details of the interface.
+Essentially, CIF files look like python dictionaries, with each
+entry in the dictionary corresponding to a data block.  The blocks
+themselves are also dictionaries, with each data name being a
 single entry in the dictionary, so for example,
-`cf['si_std']['_diffrn_meas_wavelength']` will return the value of 
+`cf['si_std']['_diffrn_meas_wavelength']` will return the value of
 `_diffrn_meas_wavelength` in the data block named `si_std` of the Cif file object
 `cf`.
 
@@ -61,7 +61,7 @@ Example
 -------
 
 To read in a CIF:
-    
+
     from CifFile import CifFile
     cf = CifFile.ReadCif('jun_01_2.cif')
 
