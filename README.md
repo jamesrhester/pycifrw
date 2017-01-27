@@ -62,8 +62,8 @@ Example
 
 To read in a CIF:
 
-    from CifFile import CifFile
-    cf = CifFile.ReadCif('jun_01_2.cif')
+    from CifFile import ReadCif
+    cf = ReadCif('jun_01_2.cif')
 
 to access information in a CIF
 
