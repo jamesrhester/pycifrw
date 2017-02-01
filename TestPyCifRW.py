@@ -432,7 +432,7 @@ class LoopBlockTestCase(unittest.TestCase):
        
    def testPacketMerge(self):
        """Test that a packet can be merged with another packet"""
-       bigcf = CifFile.CifFile("pycifrw/tests/C13H22O3.cif")
+       bigcf = CifFile.CifFile("tests/C13H22O3.cif")
        bigcf = bigcf["II"]
        testpack = bigcf.GetKeyedPacket("_atom_site_label","C4A")
        newpack = bigcf.GetKeyedPacket("_atom_site_aniso_label","C4A")
@@ -1163,11 +1163,11 @@ class DDLmImportCase(unittest.TestCase):
 # Test dictionary type
 #
 ##############################################################
-#ddl1dic = CifFile.CifDic("pycifrw/dictionaries/cif_core.dic",scantype="flex",do_minimum=True)
+#ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic",scantype="flex",do_minimum=True)
 
 class DictTestCase(unittest.TestCase):
     def setUp(self):
-	self.ddldic = CifFile.CifDic("pycifrw/tests/ddl.dic",grammar='2.0',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
+	self.ddldic = CifFile.CifDic("tests/ddl.dic",grammar='2.0',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
     
     def tearDown(self):
 	pass
@@ -1272,7 +1272,7 @@ class DictTestCase(unittest.TestCase):
         self.ddldic.set_grammar('2.0')
         final_str = str(self.ddldic)  #should not fail
         cwd = os.getcwd()
-        ffurl = os.path.join(cwd,"pycifrw/tests/test_dic_write.cif")
+        ffurl = os.path.join(cwd,"tests/test_dic_write.cif")
         ff = open(ffurl,"w")
         ff.write(final_str)
         ff.close()
@@ -1312,7 +1312,7 @@ class DictTestCase(unittest.TestCase):
         
     def testFunnyLayout(self):
         """Test that having some of the data block at the end is OK"""
-        good_read = CifFile.CifDic("pycifrw/tests/ddl_rearranged.dic",grammar="2.0",scoping="dictionary",do_minimum=True)
+        good_read = CifFile.CifDic("tests/ddl_rearranged.dic",grammar="2.0",scoping="dictionary",do_minimum=True)
 
 # now for some value testing
 class DDLmValueTestCase(unittest.TestCase):
@@ -1387,7 +1387,7 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
 class DDL1TestCase(unittest.TestCase):
 
     def setUp(self):
-	self.ddl1dic = CifFile.CifDic("pycifrw/dictionaries/cif_core.dic")
+	self.ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
 	#items = (("_atom_site_label","S1"),
 	#	 ("_atom_site_fract_x","0.74799(9)"),
         #         ("_atom_site_adp_type","Umpe"),
@@ -1474,7 +1474,7 @@ class DDL1TestCase(unittest.TestCase):
 	#       [["C","C","N"],["C1","C2","N1"]]))
 
     def testReport(self):
-        CifFile.validate_report(CifFile.Validate("pycifrw/tests/C13H2203_with_errors.cif",dic=self.ddl1dic))
+        CifFile.validate_report(CifFile.Validate("tests/C13H2203_with_errors.cif",dic=self.ddl1dic))
 
 class DDLmDicTestCase(unittest.TestCase):
     """Test validation of DDLm dictionaries"""
@@ -1589,7 +1589,7 @@ save_
         f.write(testdic_string)
         f.close()
         self.testcif = CifFile.CifFile('ddlm_valid_test.cif2',grammar='auto')
-        self.refdic = CifFile.CifDic('pycifrw/dictionaries/ddl.dic',grammar='auto')
+        self.refdic = CifFile.CifDic('dictionaries/ddl.dic',grammar='auto')
 
     def tearDown(self):
         import os
@@ -1634,16 +1634,16 @@ save_
 class FakeDicTestCase(unittest.TestCase):
 # we test stuff that hasn't been used in official dictionaries to date.
     def setUp(self):
-        self.testcif = CifFile.CifFile("pycifrw/dictionaries/novel_test.cif")
+        self.testcif = CifFile.CifFile("dictionaries/novel_test.cif")
 
     def testTypeConstruct(self):
         self.assertRaises(CifFile.ValidCifError,CifFile.ValidCifFile,
-                           diclist=["pycifrw/dictionaries/novel.dic"],datasource=self.testcif)
+                           diclist=["dictionaries/novel.dic"],datasource=self.testcif)
           
 class DicEvalTestCase(unittest.TestCase):
     def setUp(self):
-        c_old = CifFile.CifFile("pycifrw/drel/testing/data/nick_old.cif",grammar="2.0")
-        c_new = CifFile.CifFile("pycifrw/drel/testing/data/nick_new.cif",grammar="2.0")
+        c_old = CifFile.CifFile("src2/drel/testing/data/nick_old.cif",grammar="2.0")
+        c_new = CifFile.CifFile("src2/drel/testing/data/nick_new.cif",grammar="2.0")
         self.fb = c_new.first_block()
         self.fb.assign_dictionary(testdic)
         self.fb_old = c_old.first_block()
@@ -1717,7 +1717,7 @@ class DicEvalTestCase(unittest.TestCase):
 class DicStructureTestCase(unittest.TestCase):
     """Tests use of dictionary semantic information for item lookup"""
     def setUp(self):
-        cc = CifFile.CifFile("pycifrw/drel/testing/data/nick.cif",grammar="STAR2")
+        cc = CifFile.CifFile("src2/drel/testing/data/nick.cif",grammar="STAR2")
         self.fb = cc.first_block()
         self.fb.assign_dictionary(testdic)
 
@@ -1773,16 +1773,16 @@ class DicStructureTestCase(unittest.TestCase):
 
     def pullbacksetup(self):
         """Initial steps when setting up a pullback"""
-        dic_info = CifFile.CifDic("pycifrw/tests/full_demo_0.0.6.dic",grammar="auto")
-        start_data = CifFile.CifFile("pycifrw/tests/multi-image-test.cif",grammar="auto")
+        dic_info = CifFile.CifDic("tests/full_demo_0.0.6.dic",grammar="auto")
+        start_data = CifFile.CifFile("tests/multi-image-test.cif",grammar="auto")
         start_data = start_data['Merged_scans']
         start_data.assign_dictionary(dic_info)
         return start_data
 
     def unpullbacksetup(self):
         """Initial values when setting up a pullback"""
-        dic_info = CifFile.CifDic("pycifrw/tests/full_demo_0.0.6.dic",grammar="auto")
-        start_data = CifFile.CifFile("pycifrw/tests/multi-image-test.cif.pulled_back",grammar="auto")
+        dic_info = CifFile.CifDic("tests/full_demo_0.0.6.dic",grammar="auto")
+        start_data = CifFile.CifFile("tests/multi-image-test.cif.pulled_back",grammar="auto")
         start_data = start_data['Merged_scans']
         start_data.assign_dictionary(dic_info)
         return start_data

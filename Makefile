@@ -12,8 +12,8 @@ documentation:
 	cd docs;make
 #
 sources:
-	cd pycifrw;make
+	cd src2;make
 #
 drel:
-	cd pycifrw/drel;make
+	cd src2/drel;make
 #

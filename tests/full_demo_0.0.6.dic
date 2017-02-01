@@ -64,8 +64,9 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         ARRAY_DATA
 _category.key_id                        '_array_data.binary_id'
-_category.key_list ['_array_data.binary_id']
-_name.linked_item_id                    ''
+loop_
+   _category_key.name                   '_array_data.binary_id'
+
 loop_
   _method.purpose
   _method.expression
@@ -447,7 +448,9 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         ARRAY_ELEMENT_SIZE
 _category.key_id                        '_array_element_size.id'
-_category.key_list ['_array_element_size.array_id'  '_array_element_size.index']
+loop_
+   _category_key.name                   '_array_element_size.array_id'  
+                                        '_array_element_size.index'
 
 save_
 
@@ -562,7 +565,8 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         ARRAY_INTENSITIES
 _category.key_id                        '_array_intensities.binary_id'
-_category.key_list ['_array_intensities.binary_id']
+loop_
+    _category_key.name                  '_array_intensities.binary_id'
 
 save_
 
@@ -948,7 +952,8 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         ARRAY_STRUCTURE
 _category.key_id                        '_array_structure.id'
-_category.key_list ['_array_structure.id']
+loop_
+    _category_key.name                      '_array_structure.id'
 
 save_
 
@@ -1149,9 +1154,9 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         ARRAY_STRUCTURE_LIST
 _category.key_id                        '_array_structure_list.id'
-_category.key_list ['_array_structure_list.array_id'  
-                   '_array_structure_list.index']
-_name.linked_item_id                    ''
+loop_
+   _category_key.name  '_array_structure_list.array_id'  
+                       '_array_structure_list.index' 
 
 save_
 
@@ -1355,8 +1360,9 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         ARRAY_STRUCTURE_LIST_AXIS
 _category.key_id                        '_array_structure_list_axis.id'
-_category.key_list ['_array_structure_list_axis.axis_set_id'  
-                   '_array_structure_list_axis.axis_id']
+loop_
+_category_key.name  '_array_structure_list_axis.axis_set_id'  
+                   '_array_structure_list_axis.axis_id' 
 
 save_
 
@@ -1737,9 +1743,11 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         ARRAY_STRUCTURE_LIST_SECTION
 _category.key_id                        '_array_structure_list_section.key'
-_category.key_list ['_array_structure_list_section.id'  
+loop_
+    _category_key.name 
+                   '_array_structure_list_section.id'  
                    '_array_structure_list_section.array_id'  
-                   '_array_structure_list_section.index']
+                   '_array_structure_list_section.index'
 
 save_
 
@@ -2166,7 +2174,8 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         AXIS
 _category.key_id                        '_axis.key'
-_category.key_list ['_axis.id'  '_axis.equipment']
+loop_
+    _category_key.name '_axis.id'  '_axis.equipment'
 
 save_
 
@@ -2690,7 +2699,7 @@ detector axes from other axes.
 _category.key_id                        '_detector_axis.id'
 loop_
   _category_key.name
-         '_detector_axis.axis_id' 
+         '_detector_axis.id' 
 _category_construct_local.type                Filter
 _category_construct_local.text_filter [detector]
 _category_construct_local.components ['_axis.equipment']
@@ -2789,10 +2798,11 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         DIFFRN_DATA_FRAME
 _category.key_id                        '_diffrn_data_frame.key'
-_category.key_list ['_diffrn_data_frame.id'  
+loop_
+    _category_key.name 
+                   '_diffrn_data_frame.id'  
                    '_diffrn_data_frame.detector_element_id'  
-                   '_diffrn_data_frame.scan_id']
-_name.linked_item_id                    ''
+                   '_diffrn_data_frame.scan_id'
 
 save_
 
@@ -3169,10 +3179,8 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         DIFFRN_DETECTOR
 _category.key_id                        '_diffrn_detector.id'
-_category.key_list ['_diffrn_detector.diffrn_id'  '_diffrn_detector.id']
 loop_
-  _category_key.name
-         '_diffrn_detector.id' 
+     _category_key.name '_diffrn_detector.diffrn_id'  '_diffrn_detector.id'
 
 save_
 
@@ -3390,8 +3398,10 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         DIFFRN_DETECTOR_AXIS
 _category.key_id                        '_diffrn_detector_axis.id'
-_category.key_list ['_diffrn_detector_axis.detector_id'  
-                   '_diffrn_detector_axis.axis_id']
+loop_
+     _category_key.name 
+                   '_diffrn_detector_axis.detector_id'  
+                   '_diffrn_detector_axis.axis_id'
 
 save_
 
@@ -3460,8 +3470,10 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         DIFFRN_DETECTOR_ELEMENT
 _category.key_id                        '_diffrn_detector_element.key'
-_category.key_list ['_diffrn_detector_element.id'  
-                   '_diffrn_detector_element.detector_id']
+loop_
+     _category_key.name 
+                   '_diffrn_detector_element.id'  
+                   '_diffrn_detector_element.detector_id'
 
 save_
 
@@ -3640,7 +3652,6 @@ _category.key_id                        '_diffrn_detector_monolithic.id'
 loop_
   _category_key.name
          '_diffrn_detector_monolithic.id' 
-_name.linked_item_id                    ''
 _category_construct_local.type                Filter
 _category_construct_local.components ['_diffrn_detector.number_of_elements']
 _category_construct_local.filter [1]
@@ -3679,6 +3690,8 @@ _category_construct_local.components ['_diffrn_detector_element.detector_id'
 _category_construct_local.type                Pullback
 _category_construct_local.new_ids [key  detector_id]
 _category.key_id                        '_diffrn_detector_monolithic_element.key'
+loop_
+   _category_key.name                   '_diffrn_detector_monolithic_element.key'
 
 save_
 
@@ -3753,8 +3766,10 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         DIFFRN_MEASUREMENT
 _category.key_id                        '_diffrn_measurement.key'
-_category.key_list ['_diffrn_measurement.device'  
-                   '_diffrn_measurement.diffrn_id'  '_diffrn_measurement.id']
+loop_
+     _category_key.name 
+                    '_diffrn_measurement.device'  
+                   '_diffrn_measurement.diffrn_id'  '_diffrn_measurement.id'
 
 save_
 
@@ -3944,9 +3959,11 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         DIFFRN_MEASUREMENT_AXIS
 _category.key_id                        '_diffrn_measurement_axis.key'
-_category.key_list ['_diffrn_measurement_axis.measurement_device'  
+loop_
+     _category_key.name 
+                   '_diffrn_measurement_axis.measurement_device'  
                    '_diffrn_measurement_axis.measurement_id'  
-                   '_diffrn_measurement_axis.axis_id']
+                   '_diffrn_measurement_axis.axis_id'
 
 save_
 
@@ -4034,7 +4051,8 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         DIFFRN_RADIATION
 _category.key_id                        '_diffrn_radiation.diffrn_id'
-_category.key_list ['_diffrn_radiation.diffrn_id']
+loop_
+     _category_key.name  '_diffrn_radiation.diffrn_id' 
 
 save_
 
@@ -4616,6 +4634,8 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         DIFFRN_RADIATION_WAVELENGTH
 _category.key_id                        '_diffrn_radiation_wavelength.id'
+loop_
+    _category_key.name                        '_diffrn_radiation_wavelength.id'
 
 save_
 
@@ -4693,8 +4713,9 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         DIFFRN_REFLN
 _category.key_id                        '_diffrn_refln.key'
-_category.key_list ['_diffrn_refln.diffrn_id'  '_diffrn_refln.id'  
-                   '_diffrn_refln.frame_id']
+loop_
+    _category_key.name  '_diffrn_refln.diffrn_id'  '_diffrn_refln.id'  
+                   '_diffrn_refln.frame_id' 
 
 save_
 
@@ -4796,7 +4817,8 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         DIFFRN_SCAN
 _category.key_id                        '_diffrn_scan.id'
-_category.key_list ['_diffrn_scan.id']
+loop_
+    _category_key.name '_diffrn_scan.id'
 
 save_
 
@@ -5086,7 +5108,8 @@ for particular scans.  Unspecified axes are assumed to be at
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         DIFFRN_SCAN_AXIS
 _category.key_id                        '_diffrn_scan_axis.key'
-_category.key_list ['_diffrn_scan_axis.scan_id'  '_diffrn_scan_axis.axis_id']
+loop_
+    _category_key.name  '_diffrn_scan_axis.scan_id'  '_diffrn_scan_axis.axis_id' 
 
 save_
 
@@ -5437,8 +5460,8 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         DIFFRN_SCAN_FRAME
 _category.key_id                        '_diffrn_scan_frame.key'
-_category.key_list ['_diffrn_scan_frame.scan_id'  '_diffrn_scan_frame.frame_id']
-_name.linked_item_id                    ''
+loop_
+    _category_key.name  '_diffrn_scan_frame.scan_id'  '_diffrn_scan_frame.frame_id' 
 loop_
   _method.purpose
   _method.expression
@@ -5919,8 +5942,9 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         DIFFRN_SCAN_FRAME_AXIS
 _category.key_id                        '_diffrn_scan_frame_axis.key'
-_category.key_list ['_diffrn_scan_frame_axis.frame_id'  
-                   '_diffrn_scan_frame_axis.axis_id']
+loop_
+    _category_key.name  '_diffrn_scan_frame_axis.frame_id'  
+                   '_diffrn_scan_frame_axis.axis_id' 
 
 save_
 
@@ -6202,10 +6226,11 @@ _description.text
 _name.category_id                       DEMO_DIC_HEAD
 _name.object_id                         DIFFRN_SCAN_FRAME_MONITOR
 _category.key_id                        '_diffrn_scan_frame_monitor.key'
-_category.key_list ['_diffrn_scan_frame_monitor.id'  
+loop_    
+   _category_key.name  '_diffrn_scan_frame_monitor.id'  
                    '_diffrn_scan_frame_monitor.detector_id'  
                    '_diffrn_scan_frame_monitor.scan_id'  
-                   '_diffrn_scan_frame_monitor.frame_id']
+                   '_diffrn_scan_frame_monitor.frame_id' 
 
 save_
 
@@ -6348,7 +6373,7 @@ _definition.class                       Loop
 _description.text 
                                         'This category provides information about scans consisting of identically-structured frames obtained by scanning a single axis.'
 _category.key_id                        '_diffrn_scan_simple.scan_id'
-_name.linked_item_id                    ''
+_category_key.name                        '_diffrn_scan_simple.scan_id'
 _category_construct_local.new_ids [scan_id]
 _category_construct_local.type                Filter
 _category_construct_local.filter [1]
@@ -6415,14 +6440,13 @@ _description.text
 frames with a single scan axis. 
 ;
 _category.key_id                        '_diffrn_scan_simple_frames.id'
-_name.linked_item_id                    ''
 _category_construct_local.new_ids [id  scan_id]
 _category_construct_local.type                Pullback
 _category_construct_local.components ['_full_frame.scan_id'  
                                '_diffrn_scan_simple.scan_id']
 loop_
   _category_key.name
-         '_diffrn_scan_simple.id'      
+         '_diffrn_scan_simple_frames.id'      
          '_diffrn_scan_simple_frames.frame_id' 
 loop_
   _method.purpose
@@ -6584,7 +6608,6 @@ _definition.class                       Loop
 _description.text 
                                         'Items in the full frame category describe data arrays from detectors consisting of a single element.'
 _category.key_id                        '_full_frame.id'
-_name.linked_item_id                    ''
 _category_construct_local.new_ids [id  detector_element_key]
 _category_construct_local.components ['_diffrn_data_frame.detector_element_key'  
                                '_diffrn_detector_monolithic_element.key']
@@ -6925,7 +6948,6 @@ _category.key_id                        '_simple_detector_axis.id'
 loop_
   _category_key.name
          '_detector_axis.id' 
-_name.linked_item_id                    ''
 loop_
   _method.purpose
   _method.expression
