@@ -1,0 +1,153 @@
+
+###################################################
+#                                                 #
+#   Converted from PDB format to CIF format by    #
+#   pdb2cif version 2.3.7           07 Mar 1999   #
+#                       by                        #
+# P.E. Bourne, H.J. Bernstein and F.C. Bernstein  #
+#                                                 #
+# http://www.bernstein-plus-sons.com/software     #
+#                     /pdb2cif                    #
+#   *** See the remarks at the end of this  ***   #
+#   *** file for information on conversion  ***   #
+#   *** of this entry and on the program    ***   #
+#   ***               pdb2cif               ***   #
+# Please report problems to:                      #
+#         pdb2cif@bernstein-plus-sons.com         #
+###################################################
+
+
+data_2D25
+
+_entry.id        2D25
+
+
+
+##################
+#                #
+#  STRUCT        #
+#                #
+##################
+
+loop_
+_struct.entry_id
+_struct.title
+  2D25
+; Compound::
+       /DNA$ (B, 5'-$D(*CP*CP*AP*GP*GP*CPM==5==*CP*TP*GP*G)-3')    
+  Source::
+       SYNTHETIC /DNA$                                             
+; 
+
+
+
+####################
+#                  #
+# AUDIT_AUTHOR     #
+#                  #
+####################
+
+
+loop_ 
+_audit_author.name 
+'Heinemann, U.'   
+'Hahn, M.'   
+
+loop_
+_citation.id
+_citation.coordinate_linkage
+_citation.title
+_citation.country
+_citation.journal_abbrev
+_citation.journal_volume
+_citation.journal_issue
+_citation.page_first
+_citation.year
+_citation.journal_id_ASTM
+_citation.journal_id_ISSN
+_citation.journal_id_CSD
+_citation.book_title
+_citation.book_publisher
+_citation.book_id_ISBN
+_citation.details
+ 
+primary   yes
+; C-*C-*A-*G-*G-*C-M==5==*C-*T-*G-*G: HELICAL FINE   
+  STRUCTURE, HYDRATION, AND COMPARISON WITH          
+  C-*C-*A-*G-*G-*C-*C-*T-*G-*G                       
+;
+ US 'J.BIOL.CHEM.                '  267  ?    7332   1992 
+'JBCHA3         ' '0021-9258                '  071 ? ? ? ?
+ 
+  1       no
+; DNA HELIX STRUCTURE AND REFINEMENT ALGORITHM:      
+  COMPARISON OF MODELS FOR D(CCAGGCM==5==CTGG)       
+  DERIVED FROM NUCLSQ, TNT, AND X-PLOR               
+;
+  ? 'TO BE PUBLISHED             '    ?  ?       ?      ? 
+'               ' '                         '  353 ? ? ? ?
+ 
+  2       no
+; THE CONFORMATION OF A /B-DNA$ DECAMER IS MAINLY    
+  DETERMINED BY ITS SEQUENCE AND NOT BY CRYSTAL      
+  ENVIRONMENT                                        
+;
+ UK '/EMBO$ J.                   '   10  ?      35   1991 
+'EMJODG         ' '0261-4189                '  897 ? ? ? ?
+ 
+  3       no
+; CRYSTALLOGRAPHIC STUDY OF ONE TURN OF              
+  G(SLASH)*C-RICH /B-DNA$                            
+;
+ UK 'J.MOL.BIOL.                 '  210  ?     369   1989 
+'JMOBAK         ' '0022-2836                '  070 ? ? ? ?
+ 
+  4       no
+; STRUCTURAL FEATURES OF G(SLASH)*C-*RICH /DNA$      
+  GOING *A OR B                                      
+;
+  ? ?    3 ?    39 1990 ? ?  810
+; STRUCTURE AND METHODS.      
+  /DNA$ AND /RNA$             
+;
+;  ADENINE PRESS, ALBANY, NY                           
+;
+ '0-940030-31-4            ' ? 
+ 
+  5       no
+  SEQUENCE-STRUCTURE CODE                            
+;
+ US 
+; NUCLEOSIDES AND             
+  NUCLEOTIDES                 
+;
+    9  ?     349   1990 
+'NUNUD5         ' '0732-8311                '  653 ? ? ? ?
+
+loop_
+_citation_editor.citation_id
+_citation_editor.name
+   4   'Sarma, R.H.' 
+   4   'Sarma, M.H.' 
+
+loop_
+_citation_author.citation_id
+_citation_author.name
+ primary   'Heinemann, U.' 
+ primary   'Hahn, M.' 
+   1       'Hahn, M.' 
+   1       'Heinemann, U.' 
+   2       'Heinemann, U.' 
+   2       'Alings, C.' 
+   3       'Heinemann, U.' 
+   3       'Alings, C.' 
+   4       'Heinemann, U.' 
+   4       'Alings, C.' 
+   4       'Lauble, H.' 
+   5       'Heinemann, U.' 
+   5       'Alings, C.' 
+   5       'Lauble, H.' 
+
+_reflns.entry_id             2D25 
+_reflns.d_resolution_high         1.8 
+

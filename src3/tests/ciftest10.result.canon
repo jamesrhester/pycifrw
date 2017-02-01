@@ -1,0 +1,3 @@
+WARNING: Non-printable ASCII character \07 at line 13
+WARNING: Non-printable ASCII character \032 at line 32
+ERROR: Number of loop elements not multiple of packetsize at line 32

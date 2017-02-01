@@ -1,0 +1,101 @@
+##############################################################################
+#                                                                            #
+#                       PROTOTYPE DDL DICTIONARY                             #
+#                                                                            #
+##############################################################################
+
+data_TEST_DIC
+ 
+    _dictionary.title            TEST_DIC
+    _dictionary.class            Attribute
+    _dictionary.version          3.7.06
+    _dictionary.date             2007-03-18
+    _dictionary.uri              www.iucr.org/cif/dic/ddl.dic 
+    _dictionary.ddl_conformance  3.7.06
+    _dictionary.namespace        DdlDic
+    _description.text
+;
+     This dictionary contains the definitions of attributes that
+     make up the DDLm dictionary definition language.  It provides 
+	 the meta meta data for all CIF dictionaries.
+;
+
+save_TEST_ATTR
+    _definition.id               test_attr
+    _definition.scope            Category
+    _definition.class            Head        
+    _definition.update           2006-12-05
+    _description.text
+;
+     This category is parent of all other categories in the DDLm
+     dictionary.
+;
+     save_
+
+#-------------------------------------------------------------------------------
+save_POSITION
+_definition.id           position
+_category.id             position
+_category_key.generic    '_position.object_id'
+_definition.scope        Category
+save_
+
+save_position.number
+_definition.id         '_position.number'
+_name.category_id        position
+_name.object_id          number
+_type.container          Single
+_type.contents           Integer
+_type.purpose            Index
+save_
+
+save_position.object_id
+_definition.id         '_position.object_id'
+_name.category_id        position
+_name.object_id          object_id
+_type.container          Single
+_type.contents           Uchar
+save_
+
+save_position.vector_xyz
+_definition.id    '_position.vector_xyz'
+_name.category_id   position
+_name.object_id     vector_xyz
+_type.container     Array
+_type.contents      Real
+_type.dimension     [3]
+save_
+
+save_GEOM
+_definition.id           geom
+_category.id             geom
+_definition.scope            Category
+save_
+
+save_geom.vertex1_id
+_definition.id       '_geom.vertex1_id'
+_name.category_id      geom
+_name.object_id        vertex1_id
+_name.linked_item_id '_position.object_id'
+_type.container        Single
+_type.contents         Uchar
+save_
+
+save_geom.vertex2_id
+_definition.id       '_geom.vertex2_id'
+_name.category_id      geom
+_name.object_id        vertex2_id
+_name.linked_item_id '_position.object_id'
+_type.container        Single
+_type.contents         Uchar
+save_
+
+save_geom.vertex3_id
+_definition.id       '_geom.vertex3_id'
+_name.category_id      geom
+_name.object_id        vertex3_id
+_name.linked_item_id '_position.object_id'
+_type.container        Single
+_type.contents         Uchar
+save_
+

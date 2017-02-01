@@ -1,0 +1,116 @@
+# Purpose: valid STAR/CIF file with potential traps for lazy parsers
+# Added by JRH: comments in any and every valid position
+# The first data block is the model block of ciftest4
+
+data_model             #this is the datablock name
+
+# now begins the datanames
+_d1 # an internal comment 
+     char
+# a pre-dataname comment
+_d2 'model file'   #a post-datavalue comment
+_d3 "with various types of field"
+_d4              # Comment
+#random comment
+; all conforming to valid STAR syntax
+  rules
+;
+
+# pre-loop comment
+loop_    #post loop-token comment
+
+_d5
+_d6      #random loop dataname comment
+_d7
+_d8
+
+A B C D
+E F G H          # Comment within the body of a loop
+I J K L
+
+# The second block is valid, but has (potential) traps
+
+                  data_test  # Not at the beginning of a line!
+
+      # Data items can occur anywhere in a line, not just at the
+      # beginning; and several can appear on one line (if they fit).
+      # Also, some values may appear on the next or subsequent lines.
+      _t1     char
+      _t2     ' model file '
+      _t2a    'some aren't half tricky'        _t2b   ' some aren't easy '
+      _t3     "with various types of field"         # Comment
+      _t4
+; 
+  all conforming to valid STAR syntax rules
+;
+      _t5
+
+            'beware of intervening line endings and blank lines'
+
+      # Beware also of other non-white-space token separators (especially TAB)
+
+      _t6	'there was a TAB character just after the data name'
+
+
+      # Loops can be nicely laid out, but don't have to be!
+         loop_ _t7 _t8 _t9 _t10 A B C D E F G H I J K L
+         loop_ _t11
+            _t12 _t13	_t14 a      b c d  e f
+       g h i j
+           k     l
+
+      # Degenerate loop
+      loop_ _t15  0 1 2 3 4 5 6 7 8 9
+
+      # Loops can contain various data types and with intermingled comments
+      loop_
+          _t16
+          _t17
+          _t18
+          _t19
+
+             1 2 3 4
+             the quick brown fox         # four different values here!
+             'jumps over' the lazy style
+             5 6 7
+; and they all went home to tea
+;
+             9 10 11 12
+
+       # A few miscellaneous gotchas
+
+       _t20
+; An embedded ' _dataname' within quotes in a text block was once flagged as
+  an error.
+;
+
+       _t21
+; So was an instance where a valid
+  _dataname was the first word on the
+  line within a text block.
+;             data_test2            # Note that data_ tags can be within a line!
+
+
+       # Here are a few valid datanames with non-alphanumeric characters
+
+       _funny_dataname__1                                    OK
+       _funny_dataname_#2                                    OK
+       _funny_!"#$%^&*()_+-={}[]:@~;'#<>?,./_dataname_3      OK
+
+data_test3
+       # A harsh test of white-space parsing
+
+       # In this loop there is a control-K (ASCII decimal 11, vertical tab)
+       # between A and B, a control-L (ASCII decimal 12, page throw)
+       # between E and F, and a control-M (ASCII decimal 13, carriage
+       # return between I and J)
+       loop_
+
+       _d5
+       _d6
+       _d7
+       _d8
+
+       A B C D
+       E F G H         # Comment
+       IJ K L

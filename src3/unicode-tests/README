@@ -1,0 +1,3 @@
+This directory contains CIF files designed to test Unicode conformance of a CIF application.
+Ciftest1-4 contain allowed Unicode characters from various ranges.
+Ciftest5 and onwards each contain characters that are not permitted.

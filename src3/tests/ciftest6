@@ -1,0 +1,33 @@
+# Purpose: error CIF: lacks initial data statement; other data_ faults
+
+_d1 char
+_d2 'model file'
+_d3 "with various types of field"
+_d4              # Comment
+; all conforming to valid STAR syntax
+  rules
+;
+
+loop_
+
+_d5
+_d6
+_d7
+_d8
+
+A B C D
+E F G H          # Comment within the body of a loop
+I J K L
+
+
+data_            # No identifier to data_
+
+_d9 char
+
+data_test
+
+loop_ _t1  0 1 2 3 4 5 6 7 8 9
+
+data_test        # Duplicate data_ identifier
+
+_t2 char

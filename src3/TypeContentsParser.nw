@@ -1,0 +1,77 @@
+@
+Noweb literate programming file for the DDLm _type.contents type
+specification using Yapps3.
+
+<<TypeContents_syntax>>=
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
+<<Helper functions>>
+%%
+parser TypeParser:
+    <<Regular expressions>>
+    <<Grammar specification>>
+%%
+
+@   Helper functions.
+
+We have a monitor function which we can call to save the last parsed
+value (and print, if we are debugging).   We also have functions for
+stripping off delimiters from strings.  Finally, we match up our
+loops after reading them in.  Note that we have function stripextras,
+which is only for semicolon strings, and stripstring, which is for
+getting rid of the inverted commas.
+
+<<Helper functions>>=
+#
+# helper code: we define our match tokens
+lastval = ''
+def monitor(location,value):
+    global lastval
+    #print 'At %s: %s' % (location,repr(value))
+    lastval = repr(value)
+    return value
+
+@
+
+<<Regular expressions>>=
+# first handle whitespace
+ignore: "([ \t\n\r])"
+# now the tokens
+token container: "[A-Za-z]+\("
+token identifier: "[A-Za-z]+" 
+token c_c_b: "\)"
+token o_c_b: "\("
+token comma: "\,"
+token END: '$'
+
+@
+
+The final returned value is a possible-nested list with string-valued
+entries, which can then be interpreted as simple types.
+
+<<Grammar specification>>=
+# now the rules
+
+rule input: ( (( 
+            base_element         {{p = [base_element]}}
+            (
+            comma base_element         {{p.append(base_element)}} #
+            )*
+            END                  {{if len(p)==1: p = p[0]}} 
+            )
+            ))                   {{return p}}
+
+
+     rule base_element:  (container  element_list c_c_b  {{return element_list}}
+                          |
+                          identifier )  {{return identifier}}
+
+     rule element_list:  ( base_element         {{p = [base_element]}}
+                         ( comma base_element   {{p.append(base_element)}}
+                         ) *
+                         )                     {{return p}}
+

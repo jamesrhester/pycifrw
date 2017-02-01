@@ -1,0 +1,25 @@
+ERROR: Single-quoted character string does not terminate at line 6
+ERROR: Unexpected string (longer) at line 7
+ERROR: Unexpected string (a) at line 7
+ERROR: Unexpected string (model) at line 7
+ERROR: Unexpected string (file) at line 7
+ERROR: Double-quoted character string does not terminate at line 8
+ERROR: Single-quoted character string does not terminate at line 10
+ERROR: Unexpected string (t) at line 11
+ERROR: Unexpected string (abut) at line 11
+ERROR: Unexpected string (white) at line 11
+ERROR: Unexpected string (space!') at line 11
+ERROR: Unexpected string (but) at line 17
+ERROR: Unexpected string (here) at line 17
+ERROR: Unexpected string (is) at line 17
+ERROR: Unexpected string (an) at line 17
+ERROR: Unexpected string (incorrectly) at line 17
+ERROR: Unexpected string (indented) at line 17
+ERROR: Unexpected string (text) at line 18
+ERROR: Unexpected string (field) at line 18
+ERROR: Unexpected string (;) at line 19
+ERROR: Unexpected string (a) at line 25
+ERROR: Unexpected string (parser) at line 25
+ERROR: Unexpected string (should) at line 25
+ERROR: Unexpected string (now) at line 25
+ERROR: Unexpected string (complain) at line 25
