@@ -1,9 +1,0 @@
-data_on_this_dictionary
-    _version 0.1
-    _dicname testd
-
-data_cell_volume
-    _name                      '_cell_volume'
-    loop_ _example  _example_detail     4567.8          'large cell'
-                                         123.4          'small cell'
-    _units                       A^3^
