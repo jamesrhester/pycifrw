@@ -11,7 +11,7 @@ import sys
 import unittest
 import CifFile
 from CifFile import StarFile
-from CifFile.StarFile import StarDict, StarList
+from CifFile.StarFile import StarDict, StarList, StarLengthError
 import re
 try:
     from StringIO import StringIO
@@ -209,7 +209,7 @@ class BlockRWTestCase(unittest.TestCase):
 
     def testMoreBadStrings(self):
         dataname = "_name_is_ok"
-        val = u"so far, ok, but now we have a " + chr(128)
+        val = b"so far, ok, but now we have a " + chr(128)
         try:
             self.cf[dataname] = val
         except CifFile.StarError: pass
@@ -293,7 +293,7 @@ class BlockChangeTestCase(unittest.TestCase):
        else: self.fail()
        try:
            self.cf.AddToLoop('_item_name#2',adddict)
-       except StarFile.StarLengthError:
+       except StarLengthError:
            pass
        else: self.fail()
 
@@ -1899,9 +1899,10 @@ _item4 4
         f = open("round_trip_test.cif","w")
         f.write(str(q))
 
+global testdic
+testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.dic",grammar="2.0")
+
 if __name__=='__main__':
-     global testdic
-     testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.dic",grammar="2.0")
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
