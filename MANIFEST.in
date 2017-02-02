@@ -1,15 +1,25 @@
-recursive-include pycifrw *.nw
+recursive-include src2 *.nw
+recursive-include src3 *.nw
 include LICENSE
 include INSTALLATION
-include pycifrw/*.html
+include src2/*.html
+include src3/*.html
 include TestPyCifRW.py
 include RELEASENOTES
-include pycifrw/Programs/*.py
-include pycifrw/Programs/*.cif
-include pycifrw/Programs/*.html
-include pycifrw/Programs/README
-include pycifrw/Programs/Web.README
-include pycifrw/Changelog
-include pycifrw/Makefile
-include pycifrw/lib/*
+include src2/Programs/*.py
+include src2/Programs/*.cif
+include src2/Programs/*.html
+include src2/Programs/README
+include src2/Programs/Web.README
+include src2/Changelog
+include src2/Makefile
+include src3/Programs/*.py
+include src3/Programs/*.cif
+include src3/Programs/*.html
+include src3/Programs/README
+include src3/Programs/Web.README
+include src3/Changelog
+include src3/Makefile
+include src2/lib/*
+include src3/lib/*
 include docs/*.html

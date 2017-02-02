@@ -425,7 +425,7 @@ if __name__ == '__main__':
         def docfilter(o):
             rname = o.refname.split(".")[-1]
             if re.match(search,rname) is not None:
-	    #    print('%s matches %s' % (rname,search))
+                # print('%s matches %s' % (rname,search))
                 return True
             #if isinstance(o, pdoc.Class):
             #    return search in o.doc or search in o.doc_init

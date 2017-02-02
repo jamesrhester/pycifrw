@@ -1,19 +1,17 @@
-all: installed documentation
-#
-installed: package
-	pip install -v -v -v --use-wheel dist/PyCifRW-4.1.1-cp27-none-linux_i686.whl
+all: package documentation
 #
 package: setup.py sources drel
 	python setup.py sdist
 	python setup.py bdist_wheel
-#	python setup.py bdist_wininst
+	python3 setup.py bdist_wheel
 #
 documentation:
-	cd docs;make
+	$(MAKE) -C docs
 #
 sources:
-	cd src2;make
+	$(MAKE) -C src2
+	$(MAKE) -C src3
 #
 drel:
-	cd src2/drel;make
-#
+	$(MAKE) -C src2/drel
+	$(MAKE) -C src3/drel

@@ -1,0 +1,32 @@
+# Purpose: non-printing characters
+
+# This file contains control-K, control-L and control-M "white-space"
+# characters in the loop, which should parse without error. But there
+# are other illegal non-printing characters.
+
+data_model
+
+_d1 char
+_d2 'model file'
+_d3 "with various types of field"
+_d4              # Control-G in the next text field
+; all conforming to valid STAR syntax 
+  rules
+;
+
+loop_
+
+_d5
+_d6
+_d7
+_d8
+
+       AB C D
+       EF G H         # Comment
+       IJ K L
+
+
+# File ends with a control-Z (sometimes appended by DOS programs) - this
+# should be flagged both as an illegal character and as a surplus member
+# of the loop above!
+

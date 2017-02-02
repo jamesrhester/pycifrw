@@ -9,7 +9,7 @@ Self-installing packages for Python (Windows and Mac) are
 available from www.python.org.  All Linux
 distributions come with Python included in the base setup.
 
-Use of the dREL functionality requires installation of PLY
+Use of the optional dREL functionality requires installation of PLY
 (Python Lex Yacc):
 
     pip install ply

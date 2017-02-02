@@ -1,0 +1,21 @@
+# Purpose: wrong line and dataname lengths - valid STAR, broken CIF
+
+data_test
+
+_rather_long_dataname_1     OK
+_even_longer_dataname_but_still_valid_2 'breaks original 32 char CIF spec'
+_on_the_other_hand_this_dataname_runs_longer_than_the_permitted_80_character_width_of_CIF
+"and therefore is invalid"
+_short_dataname_4
+'in this case the dataname is valid, but now the value runs to a width greater than 80 chars'
+
+loop_
+
+_d5
+_d6
+_d7
+_d8
+
+A B C D
+E F G H         # Comment
+I J K L

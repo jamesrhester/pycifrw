@@ -1,0 +1,35 @@
+#  This test file checks semicolon delimited strings and embedded quotes
+#  All of these are valid CIF constructs.  We have put some inside a save
+#  frame, which is syntactically allowed in CIF 1.1 and should be ignored
+#
+#
+data_testblock
+_dataname 
+	;Hi
+_dataname2 ;Hi;
+_dataname3
+;
+a line with an extra carriage return
+
+;
+save_mysaveframe
+_dataname4 'embed'd quote'
+_test6 ''this had a quote at the front '
+_dataname5 'embed'd quote at end too''
+_test7 "embed"d quote at end too""
+_test8 ""lots of double double quotes quot"d""
+_test8a
+; semicolon to start, and text continues on same line, many line feeds...
+
+
+;
+save_
+_test9 "make sure we're allowed the single quote ' with spaces here " 
+_test10 
+ ;Hi_there         #this checks that non-first character semicolons make it in
+_test11 and_this_checks_that_comments_are_ok
+#
+# this makes sure that there are two data items on the following line
+loop_ _site.id _site.details
+'ND'' 'NAD/NADP SELECTIVITY AMINO ACID.'
+"ND"" "NAD/NADP selectivity amino acid."
