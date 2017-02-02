@@ -2175,7 +2175,7 @@ as the keys are opaque.
 <<Get semantic packet by compound key>>=
 def getMultiKeyedSemanticPacket(self,keydict,cat_id):
     """Return a complete packet for category `cat_id` where the keyvalues are
-    provided as a dictionary of key:(value,caseless) pairs""".
+    provided as a dictionary of key:(value,caseless) pairs.
     This routine
     will understand any joined loops, so if separate loops in the
     datafile belong to the

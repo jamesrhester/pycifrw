@@ -1176,7 +1176,7 @@ class DDLmImportCase(unittest.TestCase):
 
 class DictTestCase(unittest.TestCase):
     def setUp(self):
-	self.ddldic = CifFile.CifDic("tests/ddl.dic",grammar='2.0',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
+        self.ddldic = CifFile.CifDic("tests/ddl.dic",grammar='2.0',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
     
     def tearDown(self):
         pass
@@ -1396,10 +1396,7 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
 class DDL1TestCase(unittest.TestCase):
 
     def setUp(self):
-	self.ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
-	#items = (("_atom_site_label","S1"),
-	#	 ("_atom_site_fract_x","0.74799(9)"),
-        self.ddl1dic = CifFile.CifDic("pycifrw/dictionaries/cif_core.dic")
+        self.ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
         #items = (("_atom_site_label","S1"),
         #         ("_atom_site_fract_x","0.74799(9)"),
         #         ("_atom_site_adp_type","Umpe"),
@@ -1897,7 +1894,7 @@ if __name__=='__main__':
      #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
-     suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockRWTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockOutputOrderTestCase)
@@ -1910,5 +1907,5 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     unittest.TextTestRunner(verbosity=2).run(suite)
-     #unittest.main()
+     #unittest.TextTestRunner(verbosity=2).run(suite)
+     unittest.main()
