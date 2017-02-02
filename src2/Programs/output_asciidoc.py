@@ -11,9 +11,9 @@ def make_asciidoc(indic):
     dep_dics = analyse_deps(sem_dic,in_directory=base_directory)
     blockorder = sem_dic.get_full_child_list()
     outstring = cStringIO.StringIO()
-    categories = sem_dic.cat_map.keys()
+    categories = sem_dic.get_categories()
     # The first block is the one with the dictionary information
-    top_block = sem_dic[blockorder[0]]
+    top_block = sem_dic.master_block
     dicname = top_block['_dictionary.title']
     dicversion = top_block['_dictionary.version']
     dicdate = top_block['_dictionary.date']
@@ -27,7 +27,7 @@ def make_asciidoc(indic):
     if len(dep_dics)>0:
         outstring.write("This dictionary builds on definitions found in ")
         for pos,one_dic in enumerate(dep_dics):
-            outstring.write(one_dic[one_dic.get_roots()[0][0]]["_dictionary.title"])
+            outstring.write(one_dic.master_block["_dictionary.title"])
             if pos < len(dep_dics)-2:
                 outstring.write(", ")
             elif pos == len(dep_dics)-2:
@@ -149,13 +149,13 @@ def make_id(textstring):
 
 def is_key(dic,name):
     """Check whether or not name is a key in its category"""
-    cat_for_name = dic[name]['_name.category_id']
-    cat_block = dic.block_from_catname(cat_for_name)
+    cat_name = dic[name]['_name.category_id']
+    cat_block = dic.get(cat_name)
     if cat_block is not None:
-        cat_keys = dic[cat_block].get('_category_key.name',[])
-        single_key = dic[cat_block].get('_category.key_id','')
+        cat_keys = cat_block.get('_category_key.name',[])
+        single_key = cat_block.get('_category.key_id','')
         return name in cat_keys or name == single_key
-    print 'Warning: no block found for %s' % cat_for_name
+    print 'Warning: no block found for %s' % cat_name
     return False
 
 def get_template_text(onedef,mainfilename,template_cache={}):
@@ -177,7 +177,7 @@ def analyse_deps(indic,in_directory="."):
     """Determine which dictionaries this builds on by looking for imports in
     the top category"""
     import os
-    cats = indic.cat_map.keys()
+    cats = indic.get_categories()
     head_cat = [a for a in cats if indic[a].get('_definition.class',None)=='Head'][0]
     imports = indic[head_cat].get('_import.get')
     if imports is None:
@@ -187,8 +187,8 @@ def analyse_deps(indic,in_directory="."):
 
 def locate_category(diclist,catname):
     """Find out which dictionary has catname as a category"""
-    found_id = [d for d in diclist if catname.lower() in d.cat_map.keys()]
-    found_id = [d[d.get_roots()[0][0]]['_dictionary.title'] for d in found_id]
+    found_id = [d for d in diclist if catname.lower() in d.get_categories()]
+    found_id = [d.master_block['_dictionary.title'] for d in found_id]
     if len(found_id)==1:
         return found_id[0]
     elif len(found_id) == 0:

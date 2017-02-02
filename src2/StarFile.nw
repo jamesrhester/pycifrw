@@ -588,7 +588,8 @@ def rename(self,oldname,newname):
 of either Starblocks or Cifblocks, which differed only in their capacity to
 hold save frames and nested loops.  From version 4.05, we envisage Cif and Star
 files as collections of StarBlocks, neither of which hold any nested save
-frames. 
+frames.  Instead, save frames relationships are held in a separate table,
+which we look up when outputting.
 
 This was originally implemented for dictionary merging support, which is
 now deprecated with the new DDLm way of combining dictionaries.  We cannot
@@ -647,9 +648,12 @@ is now itself a datablock.
 As for [[NewBlock]], we allow duplicate save frame names in the precise situation
 where one of the blocks is a top-level block.
 
+The [[drop_att]] attribute allows a particular datablock attribute to be used
+to determine if datablocks are semantically identical. 
+
 <<Merge with another block collection>>=
 def merge_fast(self,new_bc,parent=None):
-    """Do a fast merge. WARNING: this may change one or more of its frame headers in order to
+    """Do a fast merge.  WARNING: this may change one or more of its frame headers in order to
     remove duplicate frames.  Please keep a handle to the block object instead of the text of
     the header."""
     if self.standard is None:
@@ -1256,8 +1260,9 @@ class StarPacket(list):
         d.derive_item(att_name,c,store_value=True)
         # 
         # now pick out the new value
-        keyval = getattr(self,k)
-        full_pack = c.GetKeyedPacket(k,keyval)
+        # self.key is a list of the key values
+        keydict = dict([(v,(getattr(self,v),True)) for v in k])
+        full_pack = c.GetCompoundKeyedPacket(keydict)
         return getattr(full_pack,att_name)
         
 @ Get nth looped packet.  This returns a packet of data.
@@ -2137,7 +2142,7 @@ def GetCompoundKeyedPacket(self,keydict):
            my_loop = [a for a in my_loop if getattr(a,one_key)==keyval]
     if len(my_loop)!=1:
         raise ValueError, "Bad packet keys %s: returned %d packets" % (repr(keydict),len(my_loop))
-    print "Keyed packet: %s" % my_loop[0]
+    print "Compound keyed packet: %s" % my_loop[0]
     return my_loop[0]
 
 @  Semantic loops.  These are loops defined by a dictionary,
@@ -2172,52 +2177,65 @@ are missing, then we in principle know that the child keys are a
 subset of the parent keys, but we cannot use the key to derive any values,
 as the keys are opaque. 
 
+The final DDLm specification allowed compound keys for categories. When
+combined with child categories, this means that a child key may be absent
+but its parent key may be present and is considered equivalent.
+
 <<Get semantic packet by compound key>>=
-def getMultiKeyedSemanticPacket(self,keydict,cat_id):
+def GetMultiKeyedSemanticPacket(self,keydict,cat_id):
     """Return a complete packet for category `cat_id` where the keyvalues are
-    provided as a dictionary of key:(value,caseless) pairs.
+    provided as a dictionary of key:(value,caseless) pairs
     This routine
     will understand any joined loops, so if separate loops in the
     datafile belong to the
     same category hierarchy (e.g. `_atom_site` and `_atom_site_aniso`),
     the returned `StarPacket` object will contain datanames from
-    both categories."""
-    if len(keyvalues)==1:   #simplification
-        return self.GetKeyedSemanticPacket(keydict[1][0],cat_id)
+    the requested category and any children."""
+    #if len(keyvalues)==1:   #simplification
+    #    return self.GetKeyedSemanticPacket(keydict[1][0],cat_id)
     target_keys = self.dictionary.cat_key_table[cat_id]
+    # update the dictionary passed to us with all equivalents, for
+    # simplicity.
+    parallel_keys = zip(*target_keys)  #transpose
+    print 'Parallel keys:' + repr(parallel_keys)
+    print 'Keydict:' + repr(keydict)
+    start_keys = keydict.keys()
+    for one_name in start_keys:
+        key_set = [a for a in parallel_keys if one_name in a]
+        for one_key in key_set:
+            keydict[one_key] = keydict[one_name]
     # target_keys is a list of lists, each of which is a compound key
     p = StarPacket()
-    for cat_keys in target_keys:
-    ########### UNTIL END OF METHOD HAS NOT BEEN CHANGED #########
-        if not self.has_key(cat_key): continue   # try another set
-        try:
-            extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
-        except KeyError:        #missing key
+    # a little function to return the dataname for a key
+    def find_key(key):
+        for one_key in self.dictionary.key_equivs.get(key,[])+[key]:
+            if self.has_key(one_key):
+                return one_key
+        return None
+    for one_set in target_keys: #loop down the categories
+        true_keys = [find_key(k) for k in one_set]
+        true_keys = [k for k in true_keys if k is not None]
+        if len(true_keys)==len(one_set):
+            truekeydict = dict([(t,keydict[k]) for t,k in zip(true_keys,one_set)])
             try:
-                test_key = self[cat_key]  #generate key if possible
-                print 'Test key is %s' % `test_key`
-                if test_key is not None and\
-                not (isinstance(test_key,list) and (None in test_key or len(test_key)==0)):
-                    print 'Getting packet for key %s' % `keyvalue`
-                    extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
-            except:             #can't be generated
+                extra_packet = self.GetCompoundKeyedPacket(truekeydict)
+            except KeyError:     #one or more are missing
+                continue         #should try harder?
+            except ValueError:
                 continue
-        except ValueError:      #none/more than one, assume none
+        else:
             continue
-            #extra_packet = self.dictionary.generate_default_packet(cat_id,cat_key,keyvalue)
+        print 'Merging packet for keys ' + repr(one_set)
         p.merge_packet(extra_packet)
     # the following attributes used to calculate missing values
-    for keyname in target_keys:
-        if hasattr(p,keyname):
-            p.key = keyname
-            break
-    if not hasattr(p,"key"):
-        raise ValueError, "No key found for %s, packet is %s" % (cat_id,str(p))
+    p.key = true_keys
     p.cif_dictionary = self.dictionary
     p.fulldata = self
     return p
 
-    
+@ Plain single key. This is the older routine where we assume that
+we only have a single key per category.
+
 <<Get semantic packet by key>>=
 def GetKeyedSemanticPacket(self,keyvalue,cat_id):
     """Return a complete packet for category `cat_id` where the
@@ -2228,6 +2246,7 @@ def GetKeyedSemanticPacket(self,keyvalue,cat_id):
     the returned `StarPacket` object will contain datanames from
     both categories."""
     target_keys = self.dictionary.cat_key_table[cat_id]
+    target_keys = [k[0] for k in target_keys] #one only in each list
     p = StarPacket()
     # set case-sensitivity flag
     lcase = False
@@ -2967,8 +2986,12 @@ def create_ordering(self,finish_at,start_from):
                 cand_pos = self.output_order.index(candidates[0])
             if len(loop_order)>0:
                 cand_pos = min(cand_pos,self.output_order.index(loop_order[0]))
-            print 'Output starts from %s, requested %s' % (self.output_order[cand_pos],start_from)
-            self.output_order = self.output_order[cand_pos:]
+            if cand_pos < len(self.output_order):
+                print 'Output starts from %s, requested %s' % (self.output_order[cand_pos],start_from)
+                self.output_order = self.output_order[cand_pos:]
+            else:
+                print 'Start is beyond end of output list'
+                self.output_order = []
         elif start_from in extras:
            self.output_order = self.output_order[self.output_order.index(start_from):]
         else:
@@ -2983,8 +3006,11 @@ def create_ordering(self,finish_at,start_from):
                 cand_pos = self.output_order.index(candidates[0])
             if len(loop_order)>0:
                 cand_pos = min(cand_pos,self.output_order.index(loop_order[0]))
-            print 'Output finishes before %s, requested %s' % (self.output_order[cand_pos],finish_at)
-            self.output_order = self.output_order[:cand_pos]
+            if cand_pos < len(self.output_order):
+                print 'Output finishes before %s, requested before %s' % (self.output_order[cand_pos],finish_at)
+                self.output_order = self.output_order[:cand_pos]
+            else:
+                print 'All of block output'
         elif finish_at in extras:
            self.output_order = self.output_order[:self.output_order.index(finish_at)]
     #print 'Final order: ' + `self.output_order`

@@ -5,12 +5,13 @@ respectively).
 
 We read in the file using STAR2 grammar, then output with CIF2 grammar.
  
-Adjust the comment value for your particular uses.
+Two optional files may be provided, one giving a top-level comment, and
+another the descriptive text for the dictionary.
 """
 from CifFile import ReadCif,CifDic
 import time
 
-def do_conversion(infile,outfile):
+def do_conversion(infile,outfile,desc=None,comment=None):
     startread = time.clock()
     incif = ReadCif(infile,grammar="STAR2")
     print 'Finished reading %s in %f seconds' % (infile,time.clock() - startread)
@@ -21,41 +22,44 @@ def do_conversion(infile,outfile):
     incif.set_grammar("2.0")
     incif.standard = 'Dic'
     incif.SetTemplate("dic_template.dic")
-    comment = \
+    if comment is None:
+        comment_header = \
 """###############################################################################
 #                                                                              #
-#                   CIF Dictionary for Modulated Structures                    #
-#                   ---------------------------------------                    #
+#                   CIF Dictionary                                             #
+#                   --------------                                             #
 #                                                                              #
-#  CIF data definitions specifically for Modulated Structures. These are in    #
-#  addition to those defined in the CIF Core Dictionary version 2.3 (2003).    #
-#                                                                              #
-#  The data included in this dictionary are intended to fulfil the Checklist   #
-#  for the Description of Incommensurate Modulated Crystal Structures,         #
-#  published by the Commission on Aperiodic Crystals. Acta Cryst. (1997),      #
-#  A53, 95-100.                                                                #
-#                                                                              #
-#                                                                              #
-#                                                                              #
-#  The DDL1 version of this dictionary was converted to DDLm on 27 June 2014.  #
+#  CIF data definitions in DDLm format.                                        #
 #                                                                              #
 ################################################################################
 """
+    else:
+        comment_header = open(comment).read()
+    if desc is not None:
+        incif.master_block.overwrite=True
+        incif.master_block['_description.text'] = open(desc).read()
+        incif.master_block.overwrite=False
     # print 'Master template:' + `incif.dic_as_cif.master_template`
     print 'check: ' + `incif.recurse_child_list('enumeration')`
     of = open(outfile,"w")
-    of.write(incif.WriteOut(comment=comment,saves_after='_description.text'))
+    of.write(incif.WriteOut(comment=comment_header,saves_after='_description.text'))
     of.close()
     print 'Finished writing %s in %f seconds' % (outfile,time.clock() - startread)
-
-
+    
 if __name__ == "__main__":
     import sys
+    comment_file = None
+    description_file = None
+    if len(sys.argv)<2 or len(sys.argv)>4:
+        print 'Usage: python star2_to_cif2.py infile description_file comment_file'
+        print """<infile> should be in STAR2 format. The output file will be <infile>+'.cif2'
+Optional description_file contains a description for the dictionary, and optional comment_file
+contains a comment for the dictionary header."""
     infile = sys.argv[1]
+    outfile = infile + '.cif2'
     if len(sys.argv)>2:
-        outfile = sys.argv[2]
-    else:
-        outfile = infile + '.cif2'
-
-    do_conversion(infile,outfile)
+        description_file = sys.argv[2]
+    if len(sys.argv)>3:
+        comment_file = sys.argv[3]
+    do_conversion(infile,outfile,desc=description_file,comment=comment_file)
 
