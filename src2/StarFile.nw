@@ -2172,7 +2172,7 @@ are missing, then we in principle know that the child keys are a
 subset of the parent keys, but we cannot use the key to derive any values,
 as the keys are opaque. 
 
-<<<Get semantic packet by compound key>>=
+<<Get semantic packet by compound key>>=
 def getMultiKeyedSemanticPacket(self,keydict,cat_id):
     """Return a complete packet for category `cat_id` where the keyvalues are
     provided as a dictionary of key:(value,caseless) pairs""".
