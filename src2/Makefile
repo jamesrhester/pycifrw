@@ -1,16 +1,11 @@
-# Makefile for ANBF Python based Cif handling modules
+# Makefile for Python based Cif handling modules
 
 # Customizable variables:
 #
 # Instance of Python to be used for the yapps2.py script.
 PYTHON = python2
 
-
 package: CifFile.py StarFile.py Parsers documentation
-#	python setup.py bdist_wininst
-#
-../PyCifRW.tar: clean package
-	(cd ..; tar cvf PyCifRW.tar --exclude tests --exclude CVS --exclude yapps2 --exclude error_reports --exclude old_stuff PyCifRW)
 #
 %.py : %.nw
 	notangle $< > $@
@@ -27,6 +22,7 @@ Parsers: YappsStarParser_STAR2.py YappsStarParser_1_1.py YappsStarParser_1_0.py 
 #
 clean:
 	rm -f *.pyc *.g
+	rm -f YappsStarParser_*.py TypeContentsParser.py
 
 # Local helper variables:
 #

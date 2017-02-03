@@ -9,7 +9,6 @@ if version_info.major >= 3:
     print ("Python 3 setup")
     c_scanner = Extension("CifFile.StarScan",
                       sources = ["src3/lib/lex.yy.c","src3/lib/py_star_scan.c"])
-
     package_dir = {'CifFile':'src3'}
 else:
     print ("Python 2 setup")
@@ -17,7 +16,7 @@ else:
 
     c_scanner = Extension("CifFile.StarScan",
                       sources = ["src2/lib/lex.yy.c","src2/lib/py_star_scan.c"])
-    package_dir = {'CifFile':'src3'}
+    package_dir = {'CifFile':'src2'}
 
 #### Do the setup
 
