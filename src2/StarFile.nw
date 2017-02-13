@@ -98,6 +98,9 @@ try:
 except:    #python 3
     import io as cStringIO
 
+if isinstance(u"abc",str):   #Python 3
+    unicode = str
+    
 try:
     from StringIO import StringIO
 except:
@@ -297,7 +300,7 @@ def __setitem__(self,key,value):
     self.NewBlock(key,value,parent=None)
 
 def __getitem__(self,key):
-    if isinstance(key,str):
+    if isinstance(key,(unicode,str)):
        lowerkey = key.lower()
        if lowerkey in self.lower_keys:
            return self.dictionary[lowerkey]
@@ -331,7 +334,7 @@ def __len__(self):
 
 def __contains__(self,item):
     """Support the 'in' operator"""
-    if not isinstance(item,str): return False
+    if not isinstance(item,unicode): return False
     if item.lower() in self.visible_keys:
         return True
     return False
@@ -945,7 +948,7 @@ line.
         else:
             self.maxoutlength = maxoutlength
         self.scoping = scoping
-        if isinstance(datasource,str) or hasattr(datasource,"read"):
+        if isinstance(datasource,unicode) or hasattr(datasource,"read"):
             ReadStar(datasource,prepared=self,grammar=grammar,scantype=scantype,
             maxlength = maxinlength)
         self.header_comment = \
@@ -1041,7 +1044,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
         try_list = [('STAR2',YST)]
     else:
         raise AttributeError('Unknown STAR/CIF grammar requested, %s' % repr( grammar ))
-    if isinstance(filename,str):
+    if isinstance(filename,unicode):
         # create an absolute URL
         relpath = urlparse(filename)
         if relpath.scheme == "":
@@ -1061,7 +1064,9 @@ def ReadStar(filename,prepared = None, maxlength=-1,
         filestream.close()
     else:
         filestream = filename   #already opened for us
-        text = filestream.read() #encoding already there
+        text = filestream.read()
+        if not isinstance(text,unicode):
+            text = text.decode('utf8')  #default to ascii/utf8
         my_uri = ""
     if not text:      # empty file, return empty block
         return prepared.set_uri(my_uri)
@@ -1583,7 +1588,7 @@ def items(self):
     return list(zip(self.keys(),self.values()))
 
 def __contains__(self,key):
-    if isinstance(key,str) and key.lower() in self.keys():
+    if isinstance(key,unicode) and key.lower() in self.keys():
         return True
     return False
 
@@ -1658,7 +1663,7 @@ only move an item within the loop in which it appears.
 def ChangeItemOrder(self,itemname,newpos):
     """Move the printout order of `itemname` to `newpos`. If `itemname` is
     in a loop, `newpos` refers to the order within the loop."""
-    if isinstance(itemname,str):
+    if isinstance(itemname,(unicode,str)):
         true_name = itemname.lower()
     else:
         true_name = itemname
@@ -1691,7 +1696,7 @@ checked, or will be checked in bulk at the end.
 def AddItem(self,key,value,precheck=False):
     """Add dataname `key` to block with value `value`.  `value` may be
     a single value, a list or a tuple."""
-    if not isinstance(key,str):
+    if not isinstance(key,(unicode,str)):
          raise TypeError('Star datanames are strings only (got %s)' % repr( key ))
     if not precheck:
          self.check_data_name(key,self.maxnamelength)    # make sure no nasty characters
@@ -1737,7 +1742,7 @@ def AddLoopItem(self,incomingdata,precheck=False,maxlength=-1):
        for key,value in keyvallist:
            self.AddItem(key,value)
        self.CreateLoop(incomingdata[0])
-    elif not isinstance(incomingdata[0],str):
+    elif not isinstance(incomingdata[0],(unicode,str)):
          raise TypeError('Star datanames are strings only (got %s)' % repr( incomingdata[0] ))
     else:
         self.AddItem(incomingdata[0],incomingdata[1])
@@ -1793,7 +1798,7 @@ def check_item_value(self,item):
     if not isinstance(item,(list,dict,tuple)):
        test_item = [item]         #single item list
     def check_one (it):
-        if isinstance(it,str):
+        if isinstance(it,unicode):
             if it=='': return
             me = self.char_check.match(it)
             if not me:
@@ -1815,7 +1820,7 @@ so that the value/string alternate is correctly initialised/reset.
 def regularise_data(self,dataitem):
     """Place dataitem into a list if necessary"""
     from numbers import Number
-    if isinstance(dataitem,(Number,str,StarList,StarDict)):
+    if isinstance(dataitem,(Number,unicode,str,StarList,StarDict)):
         return dataitem,None
     if isinstance(dataitem,(tuple,list)):
         return dataitem,[None]*len(dataitem)
@@ -1866,7 +1871,7 @@ def check_stringiness(data):
    if not hasattr(data,'dtype'):   #so not Numpy
        from numbers import Number
        if isinstance(data,Number): return False
-       elif isinstance(data,str): return True
+       elif isinstance(data,(unicode,str)): return True
        elif data is None:return False  #should be data are None :)
        else:
            for one_item in data:
@@ -2581,7 +2586,9 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
     global have_numpy
     delimiter = hints.get('delimiter',None)
     startcol = hints.get('column',-1)
-    if isinstance(itemvalue,str):  #need to sanitize
+    if isinstance(itemvalue,str) and not isinstance(itemvalue,unicode): #not allowed
+        raise CifError("Non-unicode value {itemvalue!r} found in block") 
+    if isinstance(itemvalue,unicode):  #need to sanitize
         stringsink.write(self._formatstring(itemvalue,delimiter=delimiter,hints=hints),canbreak = True,startcol=startcol)
     elif isinstance(itemvalue,(list)) or (hasattr(itemvalue,'dtype') and hasattr(itemvalue,'__iter__')): #numpy
        stringsink.set_tab(0)
@@ -2656,7 +2663,10 @@ def format_packets(self,outstring,indent=0,loop_no=-1):
 <<Format a single packet item>>=
 def format_packet_item(self,pack_item,indent,outstring,format_hint):
        # print 'Formatting %s' % `pack_item`
-       if isinstance(pack_item,str):
+       # temporary check for any non-unicode items
+       if isinstance(pack_item,str) and not isinstance(pack_item,unicode):
+           raise CifError("Item {pack_item!r} is not unicode")
+       if isinstance(pack_item,unicode):
            delimiter = format_hint.get('delimiter',None)
            startcol = format_hint.get('column',-1)
            outstring.write(self._formatstring(pack_item,delimiter=delimiter),startcol=startcol)
@@ -2906,7 +2916,7 @@ characters on their lines
 def process_template(template_file):
     """Process a template datafile to formatting instructions"""
     template_as_cif = StarFile(template_file,grammar="2.0").first_block()
-    if isinstance(template_file,str):
+    if isinstance(template_file,unicode):
         template_string = open(template_file).read()
     else:   #a StringIO object
         template_file.seek(0)   #reset
@@ -3002,7 +3012,7 @@ def create_ordering(self,finish_at,start_from):
     requested_order = list([i['dataname'] for i in self.formatting_hints if i['dataname']!='loop'])
     new_order = []
     for item in requested_order:
-       if isinstance(item,str) and item.lower() in self.item_order:
+       if isinstance(item,unicode) and item.lower() in self.item_order:
            new_order.append(item.lower())
        elif item in self:    #in a loop somewhere
            target_loop = self.FindLoop(item)
@@ -3108,7 +3118,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
           except ValueError:
                pass
        for key in new_block.keys():
-              if isinstance(key,str):
+              if isinstance(key,unicode):
                   self[key] = new_block[key]
        # creating the loop will remove items from other loops
        for one_loop in new_block.loops.values():
@@ -3217,7 +3227,7 @@ operate on a string instead of a list.
 
 <<List manipulations>>=
 def listify(item):
-    if isinstance(item,str): return [item]
+    if isinstance(item,unicode): return [item]
     else: return item
 
 #Transpose the list of lists passed to us
@@ -3351,7 +3361,7 @@ def recursive_iter(self,dict_so_far={},coord=[]):
 
 # small function to use the coordinates.
 def coord_to_group(self,dataname,coords):
-      if not isinstance(dataname,str):
+      if not isinstance(dataname,unicode):
          return dataname     # flag inner loop processing
       newm = self[dataname]          # newm must be a list or tuple
       for c in coords:

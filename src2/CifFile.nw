@@ -90,6 +90,13 @@ except:
     from urllib.request import urlopen
     from urllib.parse import urlparse,urlunparse,urljoin
 
+# The unicode type does not exist in Python3 as the str type
+# encompasses unicode.  PyCIFRW tests for 'unicode' would fail
+# Suggestions for a better approach welcome.
+
+if isinstance(u"abc",str):   #Python3
+    unicode = str
+    
 <<Copyright statement>>
 
 import re,sys
@@ -281,10 +288,10 @@ the item name should also occur in a single member tuple.
 def AddCifItem(self,data):
     """ *DEPRECATED*. Use `AddItem` instead."""
     # we accept only tuples, strings and lists!!
-    if not (isinstance(data[0],(str,tuple,list))):
+    if not (isinstance(data[0],(unicode,tuple,list,str))):
               raise TypeError('Cif datanames are either a string, tuple or list')
     # we catch single item loops as well...
-    if isinstance(data[0],str):
+    if isinstance(data[0],(unicode,str)):
         self.AddSingleCifItem(data[0],list(data[1]))
         if isinstance(data[1],(tuple,list)) and not isinstance(data[1],StarFile.StarList):  # a single element loop
             self.CreateLoop([data[0]])
@@ -879,9 +886,9 @@ currently-defined item.  If the child is missing, likewise.
 def create_pcloop(self,definition):
     old_children = self[definition].get('_item_linked.child_name',[])
     old_parents = self[definition].get('_item_linked.parent_name',[])
-    if isinstance(old_children,str):
+    if isinstance(old_children,unicode):
          old_children = [old_children]
-    if isinstance(old_parents,str):
+    if isinstance(old_parents,unicode):
          old_parents = [old_parents]
     if (len(old_children)==0 and len(old_parents)==0) or \
        (len(old_children) > 1 and len(old_parents)>1):
@@ -1241,7 +1248,7 @@ this information is blank unless we are dealing with the DDLm dictionary.
 
 <<Parse DDLm validity information>>=
 def ddlm_parse_valid(self):
-    if "_dictionary_valid.application" not in self[self.master_key]:
+    if "_dictionary_valid.application" not in self.master_block:
         return
     for scope_pack in self.master_block.GetLoop("_dictionary_valid.application"):
         scope = getattr(scope_pack,"_dictionary_valid.application")
@@ -1510,7 +1517,6 @@ for one_cat in looped_cats:   #follow them up
             self.key_equivs[child] = self.key_equivs.get(child,[])+[parent]
         lower_keys = linked_keys  #preserves order of start keys
 
-                                             
 @ Section{DDLm functionality}
 
 DDLm is a far more complex dictionary standard than DDL2.  We are able to import
@@ -1837,7 +1843,7 @@ def validate_item_container(self, item_name,item_value):
     container_type = self[item_name]['_type.container']
     item_values = listify(item_value)
     if container_type == 'Single':
-       okcheck = [a for a in item_values if not isinstance(a,(int,float,long,str))]
+       okcheck = [a for a in item_values if not isinstance(a,(int,float,long,unicode))]
        return decide(okcheck)
     if container_type in ('Multiple','List'):
        okcheck = [a for a in item_values if not isinstance(a,StarList)]
@@ -1955,9 +1961,9 @@ def validate_looping(self,item_name,item_value):
         must_loop = self[item_name][self.must_loop_spec]
     except KeyError:
         return {"result":None}
-    if must_loop == 'yes' and isinstance(item_value,str): # not looped
+    if must_loop == 'yes' and isinstance(item_value,unicode): # not looped
         return {"result":False}      #this could be triggered
-    if must_loop == 'no' and not isinstance(item_value,str):
+    if must_loop == 'no' and not isinstance(item_value,unicode):
         return {"result":False}
     return {"result":True}
 
@@ -2019,7 +2025,7 @@ def validate_loop_key(self,loop_names):
     # find any unique values which must be present 
     key_spec = self[category].get(self.key_spec,[])
     for names_to_check in key_spec:
-        if isinstance(names_to_check,str):   #only one
+        if isinstance(names_to_check,unicode):   #only one
             names_to_check = [names_to_check]
         for loop_key in names_to_check:
             if loop_key not in loop_names:
@@ -2066,7 +2072,7 @@ def validate_loop_references(self,loop_names):
     # build a flat list.  For efficiency we don't remove duplicates,as
     # we expect no more than the order of 10 or 20 looped names.
     def flat_func(a,b):
-        if isinstance(b,str):
+        if isinstance(b,unicode):
            a.append(b)       #single name
         else:
            a.extend(b)       #list of names
@@ -2120,7 +2126,7 @@ def get_alternates(self,main_name,exclusive_only=False):
     alt_names = []
     if alternates != None:
         alt_names =  self[main_name].get(self.related_item,None)
-        if isinstance(alt_names,str):
+        if isinstance(alt_names,unicode):
             alt_names = [alt_names]
             alternates = [alternates]
         together = zip(alt_names,alternates)
@@ -2201,7 +2207,7 @@ def validate_parent(self,item_name,item_value,whole_block,provisional_items={},g
             self.done_parents.append(parent_item)
             print("Done parents %s" % repr(self.done_parents))
     # initialise parent/child values
-    if isinstance(item_value,str):
+    if isinstance(item_value,unicode):
         child_values = [item_value]
     else: child_values = item_value[:]    #copy for safety
     # track down the parent
@@ -2228,7 +2234,7 @@ def validate_parent(self,item_name,item_value,whole_block,provisional_items={},g
         parent_values = provisional_items.get(parent_item,whole_block.get(parent_item))
         if not parent_values:   # check global block
             parent_values = globals.get(parent_item)
-    if isinstance(parent_values,str):
+    if isinstance(parent_values,unicode):
         parent_values = [parent_values]
     #print("Checking parent %s against %s, values %r/%r" % (parent_item,
     #                                          item_name, parent_values, child_values))
@@ -2245,9 +2251,9 @@ def validate_child(self,item_name,item_value,whole_block,provisional_items={},gl
     # special case for dictionaries  -> we check parents of children only
     if item_name in globals:  #dictionary so skip
         return {"result":None}
-    if isinstance(child_items,str): # only one child
+    if isinstance(child_items,unicode): # only one child
         child_items = [child_items]
-    if isinstance(item_value,str): # single value
+    if isinstance(item_value,unicode): # single value
         parent_values = [item_value]
     else: parent_values = item_value[:]
     # expand child list with list of alternates
@@ -2266,7 +2272,7 @@ def validate_child(self,item_name,item_value,whole_block,provisional_items={},gl
         elif child_item in whole_block:
             child_values = whole_block[child_item][:]
         else:  continue
-        if isinstance(child_values,str):
+        if isinstance(child_values,unicode):
             child_values = [child_values]
             # print("Checking child %s against %s, values %r/%r" % (child_item,
             #       item_name, child_values, parent_values))
@@ -2289,7 +2295,7 @@ def validate_remove_parent_child(self,item_name,whole_block):
         child_items = self[item_name][self.child_spec]
     except KeyError:
         return {"result":None}
-    if isinstance(child_items,str): # only one child
+    if isinstance(child_items,unicode): # only one child
         child_items = [child_items]
     for child_item in child_items:
         if child_item in whole_block:
@@ -2308,7 +2314,7 @@ def validate_dependents(self,item_name,item_value,whole_block,prov={},globals={}
         dep_items = self[item_name][self.dep_spec][:]
     except KeyError:
         return {"result":None}    #not relevant
-    if isinstance(dep_items,str):
+    if isinstance(dep_items,unicode):
         dep_items = [dep_items]
     actual_names = whole_block.keys()
     actual_names.extend(prov.keys())
@@ -2350,14 +2356,13 @@ def validate_uniqueness(self,item_name,item_value,whole_block,provisional_items=
         print("No category found for %s" % item_name)
         return {"result":None}
     # print("Category {!r} for item {}".format(category, item_name))
-    catentry = self.cat_map[category]
     # we make a copy in the following as we will be removing stuff later!
     unique_i = self[category].get("_category_key.name",[])[:]
-    if isinstance(unique_i,str):
+    if isinstance(unique_i,unicode):
         unique_i = [unique_i]
     if item_name not in unique_i:       #no need to verify
         return {"result":None}
-    if isinstance(item_value,str):  #not looped
+    if isinstance(item_value,unicode):  #not looped
         return {"result":None}
     # print("Checking %s -> %s -> %s ->Unique: %r" % (item_name,category,catentry, unique_i))
     # check that we can't optimize by not doing this check
@@ -3236,7 +3241,7 @@ def change_type(self,itemname,inval):
 by searching for an opening round bracket
 <<Convert value to float, ignore esd>>=
 def float_with_esd(inval):
-    if isinstance(inval,str):
+    if isinstance(inval,unicode):
         j = inval.find("(")
         if j>=0:  return float(inval[:j])
     return float(inval)
@@ -3484,7 +3489,7 @@ item that would render an object invalid.
 
 <<Add straight data>>=
 def AddCifItem(self,data):
-    if isinstance(data[0],str):   # single item
+    if isinstance(data[0],(unicode,str)):   # single item
         valid,problems = self.single_item_check(data[0],data[1])
         self.report_if_invalid(valid,problems,data[0])
         valid,problems = self.global_item_check(data[0],data[1])
@@ -4019,7 +4024,7 @@ dimension lists, rather than special-casing the character sequence
 def convert_list_values(structure,dimension):
     """Convert the values according to the element
        structure given in [[structure]]"""
-    if isinstance(structure,str):   #simple repetition
+    if isinstance(structure,unicode):   #simple repetition
         func_def =  "element_convert = convert_single_value('%s')" % structure
     else:
         func_def =       "def element_convert(element):\n"
@@ -4113,7 +4118,7 @@ def transpose(base_list):
 
 # listify strings - used surprisingly often
 def listify(item):
-    if isinstance(item,str): return [item]
+    if isinstance(item,unicode): return [item]
     else: return item
 
 # given a list of search items, return a list of items
@@ -4184,7 +4189,7 @@ def merge_dic(diclist,mergemode="replace",ddlspec=None):
     dic_as_cif_list = []
     for dic in diclist:
         if not isinstance(dic,CifFile) and \
-           not isinstance(dic,str):
+           not isinstance(dic,unicode):
                raise TypeError("Require list of CifFile names/objects for dictionary merging")
         if not isinstance(dic,CifFile): dic_as_cif_list.append(CifFile(dic))
         else: dic_as_cif_list.append(dic)
@@ -4212,7 +4217,7 @@ that we are dealing with something like a category -can they be merged??
 def find_parent(ddl2_def):
     if "_item.name" not in ddl2_def:
        return None
-    if isinstance(ddl2_def["_item.name"],str):
+    if isinstance(ddl2_def["_item.name"],unicode):
         return ddl2_def["_item.name"]
     if "_item_linked.child_name" not in ddl2_def:
         raise CifError("Asked to find parent in block with no child_names")
