@@ -948,7 +948,7 @@ line.
         else:
             self.maxoutlength = maxoutlength
         self.scoping = scoping
-        if isinstance(datasource,unicode) or hasattr(datasource,"read"):
+        if isinstance(datasource,(unicode,str)) or hasattr(datasource,"read"):
             ReadStar(datasource,prepared=self,grammar=grammar,scantype=scantype,
             maxlength = maxinlength)
         self.header_comment = \
@@ -1044,7 +1044,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
         try_list = [('STAR2',YST)]
     else:
         raise AttributeError('Unknown STAR/CIF grammar requested, %s' % repr( grammar ))
-    if isinstance(filename,unicode):
+    if isinstance(filename,(unicode,str)):
         # create an absolute URL
         relpath = urlparse(filename)
         if relpath.scheme == "":
@@ -1060,13 +1060,13 @@ def ReadStar(filename,prepared = None, maxlength=-1,
             my_uri = urlunparse(relpath)
         # print("Full URL is: " + my_uri)
         filestream = urlopen(my_uri)
-        text = filestream.read().decode('utf-8')
+        text = filestream.read().decode('utf8')
         filestream.close()
     else:
         filestream = filename   #already opened for us
         text = filestream.read()
         if not isinstance(text,unicode):
-            text = text.decode('utf8')  #default to ascii/utf8
+            text = text.decode('utf8')  #CIF is always ascii/utf8
         my_uri = ""
     if not text:      # empty file, return empty block
         return prepared.set_uri(my_uri)
@@ -1588,7 +1588,7 @@ def items(self):
     return list(zip(self.keys(),self.values()))
 
 def __contains__(self,key):
-    if isinstance(key,unicode) and key.lower() in self.keys():
+    if isinstance(key,(unicode,str)) and key.lower() in self.keys():
         return True
     return False
 
@@ -1691,6 +1691,8 @@ which case an error is raised.
 We skip checking of data values if the [[precheck]] value is true- this
 is typically set if the item is being read from a file, and so is already
 checked, or will be checked in bulk at the end.
+
+Note that all strings are stored internally as unicode.
 
 <<Add a data item>>=
 def AddItem(self,key,value,precheck=False):
@@ -1816,12 +1818,16 @@ sure everything goes in either as a single item or as a dict/list/tuple. We
 provide an empty datavalue with the same structure as the returned value
 so that the value/string alternate is correctly initialised/reset.
 
+Note that all string data should be Unicode.
+
 <<Regularise data values>>=
 def regularise_data(self,dataitem):
     """Place dataitem into a list if necessary"""
     from numbers import Number
-    if isinstance(dataitem,(Number,unicode,str,StarList,StarDict)):
+    if isinstance(dataitem,(Number,unicode,StarList,StarDict)):
         return dataitem,None
+    if isinstance(dataitem,str):
+        return (unicode(dataitem),None)
     if isinstance(dataitem,(tuple,list)):
         return dataitem,[None]*len(dataitem)
     # so try to make into a list
@@ -2587,7 +2593,7 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
     delimiter = hints.get('delimiter',None)
     startcol = hints.get('column',-1)
     if isinstance(itemvalue,str) and not isinstance(itemvalue,unicode): #not allowed
-        raise CifError("Non-unicode value {itemvalue!r} found in block") 
+        raise StarError("Non-unicode value {0} found in block".format(itemvalue)) 
     if isinstance(itemvalue,unicode):  #need to sanitize
         stringsink.write(self._formatstring(itemvalue,delimiter=delimiter,hints=hints),canbreak = True,startcol=startcol)
     elif isinstance(itemvalue,(list)) or (hasattr(itemvalue,'dtype') and hasattr(itemvalue,'__iter__')): #numpy
@@ -2665,7 +2671,7 @@ def format_packet_item(self,pack_item,indent,outstring,format_hint):
        # print 'Formatting %s' % `pack_item`
        # temporary check for any non-unicode items
        if isinstance(pack_item,str) and not isinstance(pack_item,unicode):
-           raise CifError("Item {pack_item!r} is not unicode")
+           raise StarError("Item {pack_item!r} is not unicode")
        if isinstance(pack_item,unicode):
            delimiter = format_hint.get('delimiter',None)
            startcol = format_hint.get('column',-1)

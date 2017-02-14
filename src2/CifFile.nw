@@ -1542,7 +1542,7 @@ def ddlm_import(self,import_mode='All'):
     import_frames = list([(a,self[a]['_import.get']) for a in self.keys() if '_import.get' in self[a]])
     print ('Import mode %s applied to following frames' % import_mode)
     print (str([a[0] for a in import_frames]))
-    if import_mode is not 'All':
+    if import_mode != 'All':
        for i in range(len(import_frames)):
             import_frames[i] = (import_frames[i][0],[a for a in import_frames[i][1] if a.get('mode','Contents') == import_mode])
        print('Importing following frames in mode %s' % import_mode)

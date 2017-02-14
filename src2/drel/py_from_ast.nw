@@ -85,7 +85,7 @@ def make_python_function(in_ast,func_name,targetname, special_ids=[{}],
         try:
             import numpy
         except:
-            print "Can't import numerical python, this method may not work"
+            print("Can't import numerical python, this method may not work")
 """
     preamble += num_header
     indented = map(lambda a:" "*8 + a +"\n",noindent)  #indent dREL body
@@ -555,15 +555,15 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     # this might not be robust as we ignore alternative resolutions of the (cat,name) pair
     catnames = set([a[1][0] for a in cif_dic.cat_obj_lookup_table.items() if a[0][0]==cat_id.lower()])
     outstring = "__pyallitems = " + repr(catnames)
-    outstring += "\nprint 'names in cat = %s' % `__pyallitems`"
+    outstring += "\nprint('names in cat = %s' % `__pyallitems`)"
     outstring += "\n" + "__pycitems = filter(lambda a:%s,__pyallitems)" % (api_table["has_name"] % "a")
-    outstring += "\nprint 'names in cat -> %s' % `__pycitems`\n"
+    outstring += "\nprint('names in cat -> %s' % `__pycitems`)\n"
     cat_key = cif_dic[cat_id]['_category_key.name'][0]   #take an official key
     # If there is nothing in the category, provoke category creation by evaluating the key
     outstring += "if len(__pycitems)==0:\n"
     outstring += "    __pydummy = %s\n" % (api_table["data_access"] % repr(cat_key))
     outstring += "    __pycitems = filter(lambda a:%s,__pyallitems)\n" % (api_table["has_name"] % "a")
-    outstring += "    print 'After category creation, names in cat ->' + `__pycitems`\n"
+    outstring += "    print('After category creation, names in cat ->' + `__pycitems`)\n"
     special_info["depends"].add(cat_key)  #add key as a dependency
     if var_info[2] == True:
         access_string = api_table["count_data"] % (api_table["data_access"] % "__pycitems[0]")
@@ -641,7 +641,7 @@ Ultimately we end up with a list of statements.
              outstring = outstring + traverse_ast(expression) + ","
         return outstring[:-1] + ")"
     elif node_type == "PRINT":
-        return 'print ' + traverse_ast(in_node[1])
+        return 'print(' + traverse_ast(in_node[1])+')'
     elif node_type == "BREAK":
         return 'break '
     elif node_type == "NEXT":

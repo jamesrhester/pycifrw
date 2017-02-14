@@ -34,21 +34,22 @@ initStarScan(void)
 
 /* We need to read from the text string that the Python
 scanner uses, so we get a handle on the string and use
-that to feed flex */
+that to feed flex. We allow a Unicode string that is
+UTF8 encoded. */
 
 static PyObject * 
 get_input(PyObject * self, PyObject * args) 
 {
 PyObject * str_arg;  /* A python string object in theory */
 int i;
-if(!(PyArg_ParseTuple(args,"O",&str_arg))) return NULL;
-input_string = PyString_AsString(str_arg);
+if(!(PyArg_ParseTuple(args,"U",&str_arg))) return NULL;
+ input_string = PyString_AsString(str_arg);  /* if non-ASCII, problems... */
 string_pos = 0;
 in_string_len = strlen(input_string);
 star_clear();
 for(i=0;i<current_len;i++){
-    /* printf("Freeing value %d\n",i); */
-    free(value_list[i]);
+  /* printf("New input, freeing value %d\n",i); */
+    Py_XDECREF(value_list[i]);
     }
 if(token_list!=NULL) {
 /* printf("Freeing token_list\n"); */
@@ -61,7 +62,7 @@ free(line_no_list);}
 alloc_mem = 0;
 /* Now get our first block of storage */
 token_list = (int *) malloc(MEM_ALLOC_SIZE*sizeof(int *));
-value_list = (char **) malloc(MEM_ALLOC_SIZE*sizeof(char **));
+value_list = (PyObject **) malloc(MEM_ALLOC_SIZE*sizeof(PyObject **));
 line_no_list = (int *) malloc(MEM_ALLOC_SIZE*sizeof(int *));
 alloc_mem += MEM_ALLOC_SIZE;
 current_len = 0;
@@ -90,7 +91,7 @@ if(tok_id == DEND) {
 if(current_len+1>alloc_mem) {
     token_list = (int *) realloc(token_list,(alloc_mem+MEM_ALLOC_SIZE)*sizeof(int *));
     line_no_list = (int *) realloc(line_no_list,(alloc_mem+MEM_ALLOC_SIZE)*sizeof(int *));
-    value_list = (char **) realloc(value_list,(alloc_mem+MEM_ALLOC_SIZE)*sizeof(char **));
+    value_list = (PyObject **) realloc(value_list,(alloc_mem+MEM_ALLOC_SIZE)*sizeof(PyObject **));
     alloc_mem += MEM_ALLOC_SIZE;
     /* printf("Expanded memory, val=%x,tok=%x\n",value_list,token_list);*/
     }
@@ -98,7 +99,7 @@ if(current_len+1>alloc_mem) {
 save_str = (char *) malloc((yyleng+1)*sizeof(char *));
 /* printf("Got memory for string %s length %d at %x\n",yytext,yyleng+1,save_str);*/
 strncpy(save_str,yytext,yyleng+1);
-value_list[current_len] = save_str;
+value_list[current_len] = PyUnicode_FromString(save_str); /* new reference */
 token_list[current_len] = tok_id;
 line_no_list[current_len] = yylineno;
 current_len++;
@@ -114,7 +115,7 @@ if(!(PyArg_ParseTuple(args,"i",&list_pos))) return NULL;
 /* printf("Getting token %d\n",list_pos);*/
 if(list_pos==current_len) flex_scan(self,args); 
 if(list_pos<current_len)
-    return(Py_BuildValue("(iiss)",line_no_list[list_pos],0,tokens[token_list[list_pos]],value_list[list_pos]));
+    return(Py_BuildValue("(iisO)",line_no_list[list_pos],0,tokens[token_list[list_pos]],value_list[list_pos]));
 else {
     PyErr_SetString(PyExc_IndexError,"No tokens left");
     return NULL;
@@ -126,7 +127,8 @@ clear_mem(void)
 {
 int i;
 for(i=0;i<current_len;i++){
-    free(value_list[i]);
+  printf("Clearing token %d\n",i);
+    Py_XDECREF(value_list[i]);
     }
 free(token_list);
 free(value_list);
@@ -157,7 +159,7 @@ newlist = PyList_New(current_len - start_pt);
 for(ret_list_pos=0;start_pt+ret_list_pos<current_len;ret_list_pos++){
    pos_ptr = start_pt+ret_list_pos;
    /* printf("Build token %d\n",pos_ptr);*/
-   newtuple = Py_BuildValue("iiss",line_no_list[pos_ptr],0,tokens[token_list[pos_ptr]],
+   newtuple = Py_BuildValue("iisO",line_no_list[pos_ptr],0,tokens[token_list[pos_ptr]],
                 value_list[pos_ptr]);
    /* printf("Set list pos %d\n",ret_list_pos);*/
    PyList_SET_ITEM(newlist,ret_list_pos,newtuple);

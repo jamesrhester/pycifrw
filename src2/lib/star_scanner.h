@@ -12,7 +12,7 @@ size_t string_pos;          /* current position */
 size_t in_string_len;       /* total length */
 int * token_list;           /* list of tokens */
 int * line_no_list;         /* list of token positions */
-char ** value_list;        /* list of values */
+PyObject ** value_list;      /* list of values */
 size_t alloc_mem;           /* How much allocated */
 size_t current_len;         /* Length of list */
 #define MEM_ALLOC_SIZE 4192 /* Allocation block size */
