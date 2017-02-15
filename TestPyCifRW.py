@@ -1651,8 +1651,8 @@ class FakeDicTestCase(unittest.TestCase):
 
 class DicEvalTestCase(unittest.TestCase):
     def setUp(self):
-        c_old = CifFile.CifFile("src2/drel/testing/data/nick_old.cif",grammar="2.0")
-        c_new = CifFile.CifFile("src2/drel/testing/data/nick_new.cif",grammar="2.0")
+        c_old = CifFile.CifFile("tests/drel/nick_old.cif",grammar="2.0")
+        c_new = CifFile.CifFile("tests/drel/nick_new.cif",grammar="2.0")
         self.fb = c_new.first_block()
         self.fb.assign_dictionary(testdic)
         self.fb_old = c_old.first_block()
@@ -1726,7 +1726,7 @@ class DicEvalTestCase(unittest.TestCase):
 class DicStructureTestCase(unittest.TestCase):
     """Tests use of dictionary semantic information for item lookup"""
     def setUp(self):
-        cc = CifFile.CifFile("src2/drel/testing/data/nick.cif",grammar="STAR2")
+        cc = CifFile.CifFile("tests/drel/nick.cif",grammar="STAR2")
         self.fb = cc.first_block()
         self.fb.assign_dictionary(testdic)
 
@@ -1903,7 +1903,7 @@ global testdic
 testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.dic",grammar="2.0")
 
 if __name__=='__main__':
-     #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
+     suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
@@ -1920,5 +1920,5 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     #unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     unittest.TextTestRunner(verbosity=2).run(suite)
+     #unittest.main()

@@ -1,5 +1,12 @@
 # Test suite for the dRel parser
 #
+# Testing of the PyCif module using the PyUnit framework
+#
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
 
 import unittest
 import CifFile
@@ -91,7 +98,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
         #create our lexer and parser
         self.lexer = drel_lex.lexer
         self.parser = drel_ast_yacc.parser
-        self.dic = CifFile.CifDic("pycifrw/dic_for_tests.dic",grammar="STAR2")
+        self.dic = CifFile.CifDic("tests/drel/dic_for_tests.dic",grammar="STAR2")
 
     def create_test(self,instring,right_value,debug=False,array=False):
         """Given a string, create and call a function then check result"""
@@ -294,7 +301,7 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        self.lexer = drel_lex.lexer
        self.lexer.lineno = 0
        self.parser = drel_ast_yacc.parser
-       self.dic = CifFile.CifDic("pycifrw/dic_for_tests.dic",grammar="STAR2")
+       self.dic = CifFile.CifDic("tests/drel/dic_for_tests.dic",grammar="STAR2")
 
    def create_test(self,instring,right_value,varname="_a.b",debug=False):
        """Given a string, create and call a function then check result"""
@@ -417,7 +424,7 @@ class MoreComplexTestCase(unittest.TestCase):
        self.lexer = drel_lex.lexer
        self.lexer.lineno = 0
        self.parser = drel_ast_yacc.parser
-       self.dic = CifFile.CifDic("pycifrw/dic_for_tests.dic",grammar="STAR2")
+       self.dic = CifFile.CifDic("tests/drel/dic_for_tests.dic",grammar="STAR2")
 
    def test_nested_stmt(self):
        """Test how a nested do statement executes"""
@@ -473,7 +480,7 @@ class MoreComplexTestCase(unittest.TestCase):
        b = 3
        c= 4
        do jkl = 1,5,1 {
-          geom_angle( .id = [a,b,c],
+          geom_angle(
                       .distances = [b,c],
                       .value = jkl)
                       }
@@ -497,7 +504,7 @@ class WithDictTestCase(unittest.TestCase):
        self.parser = drel_ast_yacc.parser
        self.parser.lineno = 0
        #use
-       self.testblock = CifFile.CifFile("pycifrw/drel/nick1.cif",grammar="STAR2")["saly2_all_aniso"]
+       self.testblock = CifFile.CifFile("tests/drel/nick1.cif",grammar="STAR2")["saly2_all_aniso"]
        self.testblock.assign_dictionary(testdic)
        self.testblock.provide_value = True  #get values back
        self.testdic = testdic
@@ -559,16 +566,16 @@ class WithDictTestCase(unittest.TestCase):
           multiple with statements"""
        teststrg = """
        with e as exptl
-       with c as cell_length {
+       with c as cell {
            x = 22
            j = 25
            jj = e.crystals_number
-           px = c.a
+           px = c.length_a
            _exptl.method = "single-crystal diffraction"
            }"""
        loopable_cats = {}   #none looped
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","_exptl.method",cif_dic=testdic)
+       realfunc = py_from_ast.make_python_function(res,"myfunc","_exptl.method",cif_dic=self.testdic)
        print("With statement -> \n" + realfunc)
        exec(realfunc)
        # attach dictionary
@@ -656,15 +663,15 @@ class WithDictTestCase(unittest.TestCase):
                  r.form_factor_table [a.type_symbol]      +
                         _atom_type_scat[a.type_symbol].dispersion  )
 
-      Loop s  as  symmetry_equiv  {
+      Loop s  as  space_group_symop  {
 
           t   =  Exp(-h * s.R * a.tensor_beta * s.RT * h)
 
           fc +=  f * t * ExpImag(TwoPi *( h *( s.R * a.fract_xyz + s.T)))
    }  }
-          _refln.F_complex  =   fc / _symmetry.multiplicity
+          _refln.F_complex  =   fc / _space_group.multiplicity
        """
-       loopable_cats = {'symmetry_equiv':["id",["id","R","RT","T"]],
+       loopable_cats = {'space_group_symop':["id",["id","R","RT","T"]],
                         'atom_site':["id",["id","type_symbol","occupancy","site_symmetry_multiplicity",
                                            "tensor_beta","fract_xyz"]],
                         'atom_type_scat':["id",["id","dispersion"]],
@@ -682,12 +689,12 @@ class WithDictTestCase(unittest.TestCase):
        teststrg = """[label,symop] =   _model_site.id
 
      a = atom_site[label]
-     s = symmetry_equiv[SymKey(symop)]
+     s = space_group_symop[SymKey(symop)]
 
      _model_site.adp_matrix_beta =  s.R * a.tensor_beta * s.RT"""
        loopable = {"model_site":["id",["id"]],
                    "atom_site":["label",["tensor_beta","label"]],
-                   "symmetry_equiv":["id",["id","RT","R"]]}
+                   "space_group_symop":["id",["id","RT","R"]]}
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_model_site.adp_matrix_beta",
                                                    depends = True,have_sn=False,
@@ -695,7 +702,7 @@ class WithDictTestCase(unittest.TestCase):
        print('model_site.adp_matrix_beta becomes...')
        print(realfunc)
        print(deps)
-       self.failUnless('_symmetry_equiv.RT' in deps)
+       self.failUnless('_space_group_symop.RT' in deps)
 
    def test_array_access(self):
        """Test that arrays are converted and returned correctly"""
@@ -704,7 +711,7 @@ class WithDictTestCase(unittest.TestCase):
       """
        loopable = {"model_site":["id",["id","symop","adp_eigen_system"]],
                    "atom_site":["label",["tensor_beta","label"]],
-                   "symmetry_equiv":["id",["id","RT","R"]]}
+                   "space_group_symop":["id",["id","RT","R"]]}
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_model_site.symop",
                                                    depends = True,have_sn=False,
@@ -718,11 +725,11 @@ class WithDictTestCase(unittest.TestCase):
 
 if __name__=='__main__':
     global testdic
-    testdic = CifFile.CifDic("pycifrw/drel/testing/cif_core.dic",grammar="STAR2",do_imports='Contents')
-    unittest.main()
-    #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
+    testdic = CifFile.CifDic("tests/drel/cif_core.dic",grammar="2.0",do_imports='Contents')
+    #unittest.main()
+    suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(dRELRuntimeTestCase)
-    #unittest.TextTestRunner(verbosity=2).run(suite)
+    unittest.TextTestRunner(verbosity=2).run(suite)

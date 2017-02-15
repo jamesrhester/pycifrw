@@ -1,0 +1,203 @@
+#\#CIF_2.0
+data_saly2
+
+_chemical_formula.sum                 'C7 H6 O3'
+_chemical_formula.weight               132.07
+
+_symmetry.cell_setting                 monoclinic
+_symmetry.space_group_name_H_M         P_1_21/a_1
+_symmetry_space_group_name_Hall        -p_2yab
+
+loop_
+_symmetry_equiv.pos_as_xyz
+  '+x,+y,+z'  '1/2-x,1/2+y,-z'  '-x,-y,-z'  '1/2+x,1/2-y,+z'
+ 
+_cell.length_a                         11.520(12)
+_cell.length_b                         11.210(11)
+_cell.length_c                         4.920(5)
+_cell.angle_alpha                      90.00000
+_cell.angle_beta                       90.8331(5)
+_cell.angle_gamma                      90.00000
+_cell.volume                           635.3
+_cell.formula_units_Z                  4
+
+_exptl_crystal.density_diffrn          1.444
+_exptl_crystal.density_meas            1.234
+_diffrn_radiation.type                'Cu K\a'
+loop_
+_diffrn_radiation_wavelength.id
+_diffrn_radiation_wavelength.value  
+  lambda1   1.5418
+
+loop_
+_atom_type.symbol
+_atom_type.oxidation_number
+_atom_type.atomic_mass
+_atom_type.number_in_cell
+  O    0   15.999  12 
+  C    0   12.011  28
+  H    0   1.008   24
+
+
+loop_
+_atom_type_scat.symbol
+_atom_type_scat.dispersion_real
+_atom_type_scat.dispersion_imag
+_atom_type_scat.source
+  O     .047  .032  'Int Tables Vol IV Tables 2.2B and 2.3.1'
+  C     .017  .009  'Int Tables Vol IV Tables 2.2B and 2.3.1'
+  H      0  0  'Int Tables Vol IV Tables 2.2B and 2.3.1'
+
+ 
+loop_
+_atom_site.label
+_atom_site.fract_x
+_atom_site.fract_y
+_atom_site.fract_z
+_atom_site.U_iso_or_equiv
+_atom_site.adp_type
+_atom_site.occupancy
+  o1  .5505(5)  .6374(5)  .1605(11)  .035(3)  Uani   1.00000 
+  o2  .4009(5)  .5162(5)  .2290(11)  .033(3)  Uiso   1.00000 #<<<<
+  o3  .2501(5)  .5707(5)  .6014(13)  .043(4)  Uani   1.00000
+  c1  .4170(7)  .6930(8)  .4954(15)  .029(4)  Uani   1.00000
+  c2  .3145(7)  .6704(8)  .6425(16)  .031(5)  Uani   1.00000 
+  c3  .2789(8)  .7488(8)  .8378(17)  .040(5)  Uani   1.00000 
+  c4  .3417(9)  .8529(8)  .8859(18)  .045(6)  Uani   1.00000 
+  c5  .4445(9)  .8778(9)  .7425(18)  .045(6)  Uani   1.00000 
+  c6  .4797(8)  .7975(8)  .5487(17)  .038(5)  Uani   1.00000 
+  c7  .4549(7)  .6092(7)  .2873(16)  .029(4)  Uani   1.00000 
+
+loop_
+_atom_site_aniso.label
+_atom_site_aniso.U_11
+_atom_site_aniso.U_22
+_atom_site_aniso.U_33
+_atom_site_aniso.U_12
+_atom_site_aniso.U_13
+_atom_site_aniso.U_23
+  o1  .029(3)  .033(3)  .043(3)  -.008(3)  .017(2)  -.007(2)
+  o2  .029(3)  .031(3)  .040(3)  -.008(3)  .015(2)  -.010(2)
+  o3  .033(3)  .033(4)  .064(4)  -.003(3)  .018(3)  -.007(3)
+  c1  .028(4)  .036(5)  .023(4)  .000(4)  .005(3)  -.004(3)
+  c2  .027(4)  .032(5)  .035(5)  .003(4)  .003(3)  -.007(3)
+  c3  .044(5)  .041(5)  .035(5)  .011(5)  .003(4)  -.010(4)
+  c4  .057(6)  .034(6)  .045(6)  .014(5)  -.006(4)  -.010(4)
+  c5  .057(6)  .042(5)  .035(5)  .011(5)  -.002(4)  -.010(4)
+  c6  .044(5)  .026(5)  .044(6)  .003(4)  -.002(4)  -.005(4)
+  c7  .029(4)  .028(4)  .031(5)  .005(4)  .006(3)  -.002(3)
+
+
+loop_
+ _model_site.id
+ _model_site.adp_eigen_system
+ [ o1    1_555  ] ?
+ [ o2    1_555  ] ?
+
+
+loop_                            
+ _refln.index_h                   
+ _refln.index_k                   
+ _refln.index_l                   
+ _refln.F_meas                    
+ _refln.F_calc_xtal                    
+    0   0   3  26.557  23.993 
+    0   1   1  33.109  32.058
+    1   1   1   9.008   6.604 
+
+
+
+
+data_modsite
+
+_chemical_formula.sum                 'C7 H6 O3'
+_chemical_formula.weight               132.07
+
+_symmetry.cell_setting                 monoclinic
+_symmetry.space_group_name_H-M         P_1_21/a_1
+_symmetry.space_group_name_Hall        -p_2yab
+
+loop_
+_symmetry_equiv.pos_as_xyz
+  '+x,+y,+z'  '1/2-x,1/2+y,-z'  '-x,-y,-z'  '1/2+x,1/2-y,+z'
+ 
+_cell.length_a                         11.520(12)
+_cell.length_b                         11.210(11)
+_cell.length_c                         4.920(5)
+_cell.angle_alpha                      90.00000
+_cell.angle_beta                       90.8331(5)
+_cell.angle_gamma                      90.00000
+_cell.volume                           ? # 635.3
+_cell.formula_units_Z                  4
+_cell_vector.a                         ?
+
+_exptl_crystal.density_diffrn_COMPARE  1.444
+_exptl_crystal.density_diffrn          ?
+_exptl_crystal.density_meas            1.234
+_diffrn_radiation.type                'Cu K\a'
+
+loop_
+_diffrn_radiation_wavelength.id
+_diffrn_radiation_wavelength.value  
+  lambda1   1.5418
+
+loop_
+_atom_type.symbol
+_atom_type.oxidation_number
+_atom_type.atomic_mass
+# _atom_type.number_in_cell
+  O    0   15.999 # 12 
+  C    0   12.011 # 28
+  H    0   1.008  # 24
+
+
+loop_
+_atom_type_scat.symbol
+_atom_type_scat.dispersion_real
+_atom_type_scat.dispersion_imag
+_atom_type_scat.source
+  O     .047  .032  'Int Tables Vol IV Tables 2.2B and 2.3.1'
+  C     .017  .009  'Int Tables Vol IV Tables 2.2B and 2.3.1'
+  H      0  0  'Int Tables Vol IV Tables 2.2B and 2.3.1'
+
+ 
+loop_
+_atom_site.label
+_atom_site.fract_x
+_atom_site.fract_y
+_atom_site.fract_z
+_atom_site.U_iso_or_equiv
+_atom_site.adp_type
+_atom_site.occupancy
+_atom_site.symmetry_multiplicity 
+  o1  .5505(5)  .6374(5)  .1605(11)  .035(3)  Uani   1.00000 ? 
+  o2  .4009(5)  .5162(5)  .2290(11)  .033(3)  Uiso   1.00000 ? #<<<<
+  o3  .2501(5)  .5707(5)  .6014(13)  .043(4)  Uani   1.00000 ?
+  c1  .4170(7)  .6930(8)  .4954(15)  .029(4)  Uani   1.00000 ?
+  c2  .3145(7)  .6704(8)  .6425(16)  .031(5)  Uani   1.00000 ?
+  c3  .2789(8)  .7488(8)  .8378(17)  .040(5)  Uani   1.00000 ?
+  c4  .3417(9)  .8529(8)  .8859(18)  .045(6)  Uani   1.00000 ?
+  c5  .4445(9)  .8778(9)  .7425(18)  .045(6)  Uani   1.00000 ?
+  c6  .4797(8)  .7975(8)  .5487(17)  .038(5)  Uani   1.00000 ?
+  c7  .4549(7)  .6092(7)  .2873(16)  .029(4)  Uani   1.00000 ?
+
+loop_
+_atom_site_aniso.label
+_atom_site_aniso.U_11
+_atom_site_aniso.U_22
+_atom_site_aniso.U_33
+_atom_site_aniso.U_12
+_atom_site_aniso.U_13
+_atom_site_aniso.U_23
+  o1  .029(3)  .033(3)  .043(3)  -.008(3)  .017(2)  -.007(2)
+#  o2  .029(3)  .031(3)  .040(3)  -.008(3)  .015(2)  -.010(2)
+  o3  .033(3)  .033(4)  .064(4)  -.003(3)  .018(3)  -.007(3)
+  c1  .028(4)  .036(5)  .023(4)  .000(4)  .005(3)  -.004(3)
+  c2  .027(4)  .032(5)  .035(5)  .003(4)  .003(3)  -.007(3)
+  c3  .044(5)  .041(5)  .035(5)  .011(5)  .003(4)  -.010(4)
+  c4  .057(6)  .034(6)  .045(6)  .014(5)  -.006(4)  -.010(4)
+  c5  .057(6)  .042(5)  .035(5)  .011(5)  -.002(4)  -.010(4)
+  c6  .044(5)  .026(5)  .044(6)  .003(4)  -.002(4)  -.005(4)
+  c7  .029(4)  .028(4)  .031(5)  .005(4)  .006(3)  -.002(3)
+
+
