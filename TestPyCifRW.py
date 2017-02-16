@@ -1702,8 +1702,9 @@ class DicEvalTestCase(unittest.TestCase):
     def testCategoryMethod(self):
         """Test that a category method calculates and updates"""
         # delete pre-existing values
-        del self.fb['_model_site.id']
         del self.fb['_model_site.adp_eigen_system']
+        del self.fb["_model_site.label"]
+        del self.fb["_model_site.symop"]
         self.fb.provide_value = True
         result = self.fb['model_site']
         self.fb.provide_value = False

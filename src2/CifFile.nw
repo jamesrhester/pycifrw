@@ -2952,7 +2952,7 @@ if len(pulled_to_cats)>0 and len(cat_result)==0:
 if '_method.py_expression' in self[the_category] and key not in cat_result:
     print("**Now applying category method for %s in search of %s**" % (the_category,key))
     cat_result = self.derive_item(the_category,cifdata,store_value=True)
-print("**Obtained for %s " % the_category + repr(cat_result))
+print("**Tried pullbacks, obtained for %s " % the_category + repr(cat_result))
 # do we now have our value?
 if key in cat_result:
     return cat_result[key]

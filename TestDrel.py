@@ -723,6 +723,49 @@ class WithDictTestCase(unittest.TestCase):
        print('symops are now {!r}'.format(b))
        self.failUnless(b[1] == '1_555')
 
+   def testIfStatement(self):
+        """Test that we handle optional values appropriately"""
+        teststrg = """
+        with a as atom_site
+        label = a.label
+        if (a.adp_type == "uani") {
+        Loop b as atom_site_aniso     {
+           If(label == b.label)           {
+ 
+               UIJ = b.matrix_U
+               Break
+     } } }
+ 
+     Else If (a.adp_type == 'bani')  {
+         Loop b as atom_site_aniso     {
+           If(label == b.label)           {
+ 
+              UIJ = b.matrix_B / (8 * Pi**2)
+              Break
+     } } }
+     Else                                    {
+         If (a.adp_type == 'uiso')  U  =  a.U_iso_or_equiv
+         Else                       U  =  a.B_iso_or_equiv / (8 * Pi**2)
+ 
+             UIJ = U * _cell.convert_Uiso_to_Uij
+     }
+
+     _atom_site.tensor_beta = UIJ """
+        loopable = {
+                   "atom_site":["label",["tensor_beta","label"]],
+                   "atom_site_aniso":["label",["label","matrix_B","matrix_U"]],
+                  }
+        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+        realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_atom_site.tensor_beta",
+                                                   depends = True,have_sn=False,
+                                                        loopable=loopable,cif_dic=testdic)
+        print(realfunc)
+        exec(realfunc)
+        self.testblock.assign_dictionary(testdic)
+        b = myfunc(self.testblock)
+        print('tensor beta is now {!r}'.format(b))
+        self.failUnless(b[1][1][1] == 0.031)  #U22 for O2
+        
 if __name__=='__main__':
     global testdic
     testdic = CifFile.CifDic("tests/drel/cif_core.dic",grammar="2.0",do_imports='Contents')

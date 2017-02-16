@@ -89,10 +89,11 @@ _atom_site_aniso.U_23
 
 
 loop_
- _model_site.id
+ _model_site.label
+ _model_site.symop
  _model_site.adp_eigen_system
- [ o1    1_555  ] ?
- [ o2    1_555  ] ?
+   o1    1_555    ?
+   o2    1_555    ?
 
 
 loop_                            
@@ -100,7 +101,7 @@ loop_
  _refln.index_k                   
  _refln.index_l                   
  _refln.F_meas                    
- _refln.F_calc_xtal                    
+ _refln.F_calc                    
     0   0   3  26.557  23.993 
     0   1   1  33.109  32.058
     1   1   1   9.008   6.604 

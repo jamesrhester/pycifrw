@@ -110,28 +110,47 @@ number of packets during execution of the method.
     dummy_vars = ",".join(d_vars)
     actual_names = [k for k in withtable.keys()]
     actual_names = [func_table["data_access"]% ("'"+a+"'") for a in actual_names]
+    # intercept optional values and replace with [] if None
+    optional_names = ["__option_w%d"%n for n,k in enumerate(withtable.keys()) if withtable[k][2]]
     if cur_row:
         actual_names+=['__row_id']
-    map_names = ",".join(actual_names)
+    final_names = actual_names[:]
     one_pack_names = [func_table["element_no"] % (a,"packet_no") for a in actual_names]
+    for n,k in enumerate(withtable.keys()):
+        if withtable[k][2]:
+            final_names[n]="__option_w%d"%n  #pre-evaluated
+            one_pack_names[n] = "__option_w%d"%n
+    map_names = ",".join(final_names)
     one_packet_each = ",".join(one_pack_names)
     preamble = "def %s(ciffile,packet_no=-1):\n" % (func_name)
     preamble +="    def drel_func(%s):\n" % dummy_vars
     # preamble +="        print 'Globals inside looped drel_func:' + `globals()`\n"
     # the actual function gets inserted here
-    end_body=      "\n    if packet_no < 0:   #map\n"
+    # Handle the optional names
+    end_body = "\n"
+    for n,one_opt in enumerate(withtable.keys()):
+        if withtable[one_opt][2]:
+            end_body += "    try:\n"
+            end_body += "            %s%d = %s\n" % ("__option_w",n,actual_names[n])
+            end_body += "    except KeyError:\n"
+            end_body += "            %s%d = None\n" % ("__option_w",n)
+    end_body+=      "    if packet_no < 0:   #map\n"
+    for one_opt in optional_names:
+        end_body += "        if %s is None: %s = []\n" % (one_opt,one_opt)
+
     if cur_row and len(actual_names) > 1:    #i.e. have real names from category
         end_body +="        __row_id = range(%s)\n" % (func_table['count_data'] % ("'"+actual_names[0]+"'"))
     elif cur_row and len(actual_names)==1:   #so no actual names available
         
-        end_body += "       cat_names = %s\n" % (func_table["cat_names"] % ("'"+getcatname(targetname)[0]+"'"))
-        end_body += "       have_name = [a for a in cat_names if %s]\n" % (func_table["has_name"] % "a")
-        end_body += "       if len(have_name)>0:\n"
+        end_body += "        cat_names = %s\n" % (func_table["cat_names"] % ("'"+getcatname(targetname)[0]+"'"))
+        end_body += "        have_name = [a for a in cat_names if %s]\n" % (func_table["has_name"] % "a")
+        end_body += "        if len(have_name)>0:\n"
         end_body += "           full_length = %s \n" % (func_table["count_data"] % (func_table["data_access"] % "have_name[0]"))
         end_body += "           __row_id = range(full_length)\n"
-        end_body += "       else:\n"
+        end_body += "        else:\n"
         end_body += "           return []\n"
-    end_body+=      "       return map(lambda %s:drel_func(%s),%s)\n" % (dummy_vars,dummy_vars,map_names)
+
+    end_body+=      "        return map(lambda %s:drel_func(%s),%s)\n" % (dummy_vars,dummy_vars,map_names)
     end_body+=     "    else:\n"
     end_body+=     "        return drel_func(%s)\n" % one_packet_each
 
@@ -182,12 +201,15 @@ The [[rhs]] is an entry to indicate whether or not we are dealing with the rhs
 of an assignment. If False, then we are dealing with the lhs, and if None, then
 we are not in an assignment.
 
+The [[inif]] entry flags if we are inside an IF statement, in which case dataitems
+may not need to be provided in order to proceed with calculation.
+
 <<AST traverser>>=
 def start_traverse(in_node,api_table,target_id=None,loopable={},cat_meth=False,debug=None, func=False,
                   cif_dic=None):
   special_info = {"special_id":[{}],"target_id":target_id,"withtable":{},"sub_subject":"",
                   "depends":set(),"loopable_cats":loopable,"packet_vars":{},
-                  "need_current_row":False,"rhs":None}
+                  "need_current_row":False,"rhs":None,"inif":False}
   # create a virtual enclosing 'with' statement
   if target_id is not None and not cat_meth and not func:
       cat,name = getcatname(target_id)
@@ -345,13 +367,16 @@ elif node_type == "SUBSCRIPTION":  # variable, single expression
         outstring = outstring + traverse_ast(in_node[2]) + "]"
         return outstring
 
-@  Attribute references.  We need to catch all attribute references to special
-variables (those defined by loop or with statements).  For ``with'' variables, we
-create a dummy variable for every attribute reference, keyed by the actual
-dataname looked up via the (cat,obj) tuple.  We store the order that
-it appears in the function call that is created, so that we can include the function
-within a 'map' statement and give the correct order of items.  So the withtable
-has syntax {``dataname'':(dummyname,dummyorder)}.
+@ Attribute references.  We need to catch all attribute references to
+special variables (those defined by loop or with statements).  For
+``with'' variables, we create a dummy variable for every attribute
+reference, keyed by the actual dataname looked up via the (cat,obj)
+tuple.  We store the order that it appears in the function call that
+is created, so that we can include the function within a 'map'
+statement and give the correct order of items.  Additionally, if the
+variable appears inside an IF statement, evaluation may be optional,
+so a flag is set (True means optional). So the withtable has syntax
+{``dataname'':(dummyname,dummyorder,optional = True/False)}.
 
 Furthermore, the square bracket syntax for keyed access to data packets requires
 that the result of the keyed access is accessed by attribute.  While dREL does not
@@ -398,7 +423,8 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
             if not special_info["withtable"].has_key(true_name):  #new
                 position = len(special_info["withtable"])
                 new_var = "__w%d" % position
-                special_info["withtable"][true_name] = (new_var,position)
+                isoptional = special_info["inif"]
+                special_info["withtable"][true_name] = (new_var,position,isoptional)
             outstring += special_info["withtable"][true_name][0]
             special_info["depends"].add(true_name)
     elif in_node[1][0] == "ATOM" and primary[0] == "_":   # a cat/obj name
@@ -457,11 +483,18 @@ elif node_type == "FUNC_CALL":
 @  Compound statements.  We make a copy of the target expressions in the FOR statement
 to allow these objects to be modified inside the suite.
 
+The expression inside an IF statement may never be executed, so we do not have to
+provide a value for any dataitems referenced here. We flag this by setting the
+``inif'' variable to True, and any dataitems referenced when this flag is True
+are provided as keywords to the 
+
 <<Compound statements>>=
     elif node_type == "IF_EXPR":   #IF_EXPR test true_suite [ELSE IF_EXPR] false_suite
         outstring = "if "
         outstring = outstring + traverse_ast(in_node[1])
         outstring = outstring + ":"
+        old_inif = special_info["inif"]
+        special_info["inif"] = True
         true_bit = traverse_ast(in_node[2])
         outstring = outstring + add_indent("\n"+true_bit)  #indent
         elseif = in_node[3]
@@ -473,6 +506,7 @@ to allow these objects to be modified inside the suite.
             outstring = outstring + "\nelse:"
             false_bit = traverse_ast(in_node[4])
             outstring = outstring + add_indent("\n"+false_bit)  #indent
+        special_info["inif"] = old_inif
         return outstring
 
 # dREL for statements include the final value, whereas a python range will include

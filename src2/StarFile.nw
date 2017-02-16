@@ -1297,6 +1297,7 @@ class StarPacket(list):
         d = self.cif_dictionary
         c = self.fulldata
         k = self.key
+        assert isinstance(k,list)
         d.derive_item(att_name,c,store_value=True)
         #
         # now pick out the new value
@@ -2188,7 +2189,7 @@ def GetCompoundKeyedPacket(self,keydict):
     for one_key in keynames:
         keyval,no_case = keydict[one_key]
         if no_case:
-           my_loop = list([a for a in my_loop if getattr(a,one_key).lower()==keyval.lower()])
+           my_loop = list([a for a in my_loop if str(getattr(a,one_key)).lower()==str(keyval).lower()])
         else:
            my_loop = list([a for a in my_loop if getattr(a,one_key)==keyval])
     if len(my_loop)!=1:
@@ -2285,7 +2286,9 @@ def GetMultiKeyedSemanticPacket(self,keydict,cat_id):
     return p
 
 @ Plain single key. This is the older routine where we assume that
-we only have a single key per category.
+we only have a single key per category.  We still have to put the
+single key into a list as the __getattr__ method of the StarPacket
+will assume that it has been passed a list of keys.
 
 <<Get semantic packet by key>>=
 def GetKeyedSemanticPacket(self,keyvalue,cat_id):
@@ -2304,7 +2307,6 @@ def GetKeyedSemanticPacket(self,keyvalue,cat_id):
     if self.dictionary[target_keys[0]]['_type.contents'] in ['Code','Tag','Name']:
         lcase = True
     for cat_key in target_keys:
-        if not self.has_key(cat_key): continue   #couldn't be generated
         try:
             extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
         except KeyError:        #missing key
@@ -2324,7 +2326,7 @@ def GetKeyedSemanticPacket(self,keyvalue,cat_id):
     # the following attributes used to calculate missing values
     for keyname in target_keys:
         if hasattr(p,keyname):
-            p.key = keyname
+            p.key = [keyname]
             break
     if not hasattr(p,"key"):
         raise ValueError("No key found for %s, packet is %s" % (cat_id,str(p)))
