@@ -27,6 +27,7 @@ value types (iv) the results of all applications are values ready for calculatio
 <<Configuration>>=
 pycifrw_func_table = {   #how to use PyCIFRW CifFile objects
          "data_access": "ciffile[%s]",   # argument is dataname to be accessed
+         "optional_data_access":"ciffile.get(%s,None)",
          "element_no": "%s[%s]", # accessing a particular element of the result of data_access
          "count_data": "len(%s)", # number of elements for result of data_access
          "cat_names":"ciffile.dictionary.names_in_cat(%s)", #names in category %s
@@ -131,7 +132,7 @@ number of packets during execution of the method.
     for n,one_opt in enumerate(withtable.keys()):
         if withtable[one_opt][2]:
             end_body += "    try:\n"
-            end_body += "            %s%d = %s\n" % ("__option_w",n,actual_names[n])
+            end_body += "            %s%d = %s\n" % ("__option_w",n,func_table["optional_data_access"]%("'"+one_opt+"'"))
             end_body += "    except KeyError:\n"
             end_body += "            %s%d = None\n" % ("__option_w",n)
     end_body+=      "    if packet_no < 0:   #map\n"
