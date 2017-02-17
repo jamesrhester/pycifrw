@@ -1,8 +1,10 @@
 # Testing of the PyCif module using the PyUnit framework
 #
 # To maximize python3/python2 compatibility
+# Note that all tests should pass with and without
+# unicode literals.
 from __future__ import print_function
-#from __future__ import unicode_literals
+from __future__ import unicode_literals
 from __future__ import division
 from __future__ import absolute_import
 

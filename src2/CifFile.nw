@@ -2703,7 +2703,7 @@ def add_drel_funcs(self):
         py_function = py_from_ast.make_python_function(res_ast,None,targetname=funcname,func_def=True,loopable=loop_info,cif_dic = self)
         #print('dREL library function ->\n' + py_function)
         global_table = globals()
-        exec py_function in global_table    #add to namespace
+        exec(py_function, global_table)    #add to namespace
     #print('Globals after dREL functions added:' + repr(globals()))
     self.ddlm_functions = globals()  #for outside access
 
@@ -2895,7 +2895,7 @@ of the module file (as done here) seems to be a reliable way to go.
 for one_func in the_funcs:
     print('Executing function for %s:' % key)
     #print(one_func)
-    exec one_func in globals()  #will access dREL functions, puts "pyfunc" in scope
+    exec(one_func, globals())  #will access dREL functions, puts "pyfunc" in scope
     # print('in following global environment: ' + repr(global_table))
     stored_setting = cifdata.provide_value
     cifdata.provide_value = True
@@ -4049,7 +4049,7 @@ def convert_list_values(structure,dimension):
             func_def +=")\n"  # close append
         func_def +=      "   return final_val\n"
     print(func_def)
-    exec func_def in globals() #(re)defines element_convert in global namespace
+    exec(func_def, globals()) #(re)defines element_convert in global namespace
     if len(dimension)> 0 and int(dimension[0]) != 1:
         return lambda a: map(element_convert,a)
     else: return element_convert
@@ -4077,7 +4077,7 @@ def convert_matrix_values(valtype):
         func_def +="    return p.astype('complex')\n"
     else:
         raise ValueError('Unknown matrix value type')
-    exec func_def  #matrix convert is defined
+    exec(func_def,globals())  #matrix convert is defined
     return matrix_convert
 
 @  DDLm specifies List element composition using a notation of form 'cont(el,el,el...)'
