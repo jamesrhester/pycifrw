@@ -149,14 +149,15 @@ are assuming the right eigenvalues, not the left eigenvalues.
 
 <<Extra mathematical functions>>=
 def drel_eigen(in_matrix):
-    """Return 3 lists of form [a,[v1,v2,v3]], corresponding to the 3 eigenvalues 
-       and vectors of a 3x3 matrix"""
+    """Return 3 lists of form [a,v1,v2,v3], corresponding to the 3 eigenvalues 
+       and eigenvector components of a 3x3 matrix"""
     vals,vects = eig(in_matrix)
     move = list(numpy.argsort(vals))
     move.reverse()
     vals = vals[move]
-    vects = vects.transpose()[move]
-    return zip(vals,vects)
+    vects = vects[move]
+    vects = list([[a]+list(numpy.asarray(v).ravel()) for a,v in zip(vals,vects)]) #Eigen returns 4-list
+    return vects
 
 def drel_int(in_val):
     """Return in_val as an integer"""

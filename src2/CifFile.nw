@@ -2804,9 +2804,7 @@ def store_new_looped_value(self,key,cifdata,result,default_result):
       the_category = self[key]["_name.category_id"]
       out_result = result
       if result is not None and not default_result:
-          # find any numpy arrays
-          numpy_objs = [a for a in result if hasattr(a,'dtype')]    #numpy object
-          if len(numpy_objs)>0:
+              # find any numpy arrays
               def conv_from_numpy(one_elem):
                   if not hasattr(one_elem,'dtype'):
                      if isinstance(one_elem,(list,tuple)):

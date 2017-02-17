@@ -2,7 +2,7 @@
 #
 # To maximize python3/python2 compatibility
 from __future__ import print_function
-from __future__ import unicode_literals
+#from __future__ import unicode_literals
 from __future__ import division
 from __future__ import absolute_import
 
@@ -1904,7 +1904,7 @@ global testdic
 testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.dic",grammar="2.0")
 
 if __name__=='__main__':
-     suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
@@ -1921,5 +1921,5 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     unittest.TextTestRunner(verbosity=2).run(suite)
-     #unittest.main()
+     #unittest.TextTestRunner(verbosity=2).run(suite)
+     unittest.main()

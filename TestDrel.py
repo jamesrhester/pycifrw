@@ -759,7 +759,7 @@ class WithDictTestCase(unittest.TestCase):
         realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_atom_site.tensor_beta",
                                                    depends = True,have_sn=False,
                                                         loopable=loopable,cif_dic=testdic)
-        print(realfunc)
+        #print(realfunc)
         exec(realfunc)
         self.testblock.assign_dictionary(testdic)
         b = myfunc(self.testblock)
@@ -769,10 +769,10 @@ class WithDictTestCase(unittest.TestCase):
 if __name__=='__main__':
     global testdic
     testdic = CifFile.CifDic("tests/drel/cif_core.dic",grammar="2.0",do_imports='Contents')
-    #unittest.main()
-    suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
+    unittest.main()
+    #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase)
     #suite = unittest.TestLoader().loadTestsFromTestCase(dRELRuntimeTestCase)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    #unittest.TextTestRunner(verbosity=2).run(suite)

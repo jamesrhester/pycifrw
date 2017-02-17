@@ -334,7 +334,7 @@ def __len__(self):
 
 def __contains__(self,item):
     """Support the 'in' operator"""
-    if not isinstance(item,unicode): return False
+    if not isinstance(item,(unicode,str)): return False
     if item.lower() in self.visible_keys:
         return True
     return False
@@ -1701,6 +1701,7 @@ def AddItem(self,key,value,precheck=False):
     a single value, a list or a tuple."""
     if not isinstance(key,(unicode,str)):
          raise TypeError('Star datanames are strings only (got %s)' % repr( key ))
+    key = unicode(key)    #everything is unicode internally
     if not precheck:
          self.check_data_name(key,self.maxnamelength)    # make sure no nasty characters
     # check for overwriting
@@ -1819,24 +1820,28 @@ sure everything goes in either as a single item or as a dict/list/tuple. We
 provide an empty datavalue with the same structure as the returned value
 so that the value/string alternate is correctly initialised/reset.
 
-Note that all string data should be Unicode.
+Note that all string data should be Unicode.  To maintain compatibility
+for Python 2 we apply Unicode to any string data.
 
 <<Regularise data values>>=
 def regularise_data(self,dataitem):
     """Place dataitem into a list if necessary"""
     from numbers import Number
     if isinstance(dataitem,(Number,unicode,StarList,StarDict)):
-        return dataitem,None
+        return dataitem,None  #assume StarList/StarDict are unicode if necessary
     if isinstance(dataitem,str):
-        return (unicode(dataitem),None)
+        return unicode(dataitem),None
     if isinstance(dataitem,(tuple,list)):
-        return dataitem,[None]*len(dataitem)
+        v,s = zip(*list([self.regularise_data(a) for a in dataitem]))
+        return list(v),list(s)
+        #return dataitem,[None]*len(dataitem)
     # so try to make into a list
     try:
         regval = list(dataitem)
     except TypeError as value:
         raise StarError( str(dataitem) + ' is wrong type for data value\n' )
-    return regval,[None]*len(regval)
+    v,s = zip(*list([self.regularise_data(a) for a in regval]))
+    return list(v),list(s)
 
 @ Dimension of data.  This would ordinarily be the number of nested levels,
 and if we have a naked string, we have to return zero.
@@ -2673,7 +2678,7 @@ def format_packet_item(self,pack_item,indent,outstring,format_hint):
        # print 'Formatting %s' % `pack_item`
        # temporary check for any non-unicode items
        if isinstance(pack_item,str) and not isinstance(pack_item,unicode):
-           raise StarError("Item {pack_item!r} is not unicode")
+           raise StarError("Item {0!r} is not unicode".format(pack_item))
        if isinstance(pack_item,unicode):
            delimiter = format_hint.get('delimiter',None)
            startcol = format_hint.get('column',-1)
