@@ -1961,11 +1961,11 @@ def GetFullItemValue(self,itemname):
     # prefer string value unless all are None
     # are we a looped value?
     if not isinstance(s,(tuple,list)) or isinstance(s,StarList):
-        if s is not None or (isinstance(s,StarList) and None not in s):
+        if not_none(s):
             return s,False    #a string value
         else:
             return v,not isinstance(v,StarList)  #a StarList is not calculation-ready
-    elif None not in s:
+    elif not_none(s):
         return s,False         #a list of string values
     else:
         if len(v)>0:
@@ -2929,7 +2929,7 @@ characters on their lines
 def process_template(template_file):
     """Process a template datafile to formatting instructions"""
     template_as_cif = StarFile(template_file,grammar="2.0").first_block()
-    if isinstance(template_file,unicode):
+    if isinstance(template_file,(unicode,str)):
         template_string = open(template_file).read()
     else:   #a StringIO object
         template_file.seek(0)   #reset
@@ -3254,6 +3254,16 @@ def transpose(base_list):
           new_packet.append(base_list[j][i])
        new_lofl.append(new_packet)
     return new_lofl
+
+def not_none(itemlist):
+    """Return true only if no values of None are present"""
+    if isinstance(itemlist,(tuple,list)):
+        for x in itemlist:
+          if not not_none(x): return False 
+        return True
+    elif itemlist is None:
+        return False
+    return True
 
 
 <<Selection of iterators>>=

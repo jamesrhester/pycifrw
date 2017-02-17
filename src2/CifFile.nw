@@ -1961,9 +1961,9 @@ def validate_looping(self,item_name,item_value):
         must_loop = self[item_name][self.must_loop_spec]
     except KeyError:
         return {"result":None}
-    if must_loop == 'yes' and isinstance(item_value,unicode): # not looped
+    if must_loop == 'yes' and isinstance(item_value,(unicode,str)): # not looped
         return {"result":False}      #this could be triggered
-    if must_loop == 'no' and not isinstance(item_value,unicode):
+    if must_loop == 'no' and not isinstance(item_value,(unicode,str)):
         return {"result":False}
     return {"result":True}
 
@@ -4116,7 +4116,7 @@ def transpose(base_list):
 
 # listify strings - used surprisingly often
 def listify(item):
-    if isinstance(item,unicode): return [item]
+    if isinstance(item,(unicode,str)): return [item]
     else: return item
 
 # given a list of search items, return a list of items
@@ -4187,7 +4187,7 @@ def merge_dic(diclist,mergemode="replace",ddlspec=None):
     dic_as_cif_list = []
     for dic in diclist:
         if not isinstance(dic,CifFile) and \
-           not isinstance(dic,unicode):
+           not isinstance(dic,(unicode,str)):
                raise TypeError("Require list of CifFile names/objects for dictionary merging")
         if not isinstance(dic,CifFile): dic_as_cif_list.append(CifFile(dic))
         else: dic_as_cif_list.append(dic)
