@@ -5,6 +5,22 @@
 #define STAR_SCANNER
 #include "star_scanner.h"
 
+#if PY_MAJOR_VERSION >= 3
+  #define MOD_ERROR_VAL NULL
+  #define MOD_SUCCESS_VAL(val) val
+  #define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
+  #define MOD_DEF(ob, name, doc, methods) \
+          static struct PyModuleDef moduledef = { \
+            PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
+          ob = PyModule_Create(&moduledef);
+#else
+  #define MOD_ERROR_VAL
+  #define MOD_SUCCESS_VAL(val)
+  #define MOD_INIT(name) void init##name(void)
+  #define MOD_DEF(ob, name, doc, methods) \
+          ob = Py_InitModule3(name, methods, doc);
+#endif
+
 static PyObject * get_input(PyObject * self, PyObject * args);
 static PyObject * flex_scan(PyObject * self,PyObject * args);
 static PyObject * get_token(PyObject * self,PyObject * args);
@@ -20,16 +36,22 @@ static PyMethodDef StarScanMethods[] = {
     {NULL,NULL,0,NULL}
     };
 
-
-PyMODINIT_FUNC
-initStarScan(void)
+//Module initialisation for Python 2 and 3
+MOD_INIT(StarScan)
 {
-    (void) Py_InitModule("StarScan", StarScanMethods);
+  PyObject *m;
+  MOD_DEF(m,"StarScan","A tokeniser for Star files",
+          StarScanMethods)
+    if(m==NULL)
+      return MOD_ERROR_VAL;
     token_list =  NULL;
     value_list =  NULL;
     line_no_list = NULL;
     current_len = 0;
     alloc_mem = 0;
+#if PY_MAJOR_VERSION >= 3
+    return m;
+#endif
 }
 
 /* We need to read from the text string that the Python
@@ -43,7 +65,11 @@ get_input(PyObject * self, PyObject * args)
 PyObject * str_arg;  /* A python string object in theory */
 int i;
 if(!(PyArg_ParseTuple(args,"U",&str_arg))) return NULL;
- input_string = PyString_AsString(str_arg);  /* if non-ASCII, problems... */
+#if PY_MAJOR_VERSION >= 3
+ input_string = PyUnicode_AsUTF8(str_arg);
+#else
+ input_string = PyString_AsString(str_arg);
+#endif
 string_pos = 0;
 in_string_len = strlen(input_string);
 star_clear();

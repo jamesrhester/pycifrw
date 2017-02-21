@@ -85,7 +85,7 @@ except ImportError:
 # Python 2,3 compatibility
 try:
     from urllib import urlopen         # for arbitrary opening
-    from urlparse import urlparse, urlunparse
+    from urlparse import urlparse, urlunparse,urljoin
 except:
     from urllib.request import urlopen
     from urllib.parse import urlparse,urlunparse,urljoin
@@ -518,7 +518,7 @@ keys for uniform access to DDL attributes.
 
 <<Dictionary determination function>>=
 def dic_determine(self):
-    if super(CifDic,self).has_key("on_this_dictionary"): 
+    if "on_this_dictionary" in self: 
         self.master_block = super(CifDic,self).__getitem__("on_this_dictionary")
         self.def_id_spec = "_name"
         self.cat_id_spec = "_category.id"   #we add this ourselves 
@@ -1108,8 +1108,14 @@ def keys(self):
         return super(CifDic,self).keys()
 
 def has_key(self,key):
-    return self.block_id_table.has_key(key.lower())
+    return key in self
 
+def __contains__(self,key):
+    try:
+        return key.lower() in self.block_id_table
+    except AttributeError:
+        return super(CifDic,self).__contains__(key)
+        
 def items(self):
     """Return (key,value) pairs"""
     return list([(a,self[a]) for a in self.keys()])
@@ -1538,7 +1544,6 @@ children of the old 'Head' block.
 
 <<Master import routine>>=
 def ddlm_import(self,import_mode='All'):
-    import urllib
     import_frames = list([(a,self[a]['_import.get']) for a in self.keys() if '_import.get' in self[a]])
     print ('Import mode %s applied to following frames' % import_mode)
     print (str([a[0] for a in import_frames]))
@@ -1553,7 +1558,7 @@ def ddlm_import(self,import_mode='All'):
         file_loc = import_ref["file"]
         full_uri = self.resolve_path(file_loc)
         if full_uri not in self.template_cache:
-            dic_as_cif = CifFile(urllib.urlopen(full_uri),grammar=self.grammar)
+            dic_as_cif = CifFile(urlopen(full_uri),grammar=self.grammar)
             self.template_cache[full_uri] = CifDic(dic_as_cif,do_imports=import_mode,do_dREL=False)  #this will recurse internal imports
             print('Added %s to cached dictionaries' % full_uri)
         import_from = self.template_cache[full_uri]
@@ -1622,10 +1627,9 @@ def ddlm_import(self,import_mode='All'):
         del self[parent_block]["_import.get"]
 
 def resolve_path(self,file_loc):
-    import urlparse
-    url_comps = urlparse.urlparse(file_loc)
+    url_comps = urlparse(file_loc)
     if url_comps[0]: return file_loc    #already full URI
-    new_url = urlparse.urljoin(self.my_uri,file_loc)
+    new_url = urljoin(self.my_uri,file_loc)
     #print("Transformed %s to %s for import " % (file_loc,new_url))
     return new_url
 
@@ -2434,7 +2438,7 @@ def validate_mandatory_category(self,whole_block):
     all_cats = [self[a].get(self.cat_spec) for a in whole_block.keys()]
     missing = set(mand_cats) - set(all_cats)
     if len(missing) > 0:
-        return {"result":False,"bad_items":`missing`}
+        return {"result":False,"bad_items":repr(missing)}
     return {"result":True}
 
 @  Processing DDLm mandatory categories/items

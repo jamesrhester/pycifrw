@@ -4,6 +4,19 @@ The function transformer turns dREL function calls into
 the appropriate Python/User-defined/Numpy function calls.
 
 <<*>>=
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
+# The unicode type does not exist in Python3 as the str type
+# encompasses unicode.  PyCIFRW tests for 'unicode' would fail
+# Suggestions for a better approach welcome.
+
+if isinstance(u"abc",str):   #Python3
+    unicode = str
+
 import re
 from CifFile import CifError
 <<Configuration>>
@@ -59,13 +72,13 @@ def make_python_function(in_ast,func_name,targetname, special_ids=[{}],
                          func_def = False, have_sn=True,loopable={},debug=None,depends=False):
     """Convert in_ast to python code"""
     if debug is not None:
-        print "incoming AST:"
-        print `in_ast`
+        print("incoming AST:")
+        print(repr(in_ast))
     func_text,withtable,dependencies,cur_row = start_traverse(in_ast,func_table,target_id=targetname,cat_meth=cat_meth,loopable=loopable,debug=debug,func=func_def,cif_dic=cif_dic)
     if debug is not None:
-        print 'Start========'
-        print func_text
-        print 'End=========='
+        print('Start========')
+        print(func_text)
+        print('End==========')
     if func_def and not depends:
         return func_text
     elif func_def:
@@ -125,7 +138,10 @@ number of packets during execution of the method.
     one_packet_each = ",".join(one_pack_names)
     preamble = "def %s(ciffile,packet_no=-1):\n" % (func_name)
     preamble +="    def drel_func(%s):\n" % dummy_vars
-    # preamble +="        print 'Globals inside looped drel_func:' + `globals()`\n"
+    # for debugging
+    print_instruction = "'Function passed variables "+("{!r} "*len(d_vars))+"'.format("+dummy_vars+")"
+    preamble +="        print(%s)" % print_instruction
+    # preamble +="        print ('Globals inside looped drel_func:' + repr(globals())\n")
     # the actual function gets inserted here
     # Handle the optional names
     end_body = "\n"
@@ -151,7 +167,7 @@ number of packets during execution of the method.
         end_body += "        else:\n"
         end_body += "           return []\n"
 
-    end_body+=      "        return map(lambda %s:drel_func(%s),%s)\n" % (dummy_vars,dummy_vars,map_names)
+    end_body+=      "        return map(lambda %s: drel_func(%s) , %s)\n" % (dummy_vars,dummy_vars,map_names)
     end_body+=     "    else:\n"
     end_body+=     "        return drel_func(%s)\n" % one_packet_each
 
@@ -219,13 +235,13 @@ def start_traverse(in_node,api_table,target_id=None,loopable={},cat_meth=False,d
           special_info["special_id"][-1]["_"+cat][1] = "looped_cat"
   <<Maths operator conversion table>>
   def traverse_ast(in_node,debug=debug):
-    if isinstance(in_node,basestring):
+    if isinstance(in_node,(unicode,str)):
         return in_node
     if isinstance(in_node[0],list):
-        raise SyntaxError, 'First element of AST Node must be string: ' + `in_node`
+        raise SyntaxError('First element of AST Node must be string: ' + repr(in_node))
     node_type = in_node[0]
     if debug == node_type:
-        print node_type + ": " + `in_node`
+        print(node_type + ": " + repr(in_node))
     if node_type == "ARGLIST":
         pass
 <<Literal nodes>>
@@ -234,14 +250,14 @@ def start_traverse(in_node,api_table,target_id=None,loopable={},cat_meth=False,d
 <<Compound statements>>
 <<Top level constructions>>
     else:
-       return "Not found: %s" % `in_node`
+       return "Not found: %s" % repr(in_node)
   result = traverse_ast(in_node)
   # remove target id from dependencies
   if special_info["target_id"] is not None:
       special_info["depends"].discard(special_info["target_id"].lower())
   if not special_info.get("have_drel_target",False):
-      print 'WARNING: no assignment to __dreltarget in %s (this is OK for category methods)' % `target_id`
-      print result
+      print('WARNING: no assignment to __dreltarget in %s (this is OK for category methods)' % repr(target_id))
+      print(result)
   return result,special_info["withtable"],special_info["depends"],special_info["need_current_row"]
 
 @  These are the simple constants that we have detected.
@@ -266,10 +282,10 @@ def start_traverse(in_node,api_table,target_id=None,loopable={},cat_meth=False,d
 for now literals are simply repeated, as the Python representation is
 the same as the dREL representation.   We make a note of all tags
 mentioned so that we can create a dependency tree.
-    
+
 <<Other primaries>>=
     elif node_type == "ATOM":
-        if isinstance(in_node[1],basestring):
+        if isinstance(in_node[1],(unicode,str)):
             # pick up built-in literals
             if in_node[1].lower() == 'twopi':
                 return "(2.0 * math.pi)"
@@ -344,24 +360,24 @@ In all other cases we have a plain subscription as for normal Python.
 elif node_type == "SUBSCRIPTION":  # variable, single expression
     newid = 0
     if in_node[1][0] == "ATOM" and in_node[1][1][0] == "ITEM_TAG":  #keyed lookup
-        print "Found category used as item tag: subscribing"
+        print("Found category used as item tag: subscribing")
         newid = [in_node[1][1][1][1:],False,False]  #drop underscore and remember
     else:
-        primary = traverse_ast(in_node[1])  
+        primary = traverse_ast(in_node[1])
         # check to see if this is a special variable
         for idtable in special_info["special_id"]:
             newid = idtable.get(primary,0)
             if newid: break
-            if primary in special_info["loopable_cats"].keys():   #loop category used 
+            if primary in special_info["loopable_cats"].keys():   #loop category used
                 newid = [primary,False,False]
-                break 
+                break
     if newid:
         #FIXME: the dataname may not be the <cat>.<obj> construction (eg pdCIF)
         key_items = ["_"+newid[0]+"."+s for s in special_info["loopable_cats"][newid[0]][0]]  #key name
         special_info["depends"].update([k.lower() for k in key_items])
         get_loop = api_table["semantic_packet"] % (traverse_ast(in_node[2]),"'"+newid[0]+"'")
         special_info["sub_subject"] = newid[0]  #in case of attribute reference following
-        print "Set sub_subject to %s" % special_info["sub_subject"]
+        print("Set sub_subject to %s" % special_info["sub_subject"])
         return get_loop
     else:
         outstring = primary + "["
@@ -420,8 +436,8 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
             special_info["depends"].add(true_name)
             if newid[1]:  # a loop statement requires an index
                 outstring += "[" + newid[1]+ "]"
-        else:   # a with statement; capture the name and create a dummy variable        
-            if not special_info["withtable"].has_key(true_name):  #new
+        else:   # a with statement; capture the name and create a dummy variable
+            if true_name not in special_info["withtable"]:  #new
                 position = len(special_info["withtable"])
                 new_var = "__w%d" % position
                 isoptional = special_info["inif"]
@@ -439,7 +455,7 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
             outstring = api_table["data_access"] % ("'" + fullname + "'")
     else: # default to Python attribute access
         # check for packet variables
-        if special_info["packet_vars"].has_key(primary):
+        if primary in special_info["packet_vars"]:
             real_cat = special_info["packet_vars"][primary]
             fullname = cif_dic.get_name_by_cat_obj(real_cat,in_node[2])
             special_info['depends'].add(fullname)
@@ -455,7 +471,7 @@ elif node_type == "ATTRIBUTE":  # id/tag , att
 
 @  Function calls. We catch two special cases.  If 'Current_Row'' is called
 we set a flag to ask the calling environment to provide us with a row
-number, as the generated function is always row-independent.  
+number, as the generated function is always row-independent.
 
 The List constructor in dREL will convert a single argument into a list, or
 else multiple arguments are bundled into a list.
@@ -557,7 +573,7 @@ elif node_type == "WITH": #new_id old_id suite
         special_info['special_id'][-1][a][0] == cat_id]
     if len(is_already_there)>0:
         del special_info['special_id'][-1][is_already_there[0]]
-        print "Found explicit loop category alias: %s for %s" % (alias_id,cat_id) 
+        print("Found explicit loop category alias: %s for %s" % (alias_id,cat_id) )
     special_info['special_id'][-1].update({alias_id:[cat_id,"",False]})
     if in_node[2] in special_info['loopable_cats'].keys(): #flag this
         special_info['special_id'][-1][alias_id][1] = "looped_cat"
@@ -566,7 +582,7 @@ elif node_type == "WITH": #new_id old_id suite
 
 @ Loop statements involve running over all packets in a category, substituting
 for datanames as necessary and inserting the packet index as well.
-    
+
 <<Loop statements>>=
 elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE 
     alias_id = in_node[1]
@@ -574,8 +590,8 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     var_info = [cat_id,"",False]
     if cat_id not in special_info['loopable_cats'].keys():
         message =  "%s is not a loopable category (must be one of:\n%s)" % (cat_id,special_info['loopable_cats'].keys())
-        print message
-        raise CifError, message
+        print(message)
+        raise CifError(message)
     #loop over some index
     loop_num = len(special_info['special_id'][-1])+1
     if in_node[3] == "":  # provide our own
@@ -590,15 +606,15 @@ elif node_type == "LOOP": #ALIAS CAT LOOPVAR COMP COMPVAR SUITE
     # this might not be robust as we ignore alternative resolutions of the (cat,name) pair
     catnames = set([a[1][0] for a in cif_dic.cat_obj_lookup_table.items() if a[0][0]==cat_id.lower()])
     outstring = "__pyallitems = " + repr(catnames)
-    outstring += "\nprint('names in cat = %s' % `__pyallitems`)"
-    outstring += "\n" + "__pycitems = filter(lambda a:%s,__pyallitems)" % (api_table["has_name"] % "a")
-    outstring += "\nprint('names in cat -> %s' % `__pycitems`)\n"
-    cat_key = cif_dic[cat_id]['_category_key.name'][0]   #take an official key
+    outstring += "\nprint('names in cat = %s' % repr(__pyallitems))"
+    outstring += "\n" + "__pycitems = [a for a in __pyallitems if %s]" % (api_table["has_name"] % "a")
+    outstring += "\nprint('names in cat -> %s' % repr(__pycitems))\n"
+    cat_key = cif_dic[cat_id]['_category_key.name'][0]   #take official key
     # If there is nothing in the category, provoke category creation by evaluating the key
     outstring += "if len(__pycitems)==0:\n"
     outstring += "    __pydummy = %s\n" % (api_table["data_access"] % repr(cat_key))
-    outstring += "    __pycitems = filter(lambda a:%s,__pyallitems)\n" % (api_table["has_name"] % "a")
-    outstring += "    print('After category creation, names in cat ->' + `__pycitems`)\n"
+    outstring += "    __pycitems = [a for a in __pyallitems if %s]\n" % (api_table["has_name"] % "a")
+    outstring += "    print('After category creation, names in cat ->' + repr(__pycitems))\n"
     special_info["depends"].add(cat_key)  #add key as a dependency
     if var_info[2] == True:
         access_string = api_table["count_data"] % (api_table["data_access"] % "__pycitems[0]")
@@ -636,7 +652,7 @@ elif node_type == "FUNCTION":   #FUNCTION ID ARGLIST SUITE
     outstring = outstring + add_indent("\n" + import_lines + traverse_ast(in_node[3])+"\nreturn %s" % func_name)
     return outstring
 
-@  \section{Top level constructions}. 
+@  \section{Top level constructions}.
 Ultimately we end up with a list of statements.
 
 <<Top level constructions>>=
@@ -645,20 +661,20 @@ Ultimately we end up with a list of statements.
         for one_statement in in_node[1]:
 #            try:
                 next_bit = traverse_ast(one_statement)
-                if not isinstance(next_bit,basestring):
-                    print "Unable to traverse AST for %s" % one_statement[0]
+                if not isinstance(next_bit,(unicode,str)):
+                    print("Unable to traverse AST for %s" % one_statement[0])
                 else:
-                    outstring = outstring + next_bit + "\n" 
+                    outstring = outstring + next_bit + "\n"
 #            except SyntaxError, message:
-#                print "Failed, so far have \n " + outstring
+#                print("Failed, so far have \n " + outstring)
 #                outstring += "raise SyntaxError, %s" % message
 #            except:
-#                print "Failed, so far have \n " + outstring
+#                print("Failed, so far have \n " + outstring)
 #                outstring += "raise SyntaxError, %s" % `one_statement`
         return outstring
     <<Assignment statements>>
     elif node_type == "LIST":
-        outstring = "[" 
+        outstring = "["
         for one_element in in_node[1]:
             outstring = outstring + traverse_ast(one_element)  + ","
         return outstring + "]"
@@ -676,7 +692,7 @@ Ultimately we end up with a list of statements.
              outstring = outstring + traverse_ast(expression) + ","
         return outstring[:-1] + ")"
     elif node_type == "PRINT":
-        return 'print(' + traverse_ast(in_node[1])+')'
+        return 'print( ' + traverse_ast(in_node[1]) + ")"
     elif node_type == "BREAK":
         return 'break '
     elif node_type == "NEXT":
@@ -694,7 +710,7 @@ We also need to catch packet assignments (e.g. a = atom_site[label])
 so that we can properly rewrite the attribute access later on, thus
 we keep a track of all values and the final value of sub_subject.
 Note that we are assuming that only one packet subscription
-takes place per expression, which is reasonable given that 
+takes place per expression, which is reasonable given that
 mathematical manipulations are not defined for packets.
 
 We also set the 'rhs' flag to allow us to construct lists as
@@ -735,7 +751,7 @@ elif node_type == "FANCY_ASSIGN":  # [1] is cat name, [2] is list of objects
         newvalue = traverse_ast(value)
         outstring = outstring + "__dreltarget.update({'%s':__dreltarget.get('%s',[])+[%s]})\n" % (real_id,real_id,newvalue)
     special_info["rhs"] = None
-    return outstring 
+    return outstring
 
 @  Maths.  We have to catch vector and matrix operations and farm them out
 to numpy. Not implemented yet.  A binary maths operation is 'mathop'.  We
@@ -837,12 +853,12 @@ def get_function_name(in_name):
     if test_name == 'matrix':
         return "numpy.matrix","",".astype('float64')"
     if test_name == 'sort':
-	return "","",".sort()"
+        return "","",".sort()"
     return in_name,"",None   #dictionary defined
- 
+
 @  Mathematical operations in dREL are complicated by the need to handle matrix
 operations transparently.  The two operators that are affected are "^" (cross
-product) and "*" (matrix multiplication). 
+product) and "*" (matrix multiplication).
 
 <<Mathematical operations>>=
 def fix_mathops(op,first_arg,second_arg):
@@ -857,7 +873,7 @@ def fix_mathops(op,first_arg,second_arg):
         return "numpy.subtract(%s,%s)" % (first_arg, second_arg)
     # beware integer division on this one...
     elif op == "/":
-        return "numpy.true_divide(%s,%s)" % (first_arg, second_arg)  
+        return "numpy.true_divide(%s,%s)" % (first_arg, second_arg)
 
 @  We have a few simple utility functions for commonly-required operations.
 
@@ -865,7 +881,7 @@ def fix_mathops(op,first_arg,second_arg):
 def add_indent(text,n=4):
     """Indent text by n spaces"""
     return re.sub("\n","\n"+4*" ",text)
- 
+
 def getcatname(dataname):
     """Return cat,name pair from dataname"""
     try:

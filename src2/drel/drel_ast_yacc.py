@@ -8,9 +8,13 @@
 # consultation with Doug du Boulay's JsCifBrowser
 # grammar (also derived from a Python grammar).
 
-import drel_lex
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import absolute_import
+
+from .drel_lex import lexer,tokens
 import ply.yacc as yacc
-tokens = drel_lex.tokens
 
 # Overall translation unit
 
@@ -24,7 +28,7 @@ def p_input(p):
          so_far = p[1][1]
          new_statements = p[2][1]
          p[0] = ["STATEMENTS",p[1][1] + p[2][1]]
-         #print 'input now ' + `p[0]`
+         #print('input now {!r}'.format(p[0]))
 
 # We distinguish between compound statements and
 # small statements. Small statements may be
@@ -192,7 +196,7 @@ def p_power(p):
         p[0] = p[1]
     else:
         p[0] = ["MATHOP","**",p[1] , p[3]]
-    # print 'At power: p[0] is %s' % `p[0]`
+    # print('At power: p[0] is {!r}'.format(p[0]))
 
 def p_primary(p):
     '''primary : atom
@@ -247,7 +251,7 @@ def p_parenth_form(p):
     if len(p) == 3: p[0] = ["GROUP"]
     else:
         p[0] = ["GROUP",p[2]]
-    # print 'Parens: %s' % `p[0]`
+    # print('Parens: {!r}'.format(p[0]))
 
 def p_string_conversion(p):
     '''string_conversion : "`" testlist_star_expr "`" '''
@@ -266,7 +270,7 @@ def p_list_display(p):
 def p_listmaker(p):
     '''listmaker : expression listmaker2  '''
     p[0] = [p[1]] + p[2]
-    # print 'listmaker: %s' % `p[0]`
+    # print('listmaker: {!r}'.format(p[0]))
 
 def p_listmaker2(p):
     '''listmaker2 : "," maybe_nline expression 
@@ -380,7 +384,7 @@ def p_call(p):
         p[0] = ["FUNC_CALL",p[1],[]]
     else:
         p[0] = ["FUNC_CALL",p[1],p[3]]
-    #print "Function call: %s" % `p[0]`
+    #print("Function call: {!r}".format(p[0]))
 
 # These are the arguments to a call, not a definition
 
@@ -399,7 +403,7 @@ def p_func_arg(p):
 def p_fancy_drel_assignment_stmt(p):
     '''fancy_drel_assignment_stmt : ID OPEN_PAREN dotlist CLOSE_PAREN ''' 
     p[0] = ["FANCY_ASSIGN",p[1],p[3]]
-#    print "Fancy assignment -> " + `p[0]`
+#    print("Fancy assignment -> {!r}".format(p[0]))
 
 # Something made up specially for drel.  A newline is OK between assignments
 
@@ -566,13 +570,13 @@ def p_empty(p):
 
 def p_error(p):
     try:
-        print 'Syntax error at position %d, line %d token %s, value %s' % (p.lexpos,p.lineno,p.type,p.value)
-        print 'Surrounding text: ' + p.lexer.lexdata[max(p.lexpos - 100,0): p.lexpos] + "*" + \
-           p.lexer.lexdata[p.lexpos:min(p.lexpos + 100,len(p.lexer.lexdata))]
+        print('Syntax error at position %d, line %d token %s, value %s' % (p.lexpos,p.lineno,p.type,p.value))
+        print('Surrounding text: ' + p.lexer.lexdata[max(p.lexpos - 100,0): p.lexpos] + "*" + \
+           p.lexer.lexdata[p.lexpos:min(p.lexpos + 100,len(p.lexer.lexdata))])
     except:
         pass
     parser.restart()
     raise SyntaxError
 
-lexer = drel_lex.lexer
+#lexer = drel_lex.lexer
 parser = yacc.yacc()    

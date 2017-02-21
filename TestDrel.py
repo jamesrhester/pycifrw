@@ -731,7 +731,6 @@ class WithDictTestCase(unittest.TestCase):
         if (a.adp_type == "uani") {
         Loop b as atom_site_aniso     {
            If(label == b.label)           {
- 
                UIJ = b.matrix_U
                Break
      } } }
@@ -749,7 +748,6 @@ class WithDictTestCase(unittest.TestCase):
  
              UIJ = U * _cell.convert_Uiso_to_Uij
      }
-
      _atom_site.tensor_beta = UIJ """
         loopable = {
                    "atom_site":["label",["tensor_beta","label"]],
@@ -759,6 +757,9 @@ class WithDictTestCase(unittest.TestCase):
         realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_atom_site.tensor_beta",
                                                    depends = True,have_sn=False,
                                                         loopable=loopable,cif_dic=testdic)
+        funclines = realfunc.splitlines()
+        for n,l in enumerate(funclines):
+            print("%2d:%s"%(n,l))
         #print(realfunc)
         exec(realfunc)
         self.testblock.assign_dictionary(testdic)

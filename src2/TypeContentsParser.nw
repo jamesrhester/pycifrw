@@ -3,6 +3,12 @@ Noweb literate programming file for the DDLm _type.contents type
 specification using Yapps3.
 
 <<TypeContents_syntax>>=
+# To maximize python3/python2 compatibility
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
 <<Helper functions>>
 %%
 parser TypeParser:
@@ -25,8 +31,8 @@ getting rid of the inverted commas.
 lastval = ''
 def monitor(location,value):
     global lastval
-    #print 'At %s: %s' % (location,`value`)
-    lastval = `value`
+    #print 'At %s: %s' % (location,repr(value))
+    lastval = repr(value)
     return value
 
 @

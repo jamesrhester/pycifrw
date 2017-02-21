@@ -36,9 +36,9 @@ def aug_append(current,extra):
             extra = numpy.expand_dims(extra,axis=0)
             current = numpy.expand_dims(current,axis=0)
         else:
-            raise ValueError, 'Arrays have mismatching sizes for concatenating: %d and %d' % (current.ndim,extra.ndim)
+            raise ValueError('Arrays have mismatching sizes for concatenating: %d and %d' % (current.ndim,extra.ndim))
         return numpy.concatenate((current,extra))
-    raise ValueError, "Cannot append %s to %s" % (`extra`,`current`)
+    raise ValueError("Cannot append %s to %s" % (repr(extra),repr(current)))
 
 def aug_add(current,extra):
     """Sum the contents of extra to current"""
@@ -73,10 +73,10 @@ def aug_remove(current,extra):
             current.remove(extra)
             return current
         else:
-            print 'Removal Warning: %s not in %s' % (`extra`,`current`)
+            print('Removal Warning: %s not in %s' % (repr(extra),repr(current)))
             return current
     else:
-        raise ValueError, "Cannot remove %s from %s" % (`extra`,`current`)
+        raise ValueError("Cannot remove %s from %s" % (repr(extra),repr(current)))
 
 @ Multiplication requires some intelligence.  The rules of dREL are as follows:
 (1) mat * mat, vec*mat is ordinary matrix multiplication 
@@ -108,13 +108,13 @@ backtick operator.
 <<Mathematical operators>>=
 def drel_dot(first_arg,second_arg):
     """Perform a multiplication on two unknown types"""
-    print "Multiply %s and %s" % (`first_arg`,`second_arg`)
+    print("Multiply %s and %s" % (repr(first_arg),repr(second_arg)))
     def make_numpy(input_arg):
         if hasattr(input_arg,'__iter__'):
             try:
                 return numpy.matrix(input_arg),True
             except ValueError:
-                raise ValueError, 'Attempt to multiply non-matrix object %s' % (`input_arg`)
+                raise ValueError('Attempt to multiply non-matrix object %s' % (repr(input_arg)))
         return input_arg,False
     fa,first_matrix = make_numpy(first_arg)
     sa,second_matrix = make_numpy(second_arg)
@@ -136,7 +136,7 @@ def drel_dot(first_arg,second_arg):
 
 def drel_add(first_arg,second_arg):
     """Separate string addition from the rest"""
-    if isinstance(first_arg,basestring) and isinstance(second_arg,basestring):
+    if isinstance(first_arg,(unicode,str)) and isinstance(second_arg,(unicode,str)):
         return first_arg+second_arg
     else:
         result = numpy.add(first_arg,second_arg)
