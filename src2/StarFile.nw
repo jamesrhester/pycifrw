@@ -94,18 +94,13 @@ import copy
 import textwrap
 
 try:
-    import cStringIO
-except:    #python 3
-    import io as cStringIO
+    from StringIO import StringIO #not cStringIO as we cannot subclass
+except ImportError:
+    from io import StringIO
 
 if isinstance(u"abc",str):   #Python 3
     unicode = str
     
-try:
-    from StringIO import StringIO
-except:
-    from io import StringIO
-
 try:
     import numpy
     have_numpy = True
@@ -841,7 +836,7 @@ initialising the file.
             self.SetOutputLength(maxoutlength)
         if not comment:
             comment = self.header_comment
-        outstring = cStringIO.StringIO()
+        outstring = StringIO()
         if self.grammar == "2.0" and comment[0:10] != r"#\#CIF_2.0":
             outstring.write(r"#\#CIF_2.0" + "\n")
         outstring.write(comment)
@@ -2189,7 +2184,7 @@ def GetCompoundKeyedPacket(self,keydict):
     in `keydict` take the appropriate values. Ignore case for a given `key` if `caseless` is
     True.  `ValueError` is raised if no packet is found or more than one packet is found."""
     #print "Looking for %s in %s" % (keyvalue, self.parent_block[keyname])
-    keynames = keydict.keys()
+    keynames = list(keydict.keys())
     my_loop = self.GetLoop(keynames[0])
     for one_key in keynames:
         keyval,no_case = keydict[one_key]
@@ -2253,10 +2248,10 @@ def GetMultiKeyedSemanticPacket(self,keydict,cat_id):
     target_keys = self.dictionary.cat_key_table[cat_id]
     # update the dictionary passed to us with all equivalents, for
     # simplicity.
-    parallel_keys = zip(*target_keys)  #transpose
+    parallel_keys = list(zip(*target_keys))  #transpose
     print('Parallel keys:' + repr(parallel_keys))
     print('Keydict:' + repr(keydict))
-    start_keys = keydict.keys()
+    start_keys = list(keydict.keys())
     for one_name in start_keys:
         key_set = [a for a in parallel_keys if one_name in a]
         for one_key in key_set:

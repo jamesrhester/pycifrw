@@ -6,6 +6,11 @@ the necessary functions here.
 <<*>>=
 import numpy
 from numpy.linalg import eig
+
+# Python3 compatibility
+if isinstance(u"abc",str):   #Python 3
+    unicode = str
+    
 <<Augmented assignments>>
 <<Mathematical operators>>
 <<Extra mathematical functions>>

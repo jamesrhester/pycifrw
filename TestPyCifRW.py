@@ -211,7 +211,7 @@ class BlockRWTestCase(unittest.TestCase):
 
     def testMoreBadStrings(self):
         dataname = "_name_is_ok"
-        val = (b"so far, ok, but now we have a " + chr(128)).decode('latin_1')
+        val = (b"so far, ok, but now we have a " + bytearray([128])).decode('latin_1')
         try:
             self.cf[dataname] = val
         except CifFile.StarError: pass
@@ -1686,6 +1686,7 @@ class DicEvalTestCase(unittest.TestCase):
     def testCalcOldAlias(self):
         """Test that a calculation is performed for an old dataname"""
         target = self.fb['_cell.volume']
+        print("CalcOldAlias target is {!r}".format(target))
         del self.fb['_cell.volume']
         self.failUnless(abs(self.fb['_cell_volume']-float(target))<0.01)
 

@@ -3736,7 +3736,6 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
     return valid_result,no_matches
 
 def validate_report(val_result,use_html=False):
-    import cStringIO
     valid_result,no_matches = val_result
     outstr = StringIO()
     if use_html:
@@ -4026,7 +4025,7 @@ dimension lists, rather than special-casing the character sequence
 def convert_list_values(structure,dimension):
     """Convert the values according to the element
        structure given in [[structure]]"""
-    if isinstance(structure,unicode):   #simple repetition
+    if isinstance(structure,(unicode,str)):   #simple repetition
         func_def =  "element_convert = convert_single_value('%s')" % structure
     else:
         func_def =       "def element_convert(element):\n"
@@ -4055,7 +4054,7 @@ def convert_list_values(structure,dimension):
     print(func_def)
     exec(func_def, globals()) #(re)defines element_convert in global namespace
     if len(dimension)> 0 and int(dimension[0]) != 1:
-        return lambda a: map(element_convert,a)
+        return lambda a: list(map(element_convert,a))
     else: return element_convert
 
 @  When storing a matrix/array value as a result of a calculation, we remove the

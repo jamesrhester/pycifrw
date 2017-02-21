@@ -167,7 +167,7 @@ number of packets during execution of the method.
         end_body += "        else:\n"
         end_body += "           return []\n"
 
-    end_body+=      "        return map(lambda %s: drel_func(%s) , %s)\n" % (dummy_vars,dummy_vars,map_names)
+    end_body+=      "        return list(map(lambda %s: drel_func(%s) , %s))\n" % (dummy_vars,dummy_vars,map_names)
     end_body+=     "    else:\n"
     end_body+=     "        return drel_func(%s)\n" % one_packet_each
 
