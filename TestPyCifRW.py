@@ -1655,9 +1655,9 @@ class DicEvalTestCase(unittest.TestCase):
     def setUp(self):
         c_old = CifFile.CifFile("tests/drel/nick_old.cif",grammar="2.0")
         c_new = CifFile.CifFile("tests/drel/nick_new.cif",grammar="2.0")
-        self.fb = c_new.first_block()
+        self.fb = c_new['saly2']
         self.fb.assign_dictionary(testdic)
-        self.fb_old = c_old.first_block()
+        self.fb_old = c_old['saly2']
         self.fb_old.assign_dictionary(testdic)
         
     def check_value(self,dataname,scalar=True):
@@ -1665,8 +1665,8 @@ class DicEvalTestCase(unittest.TestCase):
         target = self.fb[dataname]
         del self.fb[dataname]
         result = self.fb[dataname]
+        print("Result: {!r} Target: {!r}".format(result,target))
         if scalar:
-            print('Target: %f  Result %f' % (float(target),float(result)))
             self.failUnless(abs(float(target)-float(result))<0.01)
         else:
             self.assertEqual(target,result,"Target = %s, Result = %s" % (repr(target),repr(result)))
@@ -1723,7 +1723,6 @@ class DicEvalTestCase(unittest.TestCase):
         del self.fb['_atom_type_scat.dispersion_imag']
         del self.fb['_atom_type_scat.source']
         p = self.fb.GetKeyedSemanticPacket('O','atom_type')
-        self.failUnless(not hasattr(p,'_atom_type_scat.key'))
         self.failUnless(not hasattr(p,'_atom_type_scat.symbol'))
 
 
@@ -1731,7 +1730,7 @@ class DicStructureTestCase(unittest.TestCase):
     """Tests use of dictionary semantic information for item lookup"""
     def setUp(self):
         cc = CifFile.CifFile("tests/drel/nick.cif",grammar="STAR2")
-        self.fb = cc.first_block()
+        self.fb = cc["saly2"]
         self.fb.assign_dictionary(testdic)
 
     def testOldAlias(self):

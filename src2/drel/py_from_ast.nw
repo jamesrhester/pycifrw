@@ -137,10 +137,14 @@ number of packets during execution of the method.
     map_names = ",".join(final_names)
     one_packet_each = ",".join(one_pack_names)
     preamble = "def %s(ciffile,packet_no=-1):\n" % (func_name)
+    preamble +="    try:\n"
+    preamble +="        from itertools import repeat,imap\n"   #note that imap might fail
+    preamble +="    except ImportError: #python3\n"
+    preamble +="        imap = map\n"
     preamble +="    def drel_func(%s):\n" % dummy_vars
     # for debugging
-    print_instruction = "'Function passed variables "+("{!r} "*len(d_vars))+"'.format("+dummy_vars+")"
-    preamble +="        print(%s)" % print_instruction
+    print_instruction = "'Function passed variables "+("{!r} "*len(d_vars))+"'.format("+dummy_vars+",)"
+    preamble +="        print(%s)\n" % print_instruction
     # preamble +="        print ('Globals inside looped drel_func:' + repr(globals())\n")
     # the actual function gets inserted here
     # Handle the optional names
@@ -153,7 +157,7 @@ number of packets during execution of the method.
             end_body += "            %s%d = None\n" % ("__option_w",n)
     end_body+=      "    if packet_no < 0:   #map\n"
     for one_opt in optional_names:
-        end_body += "        if %s is None: %s = []\n" % (one_opt,one_opt)
+        end_body += "        if %s is None: %s = repeat(None)\n" % (one_opt,one_opt)
 
     if cur_row and len(actual_names) > 1:    #i.e. have real names from category
         end_body +="        __row_id = range(%s)\n" % (func_table['count_data'] % ("'"+actual_names[0]+"'"))
@@ -167,7 +171,7 @@ number of packets during execution of the method.
         end_body += "        else:\n"
         end_body += "           return []\n"
 
-    end_body+=      "        return list(map(lambda %s: drel_func(%s) , %s))\n" % (dummy_vars,dummy_vars,map_names)
+    end_body+=      "        return list(imap(drel_func,%s))\n" % (map_names+",")
     end_body+=     "    else:\n"
     end_body+=     "        return drel_func(%s)\n" % one_packet_each
 
