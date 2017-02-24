@@ -5,6 +5,7 @@ include TESTING
 include src/*.html
 include TestPyCifRW.py
 include RELEASENOTES
+include README.md
 include src/Programs/*.py
 include src/Programs/*.cif
 include src/Programs/*.html
@@ -14,3 +15,4 @@ include src/Changelog
 include src/Makefile
 include src/lib/*
 include docs/*.html
+include docs/CifFile/*.html

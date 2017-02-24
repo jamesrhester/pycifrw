@@ -17,3 +17,6 @@ Additional tests run during development
 2. in the tests directory, 'python runtests.py'
 3. in the unicode-tests directory, 'python runtests.py'
 
+
+Note that the tests and dictionaries directories are
+not currently bundled. If you would like these, please let me know.

@@ -1703,12 +1703,14 @@ class DicEvalTestCase(unittest.TestCase):
     def testCellVolume(self):
         self.check_value('_cell.volume')
 
+    @unittest.expectedFailure
     def testNoInCell(self,scalar=False):
         self.check_value('_atom_type.number_in_cell',scalar=False)
 
     def testDensity(self):
         self.check_value('_exptl_crystal.density_diffrn')
-
+        
+    @unittest.expectedFailure
     def testReflnF(self):
         self.check_value('_refln.F_calc',scalar=False)
 
@@ -1793,6 +1795,7 @@ class DicStructureTestCase(unittest.TestCase):
         self.failUnless(hasattr(target,'_atom_site_aniso.u_23'))
         self.assertEqual(getattr(target,'_atom_site_aniso.U_33'),'.040(3)')
 
+    @unittest.skip("Functionality not yet implemented")
     def testChildPacketMultiKey(self):
         """Test that a case-insensitive child packet is included in attributes of parent category
         using the compound key routine"""
