@@ -8,7 +8,7 @@ from __future__ import unicode_literals
 from __future__ import division
 from __future__ import absolute_import
 
-import sys
+import sys,os
 #sys.path[0] = '.'
 import unittest
 import CifFile
@@ -324,25 +324,24 @@ class BlockChangeTestCase(unittest.TestCase):
 class SyntaxErrorTestCase(unittest.TestCase):
     """Check that files with syntax errors are found"""
     def tearDown(self):
-        import os
         try:
-            os.remove("syntax_check.cif")
+            os.remove("tests/syntax_check.cif")
         except:
             pass
 
     def testTripleApostropheCase(self):
         teststrg = "#\#CIF_2.0\ndata_testblock\n _item_1 ''' ''' '''\n"
-        f = open("syntax_check.cif","w")
+        f = open("tests/syntax_check.cif","w")
         f.write(teststrg)
         f.close()
-        self.assertRaises(CifFile.StarError, CifFile.ReadCif,"syntax_check.cif",grammar="2.0")
+        self.assertRaises(CifFile.StarError, CifFile.ReadCif,"tests/syntax_check.cif",grammar="2.0")
 
     def testTripleQuoteCase(self):
         teststrg = '#\#CIF_2.0\ndata_testblock\n _item_1 """ """ """\n'
-        f = open("syntax_check.cif","w")
+        f = open("tests/syntax_check.cif","w")
         f.write(teststrg)
         f.close()
-        self.assertRaises(CifFile.StarError, CifFile.ReadCif,"syntax_check.cif",grammar="2.0")
+        self.assertRaises(CifFile.StarError, CifFile.ReadCif,"tests/syntax_check.cif",grammar="2.0")
 
 class LoopBlockTestCase(unittest.TestCase):
    """Check operations on loop blocks"""
@@ -589,22 +588,26 @@ class FileWriteTestCase(unittest.TestCase):
        self.save_block = CifFile.CifBlock(s_items)
        cif.NewBlock("test_Save_frame",self.save_block,parent='testblock')
        self.cfs = cif["test_save_frame"]
-       outfile = open('test.cif','w')
+       outfile = open('tests/test.cif','w')
        outfile.write(str(cif))
        outfile.close()
-       self.ef = CifFile.CifFile('test.cif',scoping='dictionary')
+       self.ef = CifFile.CifFile('tests/test.cif',scoping='dictionary')
        self.df = self.ef['testblock']
        self.dfs = self.ef["test_save_frame"]
-       flfile = CifFile.ReadCif('test.cif',scantype="flex",scoping='dictionary')
+       flfile = CifFile.ReadCif('tests/test.cif',scantype="flex",scoping='dictionary')
        # test passing a stream directly
-       tstream = open('test.cif')
+       tstream = open('tests/test.cif')
        CifFile.CifFile(tstream,scantype="flex")
        self.flf = flfile['testblock']
        self.flfs = flfile["Test_save_frame"]
 
    def tearDown(self):
-       import os
-       #os.remove('test.cif')
+       try:
+           os.remove('tests/test.cif')
+           os.remove('tests/test2.cif')
+       except:
+           pass
+       
        del self.dfs
        del self.df
        del self.cf
@@ -711,10 +714,10 @@ _atom_type.number_in_cell
   C    ?   12.011   28
   H    ?   1.008    24
        """
-       q = open("test2.cif","w")
+       q = open("tests/test2.cif","w")
        q.write(teststrg)
        q.close()
-       testcif = CifFile.CifFile("test2.cif").first_block()
+       testcif = CifFile.CifFile("tests/test2.cif").first_block()
        self.failUnless(testcif['_atom_type.symbol']==['O','C','H'])
 
    def testDupName(self):
@@ -722,22 +725,22 @@ _atom_type.number_in_cell
        outstr = """data_block1 _data_1 b save_ab1 _data_2 c
                   save_
                   save_ab1 _data_3 d save_"""
-       b = open("test2.cif","w")
+       b = open("tests/test2.cif","w")
        b.write(outstr)
        b.close()
-       testin = CifFile.CifFile("test2.cif",standard=None)
+       testin = CifFile.CifFile("tests/test2.cif",standard=None)
 
    def testPrefixProtocol(self):
        """Test that pathological strings round-trip correctly"""
-       cif_as_text = open('test.cif','r').read()
+       cif_as_text = open('tests/test.cif','r').read()
        bf = CifFile.CifFile(maxoutlength=80)
        bb = CifFile.CifBlock()
        bb['_data_embedded'] = cif_as_text
        bf['tough_one'] = bb
-       out_f = open('embedded.cif','w')
+       out_f = open('tests/embedded.cif','w')
        out_f.write(str(bf))
        out_f.close()
-       in_emb = CifFile.CifFile('embedded.cif',grammar='2.0')
+       in_emb = CifFile.CifFile('tests/embedded.cif',grammar='2.0')
        self.assertEqual(in_emb['tough_one']['_data_embedded'],cif_as_text)
 
    def testBadBeginning(self):
@@ -749,8 +752,11 @@ class SimpleWriteTestCase(unittest.TestCase):
         self.bf = CifFile.CifBlock()
         self.cf = CifFile.CifFile()
         self.cf['testblock'] = self.bf
-        self.testfile  = "test_3.cif"
+        self.testfile  = "tests/test_3.cif"
 
+    def tearDown(self):
+        os.remove(self.testfile)
+        
     def testNumpyArray(self):
         """Check that an array can be output properly"""
         import numpy
@@ -803,14 +809,22 @@ data_TEST_DIC
           Item              "applies to a single item definition"
     _enumeration.default        Item   
 """  
-       f = open("cif_template.cif","w")
+       f = open("tests/cif_template.cif","w")
        f.write(template_string)
        f.close()
 
+   def tearDown(self):
+       try:
+           os.remove("tests/cif_template.cif")
+           os.remove("tests/temp_test_file.cif")
+           os.remove("tests/temp_test_file_new.cif")
+       except:
+           pass
+       
    def testTemplateInput(self):
        """Test that an output template is successfully input"""
        p = CifFile.CifFile()
-       p.SetTemplate("cif_template.cif")
+       p.SetTemplate("tests/cif_template.cif")
        #print(p.master_template)
        self.failUnless(p.master_template[0]['dataname']=='_dictionary.title')
        self.failUnless(p.master_template[5]['column']==31)
@@ -843,16 +857,16 @@ data item, and we shouldn't have more than two spaces in a row if we want it
 to work properly.
 ;
        """
-       f = open("temp_test_file.cif","w")
+       f = open("tests/temp_test_file.cif","w")
        f.write(test_file)
        f.close()
-       p = CifFile.CifFile("temp_test_file.cif")
-       p.SetTemplate("cif_template.cif")
-       f = open("temp_test_file_new.cif","w")
+       p = CifFile.CifFile("tests/temp_test_file.cif")
+       p.SetTemplate("tests/cif_template.cif")
+       f = open("tests/temp_test_file_new.cif","w")
        f.write(str(p))
        f.close()
        # now read as new file
-       g = CifFile.CifFile("temp_test_file_new.cif").first_block()
+       g = CifFile.CifFile("tests/temp_test_file_new.cif").first_block()
        self.assertEqual(g.item_order[1],'_name.category_id')
        self.assertEqual(g.loops[1][-1],'_enumeration_set.dummy')
        self.assertEqual(g.loops[1][0],'_enumeration_set.state')
@@ -860,7 +874,7 @@ to work properly.
 
    def testStringInput(self):
         """Test that it works when passed a stringIO object"""
-        s = open("cif_template.cif","r").read()
+        s = open("tests/cif_template.cif","r").read()
         ss = StringIO(s)
         p = CifFile.CifFile()
         p.SetTemplate(ss)
@@ -885,7 +899,7 @@ class GrammarTestCase(unittest.TestCase):
          _item_2 '(Bracket always ok in quotes)'
          _item_3 [can_have_bracket_here_if_1.0]
        """
-       f = open("test_1.0","w")
+       f = open("tests/test_1.0","w")
        f.write(teststr1_0)
        f.close()
        teststr2_0 = """#\#CIF_2.0
@@ -894,7 +908,7 @@ class GrammarTestCase(unittest.TestCase):
          _item_2 'ordinary string'
          _item_3 {'a':2 'b':3}
        """
-       f = open("test_2.0","w")
+       f = open("tests/test_2.0","w")
        f.write(teststr2_0)
        f.close()
        teststr_st = """
@@ -903,60 +917,65 @@ class GrammarTestCase(unittest.TestCase):
          _item_2 'ordinary string'
          _item_3 {'a':2 , 'b':3}
        """
-       f = open("test_star","w")
+       f = open("tests/test_star","w")
        f.write(teststr_st)
        f.close()
 
    def tearDown(self):
-       pass
-
+       try:
+           os.remove("tests/test_star")
+           os.remove("tests/test_2.0")
+           os.remove("tests/test_1.0")
+       except:
+           pass
+       
    def testold(self):
        """Read in 1.0 conformant file; should not fail"""
-       f = CifFile.ReadCif("test_1.0",grammar="1.0")
+       f = CifFile.ReadCif("tests/test_1.0",grammar="1.0")
        self.assertEqual(f["test"]["_item_3"],'[can_have_bracket_here_if_1.0]')
 
    def testNew(self):
        """Read in a 1.0 conformant file with 1.1 grammar; should fail"""
        try:
-           f = CifFile.ReadCif("test_1.0",grammar="1.1")
+           f = CifFile.ReadCif("tests/test_1.0",grammar="1.1")
        except CifFile.StarError:
            pass
 
    def testCIF2(self):
        """Read in a 2.0 conformant file"""
-       f = CifFile.ReadCif("test_2.0",grammar="2.0")
+       f = CifFile.ReadCif("tests/test_2.0",grammar="2.0")
        self.assertEqual(f["test"]["_item_3"]['b'],'3')
 
    def testSTAR2(self):
        """Read in a STAR2 conformant file"""
-       f = CifFile.ReadCif("test_star",grammar="STAR2")
+       f = CifFile.ReadCif("tests/test_star",grammar="STAR2")
        self.assertEqual(f["test"]["_item_3"]['b'],'3')
 
    def testAuto(self):
        """Test that grammar is auto-detected"""
-       f = CifFile.CifFile("test_1.0",grammar="auto")
+       f = CifFile.CifFile("tests/test_1.0",grammar="auto")
        self.assertEqual(f["test"]["_item_3"],'[can_have_bracket_here_if_1.0]')
-       h = CifFile.CifFile("test_2.0",grammar="auto")
+       h = CifFile.CifFile("tests/test_2.0",grammar="auto")
        self.assertEqual(h["test"]["_item_1"],StarList(['a','b','c','d']))
 
    def testFlexCIF2(self):
        """Test that CIF2 grammar is detected with flex tokenizer"""
-       f = CifFile.CifFile("test_2.0",grammar="2.0",scantype="flex")
+       f = CifFile.CifFile("tests/test_2.0",grammar="2.0",scantype="flex")
        self.assertEqual(f["test"]["_item_3"]['b'],'3')
 
    def testFlexSTAR2(self):
        """Read in a STAR2 conformant file with flex scanner"""
-       f = CifFile.ReadCif("test_star",grammar="STAR2",scantype="flex")
+       f = CifFile.ReadCif("tests/test_star",grammar="STAR2",scantype="flex")
        self.assertEqual(f["test"]["_item_3"]['b'],'3')
 
    def testRoundTrip(self):
        """Read in STAR2, write out CIF2, read in and check """
-       f = CifFile.ReadCif("test_star",grammar="STAR2")
-       g = open("star_to_cif2","w")
+       f = CifFile.ReadCif("tests/test_star",grammar="STAR2")
+       g = open("tests/star_to_cif2","w")
        f.set_grammar("2.0")
        g.write(str(f))
        g.close()
-       h = CifFile.ReadCif("star_to_cif2",grammar="2.0")
+       h = CifFile.ReadCif("tests/star_to_cif2",grammar="2.0")
        self.assertEqual(f["test"]["_item_3"],h["test"]["_item_3"])
 
 class ParentChildTestCase(unittest.TestCase):
@@ -994,10 +1013,10 @@ data_Toplevel
    _item_1       k
  save_
 """
-       f = open('save_test.cif','w')
+       f = open('tests/save_test.cif','w')
        f.write(outstring)
        f.close()
-       self.testcif = CifFile.CifFile('save_test.cif',scoping='dictionary')
+       self.testcif = CifFile.CifFile('tests/save_test.cif',scoping='dictionary')
 
    def testGoodRead(self):
        """Check that there is a top level block"""
@@ -1090,55 +1109,61 @@ class DDLmTestCase(unittest.TestCase):
                                 are ok'''
          _underscore_test underscores_are_allowed_inside_text
        """
-       f = open("test_1.2","w")
+       f = open("tests/test_1.2","w")
        f.write(teststr1_2)
        f.close()
-       f = open("goodtest_1.2","w")
+       f = open("tests/goodtest_1.2","w")
        f.write(goodstr1_2)
        f.close()
 
    def tearDown(self):
-       pass
-
+       try:
+           os.remove("tests/test_1.2")
+           os.remove("tests/goodtest_1.2")
+           os.remove("tests/newgoodtest_1.2.cif")
+           os.remove("tests/cif2goodtest_1.2.cif")
+       except:
+           pass
+       
    def testold(self):
        """Read in 1.2 nonconformant file; should fail"""
        try:
-           f = CifFile.ReadCif("test_1.2",grammar="STAR2")
+           f = CifFile.ReadCif("tests/test_1.2",grammar="STAR2")
        except CifFile.StarError:
            pass
 
    def testgood(self):
        """Read in 1.2 conformant file: should succeed"""
-       f = CifFile.ReadCif("goodtest_1.2",grammar="STAR2")
+       f = CifFile.ReadCif("tests/goodtest_1.2",grammar="STAR2")
 
    def testTables(self):
        """Test that DDLm tables are properly parsed"""
-       f = CifFile.ReadCif("goodtest_1.2",grammar="STAR2")
+       f = CifFile.ReadCif("tests/goodtest_1.2",grammar="STAR2")
        self.failUnless(f["test"]["_test.1"]["wiffle"] == '3')
 
    def testTables2(self):
        """Test that a plain table is properly parsed"""
-       f = CifFile.ReadCif("goodtest_1.2",grammar="STAR2")
+       f = CifFile.ReadCif("tests/goodtest_1.2",grammar="STAR2")
        self.failUnless(f["test"]["_import.get"][0]["file"] == 'core_exptl.dic')
 
    def testTables3(self):
        """Test that a nested structure is properly parsed"""
-       f = CifFile.ReadCif("goodtest_1.2",grammar="STAR2")
+       f = CifFile.ReadCif("tests/goodtest_1.2",grammar="STAR2")
        self.failUnless(f["test"]["_test_3"]["ppp"]["poke"]["jike"][1]["gg"]=='100')
 
    def testTripleQuote(self):
        """Test that triple quoted values are treated correctly"""
-       f = CifFile.ReadCif("goodtest_1.2",grammar="STAR2")
+       f = CifFile.ReadCif("tests/goodtest_1.2",grammar="STAR2")
        print(f["test"]["_triple_quote_test"])
        self.failUnless(f["test"]["_triple_quote_test"][:9] == 'The comma')
 
    def testRoundTrip(self):
        """Test that a DDLm file can be read in, written out and read in again"""
-       f = CifFile.ReadCif("goodtest_1.2",grammar="STAR2")
-       g = open("newgoodtest_1.2.cif","w")
+       f = CifFile.ReadCif("tests/goodtest_1.2",grammar="STAR2")
+       g = open("tests/newgoodtest_1.2.cif","w")
        g.write(str(f))
        g.close()
-       h = CifFile.ReadCif("newgoodtest_1.2.cif",grammar="STAR2")
+       h = CifFile.ReadCif("tests/newgoodtest_1.2.cif",grammar="STAR2")
        #print(h['Test'])
        #print(h['Test']['_import.get'])
        #print(h['Test']['_import.get'][2])
@@ -1147,11 +1172,11 @@ class DDLmTestCase(unittest.TestCase):
 
    def testUnNest(self):
        """Test that we can convert a nested save frame STAR2 file to a non-nested file"""
-       f = CifFile.ReadCif("goodtest_1.2",grammar="STAR2")
-       g = open("cif2goodtest_1.2.cif","w")
+       f = CifFile.ReadCif("tests/goodtest_1.2",grammar="STAR2")
+       g = open("tests/cif2goodtest_1.2.cif","w")
        f.set_grammar("2.0")
        g.write(str(f))
-       h = CifFile.ReadCif("cif2goodtest_1.2.cif")
+       h = CifFile.ReadCif("tests/cif2goodtest_1.2.cif")
 
 ##########
 #
@@ -1181,8 +1206,11 @@ class DictTestCase(unittest.TestCase):
         self.ddldic = CifFile.CifDic("tests/ddl.dic",grammar='2.0',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
     
     def tearDown(self):
-        pass
-
+        try:
+            os.remove("test_dic_write.cif")
+        except:
+            pass
+        
     def testnum_and_esd(self):
         """Test conversion of numbers with esds"""
         testnums = ["5.65","-76.24(3)","8(2)","6.24(3)e3","55.2(2)d4"]
@@ -1278,7 +1306,6 @@ class DictTestCase(unittest.TestCase):
 
     def testWriteDic(self):
         """Test that we can write a dictionary after adding a category"""
-        import os
         self.ddldic.add_definition('_junkety._junkjunk_','description')
         self.ddldic.set_grammar('2.0')
         final_str = str(self.ddldic)  #should not fail
@@ -1336,11 +1363,14 @@ _list1.value [1.2, 2.3, 4.5]
 _list2.value [['i',4.2],['j',1.5],['lmnop',-4.5]]
 _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
 """
-        p = open('ddlm_testdata','w')
+        p = open('tests/ddlm_testdata','w')
         p.write(filedata)
         p.close()
-        self.testblock = CifFile.CifFile('ddlm_testdata',grammar="STAR2")['testblock']
+        self.testblock = CifFile.CifFile('tests/ddlm_testdata',grammar="STAR2")['testblock']
 
+    def tearDown(self):
+        os.remove("tests/ddlm_testdata")
+        
     def testTypeInterpretation(self):
         """Test that we decode DDLm type.contents correctly"""
         import CifFile.TypeContentsParser as t
@@ -1596,15 +1626,14 @@ save_
 
 
  """
-        f = open('ddlm_valid_test.cif2','w')
+        f = open('tests/ddlm_valid_test.cif2','w')
         f.write(testdic_string)
         f.close()
-        self.testcif = CifFile.CifFile('ddlm_valid_test.cif2',grammar='auto')
+        self.testcif = CifFile.CifFile('tests/ddlm_valid_test.cif2',grammar='auto')
         self.refdic = CifFile.CifDic('dictionaries/ddl.dic',grammar='auto')
 
     def tearDown(self):
-        import os
-        os.remove('ddlm_valid_test.cif2')
+        os.remove('tests/ddlm_valid_test.cif2')
 
     def testMandatory(self):
         """Test that missing mandatory items are found"""
@@ -1876,11 +1905,11 @@ class DicStructureTestCase(unittest.TestCase):
 
 class BlockOutputOrderTestCase(unittest.TestCase):
     def tearDown(self):
-        import os
-        #try:
-        #    os.remove("order_test.cif")
-        #except:
-        #    pass
+        try:
+            os.remove("tests/order_test.cif")
+            os.remove("tests/round_trip_test.cif")
+        except:
+            pass
 
     def testOutputOrder(self):
         outstrg = """#\#CIF_2.0
@@ -1893,13 +1922,13 @@ _item3 3
 data_testd
 _item4 4
 """
-        f = open("order_test.cif","w")
+        f = open("tests/order_test.cif","w")
         f.write(outstrg)
         f.close()
-        q = CifFile.CifFile("order_test.cif",grammar="auto")
+        q = CifFile.CifFile("tests/order_test.cif",grammar="auto")
         print(repr(q.block_input_order))
         self.failUnless(q.block_input_order[1] == "testb")
-        f = open("round_trip_test.cif","w")
+        f = open("tests/round_trip_test.cif","w")
         f.write(str(q))
 
 global testdic
