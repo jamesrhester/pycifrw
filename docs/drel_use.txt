@@ -17,10 +17,10 @@ if available.  Note that the value returned will not necessarily be a
 string type.
 
 ~~~{.python}
->>> import CifFile
->>> p = CifFile.CifDic('pycifrw/drel/testing/cif_core.dic',grammar='STAR2')
->>> r = CifFile.CifFile('pycifrw/drel/testing/data/nick.cif',grammar='STAR2')
->>> r = r.first_block()    #only care about the first block
+>>> from CifFile import CifDic, CifFile
+>>> p = CifDic('pycifrw/drel/testing/cif_core.dic',grammar='STAR2')
+>>> r = CifFile('pycifrw/drel/testing/data/nick.cif',grammar='STAR2')
+>>> r = r['saly2']         # choose our testing block
 >>> r['_cell.volume']      #should be in the file already
 u'635.3'                   # Note this is a string value
 >>> del r['_cell.volume']  # remove from the CifBlock

@@ -13,16 +13,13 @@ documentation:
 	$(MAKE) -C docs
 #
 sources:
-	$(MAKE) -C src2
-	$(MAKE) -C src3
+	$(MAKE) -C src
 #
 drel:
-	$(MAKE) -C src2/drel
-	$(MAKE) -C src3/drel
+	$(MAKE) -C src/drel
 #
 lib: 
-	$(MAKE) -C src2/lib
-	$(MAKE) -C src3/lib
+	$(MAKE) -C src/lib
 #
 clean:
-	$(MAKE) -C src2/lib clean
+	$(MAKE) -C src/lib clean

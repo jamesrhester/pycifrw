@@ -1,6 +1,10 @@
 #  Run files in the list, and catch any expected exceptions
+from __future__ import absolute_import
+from __future__ import print_function
+
 import sys
-from CifFile import *
+from CifFile import ReadCif,CifError
+from CifFile.StarFile import StarError
 
 def runtests(scantype):
     test_table = [
@@ -26,23 +30,24 @@ def runtests(scantype):
 
     for filename, testresult in test_table:
         try:
-        	ReadCif(filename,scantype=scantype)
+                ReadCif(filename,scantype=scantype)
         except:
-        	if testresult == 'OK':
-           	    print "%s causes error where none expected" % filename
-	            print "%s\n%s" % (`sys.exc_type`,sys.exc_value)
-        	else:
-        	    if sys.exc_type in testresult:
-        		print "%s passes" % filename
-		    else:
-			print "Unexpected exception %s for %s" % (`sys.exc_type`,filename)
+                stype,svalue,ss = sys.exc_info()
+                if testresult == 'OK':
+                    print ("%s causes error where none expected" % filename)
+                    print ("%s\n%s" % (repr(stype),svalue))
+                else:
+                    if stype in testresult:
+       	                print ("%s passes" % filename)
+                    else:
+                        print ("Unexpected exception %s for %s" % (repr(stype),filename))
         else:     #no exception
-        	if testresult == 'OK':
-        	    print "%s passes" % filename
-        	else:
-        	    print "%s: Expected %s, got nothing" % (filename,`testresult`)
+                if testresult == 'OK':
+                    print( "%s passes" % filename)
+                else:
+                    print( "%s: Expected %s, got nothing" % (filename,repr(testresult)))
 if __name__ == "__main__":
-    print "Testing interpreted tokenizer"
+    print("Testing interpreted tokenizer")
     runtests("standard")
-    print "Testing compiled tokenizer"
+    print("Testing compiled tokenizer")
     runtests("flex")

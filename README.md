@@ -9,31 +9,34 @@ Information Format) files using Python.  It was developed at the
 Australian National Beamline Facility (ANBF), run by the Australian
 Synchrotron Research Program (ASRP), as part of a larger project to
 provide CIF input/output capabilities for data collection.  It is
-now (Jan 2015) maintained and developed within the Australian Nuclear Science and
+now (Mar 2017) maintained and developed within the Australian Nuclear Science and
 Technology Organisation (ANSTO).
 
 Conformance
 -----------
 
-The CIF 1.1 and 2.0 working specifications were used as a reference,
+The specifications found in Vol G of the International Tables for
+Crystallography were used as a reference for CIF 1.0/1.1 syntax.
+http://dx.doi.org/10.1107/S1600576715021871 was used as the CIF 2.0
+reference.
 
 PyCifRW has been tested on the IUCr sample CIF1.1 trip files located at
 http://www.iucr.org/iucr-top/cif/developers/trip and fails or
 successfully reads as it is supposed to (note that `ciftest5` contains
-characters now forbidden in CIFs). For CIF2.0, only characters in the
-Basic Multilingual Plane are supported due to limitations of Python 2.
+characters now forbidden in CIFs). 
 
 Supported Platforms
 -------------------
 
-PyCIFRW is written entirely in Python.  While this makes parsing of large
-CIF files rather slow, it should run wherever Python runs.  The latest version
-has been tested on Linux and will soon be tested on Windows 7.
+PyCIFRW is written entirely in Python, and so should run wherever
+Python runs.  Any failures on Mac, Windows or Linux should be
+communicated to the author, either through the BitBucket issues
+tracker or email.
 
-The source code of a C extension module is also included in the distribution.
-This module accelerates CIF file reading. From time to time
-system-dependent installation packages are generated containing precompiled
-versions of this module.
+The source code of a C extension module is also included in the
+distribution.  This module accelerates CIF file reading. From time to
+time system-dependent installation packages are generated containing
+precompiled versions of this module.
 
 Installation
 ------------
@@ -74,9 +77,16 @@ to set a value
     cf['si_std']['_diffrn_meas_wavelength'] = 1.54
 
 
-Extra programs
---------------
+Example programs
+----------------
 
-The "Programs" directory contains program "validate_cif.py" which
-validates a data files against data dictionaries.  Execute this file
-without arguments for a help message.
+The file 'TestPyCIFRW.py' in the source distribution contains around 170 tests
+of PyCIFRW functionality and is a good source of examples for using both simple
+and advanced PyCIFRW interfaces.
+
+The "Programs" directory in the source distribution contains simple example programs. 
+Of interest are `validate_cif.py` which validates a data files against data dictionaries 
+(execute this file at a terminal prompt without arguments for a help message)
+and `output_asciidoc.py` which will convert a DDLm dictionary into an
+asciidoc document that can then be converted to HTML or other presentation
+formats.

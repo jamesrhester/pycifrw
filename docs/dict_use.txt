@@ -5,7 +5,7 @@
 CIF dictionaries describe the meaning of the datanames found in CIF data files
 in a machine-readable format - the CIF format.  Each block in a CIF dictionary
 defines a single dataname by assigning values to a limited set of attributes.
-The set of attributes used by a dictionary is called its 'Dictionary Definition
+This set of attributes used by a dictionary is called its 'Dictionary Definition
 Language' or DDL.  Three languages have been used in IUCr-supported CIF dictionaries:
 DDL1 (the original language), DDL2 (heavily developed by the macromolecular community), and
 DDLm (a new standard that aims to unite the best of DDL1 and DDL2). DDL2 and DDLm both

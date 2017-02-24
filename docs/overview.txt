@@ -37,18 +37,23 @@ objects behave identically to Python dictionaries, with some
 additional methods. `CifFile` objects can be created by calling the 
 `ReadCif` function on a filename or URL:
 
-          cf = CifFile.ReadCif("mycif.cif")    
-          df = CifFile.ReadCif("ftp://ftp.iucr.org/pub/cifdics/cifdic.register")
+          from CifFile import ReadCif
+          cf = ReadCif("mycif.cif")    
+          df = ReadCif("ftp://ftp.iucr.org/pub/cifdics/cifdic.register")
 
 Errors are raised if CIF syntax/grammar violations are 
 encountered in the input file or line length limits are exceeded.
 
-A compiled extension (`StarScan.so`) is available on Linux which 
-increases parsing speed by a factor of three or more. To use this 
-facility, include the keyword argument `scantype='flex'` in 
-`ReadCif` commands:
+A compiled extension (`StarScan.so`) is available in binary
+distributions which increases parsing speed by a factor of three or
+more. To use this facility, include the keyword argument
+`scantype='flex'` in `ReadCif` commands:
 
-          cf = CifFile.ReadCif("mycif.cif",scantype="flex")
+          cf = ReadCif("mycif.cif",scantype="flex")
+
+Binary distributions are generally only provided for the 'manylinux'
+target, but may also be generated from the source distribution for any
+platform if the appropriate compilers are available on that platform.
 
 #### Grammar options
 
@@ -61,20 +66,21 @@ CIF1. Detection of the appropriate CIF grammar is automatic, but
 potentially time-consuming for multiple files, so specification of the
 particular version to use is possible with the grammar keyword:
 
-         cf = CifFile.ReadCif('oldcif.cif',grammar='1.0') #oldest CIF syntax      
-         cf = CifFile.ReadCif('normcif.cif',grammar='1.1') #widespread
-         cf = CifFile.ReadCif('future.cif',grammar='2.0') #latest standard
-         cf = CifFile.ReadCif('unknown.cif',grammar='auto') #try 2.0->1.1->1.0
+         cf = ReadCif('oldcif.cif',grammar='1.0') #oldest CIF syntax      
+         cf = ReadCif('normcif.cif',grammar='1.1') #widespread
+         cf = ReadCif('future.cif',grammar='2.0') #latest standard
+         cf = ReadCif('unknown.cif',grammar='auto') #try 2.0->1.1->1.0
 
 Reading of STAR2 files is also possible by setting `grammar='STAR2'`.
-Currently, the default is set to '1.1'.
+Currently, the default is set to 'auto'.
 
 ### Creating a new CifFile
 
 A new `CifFile` object is usually created empty:
 
 ~~~{.python}
-        cf = CifFile.CifFile()
+        from CifFile import CifFile
+        cf = CifFile()
 ~~~
 
 You will need to create at least one `CifBlock` object to hold your 
@@ -83,7 +89,8 @@ Python dictionary notation.  The dictionary 'key' becomes the
 blockname used for output.
 
 ~~~{.python}
-        myblock = CifFile.CifBlock()        
+        from CifFile import CifBlock
+        myblock = CifBlock()        
         cf['a_block'] = myblock
 ~~~
 
@@ -116,8 +123,8 @@ included in the values. The value associated with a `CifFile`
 dictionary key is always a `CifBlock` object. All standard Python 
 dictionary methods (e.g. `get`, `update`, `items()`, `keys()`) are available 
 for both `CifFile` and `CifBlock` objects. Note also the convenience 
-method `first_block()`, which will return the first datablock in a 
-CIF file:
+method `first_block()`, which will return the first datablock stored _which
+is not necessarily the first datablock in the physical file_:
 
 ~~~{.python}
     my_data = cf.first_block()
@@ -129,7 +136,7 @@ describes ways to access looped data.
 
 #### Tabular (“looped”) data
 
-For the purpose of the following examples, we use the following 
+For the purpose of the examples, we use the following 
 example CIF file:
 
 ~~~~~~~~~~~~~~
@@ -157,7 +164,7 @@ and facilitates row-based access. A `CifLoopBlock` object can be
 obtained by calling the `CifBlock` method `GetLoop(dataname)`.
 Column-based access remains available for this object (e.g. `keys()`
 returns a list of datanames in the loop and square bracket notation
-returns a list of column values).
+returns a list of column values for that column).
 
 A particular row can be selected using the `CifLoopBlock` 
 `GetKeyedPacket` method:
@@ -169,7 +176,7 @@ A particular row can be selected using the `CifLoopBlock`
     '3'
 ~~~
 
-In this example, the first packet with a value of `'c'` for `_item_7`
+In this example, the single packet with a value of `'c'` for `_item_7`
 is returned, and packet values can then be accessed using the 
 dataname as an attribute of the packet. Note that a `KeyError` is 
 raised if more than one packet matches, or no packets match, and 
@@ -227,13 +234,11 @@ strings or numbers.
 
 #### Creating loops
 
-Loop creation has been simplified in PyCIFRW 4.0. To create a
-loop, simply set the column values to same-length lists, and
-then call the `CifBlock` method `CreateLoop` with a list of
-the looped datanames as a single argument.  This method will
-raise an error if the datanames have different length columns
-assigned to them.  For example, the following commands create
-the example loop above:
+To create a loop, simply set the column values to same-length lists,
+and then call the `CifBlock` method `CreateLoop` with a list of the
+looped datanames as a single argument.  This method will raise an
+error if the datanames have different length columns assigned to them.
+For example, the following commands create the example loop above:
 
 ~~~{.python}
     cb['_item_5']  = [1,2,3,4]
@@ -263,11 +268,11 @@ structure:
 
 ####  Changing item order
 
-Item order has *no* semantic significance in CIF files.  However, the
-readability of CIF files in simple text editors leads to a desire to
-organise the output order for human readers.  The `ChangeItemOrder`
-method allows the order in which data items appear in the printed file
-to be changed:
+Item (and block) order has *no* semantic significance in CIF files.
+However, the readability of CIF files in simple text editors leads to
+a desire to organise the output order for human readers.  The
+`ChangeItemOrder` method allows the order in which data items appear
+in the printed file to be changed:
 
 ~~~{.python}
     mycif['testblock'].ChangeItemOrder('_item_5',0)
@@ -317,7 +322,7 @@ you wish to create a packet from scratch, you should instantiate
 a `StarPacket`:
 
 ~~~{.python}
-    import StarFile   #installed with PyCIFRW
+    from CifFile import StarFile   #installed with PyCIFRW
     newpack = StarFile.StarPacket()
     newpack._item_5 = '5'  
     ...
@@ -355,25 +360,29 @@ string containing a comment which will be placed at the top of
 the output file. This comment string must already contain # 
 characters at the beginning of lines:
 
+~~~{.python}
     outfile.write(cf.WriteOut("#This is a test file"))
+~~~
 
-Two additional keyword arguments control line length in the 
-output file: `wraplength` and `maxoutlength`. Lines in the output 
-file are guaranteed to be shorter than `maxoutlength` characters, 
-and PyCIFRW will additionally insert a line break if putting two 
-data values or a dataname/datavalue pair together on the same 
-line would exceed `wraplength`. In other words, unless data values 
-are longer than `maxoutlength` characters long, no line breaks will 
-be inserted in the output file. By default, `wraplength = 80` and 
-`maxoutlength = 2048`.
+Two additional keyword arguments control line length in the output
+file: `wraplength` and `maxoutlength`. Lines in the output file are
+guaranteed to be shorter than `maxoutlength` characters, and PyCIFRW
+will additionally insert a line break if putting two data values or a
+dataname/datavalue pair together on the same line would exceed
+`wraplength`. In other words, unless data values are longer than
+`maxoutlength` characters long, no line breaks will be inserted into
+those datavalues the output file. By default, `wraplength = 80` and
+`maxoutlength = 2048`.  Note that the CIF line folding protocol is
+used, which makes wrapping of long datavalues reversible.
 
 These values may be set on a per block basis by calling the 
 `SetOutputLength` method of the block.
 
 The order of output of items within a `CifFile` or `CifBlock` is 
 specified using the `ChangeItemOrder` method (see above). The 
-default order is the order that items were inserted or read in to 
-the `CifFile`/`CifBlock`.
+default order is the order that items were first added in to 
+the `CifFile`/`CifBlock`. Note that this order is not guaranteed
+to be the order in which they appear in the input file.
 
 ### Templating system
 
@@ -410,52 +419,18 @@ containing the same limited number of datanames.
 
 #### Output format
 
-CIF files are output by default in CIF2 grammar, but with the CIF2-only
-triple quotes avoided unless explicitly requested.  Therefore, as long
-as CIF2-only datastructures (lists and tables) are absent, the output
-CIF files will conform to 1.0,1.1 and 2.0 grammar.  The grammar of the
-output files can be changed by calling `CifFile.set_grammar` with the
-choices being 1.0,1.1,2.0 or STAR2. 
+CIF files are output by default in CIF2 grammar, but with the
+CIF2-only triple quotes avoided unless explicitly requested through a
+template.  Therefore, as long as CIF2-only datastructures (lists and
+tables) are absent, the output CIF files will conform to 1.0,1.1 and
+2.0 grammar.  The grammar of the output files can be changed by
+calling `CifFile.set_grammar` with the choices being `1.0`,`1.1`,`2.0` or
+`STAR2`.
 
-## Unsupported operations
+## Deprecated classes
 
-The following notes are from previous versions of PyCIFRW.  The operations
-described have not been updated to new internal datastructures and may
-not work in this release.
-
-### Merging dictionaries
-
-PyCIFRW provides a top-level function to merge DDL1/2 dictionary 
-files. It takes a list of CIF filenames or `CifFile` objects, and a 
-`mergemode` keyword argument. CIF files are merged from left to 
-right, that is, the second file in the list is merged into the 
-first file in the list and so on.
-
-For completeness we list the arguments of the `CifFile` merge 
-method, which actually performs the merging operation:
-
-  new_block_set
-:     (first argument, no keyword) The new dictionary 
-  to be merged into the current dictionary
-
-  mode
-:     merging mode to use ('strict', 'overlay' or 'replace')
-
-  single_block
-:     a two element list [oldblockname, newblockname], 
-  where oldblockname in the current file is merged with 
-  newblockname in the new file. This is useful when blocknames 
-  don't match
-
-  idblock
-:     This block is ignored when merging - useful when 
-  merging DDL1 dictionaries in strict mode, in which case the 
-  on_this_dictionary block would cause an error.
-
-#### Limitations on merging
-
-Overlay mode is no longer supported, and should not in any
-case be used.
+The ValidCifFile class is deprecated and will be removed in a future
+version.
 
 # Example programs
 

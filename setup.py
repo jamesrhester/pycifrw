@@ -3,25 +3,13 @@
 from __future__ import print_function
 
 from setuptools import setup, Extension
-from sys import version_info
-
-if version_info.major >= 3:
-    print ("Python 3 setup")
-    c_scanner = Extension("CifFile.StarScan",
-                      sources = ["src2/lib/lex.yy.c","src2/lib/py_star_scan.c"])
-    package_dir = {'CifFile':'src2'}
-else:
-    print ("Python 2 setup")
-    # The compiled scanner for speed
-
-    c_scanner = Extension("CifFile.StarScan",
-                      sources = ["src2/lib/lex.yy.c","src2/lib/py_star_scan.c"])
-    package_dir = {'CifFile':'src2'}
 
 #### Do the setup
+c_scanner = Extension("CifFile.StarScan",
+            sources = ["src/lib/lex.yy.c","src/lib/py_star_scan.c"])
 
 setup(name="PyCifRW",
-      version = "4.2.3",
+      version = "4.3",
       description = "CIF/STAR file support for Python",
       author = "James Hester",
       author_email = "jamesrhester at gmail.com",
@@ -42,8 +30,8 @@ setup(name="PyCifRW",
       py_modules = ['CifFile.CifFile','CifFile.yapps3_compiled_rt','CifFile.YappsStarParser_1_1','CifFile.YappsStarParser_1_0',
                     'CifFile.YappsStarParser_STAR2','CifFile.YappsStarParser_2_0','CifFile.StarFile','CifFile.TypeContentsParser'],
       ext_modules = [c_scanner],
-      package_dir = package_dir,
       packages = ['CifFile', 'CifFile.drel'],
-      test_suite = 'TestPyCifRW'
+      test_suite = 'TestPyCifRW',
+      package_dir = {'CifFile':'src'}
       )
 

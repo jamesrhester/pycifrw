@@ -1,25 +1,16 @@
-recursive-include src2 *.nw
-recursive-include src3 *.nw
+recursive-include src *.nw
 include LICENSE
 include INSTALLATION
-include src2/*.html
-include src3/*.html
+include TESTING
+include src/*.html
 include TestPyCifRW.py
 include RELEASENOTES
-include src2/Programs/*.py
-include src2/Programs/*.cif
-include src2/Programs/*.html
-include src2/Programs/README
-include src2/Programs/Web.README
-include src2/Changelog
-include src2/Makefile
-include src3/Programs/*.py
-include src3/Programs/*.cif
-include src3/Programs/*.html
-include src3/Programs/README
-include src3/Programs/Web.README
-include src3/Changelog
-include src3/Makefile
-include src2/lib/*
-include src3/lib/*
+include src/Programs/*.py
+include src/Programs/*.cif
+include src/Programs/*.html
+include src/Programs/README
+include src/Programs/Web.README
+include src/Changelog
+include src/Makefile
+include src/lib/*
 include docs/*.html

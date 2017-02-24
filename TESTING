@@ -1,21 +1,19 @@
 Testing procedure for PyCIFRW
 =============================
 
-In Python2 virtual environments:
+In Python2 and Python3 virtual environments:
 
-0. python2 setup.py install
+0. pip install ply; pip install numpy 
+1. pip install <dist as wheel>
+2. tar -xf <src package>
+3. cd PyCifRW-<version>
+4. ln -s <build directory>/tests .
+5. ln -s <build directory>/dictionaries .
+4. python TestPyCIFRW
 
-1. python2 TestPyCIFRW
-2. Edit out/in '__unicode_literals__' from TestPyCIFRW.py
-3. python2 TestPyCIFRW
-4. in the tests directory, 'python runtests.py'
-5. in the unicode-tests directory, 'python runtests.py'
+Additional tests run during development
 
-In Python3 virtual environment
-
-0. python3 setup.py install
-
-1. python3 TestPyCIFRW
-2. in the tests directory, 'python3 runtests.py'
-3. in the unicode-tests directory, 'python3 runtests.py' 
+1. Edit out/in '__unicode_literals__' from TestPyCIFRW.py for Python2
+2. in the tests directory, 'python runtests.py'
+3. in the unicode-tests directory, 'python runtests.py'
 
