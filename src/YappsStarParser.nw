@@ -369,7 +369,7 @@ rule input@<<prepared>>: ( ((
 
      rule data_value: (data_value_1          {{thisval = data_value_1}}
                       |
-                      delimited_data_value  {{thisval = stripstring(delimited_data_value)}}
+                      delimited_data_value  {{thisval = delimited_data_value}}
                       |
                       sc_lines_of_text      {{thisval = stripextras(sc_lines_of_text)}}
                       |

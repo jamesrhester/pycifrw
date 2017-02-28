@@ -1693,7 +1693,10 @@ Note that all strings are stored internally as unicode.
 <<Add a data item>>=
 def AddItem(self,key,value,precheck=False):
     """Add dataname `key` to block with value `value`.  `value` may be
-    a single value, a list or a tuple."""
+    a single value, a list or a tuple. If `precheck` is False (the default),
+    all values will be checked and converted to unicode strings as necessary. If
+    `precheck` is True, this checking is bypassed.  No checking is necessary
+    when values are read from a CIF file as they are already in correct form."""
     if not isinstance(key,(unicode,str)):
          raise TypeError('Star datanames are strings only (got %s)' % repr( key ))
     key = unicode(key)    #everything is unicode internally
@@ -1703,12 +1706,13 @@ def AddItem(self,key,value,precheck=False):
     if key in self:
          if not self.overwrite:
              raise StarError( 'Attempt to insert duplicate item name %s' % key)
-    # put the data in the right container
-    regval,empty_val = self.regularise_data(value)
-    # check for pure string data
-    pure_string = check_stringiness(regval)
-    if not precheck:
+    if not precheck:   #need to sanitise
+        regval,empty_val = self.regularise_data(value)
+        pure_string = check_stringiness(regval)
         self.check_item_value(regval)
+    else:
+        regval,empty_val = value,None
+        pure_string = True
     # update ancillary information first
     lower_key = key.lower()
     if not lower_key in self and self.FindLoop(lower_key)<0:      #need to add to order
@@ -1822,10 +1826,10 @@ for Python 2 we apply Unicode to any string data.
 def regularise_data(self,dataitem):
     """Place dataitem into a list if necessary"""
     from numbers import Number
-    if isinstance(dataitem,(Number,unicode,StarList,StarDict)):
-        return dataitem,None  #assume StarList/StarDict are unicode if necessary
     if isinstance(dataitem,str):
         return unicode(dataitem),None
+    if isinstance(dataitem,(Number,unicode,StarList,StarDict)):
+        return dataitem,None  #assume StarList/StarDict contain unicode if necessary
     if isinstance(dataitem,(tuple,list)):
         v,s = zip(*list([self.regularise_data(a) for a in dataitem]))
         return list(v),list(s)
@@ -3250,14 +3254,16 @@ def transpose(base_list):
        new_lofl.append(new_packet)
     return new_lofl
 
+# This routine optimised to return as quickly as possible
+# as it is called a lot.
 def not_none(itemlist):
     """Return true only if no values of None are present"""
-    if isinstance(itemlist,(tuple,list)):
-        for x in itemlist:
-          if not not_none(x): return False 
-        return True
-    elif itemlist is None:
+    if itemlist is None:
         return False
+    if not isinstance(itemlist,(tuple,list)):
+        return True
+    for x in itemlist:
+       if not not_none(x): return False 
     return True
 
 
