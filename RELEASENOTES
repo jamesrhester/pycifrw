@@ -1,8 +1,13 @@
 Release Notes for PyCIFRW-4.3
 =============================
 
-This is the first version of PyCIFRW to include unified source
-for both Python2 and Python3. 
+This is the first version of PyCIFRW to include unified source for
+both Python2 and Python3.  As a side-effect, all strings returned by
+CifFile and StarFile methods are of type unicode (Python 2).  Please
+create an issue on Bitbucket if this causes breakage in your software.
+
+The ValidCifFile class will be deprecated from the next release. Please
+advise if this would cause problems.
 
 Python 3 notes
 ==============
@@ -11,20 +16,21 @@ Python 3 notes
 CifFile and CifBlock objects, despite the Python 3 dictionary
 semantics requiring them to be iterators rather than lists.
 
-* In the original Python 2 version, the top-level CifFile module
-imported everything from the CifFile.py and StarFile.py modules. This
-meant that it was sufficient for your code to include 'from CifFile
-import x', where x is anything defined in CifFile.py or StarFile.py.
-This has been replicated in Python 3 by explicitly importing those
-classes and functions in CifFile.py and StarFile.py required for the
-tests to succeed. If your code uses a function not included in the
-tests (note that all classes are included) you will need to refer to
-it as CifFile.CifFile.x (for a function named x in CifFile.py).
+* In the original Python 2 version, the top-level `CifFile` module
+imported everything from the `CifFile.py` and `StarFile.py`
+modules. This meant that it was sufficient for your code to include
+`from CifFile import x`, where x is anything defined in CifFile.py or
+StarFile.py.  This has been replicated in Python 3 by explicitly
+importing those classes and functions in CifFile.py and StarFile.py
+required for the tests to succeed. If your code uses a function not
+included in the tests (note that all classes and methods are included)
+you will need to refer to it as `CifFile.CifFile.x` (for a function
+named `x` in `CifFile.py`).
 
 * Python 3 conversion relied heavily on getting the 170 unit tests to
 complete successfully.  These tests cover about 80% of the code. If
-your code happens to trigger errors in the remaining code, please let
-me know.  The code that is not covered well is generally DDL1/2
+your code happens to trigger errors in the remaining code, please create
+an issue.  The code that is not covered well is generally DDL1/2
 validation code or unusual error conditions.
 
 Changes since 4.2
@@ -37,6 +43,7 @@ Changes since 4.2
 * Adjusted DDLm CIF dictionary usage to conform to recent changes
 * first_block() returns a single block from the file, not necessarily the
   first one in the file, or the first one added to the CifFile object.
+* All strings returned by methods are of type unicode.
 
 Changes since 4.1.1
 ===================
