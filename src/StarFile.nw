@@ -3175,7 +3175,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
                   else: new_data = []
               # wipe out the old data and enter the new stuff
               byebyeloop = self.GetLoop(overlaps[0])
-              # print "Removing '%s' with overlaps '%s'" % (`byebyeloop`,`overlaps`)
+              # print("Removing '%r' with overlaps '%r'" % (byebyeloop, overlaps))
               # Note that if, in the original dictionary, overlaps are not
               # looped, GetLoop will return the block itself.  So we check
               # for this case...

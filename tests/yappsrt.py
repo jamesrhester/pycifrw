@@ -5,8 +5,8 @@
 # Modified for PyCIFRW by JRH to allow external scanner
 #
 
+from __future__ import print_function
 from string import *
-import exceptions
 import re
 try:
     import StarScan
@@ -20,8 +20,9 @@ class SyntaxError(Exception):
         self.pos = pos
         self.msg = msg
     def __repr__(self):
-        if self.pos < 0: return "#<syntax-error>"
-        else: return "SyntaxError[@ char " + `self.pos` + ": " + self.msg + "]"
+        emsg = ("#<syntax-error>" if self.pos < 0 else
+                "SyntaxError[@ char {!r}: {}]".format(self.pos, self.msg))
+        return emsg
 
 class NoMoreTokens(Exception):
     """Another exception object, for when we run out of tokens"""
@@ -44,7 +45,7 @@ class Scanner:
             self.token = self.compiled_token
             self.__del__ = StarScan.cleanup
         elif self.scantype == "flex":
-            print "Warning: using Python scanner"
+            print("Warning: using Python scanner")
             self.scantype = "standard"
         if self.scantype != "flex":
             self.scan = self.interp_scan
@@ -85,7 +86,7 @@ class Scanner:
         """Print the last 10 tokens that have been scanned in"""
         output = ''
         # for t in self.tokens[-10:]:
-        #     output = '%s\n  (@%s)  %s  =  %s' % (output,t[0],t[2],`t[3]`)
+        #     output = '%s\n  (@%s)  %s  =  %r' % (output, t[0], t[2], t[3])
         return output
 
     def compiled_scan(self,restrict):
@@ -169,7 +170,7 @@ def print_error(input, err, scanner):
     p = err.pos
     # Figure out the line number
     line = count(input[:p], '\n')
-    print err.msg+" on line "+`line+1`+":"
+    print(err.msg, " on line ", line + 1, ":", sep='')
     # Now try printing part of the line
     text = input[max(p-80,0):p+80]
     p = p - max(p-80,0)
@@ -196,18 +197,18 @@ def print_error(input, err, scanner):
         p = p - 7
 
     # Now print the string, along with an indicator
-    print '> ',text
-    print '> ',' '*p + '^'
-    print 'List of nearby tokens:', scanner
+    print('> ',text)
+    print('> ',' '*p + '^')
+    print('List of nearby tokens:', scanner)
 
 def wrap_error_reporter(parser, rule):
     try: return getattr(parser, rule)()
-    except SyntaxError, s:
+    except SyntaxError as s:
         input = parser._scanner.input
         try:
             print_error(input, s, parser._scanner)
         except ImportError:
-            print 'Syntax Error',s.msg,'on line',1+count(input[:s.pos], '\n')
+            print('Syntax Error',s.msg,'on line',1+count(input[:s.pos], '\n'))
     except NoMoreTokens:
-        print 'Could not complete parsing; stopped around here:'
-        print parser._scanner
+        print('Could not complete parsing; stopped around here:')
+        print(parser._scanner)
