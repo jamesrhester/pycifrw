@@ -734,18 +734,18 @@ class WithDictTestCase(unittest.TestCase):
                UIJ = b.matrix_U
                Break
      } } }
- 
+
      Else If (a.adp_type == 'bani')  {
          Loop b as atom_site_aniso     {
            If(label == b.label)           {
- 
+
               UIJ = b.matrix_B / (8 * Pi**2)
               Break
      } } }
      Else                                    {
          If (a.adp_type == 'uiso')  U  =  a.U_iso_or_equiv
          Else                       U  =  a.B_iso_or_equiv / (8 * Pi**2)
- 
+
              UIJ = U * _cell.convert_Uiso_to_Uij
      }
      _atom_site.tensor_beta = UIJ """
@@ -766,7 +766,7 @@ class WithDictTestCase(unittest.TestCase):
         b = myfunc(self.testblock)
         print('tensor beta is now {!r}'.format(b))
         self.failUnless(b[1][1][1] == 0.031)  #U22 for O2
-        
+
 if __name__=='__main__':
     global testdic
     testdic = CifFile.CifDic("tests/drel/cif_core.dic",grammar="2.0",do_imports='Contents')

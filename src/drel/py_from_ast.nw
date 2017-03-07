@@ -162,7 +162,7 @@ number of packets during execution of the method.
     if cur_row and len(actual_names) > 1:    #i.e. have real names from category
         end_body +="        __row_id = range(%s)\n" % (func_table['count_data'] % ("'"+actual_names[0]+"'"))
     elif cur_row and len(actual_names)==1:   #so no actual names available
-        
+
         end_body += "        cat_names = %s\n" % (func_table["cat_names"] % ("'"+getcatname(targetname)[0]+"'"))
         end_body += "        have_name = [a for a in cat_names if %s]\n" % (func_table["has_name"] % "a")
         end_body += "        if len(have_name)>0:\n"

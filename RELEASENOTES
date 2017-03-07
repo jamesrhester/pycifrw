@@ -36,7 +36,7 @@ validation code or unusual error conditions.
 Changes since 4.2
 =================
 
-* Fixed bugs in fast merging 
+* Fixed bugs in fast merging
 * Improved DDLm import behaviour
 * Improved templating of semicolon-delimited strings
 * Added non-standard hash functions to dREL
@@ -91,5 +91,3 @@ Deprecated methods
 adding a whole loop all at once in a single tuple has been deprecated.
 Just assign dataname values using the usual square brackets and then
 call CreateLoop with the datanames that belong in a single loop.
-
-

@@ -55,12 +55,12 @@ def p_simple_stmt(p):
 # This production appears inside a set of braces. Any statement
 # will be automatically terminated by a newline so we do not
 # need to include that here
-def p_statements(p): 
+def p_statements(p):
     '''statements : statement
                  | statements statement '''
     if len(p) == 2: p[0] = p[1]
     else: p[0] = ["STATEMENTS", p[1][1] + [p[2]]]
-    
+
 def p_small_stmt(p):
     '''small_stmt :   expr_stmt
                     | print_stmt
@@ -86,7 +86,7 @@ def p_print_stmt(p):
 # AST processor for language-dependent processing
 def p_expr_stmt(p):
     ''' expr_stmt : testlist_star_expr
-                  | testlist_star_expr AUGOP testlist_star_expr 
+                  | testlist_star_expr AUGOP testlist_star_expr
                   | testlist_star_expr "=" testlist_star_expr
                   | fancy_drel_assignment_stmt '''
     if len(p) == 2 and p[1][0] != 'FANCY_ASSIGN':  # we have a list of expressions which we
@@ -165,19 +165,19 @@ def p_a_expr(p):
                | a_expr "-" m_expr'''
     if len(p) == 2:
         p[0] = p[1]
-    else: 
+    else:
         p[0] = ["MATHOP",p[2], p[1], p[3]]
 
 def p_m_expr(p):   #note bitwise and and or are pycifrw extensions
     '''m_expr : u_expr
                | m_expr "*" u_expr
-               | m_expr "/" u_expr 
+               | m_expr "/" u_expr
                | m_expr "^" u_expr
                | m_expr "&" u_expr
                | m_expr "|" u_expr '''
     if len(p) == 2:
         p[0] = p[1]
-    else: 
+    else:
         p[0] = ["MATHOP",p[2],p[1],p[3]]
 
 def p_u_expr(p):
@@ -186,13 +186,13 @@ def p_u_expr(p):
                | "+" u_expr'''
     if len(p) == 2:
         p[0] = p[1]
-    else: 
+    else:
         p[0] = ["SIGN",p[1],p[2]]
 
 def p_power(p):
     '''power : primary
               | primary POWER u_expr'''
-    if len(p) == 2: 
+    if len(p) == 2:
         p[0] = p[1]
     else:
         p[0] = ["MATHOP","**",p[1] , p[3]]
@@ -208,8 +208,8 @@ def p_primary(p):
     p[0] = p[1]
 
 def p_atom(p):
-    '''atom : ID 
-             | item_tag 
+    '''atom : ID
+             | item_tag
              | literal
              | enclosure'''
     # print 'Atom -> %s' % repr(p[1])
@@ -219,7 +219,7 @@ def p_item_tag(p):
     '''item_tag : ITEM_TAG'''
     p[0] = ["ITEM_TAG",p[1]]
 
-def p_literal(p): 
+def p_literal(p):
     '''literal : stringliteral
                   | INTEGER
                   | HEXINT
@@ -264,7 +264,7 @@ def p_list_display(p):
     if len(p) == 4: p[0] = ["LIST"]
     else:
         p[0] = ["LIST"] + p[3]
-    
+
 
 # scrap the trailing comma
 def p_listmaker(p):
@@ -273,7 +273,7 @@ def p_listmaker(p):
     # print('listmaker: {!r}'.format(p[0]))
 
 def p_listmaker2(p):
-    '''listmaker2 : "," maybe_nline expression 
+    '''listmaker2 : "," maybe_nline expression
                   | listmaker2 "," maybe_nline expression
                   |             '''
     if len(p) == 4:
@@ -281,13 +281,13 @@ def p_listmaker2(p):
     elif len(p) < 2:
         p[0] = []
     else:
-        p[0] = p[1] + [p[4]] 
+        p[0] = p[1] + [p[4]]
 
 # define tables
 def p_table_display(p):
     ''' table_display : "{" maybe_nline tablemaker maybe_nline "}"
                       | "{" maybe_nline "}" '''
-    if len(p) == 4: 
+    if len(p) == 4:
         p[0] = ["TABLE"]
     else:
         p[0] = ["TABLE"] + p[3]
@@ -300,7 +300,7 @@ def p_tablemaker2(p):
     '''tablemaker2 : "," maybe_nline stringliteral ":" expression
                    | tablemaker2 "," maybe_nline stringliteral ":" expression
                    |  '''
-    if len(p) == 6: 
+    if len(p) == 6:
           p[0] = [(p[3],p[5])]
     elif len(p) < 2:
           p[0] = []
@@ -311,17 +311,17 @@ def p_tablemaker2(p):
 # our lexer will interpret as ID REAL.  We therefore also
 # accept t.12(3), which is not allowed, but we don't bother
 # trying to catch this error here.
- 
+
 def p_attributeref(p):
     '''attributeref : primary attribute_tag '''
     p[0] = ["ATTRIBUTE",p[1],p[2]]
 
 def p_attribute_tag(p):
-    '''attribute_tag : "." ID 
+    '''attribute_tag : "." ID
                      | REAL '''
     if len(p) == 3:
         p[0] = p[2]
-    else: 
+    else:
         p[0] = p[1][1:]
 
 def p_subscription(p):
@@ -331,7 +331,7 @@ def p_subscription(p):
 def p_slicing(p):
     '''slicing :  primary "[" proper_slice "]"
                |  primary "[" slice_list "]" '''
-    p[0] = ["SLICE", p[1], p[3] ] 
+    p[0] = ["SLICE", p[1], p[3] ]
 
 def p_proper_slice(p):
     '''proper_slice : short_slice
@@ -373,7 +373,7 @@ def p_slice_list(p):
         p[0] = p[1] + [p[3]]
 
 def p_slice_item(p):
-    ''' slice_item : expression 
+    ''' slice_item : expression
                    | proper_slice '''
     p[0] = p[1]
 
@@ -389,7 +389,7 @@ def p_call(p):
 # These are the arguments to a call, not a definition
 
 def p_argument_list(p):
-    '''argument_list : func_arg 
+    '''argument_list : func_arg
                      | argument_list "," func_arg '''
     if len(p) == 2:
         p[0] = [p[1]]
@@ -401,7 +401,7 @@ def p_func_arg(p):
     p[0] = p[1]
 
 def p_fancy_drel_assignment_stmt(p):
-    '''fancy_drel_assignment_stmt : ID OPEN_PAREN dotlist CLOSE_PAREN ''' 
+    '''fancy_drel_assignment_stmt : ID OPEN_PAREN dotlist CLOSE_PAREN '''
     p[0] = ["FANCY_ASSIGN",p[1],p[3]]
 #    print("Fancy assignment -> {!r}".format(p[0]))
 
@@ -409,7 +409,7 @@ def p_fancy_drel_assignment_stmt(p):
 
 def p_dotlist(p):
     '''dotlist : "." ID "=" expression
-               | dotlist "," "." ID "=" expression '''               
+               | dotlist "," "." ID "=" expression '''
     if len(p) <= 5:   #first element of dotlist
         p[0] = [[p[2],p[4]]]
     else:              #append to previous elements
@@ -417,7 +417,7 @@ def p_dotlist(p):
 
 def p_exprlist(p):
     ''' exprlist : a_expr
-                 | exprlist "," a_expr ''' 
+                 | exprlist "," a_expr '''
     if len(p) == 2:
         p[0] = [p[1]]
     else: p[0] = p[1] + [p[3]]
@@ -426,7 +426,7 @@ def p_exprlist(p):
 def p_id_list(p):
     ''' id_list : ID
                 | id_list "," ID '''
-                
+
     if len(p) == 2:
         p[0] = [p[1]]
     else:
@@ -456,7 +456,7 @@ def p_if_else_stmt(p):
 
 # The AST node is [IF_EXPR,cond, suite,[[elseif cond1,suite],[elseifcond2,suite]...]]
 def p_if_stmt(p):
-    '''if_stmt : IF OPEN_PAREN expression CLOSE_PAREN maybe_nline suite 
+    '''if_stmt : IF OPEN_PAREN expression CLOSE_PAREN maybe_nline suite
                | if_stmt ELSEIF OPEN_PAREN expression CLOSE_PAREN maybe_nline suite '''
     if len(p) == 7:
        p[0] = ["IF_EXPR"]
@@ -498,8 +498,8 @@ def p_loop_stmt(p):
 # We capture a list of all the actually present items in the current
 # datafile
 def p_loop_head(p):
-    '''loop_head : LOOP ID AS ID 
-                 | LOOP ID AS ID ":" ID 
+    '''loop_head : LOOP ID AS ID
+                 | LOOP ID AS ID ":" ID
                  | LOOP ID AS ID ":" ID restricted_comp_operator ID '''
 
     p[0] = [p[2],p[4]]
@@ -533,7 +533,7 @@ def p_repeat_stmt(p):
 
 def p_with_stmt(p):
     '''with_stmt : with_head maybe_nline suite'''
-    p[0] = p[1]+[p[3]] 
+    p[0] = p[1]+[p[3]]
 
 def p_with_head(p):
     '''with_head : WITH ID AS ID'''
@@ -579,4 +579,4 @@ def p_error(p):
     raise SyntaxError
 
 #lexer = drel_lex.lexer
-parser = yacc.yacc()    
+parser = yacc.yacc()

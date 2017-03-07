@@ -11,7 +11,7 @@ import cgitb; cgitb.enable()      # for debugging
 
 # output header
 print "Content-Type: text/html\n\n"
-            
+
 formdata = cgi.FieldStorage()
 
 # some constants

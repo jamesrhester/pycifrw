@@ -135,7 +135,7 @@ def t_HEXINT(t):
         t.value = repr(int(t.value,base=16))
     except ValueError:
         print( 'Unable to convert hex value %s' % t.value)
-    return t 
+    return t
 
 def t_INTEGER(t):
     r'[0-9]+'

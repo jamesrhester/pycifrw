@@ -10,7 +10,7 @@ from numpy.linalg import eig
 # Python3 compatibility
 if isinstance(u"abc",str):   #Python 3
     unicode = str
-    
+
 <<Augmented assignments>>
 <<Mathematical operators>>
 <<Extra mathematical functions>>
@@ -50,7 +50,7 @@ def aug_add(current,extra):
     have_list = isinstance(current,list)
     if have_list:
         if isinstance(extra, (float,int)):
-           # requires numpy 
+           # requires numpy
            return numpy.array(current) + extra
         elif isinstance(extra, list):
            return numpy.array(current) + numpy.array(extra)
@@ -61,7 +61,7 @@ def aug_sub(current,extra):
    have_list = isinstance(current,(list,numpy.ndarray))
    if have_list:
         if isinstance(extra, (float,int)):
-           # requires numpy 
+           # requires numpy
            return numpy.array(current) - extra
         elif isinstance(extra, (list,numpy.ndarray)):
            return numpy.array(current) - numpy.array(extra)
@@ -84,7 +84,7 @@ def aug_remove(current,extra):
         raise ValueError("Cannot remove %s from %s" % (repr(extra),repr(current)))
 
 @ Multiplication requires some intelligence.  The rules of dREL are as follows:
-(1) mat * mat, vec*mat is ordinary matrix multiplication 
+(1) mat * mat, vec*mat is ordinary matrix multiplication
 (2) vec * vec is a dot product (i.e. second vector is column)
 (3) mat * vec is matrix multiplication with vec as a column vector
 
@@ -146,7 +146,7 @@ def drel_add(first_arg,second_arg):
     else:
         result = numpy.add(first_arg,second_arg)
         return result
-        
+
 
 @  Other mathematical functions.  dREL defines some linear algebra type functions,
 which we have to wrap because e.g. the eigenvalues should be sorted.  Note that we
@@ -170,7 +170,7 @@ def drel_int(in_val):
         return in_val.astype('int')
     except:
         return int(in_val)
-        
+
 @ List operations.  We deduce that Strip actually returns the nth
 element of each list element (??) based on its use in the model_site
 category functions.

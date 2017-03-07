@@ -12,7 +12,7 @@ def update_one_category(dic,cat_name,hub_id,obj_id,extra_text=""):
     hub_keyname = dic[hub_blockname]['_category_key.name'][0]
     def_text = "This dataname indicates which member of the " + hub_id.upper()
     def_text += \
-""" category a member of this category belongs to. It does not need to be 
+""" category a member of this category belongs to. It does not need to be
 explicitly included in datafiles if the key for the """ + hub_id + \
 """ category takes a single (or default) value. """ + extra_text
     new_bname = dic.add_definition(obj_id,blockname,def_text)
@@ -23,7 +23,7 @@ explicitly included in datafiles if the key for the """ + hub_id + \
     dic[blockname]['_category_key.name'] = current_keys + ["_"+new_bname]
     dic[blockname].CreateLoop(['_category_key.name'])
     return new_bname
-    
+
 def add_spoke(sem_dic,hub_cat,specific_cats = set(),extra_text=''):
     all_cats = set([a.get('_definition.id','').lower() for a in sem_dic if a.get('_definition.scope','Item'=='Category') and a.get('_definition.class','') != 'Head'])
     if specific_cats is None:
@@ -67,7 +67,7 @@ def add_hub_spoke(indic,hub_cat,only_cats=None,force=False):
     outfile = open(outfile,"w")
     outfile.write(str(sem_dic))
     return sem_dic
-                
+
 if __name__ == '__main__':
     import sys
     if len(sys.argv)>2:

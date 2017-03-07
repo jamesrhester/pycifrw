@@ -100,7 +100,7 @@ except ImportError:
 
 if isinstance(u"abc",str):   #Python 3
     unicode = str
-    
+
 try:
     import numpy
     have_numpy = True
@@ -669,7 +669,7 @@ As for [[NewBlock]], we allow duplicate save frame names in the precise situatio
 where one of the blocks is a top-level block.
 
 The [[drop_att]] attribute allows a particular datablock attribute to be used
-to determine if datablocks are semantically identical. 
+to determine if datablocks are semantically identical.
 
 <<Merge with another block collection>>=
 def merge_fast(self,new_bc,parent=None):
@@ -1092,7 +1092,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
        if scantype == 'standard' or grammar_name in ['2.0','STAR2']:
             parser = Y.StarParser(Y.StarParserScanner(text))
        else:
-	    parser = Y.StarParser(Y.yappsrt.Scanner(None,[],text,scantype='flex'))
+            parser = Y.StarParser(Y.yappsrt.Scanner(None,[],text,scantype='flex'))
        # handle encoding switch
        if grammar_name in ['2.0','STAR2']:
            prepared.set_characterset('unicode')
@@ -1600,7 +1600,7 @@ def has_key_or_alias(self,key):
         if len(aliases)>0:
            return True
     return False
-    
+
 def get(self,key,default=None):
     if key in self:
         retval = self.__getitem__(key)
@@ -2231,7 +2231,7 @@ key should already be present.
 ON the other hand, if the child category keys are present but the parent keys
 are missing, then we in principle know that the child keys are a
 subset of the parent keys, but we cannot use the key to derive any values,
-as the keys are opaque. 
+as the keys are opaque.
 
 The final DDLm specification allowed compound keys for categories. When
 combined with child categories, this means that a child key may be absent
@@ -2599,7 +2599,7 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
     delimiter = hints.get('delimiter',None)
     startcol = hints.get('column',-1)
     if isinstance(itemvalue,str) and not isinstance(itemvalue,unicode): #not allowed
-        raise StarError("Non-unicode value {0} found in block".format(itemvalue)) 
+        raise StarError("Non-unicode value {0} found in block".format(itemvalue))
     if isinstance(itemvalue,unicode):  #need to sanitize
         stringsink.write(self._formatstring(itemvalue,delimiter=delimiter,hints=hints),canbreak = True,startcol=startcol)
     elif isinstance(itemvalue,(list)) or (hasattr(itemvalue,'dtype') and hasattr(itemvalue,'__iter__')): #numpy
@@ -3041,7 +3041,7 @@ def create_ordering(self,finish_at,start_from):
     if start_from != '':
         if start_from in requested_order:
             sfi = requested_order.index(start_from)
-            loop_order = [self.FindLoop(k) for k in requested_order[sfi:] if self.FindLoop(k)>0] 
+            loop_order = [self.FindLoop(k) for k in requested_order[sfi:] if self.FindLoop(k)>0]
             candidates = list([k for k in self.output_order if k in requested_order[sfi:]])
             cand_pos = len(new_order)
             if len(candidates)>0:
@@ -3061,7 +3061,7 @@ def create_ordering(self,finish_at,start_from):
     if finish_at != '':
         if finish_at in requested_order:
             fai = requested_order.index(finish_at)
-            loop_order = list([self.FindLoop(k) for k in requested_order[fai:] if self.FindLoop(k)>0]) 
+            loop_order = list([self.FindLoop(k) for k in requested_order[fai:] if self.FindLoop(k)>0])
             candidates = list([k for k in self.output_order if k in requested_order[fai:]])
             cand_pos = len(new_order)
             if len(candidates)>0:
@@ -3147,7 +3147,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
            new_value = new_block[attribute]
            #non-looped items
            if new_block.FindLoop(attribute)<0:     #not looped
-              self[attribute] = new_value 
+              self[attribute] = new_value
        my_loops = self.loops.values()
        perfect_overlaps = [a for a in new_block.loops if a in my_loops]
        for po in perfect_overlaps:
@@ -3155,7 +3155,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
           try:
               newkeypos = map(lambda a:newkeys.index(a),loop_keys)
               newkeypos = newkeypos[0]      #one key per loop for now
-              loop_keys = loop_keys[0] 
+              loop_keys = loop_keys[0]
           except (ValueError,IndexError):
               newkeypos = []
               overlap_data = map(lambda a:listify(self[a]),overlaps) #old packet data
@@ -3187,7 +3187,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
                     for i in range(len(overlaps)):
                         #don't do this at home; we are appending
                         #to something in place
-                        self[overlaps[i]].append(pd[i]) 
+                        self[overlaps[i]].append(pd[i])
        self.overwrite = save_overwrite
 
 <<Define an error class>>=
@@ -3263,7 +3263,7 @@ def not_none(itemlist):
     if not isinstance(itemlist,(tuple,list)):
         return True
     for x in itemlist:
-       if not not_none(x): return False 
+       if not not_none(x): return False
     return True
 
 

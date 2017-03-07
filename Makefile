@@ -18,7 +18,7 @@ sources:
 drel:
 	$(MAKE) -C src/drel
 #
-lib: 
+lib:
 	$(MAKE) -C src/lib
 #
 clean:

@@ -1,10 +1,10 @@
-""" 
-Convert a data/dictionary file in STAR2 to CIF2 format.  STAR2 and CIF2 differ 
-most markedly in their compound data value delimiters (comma and whitespace 
+"""
+Convert a data/dictionary file in STAR2 to CIF2 format.  STAR2 and CIF2 differ
+most markedly in their compound data value delimiters (comma and whitespace
 respectively).
 
 We read in the file using STAR2 grammar, then output with CIF2 grammar.
- 
+
 Two optional files may be provided, one giving a top-level comment, and
 another the descriptive text for the dictionary.
 """
@@ -45,7 +45,7 @@ def do_conversion(infile,outfile,desc=None,comment=None):
     of.write(incif.WriteOut(comment=comment_header,saves_after='_description.text'))
     of.close()
     print 'Finished writing %s in %f seconds' % (outfile,time.clock() - startread)
-    
+
 if __name__ == "__main__":
     import sys
     comment_file = None
@@ -62,4 +62,3 @@ contains a comment for the dictionary header."""
     if len(sys.argv)>3:
         comment_file = sys.argv[3]
     do_conversion(infile,outfile,desc=description_file,comment=comment_file)
-
