@@ -90,7 +90,6 @@ except:
     from urllib.request import urlopen
     from urllib.parse import urlparse,urlunparse
 import re,os
-import copy
 import textwrap
 
 try:
@@ -1017,8 +1016,6 @@ def ReadStar(filename,prepared = None, maxlength=-1,
     excised from the input data stream before parsing and is not available in the returned object.
     """
 
-    import string
-    import codecs
     # save desired scoping
     save_scoping = prepared.scoping
     from . import YappsStarParser_1_1 as Y11
@@ -1639,7 +1636,6 @@ def GetItemPosition(self,itemname):
     the top level having a `loop_no` of -1.  If an integer is passed to
     the routine then it will return the position of the loop
     referenced by that number."""
-    import string
     if isinstance(itemname,int):
         # return loop position
         return (-1, self.item_order.index(itemname))
@@ -2404,7 +2400,6 @@ update the length of the current line
 to the number of characters from the beginning of the line.
 
 <<Subclass StringIO>>=
-import math
 class CIFStringIO(StringIO):
     def __init__(self,target_width=80,**kwargs):
         StringIO.__init__(self,**kwargs)
@@ -2543,7 +2538,6 @@ tab stop at 40 characters.  And of course, we stop providing values.
 
 <<Print a complete block>>=
 def printsection(self,instring='',blockstart="",blockend="",indent=0,finish_at='',start_from=''):
-    import string
     self.provide_value = False
     # first make an ordering
     self.create_ordering(finish_at,start_from)  #create self.output_order
@@ -2653,7 +2647,6 @@ recognised.
 
 <<Format loop packets>>=
 def format_packets(self,outstring,indent=0,loop_no=-1):
-   import string
    alldata = [self[a] for a in self.loops[loop_no]]
    loopnames = self.loops[loop_no]
    #print 'Alldata: %s' % `alldata`
@@ -2721,7 +2714,6 @@ text-prefix protocol.
 
 <<Format a string>>=
 def _formatstring(self,instring,delimiter=None,standard='CIF1',indent=0,hints={}):
-    import string
     if hints.get("reformat",False) and "\n" in instring:
         instring = "\n"+self.do_wrapping(instring,hints["reformat_indent"])
     allowed_delimiters = set(self.string_delimiters)

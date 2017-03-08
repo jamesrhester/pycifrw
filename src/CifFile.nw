@@ -85,10 +85,10 @@ except ImportError:
 # Python 2,3 compatibility
 try:
     from urllib import urlopen         # for arbitrary opening
-    from urlparse import urlparse, urlunparse,urljoin
+    from urlparse import urlparse, urljoin
 except:
     from urllib.request import urlopen
-    from urllib.parse import urlparse,urlunparse,urljoin
+    from urllib.parse import urlparse, urljoin
 
 # The unicode type does not exist in Python3 as the str type
 # encompasses unicode.  PyCIFRW tests for 'unicode' would fail
@@ -3236,7 +3236,6 @@ contain.
 
 <<Convert string to appropriate type>>=
 def change_type(self,itemname,inval):
-    import numpy
     if inval == "?": return inval
     change_function = convert_type(self[itemname])
     if isinstance(inval,list) and not isinstance(inval,StarFile.StarList):   #from a loop
@@ -3939,7 +3938,6 @@ if necessary, apply the exponent.
 
 <<Extract number and esd>>=
 def get_number_with_esd(numstring):
-    import string
     numb_re = '((-?(([0-9]*[.]([0-9]+))|([0-9]+)[.]?))([(][0-9]+[)])?([eEdD][+-]?[0-9]+)?)|(\?)|(\.)'
     our_match = re.match(numb_re,numstring)
     if our_match:

@@ -3,7 +3,7 @@
 # All spoke categories are then linked via the hub category.
 
 from __future__ import print_function
-from CifFile import CifFile,CifDic
+from CifFile import CifDic
 
 def update_one_category(dic,cat_name,hub_id,obj_id,extra_text=""):
     """Add a dataname <cat_name.obj_id> to category cat_name which is

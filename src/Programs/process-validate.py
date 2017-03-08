@@ -36,7 +36,7 @@ try:
     os.remove(tmpfile)
 except CifFile.StarFile.StarError:
     os.remove(tmpfile)
-    import sys,re
+    import sys
     print("<h3>File reading error</h3>")
     print("<p>File %s appears to have one or more syntax errors</p>" % input_cif.filename)
     print("<p>The detailed error message is as follows:</p><p><pre>")
