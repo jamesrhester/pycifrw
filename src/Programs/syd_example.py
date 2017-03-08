@@ -21,11 +21,11 @@ try:
 except IOError:
     print("Cannot open " + test_data)
     sys.exit()
-except ValidCifError,error_message:
+except ValidCifError as error_message:
     print(test_data + " failed validity checks:")
     print(error_message)
     sys.exit()
-except CifError, error_message:
+except CifError as error_message:
     print("Syntax error in " + test_data +":")
     print(error_message)
     sys.exit()
