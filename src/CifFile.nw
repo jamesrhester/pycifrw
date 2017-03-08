@@ -1545,8 +1545,8 @@ children of the old 'Head' block.
 <<Master import routine>>=
 def ddlm_import(self,import_mode='All'):
     import_frames = list([(a,self[a]['_import.get']) for a in self.keys() if '_import.get' in self[a]])
-    print ('Import mode %s applied to following frames' % import_mode)
-    print (str([a[0] for a in import_frames]))
+    print('Import mode %s applied to following frames' % import_mode)
+    print(str([a[0] for a in import_frames]))
     if import_mode != 'All':
        for i in range(len(import_frames)):
             import_frames[i] = (import_frames[i][0],[a for a in import_frames[i][1] if a.get('mode','Contents') == import_mode])
@@ -1598,7 +1598,7 @@ def ddlm_import(self,import_mode='All'):
             # Prune out any datablocks that have identical definitions
             from_defs = dict([(a,child_blocks[a].get('_definition.id','').lower()) for a in child_blocks.keys()])
             double_defs = list([b for b in from_defs.items() if self.has_key(b[1])])
-            print ('Definitions for %s superseded' % repr(double_defs))
+            print('Definitions for %s superseded' % repr(double_defs))
             for b in double_defs:
                 del child_blocks[b[0]]
             super(CifDic,self).merge_fast(child_blocks,parent=syntactic_head)      #

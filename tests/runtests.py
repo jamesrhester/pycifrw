@@ -34,13 +34,13 @@ def runtests(scantype):
         except:
             stype,svalue,ss = sys.exc_info()
             if testresult == 'OK':
-                print ("%s causes error where none expected" % filename)
-                print ("%s\n%s" % (repr(stype),svalue))
+                print("%s causes error where none expected" % filename)
+                print("%s\n%s" % (repr(stype),svalue))
             else:
                 if stype in testresult:
-                    print ("%s passes" % filename)
+                    print("%s passes" % filename)
                 else:
-                    print ("Unexpected exception %s for %s" % (repr(stype),filename))
+                    print("Unexpected exception %s for %s" % (repr(stype),filename))
         else:     #no exception
             if testresult == 'OK':
                 print( "%s passes" % filename)

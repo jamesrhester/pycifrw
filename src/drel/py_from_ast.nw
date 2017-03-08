@@ -145,7 +145,7 @@ number of packets during execution of the method.
     # for debugging
     print_instruction = "'Function passed variables "+("{!r} "*len(d_vars))+"'.format("+dummy_vars+",)"
     preamble +="        print(%s)\n" % print_instruction
-    # preamble +="        print ('Globals inside looped drel_func:' + repr(globals())\n")
+    # preamble +="        print('Globals inside looped drel_func:' + repr(globals())\n")
     # the actual function gets inserted here
     # Handle the optional names
     end_body = "\n"

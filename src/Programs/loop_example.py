@@ -1,6 +1,8 @@
 #
 # An example of how to output a subset of looped items.
 #
+from __future__ import print_function
+import sys
 from CifFile import CifFile, CifBlock
 cf = CifFile("loop_example.cif")["some_stuff"] # open and parse our cif,
                                       #we want data block named "some_stuff".
@@ -16,8 +18,8 @@ needed_items = [
 
 loopkeys = cf.GetLoopNames("_atom_site_label")  #get co-looped names
 if len(filter(lambda a,b=loopkeys:a not in b, needed_items)) != 0:
-    print "Error: one or more items missing from atom_site_label loop"
-    exit
+    print("Error: one or more items missing from atom_site_label loop")
+    sys.exit()
 #
 # ----- End of optional section
 
