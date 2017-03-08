@@ -82,6 +82,8 @@ from __future__ import absolute_import
 
 <<Copyright statement>>
 
+import sys
+
 # Python 2,3 compatibility
 try:
     from urllib import urlopen         # for arbitrary opening
@@ -1468,7 +1470,6 @@ def setmaxnamelength(self,maxlength):
 
 def set_characterset(self,characterset):
     """Set the characterset for checking datanames: may be `ascii` or `unicode`"""
-    import sys
     self.characterset = characterset
     if characterset == 'ascii':
         self.char_check = re.compile("[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+",re.M)
