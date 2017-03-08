@@ -259,7 +259,7 @@ class Scanner:
         if token[2] not in restrict:
             msg = "Bad Token"
             if restrict:
-               msg = "Trying to find one of "+join(restrict,", ")
+               msg = "Trying to find one of " + ", ".join(restrict)
             raise SyntaxError(self.pos,msg)
         self.tokens.append(token)
         self.restrictions.append(restrict)
