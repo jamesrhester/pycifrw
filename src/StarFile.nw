@@ -1196,7 +1196,6 @@ class LoopBlock(object):
     <<Remove a data item>>
     <<Get complete looped data>>
     <<Packet handling methods>>
-    <<Get item order>>
     <<Change data item order>>
     <<Return position of data item>>
     <<Get co-looped names>>
