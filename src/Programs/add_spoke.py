@@ -2,6 +2,7 @@
 # dataname of the nominated category for the provided dictionary
 # All spoke categories are then linked via the hub category.
 
+from __future__ import print_function
 from CifFile import CifFile,CifDic
 
 def update_one_category(dic,cat_name,hub_id,obj_id,extra_text=""):
@@ -29,13 +30,13 @@ def add_spoke(sem_dic,hub_cat,specific_cats = set(),extra_text=''):
     if specific_cats is None:
         specific_cats = all_cats
     actual_cats = (all_cats & set(specific_cats)) - set([hub_cat])
-    print 'Will update categories in following list'
-    print `actual_cats`
+    print('Will update categories in following list')
+    print(repr(actual_cats))
     for one_cat in actual_cats:
-        print 'Updating %s' % one_cat
+        print('Updating %s' % one_cat)
         new_bname = update_one_category(sem_dic,one_cat,hub_cat,hub_cat+'_id',extra_text)
-        print 'New definition:\n'
-        print str(sem_dic[new_bname])
+        print('New definition:\n')
+        print(str(sem_dic[new_bname]))
 
 def add_hub(indic,hub_cat,key_id,extra_text=''):
     """Add a hub category with hub key id <key_id>"""
@@ -60,7 +61,7 @@ def add_hub_spoke(indic,hub_cat,only_cats=None,force=False):
     other categories, unless only_cats is specified"""
     sem_dic = CifDic(indic,grammar="2.0",do_minimum=True)
     if hub_cat.lower() not in sem_dic.cat_map.keys() or force==True:
-        print hub_cat + ' not found in dictionary, adding'
+        print(hub_cat + ' not found in dictionary, adding')
         add_hub(sem_dic, hub_cat, 'id')
     add_spoke(sem_dic,hub_cat,only_cats)
     outfile = indic + '.updated'
@@ -79,4 +80,4 @@ if __name__ == '__main__':
             all_cats = None
         new_dic = add_hub_spoke(indic,hub_cat,all_cats)
     else:
-        print 'Usage: add_spoke <dic name> <hub category name> <category name> ...'
+        print('Usage: add_spoke <dic name> <hub category name> <category name> ...')
