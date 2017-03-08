@@ -1935,7 +1935,7 @@ _item4 4
         f.write(str(q))
 
 global testdic
-testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.dic",grammar="2.0")
+testdic = CifFile.CifDic("dictionaries/cif_core.dic",grammar="2.0")
 
 if __name__=='__main__':
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
