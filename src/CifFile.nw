@@ -1765,10 +1765,14 @@ def install_validation_functions(self):
             self.validate_dependents,
             self.validate_uniqueness
         ]
-      self.block_validation_funs = [  # where only a full block will do
-        self.validate_mandatory_category]
-      self.global_remove_validation_funs = [
-        self.validate_remove_parent_child] # removal is quicker with special checks
+        # where only a full block will do
+        self.block_validation_funs = [
+            self.validate_mandatory_category
+        ]
+        # removal is quicker with special checks
+        self.global_remove_validation_funs = [
+            self.validate_remove_parent_child
+        ]
     elif self.diclang == 'DDLm':
         self.item_validation_funs = [
             self.validate_item_enum,
