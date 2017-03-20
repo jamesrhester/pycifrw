@@ -7,7 +7,7 @@ def make_asciidoc(indic):
     """Make a nice asciidoc document from a CIF dictionary"""
     template_files = {}
     base_directory = os.path.dirname(indic)  #for later
-    sem_dic = CifDic(indic,grammar="2.0",do_minimum=True)
+    sem_dic = CifDic(indic,grammar="2.0",do_imports="Contents",do_dREL=False)
     dep_dics = analyse_deps(sem_dic,in_directory=base_directory)
     blockorder = sem_dic.get_full_child_list()
     outstring = cStringIO.StringIO()
@@ -119,6 +119,8 @@ def prepare_text(textstring,link_ids=[]):
     outstring = re.sub(r"\\q",r"&#952;",outstring)
     outstring = re.sub(r"\\l",r"&#955;",outstring)
     outstring = re.sub(r"\\\\m",r"&#956;",outstring)
+    outstring = re.sub(r"\\\\n",r"&#957;",outstring)
+    outstring = re.sub(r"\\n",r"&#957;",outstring)
     # Subscripting should just work
     # Assume underscores signal a dataname and format as literal
     # as well as linking
@@ -128,6 +130,8 @@ def prepare_text(textstring,link_ids=[]):
     outstring = re.sub(r"'([\S])'",r'"\1"',outstring)
     # Also catch constructions of the form "*_" and "*_"
     outstring = re.sub(r"(\*_[\w]+|[\w]+_\*)",r"`\1`",outstring)
+    # Asterisks are probably reciprocal space, not emphasis
+    outstring = re.sub(r"\*(?!_)",r"\*",outstring)
     return outstring
 
 def match_to_id(one_match):
