@@ -58,7 +58,7 @@ else:
         "This should be reached only when running yapps2.py in Makefile.")
     have_star_scan = False
 
-class SyntaxError(Exception):
+class YappsSyntaxError(Exception):
     """When we run into an unexpected token, this is the exception to use"""
     def __init__(self, charpos=-1, msg="Bad Token", context=None):
         Exception.__init__(self)
@@ -235,7 +235,7 @@ class Scanner:
                 msg = 'Bad Token'
                 if restrict:
                     msg = 'Trying to find one of '+', '.join(restrict)
-                raise SyntaxError(self.pos, msg)
+                raise YappsSyntaxError(self.pos, msg)
 
             # If we found something that isn't to be ignored, return it
             if best_pat not in self.ignore:
@@ -260,7 +260,7 @@ class Scanner:
             msg = "Bad Token"
             if restrict:
                msg = "Trying to find one of " + ", ".join(restrict)
-            raise SyntaxError(self.pos,msg)
+            raise YappsSyntaxError(self.pos,msg)
         self.tokens.append(token)
         self.restrictions.append(restrict)
         return
@@ -284,7 +284,7 @@ class Parser:
         """Returns the matched text, and moves to the next token"""
         tok = self._scanner.token(self._pos, [type])
         if tok[2] != type:
-            raise SyntaxError(tok[0], 'Trying to find '+type+' :'+ ' ,')
+            raise YappsSyntaxError(tok[0], 'Trying to find '+type+' :'+ ' ,')
         self._pos = 1 + self._pos
         return tok[3]
 
@@ -382,7 +382,7 @@ def print_error(input, err, scanner):
 def wrap_error_reporter(parser, rule):
     try:
         return getattr(parser, rule)()
-    except SyntaxError as e:
+    except YappsSyntaxError as e:
         input = parser._scanner.input
         print_error(input, e, parser._scanner)
     except NoMoreTokens:

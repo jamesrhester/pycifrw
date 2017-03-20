@@ -1100,7 +1100,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
        proto_star = None
        try:
            proto_star = getattr(parser,"input")(prepared)
-       except Y.yappsrt.SyntaxError as e:
+       except Y.yappsrt.YappsSyntaxError as e:
            input = parser._scanner.input
            Y.yappsrt.print_error(input, e, parser._scanner)
        except Y.yappsrt.NoMoreTokens:

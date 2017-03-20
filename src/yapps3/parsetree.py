@@ -548,7 +548,7 @@ class Choice(Node):
 
         if tokens_unseen:
             gen.write(indent, "else:\n")
-            gen.write(indent, INDENT, "raise yappsrt.SyntaxError(_token[0], ")
+            gen.write(indent, INDENT, "raise yappsrt.YappsSyntaxError(_token[0], ")
             gen.write("'Could not match ", self.rule, "')\n")
 
 class Wrapper(Node):
@@ -641,5 +641,5 @@ class Star(Wrapper):
         # TODO: do we need to do this only when it's a context-insensitive scanner?
         gen.write(indent, "if %s:\n" %
                   gen.not_peek_test(gen.non_ignored_tokens(), self.follow))
-        gen.write(indent+INDENT, "raise yappsrt.SyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(%s))\n" %
+        gen.write(indent+INDENT, "raise yappsrt.YappsSyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(%s))\n" %
                   repr(self.first))

@@ -100,7 +100,7 @@ class ParserDescription(yappsrt.Parser):
             Str = self.Str(_context)
             opt[Str] = 1
         if self._peek() not in ['"option"', '"token"', '"ignore"', 'EOF', '"rule"']:
-            raise yappsrt.SyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(['"option"', '"token"', '"ignore"', 'EOF', '"rule"']))
+            raise yappsrt.YappsSyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(['"option"', '"token"', '"ignore"', 'EOF', '"rule"']))
         return opt
 
     def Tokens(self, _parent=None):
@@ -120,9 +120,9 @@ class ParserDescription(yappsrt.Parser):
                 Str = self.Str(_context)
                 tok.append( ('#ignore',Str) )
             else:
-                raise yappsrt.SyntaxError(_token[0], 'Could not match Tokens')
+                raise yappsrt.YappsSyntaxError(_token[0], 'Could not match Tokens')
         if self._peek() not in ['"token"', '"ignore"', 'EOF', '"rule"']:
-            raise yappsrt.SyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(['"token"', '"ignore"', 'EOF', '"rule"']))
+            raise yappsrt.YappsSyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(['"token"', '"ignore"', 'EOF', '"rule"']))
         return tok
 
     def Rules(self, tokens, _parent=None):
@@ -137,7 +137,7 @@ class ParserDescription(yappsrt.Parser):
             ClauseA = self.ClauseA(ID, tokens, _context)
             rul.append( (ID, OptParam, ClauseA) )
         if self._peek() not in ['"rule"', 'EOF']:
-            raise yappsrt.SyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(['"rule"', 'EOF']))
+            raise yappsrt.YappsSyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(['"rule"', 'EOF']))
         return rul
 
     def ClauseA(self, rule, tokens, _parent=None):
@@ -149,7 +149,7 @@ class ParserDescription(yappsrt.Parser):
             ClauseB = self.ClauseB(rule, tokens, _context)
             v.append(ClauseB)
         if self._peek() not in ['OR', 'RP', 'RB', '"rule"', 'EOF']:
-            raise yappsrt.SyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(['OR', 'RP', 'RB', '"rule"', 'EOF']))
+            raise yappsrt.YappsSyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(['OR', 'RP', 'RB', '"rule"', 'EOF']))
         return cleanup_choice(rule, v)
 
     def ClauseB(self, rule, tokens, _parent=None):
@@ -159,7 +159,7 @@ class ParserDescription(yappsrt.Parser):
             ClauseC = self.ClauseC(rule, tokens, _context)
             v.append(ClauseC)
         if self._peek() not in ['STR', 'ID', 'LP', 'LB', 'STMT', 'OR', 'RP', 'RB', '"rule"', 'EOF']:
-            raise yappsrt.SyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(['STR', 'ID', 'LP', 'LB', 'STMT', 'OR', 'RP', 'RB', '"rule"', 'EOF']))
+            raise yappsrt.YappsSyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(['STR', 'ID', 'LP', 'LB', 'STMT', 'OR', 'RP', 'RB', '"rule"', 'EOF']))
         return cleanup_sequence(rule, v)
 
     def ClauseC(self, rule, tokens, _parent=None):
@@ -178,7 +178,7 @@ class ParserDescription(yappsrt.Parser):
         elif _token not in ['"ignore"', '"token"', '"option"', '":"', '"parser"', 'ATTR', 'COLON']:
             return ClauseD
         else:
-            raise yappsrt.SyntaxError(_token[0], 'Could not match ClauseC')
+            raise yappsrt.YappsSyntaxError(_token[0], 'Could not match ClauseC')
 
     def ClauseD(self, rule, tokens, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'ClauseD', [rule, tokens])
@@ -206,7 +206,7 @@ class ParserDescription(yappsrt.Parser):
             STMT = self._scan('STMT')
             return parsetree.Eval(rule, STMT[2:-2])
         else:
-            raise yappsrt.SyntaxError(_token[0], 'Could not match ClauseD')
+            raise yappsrt.YappsSyntaxError(_token[0], 'Could not match ClauseD')
 
     def OptParam(self, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'OptParam', [])
@@ -217,7 +217,7 @@ class ParserDescription(yappsrt.Parser):
         elif _token not in ['"ignore"', '"token"', '"option"', '"parser"', 'COLON']:
             return ''
         else:
-            raise yappsrt.SyntaxError(_token[0], 'Could not match OptParam')
+            raise yappsrt.YappsSyntaxError(_token[0], 'Could not match OptParam')
 
     def Str(self, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'Str', [])
