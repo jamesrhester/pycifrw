@@ -1185,11 +1185,11 @@ class DDLmTestCase(unittest.TestCase):
 ##########
 class DDLmImportCase(unittest.TestCase):
     def setUp(self):
-        pass
+        self.testdic = CifFile.CifDic("dictionaries/cif_core_ddlm.dic",grammar="auto")
 
     def testEnumImport(self):
         """Test that enumerated types were imported correctly"""
-        pp = testdic['_atom_type.radius_bond']
+        pp = self.testdic['_atom_type.radius_bond']
         self.failUnless(pp.has_key('_enumeration_default.index'))
         c_pos = pp['_enumeration_default.index'].index('C')
         self.assertEqual(pp['_enumeration_default.value'][c_pos],'0.77')
@@ -1682,6 +1682,7 @@ class FakeDicTestCase(unittest.TestCase):
 
 class DicEvalTestCase(unittest.TestCase):
     def setUp(self):
+        testdic = CifFile.CifDic("dictionaries/cif_core_ddlm.dic",grammar="auto")
         c_old = CifFile.CifFile("tests/drel/nick_old.cif",grammar="2.0")
         c_new = CifFile.CifFile("tests/drel/nick_new.cif",grammar="2.0")
         self.fb = c_new['saly2']
@@ -1760,9 +1761,10 @@ class DicEvalTestCase(unittest.TestCase):
 class DicStructureTestCase(unittest.TestCase):
     """Tests use of dictionary semantic information for item lookup"""
     def setUp(self):
+        self.testdic = CifFile.CifDic("dictionaries/cif_core_ddlm.dic",grammar="auto")
         cc = CifFile.CifFile("tests/drel/nick.cif",grammar="STAR2")
         self.fb = cc["saly2"]
-        self.fb.assign_dictionary(testdic)
+        self.fb.assign_dictionary(self.testdic)
 
     def testOldAlias(self):
         """Test finding an older form of a new dataname"""
@@ -1774,19 +1776,19 @@ class DicStructureTestCase(unittest.TestCase):
 
     def testCatObj(self):
         """Test that we can obtain a name by category/object specification"""
-        target = testdic.get_name_by_cat_obj('atom_type','Cromer_Mann_coeffs')
+        target = self.testdic.get_name_by_cat_obj('atom_type','Cromer_Mann_coeffs')
         self.assertEqual(target,'_atom_type_scat.Cromer_Mann_coeffs')
-        target = testdic.get_name_by_cat_obj('cell','volume')
+        target = self.testdic.get_name_by_cat_obj('cell','volume')
         self.assertEqual(target,'_cell.volume')
 
     def testCatKey(self):
         """Test that we get a complete list of keys for child categories"""
-        target = testdic.cat_key_table
+        target = self.testdic.cat_key_table
         self.assertEqual(target['atom_site'],[['_atom_site.label'],['_atom_site_aniso.label']])
 
     def testEquivKey(self):
         """Test that we can identify equivalent key datanames"""
-        target = testdic.key_equivs
+        target = self.testdic.key_equivs
         self.assertEqual(target['_atom_site_aniso.label'],['_atom_site.label'])
 
     def testChildPacket(self):
@@ -1816,11 +1818,11 @@ class DicStructureTestCase(unittest.TestCase):
 
     def testCatObjKey(self):
         """Test that keys are correctly handled by the cat/obj table"""
-        self.assertEqual(testdic.get_name_by_cat_obj('atom_site','label'),"_atom_site.label")
+        self.assertEqual(self.testdic.get_name_by_cat_obj('atom_site','label'),"_atom_site.label")
 
     def testRepeatedName(self):
         """Test that a repeated object_id is handled correctly"""
-        self.assertEqual(testdic.cat_obj_lookup_table[('atom_site','type_symbol')],
+        self.assertEqual(self.testdic.cat_obj_lookup_table[('atom_site','type_symbol')],
                          ['_atom_site.type_symbol','_atom_site_aniso.type_symbol'])
 
     def testPrintOut(self):
@@ -1933,9 +1935,6 @@ _item4 4
         self.failUnless(q.block_input_order[1] == "testb")
         f = open("tests/round_trip_test.cif","w")
         f.write(str(q))
-
-global testdic
-testdic = CifFile.CifDic("dictionaries/cif_core.dic",grammar="2.0")
 
 if __name__=='__main__':
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)

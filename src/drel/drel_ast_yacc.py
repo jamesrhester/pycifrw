@@ -13,6 +13,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import absolute_import
 
+from .drel_lex import lexer,tokens
 import ply.yacc as yacc
 
 # Overall translation unit

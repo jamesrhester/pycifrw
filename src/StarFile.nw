@@ -1147,7 +1147,7 @@ automatically converted to the type given in the dictionary.
 <<Assigning a dictionary>>=
 def assign_dictionary(self,dic):
     if not dic.diclang=="DDLm":
-        print("Warning: ignoring dictionary %s" % dic.dic_as_cif.my_uri)
+        print("Warning: ignoring dictionary %s" % dic.my_uri)
         return
     self.dictionary = dic
 
