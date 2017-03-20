@@ -34,4 +34,3 @@ setup(name="PyCifRW",
       test_suite = 'TestPyCifRW',
       package_dir = {'CifFile':'src'}
       )
-

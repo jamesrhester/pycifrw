@@ -361,7 +361,7 @@ class LoopBlockTestCase(unittest.TestCase):
         self.cf['_ck_2'] = ['r','g','b','r','g','b','r','g','b']
         self.cf['_stuff'] = ['Q','W','E','R','T','Y','U','I','O']
         self.cf.CreateLoop(['_ck_1','_ck_2','_stuff'])
-       
+
    def tearDown(self):
        del self.cf
 
@@ -440,7 +440,7 @@ class LoopBlockTestCase(unittest.TestCase):
        """Test that a compound key can also be used"""
        testpack = self.cf.GetCompoundKeyedPacket({"_ck_1":('2',False),"_ck_2":('b',False)})
        self.assertEqual("Y",getattr(testpack,"_stuff"))
-       
+
    def testPacketMerge(self):
        """Test that a packet can be merged with another packet"""
        bigcf = CifFile.CifFile("tests/C13H22O3.cif")
@@ -607,7 +607,7 @@ class FileWriteTestCase(unittest.TestCase):
            os.remove('tests/test2.cif')
        except:
            pass
-       
+
        del self.dfs
        del self.df
        del self.cf
@@ -710,7 +710,7 @@ _atom_type.symbol
 _atom_type.oxidation_number
 _atom_type.atomic_mass
 _atom_type.number_in_cell
-  O    ?   15.999   12 
+  O    ?   15.999   12
   C    ?   12.011   28
   H    ?   1.008    24
        """
@@ -756,7 +756,7 @@ class SimpleWriteTestCase(unittest.TestCase):
 
     def tearDown(self):
         os.remove(self.testfile)
-        
+
     def testNumpyArray(self):
         """Check that an array can be output properly"""
         import numpy
@@ -785,20 +785,20 @@ class TemplateTestCase(unittest.TestCase):
 # Template
 #
 data_TEST_DIC
- 
+
     _dictionary.title            DDL_DIC
     _definition.update           2011-07-27
     _description.text
 ;
      This dictionary specifies through its layout how we desire to
-     format datanames.  It is not a valid dictionary, but it must 
+     format datanames.  It is not a valid dictionary, but it must
      be a valid CIF file.
 ;
     _name.category_id            blahblah
     _name.object_id              ALIAS
     _category.key_id           '_alias.definition_id'
     _category.key_list        ['_alias.definition_id']
-    _type.purpose                Key     
+    _type.purpose                Key
     _type.dimension              [*]
     _import.get    [{"file":'templ_enum.cif' "save":'units_code'}]
      loop_
@@ -807,8 +807,8 @@ data_TEST_DIC
           Dictionary        "applies to all defined items in the dictionary"
           Category          "applies to all defined items in the category"
           Item              "applies to a single item definition"
-    _enumeration.default        Item   
-"""  
+    _enumeration.default        Item
+"""
        f = open("tests/cif_template.cif","w")
        f.write(template_string)
        f.close()
@@ -820,7 +820,7 @@ data_TEST_DIC
            os.remove("tests/temp_test_file_new.cif")
        except:
            pass
-       
+
    def testTemplateInput(self):
        """Test that an output template is successfully input"""
        p = CifFile.CifFile()
@@ -849,7 +849,7 @@ data_TEST_DIC
           'cat only'  category 1
           'whatever'  item 2
        _name.category_id   blahblah
-       _description.text  
+       _description.text
 ;a nice long string that we would like
 to be formatted really nicely with an appropriate indent and so forth. Note
 that the template specifies an indent of 5 characters for this particular
@@ -928,7 +928,7 @@ class GrammarTestCase(unittest.TestCase):
            os.remove("tests/test_1.0")
        except:
            pass
-       
+
    def testold(self):
        """Read in 1.0 conformant file; should not fail"""
        f = CifFile.ReadCif("tests/test_1.0",grammar="1.0")
@@ -1089,7 +1089,7 @@ class DDLmTestCase(unittest.TestCase):
        data_Test
           _name.category_id           CIF_DIC
           _name.object_id             CIF_CORE
-          _import.get       
+          _import.get
         [{"save":'EXPERIMENTAL', "file":'core_exptl.dic', "mode":'full' },
          {"save":'DIFFRACTION',  "file":'core_diffr.dic', "mode":'full' },
          {"save":'STRUCTURE',    "file":'core_struc.dic', "mode":'full' },
@@ -1124,7 +1124,7 @@ class DDLmTestCase(unittest.TestCase):
            os.remove("tests/cif2goodtest_1.2.cif")
        except:
            pass
-       
+
    def testold(self):
        """Read in 1.2 nonconformant file; should fail"""
        try:
@@ -1204,13 +1204,13 @@ class DDLmImportCase(unittest.TestCase):
 class DictTestCase(unittest.TestCase):
     def setUp(self):
         self.ddldic = CifFile.CifDic("tests/ddl.dic",grammar='2.0',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
-    
+
     def tearDown(self):
         try:
             os.remove("test_dic_write.cif")
         except:
             pass
-        
+
     def testnum_and_esd(self):
         """Test conversion of numbers with esds"""
         testnums = ["5.65","-76.24(3)","8(2)","6.24(3)e3","55.2(2)d4"]
@@ -1370,7 +1370,7 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
 
     def tearDown(self):
         os.remove("tests/ddlm_testdata")
-        
+
     def testTypeInterpretation(self):
         """Test that we decode DDLm type.contents correctly"""
         import CifFile.TypeContentsParser as t
@@ -1536,10 +1536,10 @@ data_DDL_DIC
     _dictionary.uri              www.iucr.org/cif/dic/ddl.dic
     _dictionary.ddl_conformance  3.11.08
     _dictionary.namespace        DdlDic
-    _description.text                   
+    _description.text
 ;
      This dictionary contains the definitions of attributes that
-     make up the DDLm dictionary definition language.  It provides 
+     make up the DDLm dictionary definition language.  It provides
      the meta meta data for all CIF dictionaries.
 ;
 
@@ -1549,7 +1549,7 @@ save_ATTRIBUTES
     _definition.scope            Category
     _definition.class            Head
     _definition.update           2011-07-27
-    _description.text                   
+    _description.text
 ;
      This category is parent of all other categories in the DDLm
      dictionary.
@@ -1566,7 +1566,7 @@ save_ALIAS
     _definition.scope            Category
     _definition.class            Loop
     _definition.update           2013-09-08
-    _description.text                   
+    _description.text
 ;
      The attributes used to specify the aliased names of definitions.
 ;
@@ -1575,7 +1575,7 @@ save_ALIAS
     _category.key_id             '_alias.definition_id'
     loop_
     _category_key.name
-                                 '_alias.definition_id' 
+                                 '_alias.definition_id'
 
 save_
 
@@ -1585,7 +1585,7 @@ save_alias.definition_id
     _definition.id               '_alias.definition_id'
     _definition.class            Attribute
     _definition.update           2006-11-16
-    _description.text                   
+    _description.text
 ;
      Identifier tag of an aliased definition.
 ;
@@ -1596,14 +1596,14 @@ save_alias.definition_id
     _type.container              Single
     _type.contents               Tag
 
-save_  
+save_
 
 save_definition.scope
 
     _definition.id               '_definition.scope'
     _definition.class            Attribute
     _definition.update           2006-11-16
-    _description.text                   
+    _description.text
 ;
      The extent to which a definition affects other definitions.
 ;
@@ -1688,7 +1688,7 @@ class DicEvalTestCase(unittest.TestCase):
         self.fb.assign_dictionary(testdic)
         self.fb_old = c_old['saly2']
         self.fb_old.assign_dictionary(testdic)
-        
+
     def check_value(self,dataname,scalar=True):
         """Generic check of value"""
         target = self.fb[dataname]
@@ -1709,7 +1709,7 @@ class DicEvalTestCase(unittest.TestCase):
 
     def testDensity(self):
         self.check_value('_exptl_crystal.density_diffrn')
-        
+
     @unittest.expectedFailure
     def testReflnF(self):
         self.check_value('_refln.F_calc',scalar=False)
@@ -1726,7 +1726,7 @@ class DicEvalTestCase(unittest.TestCase):
         have aliased values"""
         del self.fb_old['_relfn.F_calc']
         result = self.fb_old['_refln.F_calc']
-        
+
     def testEigenSystem(self):
         """Test that question marks are seen as missing values"""
         self.fb.provide_value = True
@@ -1788,7 +1788,7 @@ class DicStructureTestCase(unittest.TestCase):
         """Test that we can identify equivalent key datanames"""
         target = testdic.key_equivs
         self.assertEqual(target['_atom_site_aniso.label'],['_atom_site.label'])
-        
+
     def testChildPacket(self):
         """Test that a case-insensitive child packet is included in attributes of parent category"""
         target = self.fb.GetKeyedSemanticPacket("o2",'atom_site')
@@ -1935,7 +1935,7 @@ _item4 4
         f.write(str(q))
 
 global testdic
-testdic = CifFile.CifDic("/home/jrh/COMCIFS/cif_core/cif_core.dic",grammar="2.0")
+testdic = CifFile.CifDic("dictionaries/cif_core.dic",grammar="2.0")
 
 if __name__=='__main__':
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)

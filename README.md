@@ -23,7 +23,7 @@ reference.
 PyCifRW has been tested on the IUCr sample CIF1.1 trip files located at
 http://www.iucr.org/iucr-top/cif/developers/trip and fails or
 successfully reads as it is supposed to (note that `ciftest5` contains
-characters now forbidden in CIFs). 
+characters now forbidden in CIFs).
 
 Supported Platforms
 -------------------
@@ -84,8 +84,8 @@ The file 'TestPyCIFRW.py' in the source distribution contains around 170 tests
 of PyCIFRW functionality and is a good source of examples for using both simple
 and advanced PyCIFRW interfaces.
 
-The "Programs" directory in the source distribution contains simple example programs. 
-Of interest are `validate_cif.py` which validates a data files against data dictionaries 
+The "Programs" directory in the source distribution contains simple example programs.
+Of interest are `validate_cif.py` which validates a data files against data dictionaries
 (execute this file at a terminal prompt without arguments for a help message)
 and `output_asciidoc.py` which will convert a DDLm dictionary into an
 asciidoc document that can then be converted to HTML or other presentation

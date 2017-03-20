@@ -82,6 +82,8 @@ from __future__ import absolute_import
 
 <<Copyright statement>>
 
+import sys
+
 # Python 2,3 compatibility
 try:
     from urllib import urlopen         # for arbitrary opening
@@ -90,7 +92,6 @@ except:
     from urllib.request import urlopen
     from urllib.parse import urlparse,urlunparse
 import re,os
-import copy
 import textwrap
 
 try:
@@ -100,7 +101,7 @@ except ImportError:
 
 if isinstance(u"abc",str):   #Python 3
     unicode = str
-    
+
 try:
     import numpy
     have_numpy = True
@@ -669,7 +670,7 @@ As for [[NewBlock]], we allow duplicate save frame names in the precise situatio
 where one of the blocks is a top-level block.
 
 The [[drop_att]] attribute allows a particular datablock attribute to be used
-to determine if datablocks are semantically identical. 
+to determine if datablocks are semantically identical.
 
 <<Merge with another block collection>>=
 def merge_fast(self,new_bc,parent=None):
@@ -1017,8 +1018,6 @@ def ReadStar(filename,prepared = None, maxlength=-1,
     excised from the input data stream before parsing and is not available in the returned object.
     """
 
-    import string
-    import codecs
     # save desired scoping
     save_scoping = prepared.scoping
     from . import YappsStarParser_1_1 as Y11
@@ -1092,7 +1091,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
        if scantype == 'standard' or grammar_name in ['2.0','STAR2']:
             parser = Y.StarParser(Y.StarParserScanner(text))
        else:
-	    parser = Y.StarParser(Y.yappsrt.Scanner(None,[],text,scantype='flex'))
+            parser = Y.StarParser(Y.yappsrt.Scanner(None,[],text,scantype='flex'))
        # handle encoding switch
        if grammar_name in ['2.0','STAR2']:
            prepared.set_characterset('unicode')
@@ -1197,7 +1196,6 @@ class LoopBlock(object):
     <<Remove a data item>>
     <<Get complete looped data>>
     <<Packet handling methods>>
-    <<Get item order>>
     <<Change data item order>>
     <<Return position of data item>>
     <<Get co-looped names>>
@@ -1471,7 +1469,6 @@ def setmaxnamelength(self,maxlength):
 
 def set_characterset(self,characterset):
     """Set the characterset for checking datanames: may be `ascii` or `unicode`"""
-    import sys
     self.characterset = characterset
     if characterset == 'ascii':
         self.char_check = re.compile("[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+",re.M)
@@ -1600,7 +1597,7 @@ def has_key_or_alias(self,key):
         if len(aliases)>0:
            return True
     return False
-    
+
 def get(self,key,default=None):
     if key in self:
         retval = self.__getitem__(key)
@@ -1639,7 +1636,6 @@ def GetItemPosition(self,itemname):
     the top level having a `loop_no` of -1.  If an integer is passed to
     the routine then it will return the position of the loop
     referenced by that number."""
-    import string
     if isinstance(itemname,int):
         # return loop position
         return (-1, self.item_order.index(itemname))
@@ -2231,7 +2227,7 @@ key should already be present.
 ON the other hand, if the child category keys are present but the parent keys
 are missing, then we in principle know that the child keys are a
 subset of the parent keys, but we cannot use the key to derive any values,
-as the keys are opaque. 
+as the keys are opaque.
 
 The final DDLm specification allowed compound keys for categories. When
 combined with child categories, this means that a child key may be absent
@@ -2404,7 +2400,6 @@ update the length of the current line
 to the number of characters from the beginning of the line.
 
 <<Subclass StringIO>>=
-import math
 class CIFStringIO(StringIO):
     def __init__(self,target_width=80,**kwargs):
         StringIO.__init__(self,**kwargs)
@@ -2543,7 +2538,6 @@ tab stop at 40 characters.  And of course, we stop providing values.
 
 <<Print a complete block>>=
 def printsection(self,instring='',blockstart="",blockend="",indent=0,finish_at='',start_from=''):
-    import string
     self.provide_value = False
     # first make an ordering
     self.create_ordering(finish_at,start_from)  #create self.output_order
@@ -2599,7 +2593,7 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
     delimiter = hints.get('delimiter',None)
     startcol = hints.get('column',-1)
     if isinstance(itemvalue,str) and not isinstance(itemvalue,unicode): #not allowed
-        raise StarError("Non-unicode value {0} found in block".format(itemvalue)) 
+        raise StarError("Non-unicode value {0} found in block".format(itemvalue))
     if isinstance(itemvalue,unicode):  #need to sanitize
         stringsink.write(self._formatstring(itemvalue,delimiter=delimiter,hints=hints),canbreak = True,startcol=startcol)
     elif isinstance(itemvalue,(list)) or (hasattr(itemvalue,'dtype') and hasattr(itemvalue,'__iter__')): #numpy
@@ -2653,7 +2647,6 @@ recognised.
 
 <<Format loop packets>>=
 def format_packets(self,outstring,indent=0,loop_no=-1):
-   import string
    alldata = [self[a] for a in self.loops[loop_no]]
    loopnames = self.loops[loop_no]
    #print 'Alldata: %s' % `alldata`
@@ -2721,7 +2714,6 @@ text-prefix protocol.
 
 <<Format a string>>=
 def _formatstring(self,instring,delimiter=None,standard='CIF1',indent=0,hints={}):
-    import string
     if hints.get("reformat",False) and "\n" in instring:
         instring = "\n"+self.do_wrapping(instring,hints["reformat_indent"])
     allowed_delimiters = set(self.string_delimiters)
@@ -3041,7 +3033,7 @@ def create_ordering(self,finish_at,start_from):
     if start_from != '':
         if start_from in requested_order:
             sfi = requested_order.index(start_from)
-            loop_order = [self.FindLoop(k) for k in requested_order[sfi:] if self.FindLoop(k)>0] 
+            loop_order = [self.FindLoop(k) for k in requested_order[sfi:] if self.FindLoop(k)>0]
             candidates = list([k for k in self.output_order if k in requested_order[sfi:]])
             cand_pos = len(new_order)
             if len(candidates)>0:
@@ -3061,7 +3053,7 @@ def create_ordering(self,finish_at,start_from):
     if finish_at != '':
         if finish_at in requested_order:
             fai = requested_order.index(finish_at)
-            loop_order = list([self.FindLoop(k) for k in requested_order[fai:] if self.FindLoop(k)>0]) 
+            loop_order = list([self.FindLoop(k) for k in requested_order[fai:] if self.FindLoop(k)>0])
             candidates = list([k for k in self.output_order if k in requested_order[fai:]])
             cand_pos = len(new_order)
             if len(candidates)>0:
@@ -3147,7 +3139,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
            new_value = new_block[attribute]
            #non-looped items
            if new_block.FindLoop(attribute)<0:     #not looped
-              self[attribute] = new_value 
+              self[attribute] = new_value
        my_loops = self.loops.values()
        perfect_overlaps = [a for a in new_block.loops if a in my_loops]
        for po in perfect_overlaps:
@@ -3155,7 +3147,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
           try:
               newkeypos = map(lambda a:newkeys.index(a),loop_keys)
               newkeypos = newkeypos[0]      #one key per loop for now
-              loop_keys = loop_keys[0] 
+              loop_keys = loop_keys[0]
           except (ValueError,IndexError):
               newkeypos = []
               overlap_data = map(lambda a:listify(self[a]),overlaps) #old packet data
@@ -3175,7 +3167,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
                   else: new_data = []
               # wipe out the old data and enter the new stuff
               byebyeloop = self.GetLoop(overlaps[0])
-              # print "Removing '%s' with overlaps '%s'" % (`byebyeloop`,`overlaps`)
+              # print("Removing '%r' with overlaps '%r'" % (byebyeloop, overlaps))
               # Note that if, in the original dictionary, overlaps are not
               # looped, GetLoop will return the block itself.  So we check
               # for this case...
@@ -3187,7 +3179,7 @@ def merge(self,new_block,mode="strict",match_att=[],match_function=None,
                     for i in range(len(overlaps)):
                         #don't do this at home; we are appending
                         #to something in place
-                        self[overlaps[i]].append(pd[i]) 
+                        self[overlaps[i]].append(pd[i])
        self.overwrite = save_overwrite
 
 <<Define an error class>>=
@@ -3263,7 +3255,7 @@ def not_none(itemlist):
     if not isinstance(itemlist,(tuple,list)):
         return True
     for x in itemlist:
-       if not not_none(x): return False 
+       if not not_none(x): return False
     return True
 
 

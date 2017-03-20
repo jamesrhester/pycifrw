@@ -145,7 +145,7 @@ number of packets during execution of the method.
     # for debugging
     print_instruction = "'Function passed variables "+("{!r} "*len(d_vars))+"'.format("+dummy_vars+",)"
     preamble +="        print(%s)\n" % print_instruction
-    # preamble +="        print ('Globals inside looped drel_func:' + repr(globals())\n")
+    # preamble +="        print('Globals inside looped drel_func:' + repr(globals())\n")
     # the actual function gets inserted here
     # Handle the optional names
     end_body = "\n"
@@ -162,7 +162,7 @@ number of packets during execution of the method.
     if cur_row and len(actual_names) > 1:    #i.e. have real names from category
         end_body +="        __row_id = range(%s)\n" % (func_table['count_data'] % ("'"+actual_names[0]+"'"))
     elif cur_row and len(actual_names)==1:   #so no actual names available
-        
+
         end_body += "        cat_names = %s\n" % (func_table["cat_names"] % ("'"+getcatname(targetname)[0]+"'"))
         end_body += "        have_name = [a for a in cat_names if %s]\n" % (func_table["has_name"] % "a")
         end_body += "        if len(have_name)>0:\n"
@@ -669,7 +669,7 @@ Ultimately we end up with a list of statements.
                     print("Unable to traverse AST for %s" % one_statement[0])
                 else:
                     outstring = outstring + next_bit + "\n"
-#            except SyntaxError, message:
+#            except SyntaxError as message:
 #                print("Failed, so far have \n " + outstring)
 #                outstring += "raise SyntaxError, %s" % message
 #            except:

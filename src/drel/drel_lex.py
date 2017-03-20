@@ -126,7 +126,7 @@ def t_OCTINT(t):
     try:
         t.value = repr(int(t.value[2:],base=8))
     except ValueError:
-        print( 'Unable to convert octal value %s' % t.value)
+        print('Unable to convert octal value %s' % t.value)
     return t
 
 def t_HEXINT(t):
@@ -134,15 +134,15 @@ def t_HEXINT(t):
     try:
         t.value = repr(int(t.value,base=16))
     except ValueError:
-        print( 'Unable to convert hex value %s' % t.value)
-    return t 
+        print('Unable to convert hex value %s' % t.value)
+    return t
 
 def t_INTEGER(t):
     r'[0-9]+'
     try:
         value = int(t.value)
     except ValueError:
-        print ('Incorrect integer value %s' % t.value)
+        print('Incorrect integer value %s' % t.value)
     return t
 
 def t_STRPREFIX(t):

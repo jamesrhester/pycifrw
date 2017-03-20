@@ -85,10 +85,10 @@ except ImportError:
 # Python 2,3 compatibility
 try:
     from urllib import urlopen         # for arbitrary opening
-    from urlparse import urlparse, urlunparse,urljoin
+    from urlparse import urlparse, urljoin
 except:
     from urllib.request import urlopen
-    from urllib.parse import urlparse,urlunparse,urljoin
+    from urllib.parse import urlparse, urljoin
 
 # The unicode type does not exist in Python3 as the str type
 # encompasses unicode.  PyCIFRW tests for 'unicode' would fail
@@ -96,7 +96,7 @@ except:
 
 if isinstance(u"abc",str):   #Python3
     unicode = str
-    
+
 <<Copyright statement>>
 
 import re,sys
@@ -506,7 +506,7 @@ to DDLm.
 <<Dictionary determination function>>
 <<Deal with DDL1 differences>>
 <<Load categories with DDL2-type information>>
-<<Iron out DDL2 strangeness>> 
+<<Iron out DDL2 strangeness>>
 <<Parse DDLm validity information>>
 <<Perform DDLm imports>>
 
@@ -518,15 +518,15 @@ keys for uniform access to DDL attributes.
 
 <<Dictionary determination function>>=
 def dic_determine(self):
-    if "on_this_dictionary" in self: 
+    if "on_this_dictionary" in self:
         self.master_block = super(CifDic,self).__getitem__("on_this_dictionary")
         self.def_id_spec = "_name"
-        self.cat_id_spec = "_category.id"   #we add this ourselves 
-	self.type_spec = "_type"
-	self.enum_spec = "_enumeration"
-	self.cat_spec = "_category"
+        self.cat_id_spec = "_category.id"   #we add this ourselves
+        self.type_spec = "_type"
+        self.enum_spec = "_enumeration"
+        self.cat_spec = "_category"
         self.esd_spec = "_type_conditions"
-	self.must_loop_spec = "_list"
+        self.must_loop_spec = "_list"
         self.must_exist_spec = "_list_mandatory"
         self.list_ref_spec = "_list_reference"
         self.key_spec = "_list_mandatory"
@@ -538,15 +538,15 @@ def dic_determine(self):
         self.primitive_type = "_type"
         self.dep_spec = "xxx"
         self.cat_list = []   #to save searching all the time
-	name = super(CifDic,self).__getitem__("on_this_dictionary")["_dictionary_name"]
-	version = super(CifDic,self).__getitem__("on_this_dictionary")["_dictionary_version"]
-	return (name+version,"DDL1")
+        name = super(CifDic,self).__getitem__("on_this_dictionary")["_dictionary_name"]
+        version = super(CifDic,self).__getitem__("on_this_dictionary")["_dictionary_version"]
+        return (name+version,"DDL1")
     elif len(self.get_roots()) == 1:              # DDL2/DDLm
-        self.master_block = super(CifDic,self).__getitem__(self.get_roots()[0][0])	
+        self.master_block = super(CifDic,self).__getitem__(self.get_roots()[0][0])
         # now change to dictionary scoping
         self.scoping = 'dictionary'
-	name = self.master_block["_dictionary.title"]
-	version = self.master_block["_dictionary.version"]
+        name = self.master_block["_dictionary.title"]
+        version = self.master_block["_dictionary.version"]
         if self.master_block.has_key("_dictionary.class"):   #DDLm
             self.enum_spec = '_enumeration_set.state'
             self.key_spec = '_category.key_id'
@@ -555,7 +555,7 @@ def dic_determine(self):
             self.primitive_type = '_type.contents'
             self.cat_id_spec = "_definition.id"
             self.def_id_spec = "_definition.id"
-            return(name+version,"DDLm") 
+            return(name+version,"DDLm")
         else:   #DDL2
             self.cat_id_spec = "_category.id"
             self.def_id_spec = "_item.name"
@@ -981,7 +981,7 @@ def create_cat_obj_table(self):
     """Populate a table indexed by (cat,obj) and returning the correct dataname"""
     base_table = dict([((self[a].get('_name.category_id','').lower(),self[a].get('_name.object_id','').lower()),[self[a].get('_definition.id','')]) \
                        for a in self.keys() if self[a].get('_definition.scope','Item')=='Item'])
-    loopable = self.get_loopable_cats() 
+    loopable = self.get_loopable_cats()
     loopers = [self.ddlm_immediate_children(a) for a in loopable]
     print('Loopable cats:' + repr(loopable))
     loop_children = [[b for b in a if b.lower() in loopable ] for a in loopers]
@@ -1070,7 +1070,7 @@ def create_def_block_table(self):
         dodgy = [a for a in def_names if def_names.count(a)>1]
         raise CifError('Duplicate definitions in dictionary:' + repr(dodgy))
     self.block_id_table = dict([(a[0].lower(),a[1].lower()) for a in proto_table if a[1].lower() not in top_blocks])
-    
+
 def __getitem__(self,key):
     """Access a datablock by definition id, after the lookup has been created"""
     try:
@@ -1099,7 +1099,7 @@ def __delitem__(self,key):
         return
     # fix other datastructures
     # cat_obj table
-    
+
 def keys(self):
     """Return all definitions"""
     try:
@@ -1115,14 +1115,14 @@ def __contains__(self,key):
         return key.lower() in self.block_id_table
     except AttributeError:
         return super(CifDic,self).__contains__(key)
-        
+
 def items(self):
     """Return (key,value) pairs"""
     return list([(a,self[a]) for a in self.keys()])
 
 @ Any Starfile method that uses the square-bracket notation or
 build-in syntax (e.g. del) to access keys may fail if the set of keys
-it uses is not that provided by the keys() method above, as the 
+it uses is not that provided by the keys() method above, as the
 object delegation using super() does not apply.  As we have set
 up our methods above to 'fall through' to the underlying CifFile,
 the process of renaming may or may not have called our del
@@ -1143,7 +1143,7 @@ def rename(self,oldname,newname,blockname_as_well=True):
     """Change a _definition.id from oldname to newname, and if `blockname_as_well` is True,
     change the underlying blockname too."""
     if blockname_as_well:
-        super(CifDic,self).rename(self.block_id_table[oldname.lower()],newname)        
+        super(CifDic,self).rename(self.block_id_table[oldname.lower()],newname)
         self.block_id_table[newname.lower()]=newname
         if oldname.lower() in self.block_id_table: #not removed
            del self.block_id_table[oldname.lower()]
@@ -1151,13 +1151,13 @@ def rename(self,oldname,newname,blockname_as_well=True):
         self.block_id_table[newname.lower()]=self.block_id_table[oldname.lower()]
         del self.block_id_table[oldname.lower()]
         return
-                                             
+
 @ \subsection{Semantic information}
 
 <<Obtaining semantic information from the dictionary>>=
 <<Operations with semantic children>>
 <<Get category information>>
-<<List all items in a category>>                           
+<<List all items in a category>>
 
 @ For convenience we provide ways of interrogating the semantic tree
 of categories. Note that if we are passed the top-level datablock, the
@@ -1178,7 +1178,7 @@ def ddlm_immediate_children(self,catname):
     """Return a list of datanames for the immediate children of catname.  These are
     semantic children (i.e. based on _name.category_id), not structural children as
     in the case of StarFile.get_immediate_children"""
-                                             
+
     straight_children = [a for a in self.keys() if self[a].get('_name.category_id','').lower() == catname.lower()]
     return list(straight_children)
 
@@ -1263,9 +1263,9 @@ def ddlm_parse_valid(self):
             self.scopes_mandatory[scope[0]] = self.expand_category_opt(valid_info)
         elif scope[1] == "Prohibited":
             self.scopes_naughty[scope[0]] = self.expand_category_opt(valid_info)
-            
+
 @  These methods were added when developing interactive editing tools, which allow
-shifting categories around. 
+shifting categories around.
 
 <<Definition manipulation methods>>=
 <<Changing and updating categories>>
@@ -1397,7 +1397,7 @@ def add_definition(self,itemname,catparent,def_text='PLEASE DEFINE ME',allow_dan
     self[fullname]['_name.category_id']=catparent
     self[fullname]['_definition.class']='Datum'
     self[fullname]['_description.text']=def_text
-    
+
 def remove_definition(self,defname):
     """Remove a definition from the dictionary."""
     if defname not in self:
@@ -1465,7 +1465,7 @@ def get_key_pack(self,category,value,data):
     return onepack
 
 @ For help in validation we create a lookup table which matches a category to
-its ultimate parent.  This allows us to quickly check whether or not a data 
+its ultimate parent.  This allows us to quickly check whether or not a data
 item is allowed to be co-looped with other data items.  Note that we may have
 to draw in external dictionaries to do this properly, but to avoid holding
 the whole lot in memory, we simply stop searching up the parent tree if the
@@ -1537,7 +1537,7 @@ and the imported 'Head' category disappears.
 The merging method of the StarFile object is purely syntactic and so does not understand
 DDLm relationships.  We add all blocks as the children of the top-level dictionary block,
 and then in the case of a new 'Head' block we simply reparent the immediate semantic
-children of the old 'Head' block. 
+children of the old 'Head' block.
 
 <<Perform DDLm imports>>=
 <<Master import routine>>
@@ -1545,8 +1545,8 @@ children of the old 'Head' block.
 <<Master import routine>>=
 def ddlm_import(self,import_mode='All'):
     import_frames = list([(a,self[a]['_import.get']) for a in self.keys() if '_import.get' in self[a]])
-    print ('Import mode %s applied to following frames' % import_mode)
-    print (str([a[0] for a in import_frames]))
+    print('Import mode %s applied to following frames' % import_mode)
+    print(str([a[0] for a in import_frames]))
     if import_mode != 'All':
        for i in range(len(import_frames)):
             import_frames[i] = (import_frames[i][0],[a for a in import_frames[i][1] if a.get('mode','Contents') == import_mode])
@@ -1598,7 +1598,7 @@ def ddlm_import(self,import_mode='All'):
             # Prune out any datablocks that have identical definitions
             from_defs = dict([(a,child_blocks[a].get('_definition.id','').lower()) for a in child_blocks.keys()])
             double_defs = list([b for b in from_defs.items() if self.has_key(b[1])])
-            print ('Definitions for %s superseded' % repr(double_defs))
+            print('Definitions for %s superseded' % repr(double_defs))
             for b in double_defs:
                 del child_blocks[b[0]]
             super(CifDic,self).merge_fast(child_blocks,parent=syntactic_head)      #
@@ -1738,31 +1738,41 @@ time.
 @ Each dictionary has a set of validation functions associated with it based
 on the information contained in the DDL. The following function is called
 on initialisation.
-                                    
+
 <<Install validation functions>>=
 def install_validation_functions(self):
     """Install the DDL-appropriate validation checks"""
     if self.diclang != 'DDLm':
-      self.item_validation_funs = [
-	self.validate_item_type,
-        self.validate_item_esd,
-	self.validate_item_enum,   # functions which check conformance
-        self.validate_enum_range,
-        self.validate_looping]
-      self.loop_validation_funs = [
-        self.validate_loop_membership,
-        self.validate_loop_key,
-        self.validate_loop_references]    # functions checking loop values
-      self.global_validation_funs = [
-        self.validate_exclusion,
-        self.validate_parent,
-        self.validate_child,
-        self.validate_dependents,
-        self.validate_uniqueness] # where we need to look at other values
-      self.block_validation_funs = [  # where only a full block will do
-        self.validate_mandatory_category]
-      self.global_remove_validation_funs = [
-        self.validate_remove_parent_child] # removal is quicker with special checks
+        # functions which check conformance
+        self.item_validation_funs = [
+            self.validate_item_type,
+            self.validate_item_esd,
+            self.validate_item_enum,
+            self.validate_enum_range,
+            self.validate_looping
+        ]
+        # functions checking loop values
+        self.loop_validation_funs = [
+            self.validate_loop_membership,
+            self.validate_loop_key,
+            self.validate_loop_references
+        ]
+        # where we need to look at other values
+        self.global_validation_funs = [
+            self.validate_exclusion,
+            self.validate_parent,
+            self.validate_child,
+            self.validate_dependents,
+            self.validate_uniqueness
+        ]
+        # where only a full block will do
+        self.block_validation_funs = [
+            self.validate_mandatory_category
+        ]
+        # removal is quicker with special checks
+        self.global_remove_validation_funs = [
+            self.validate_remove_parent_child
+        ]
     elif self.diclang == 'DDLm':
         self.item_validation_funs = [
             self.validate_item_enum,
@@ -2026,7 +2036,7 @@ the given category itself.
 <<Validate loop key>>=
 def validate_loop_key(self,loop_names):
     category = self[loop_names[0]][self.cat_spec]
-    # find any unique values which must be present 
+    # find any unique values which must be present
     key_spec = self[category].get(self.key_spec,[])
     for names_to_check in key_spec:
         if isinstance(names_to_check,unicode):   #only one
@@ -2481,7 +2491,7 @@ def check_prohibited_items(self,whole_block,default_scope='Item'):
 
 @ These validation checks are intended to be called externally.  They return
 a dictionary keyed by item name with value being a list of the
-results of the check functions.  The individual functions return a 
+results of the check functions.  The individual functions return a
 dictionary which contains at least the key "result", and in case of error
 relevant keys relating to the error.
 
@@ -2504,7 +2514,7 @@ def run_block_validation(self,whole_block,block_scope='Item'):
 @ Optimization: the dictionary validation routines normally retain no history
 of what has been checked, as they are executed on a per-item basis.  This
 leads to duplication of the uniqueness check, when there is more than one
-key, and duplication of the parent-child check, once for the parent and 
+key, and duplication of the parent-child check, once for the parent and
 once for the child.  By switching on optimisation, a record is kept and
 these checks will not be repeated.  This is safe only if none of the
 relevant items is altered while optimisation is on, and optimisation
@@ -2553,9 +2563,9 @@ this is flagged by the primitive code being of type 'numb'.
 <<Add type information>>=
 def add_type_info(self):
     if "_item_type_list.construct" in self.master_block:
-	types = self.master_block["_item_type_list.code"]
+        types = self.master_block["_item_type_list.code"]
         prim_types = self.master_block["_item_type_list.primitive_code"]
-	constructs = list([a + "$" for a in self.master_block["_item_type_list.construct"]])
+        constructs = list([a + "$" for a in self.master_block["_item_type_list.construct"]])
         # add in \r wherever we see \n, and change \{ to \\{
         def regex_fiddle(mm_regex):
             brack_match = r"((.*\[.+)(\\{)(.*\].*))"
@@ -3230,7 +3240,6 @@ contain.
 
 <<Convert string to appropriate type>>=
 def change_type(self,itemname,inval):
-    import numpy
     if inval == "?": return inval
     change_function = convert_type(self[itemname])
     if isinstance(inval,list) and not isinstance(inval,StarFile.StarList):   #from a loop
@@ -3933,7 +3942,6 @@ if necessary, apply the exponent.
 
 <<Extract number and esd>>=
 def get_number_with_esd(numstring):
-    import string
     numb_re = '((-?(([0-9]*[.]([0-9]+))|([0-9]+)[.]?))([(][0-9]+[)])?([eEdD][+-]?[0-9]+)?)|(\?)|(\.)'
     our_match = re.match(numb_re,numstring)
     if our_match:
@@ -4212,7 +4220,7 @@ def merge_dic(diclist,mergemode="replace",ddlspec=None):
 topmost parent in a ddl2 definition block containing multiple item.names.
 We use the insight that the parent item will be that item which is not in
 the list of children as well.  If there are no item names, that means
-that we are dealing with something like a category -can they be merged?? 
+that we are dealing with something like a category -can they be merged??
 
 <<Get topmost parent>>=
 def find_parent(ddl2_def):

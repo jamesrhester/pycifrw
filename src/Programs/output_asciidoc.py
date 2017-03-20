@@ -195,7 +195,7 @@ def locate_category(diclist,catname):
         return 'External category not found'
     else:
         return 'Ambiguous external dictionary'
-    
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1:
