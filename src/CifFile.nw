@@ -4030,40 +4030,41 @@ dimension lists, rather than special-casing the character sequence
 '[1]'.
 
 <<Convert a list value>>=
-def convert_list_values(structure,dimension):
+class convert_simple_list(object):
+
+    """\
+    Callable object that converts values in a simple list according
+    to the specified element structure.
+    """
+
+    def __init__(self, structure):
+        self.converters = [convert_single_value(tp) for tp in structure]
+        return
+
+    def __call__(self, element):
+        if len(element) != len(self.converters):
+            emsg = "Expected iterable of %i values, got %i." % (
+                (len(self.converters), len(element)))
+            raise ValueError(emsg)
+        rv = [f(e) for f, e in zip(self.converters, element)]
+        return rv
+
+# End of class convert_single_value
+
+
+def convert_list_values(structure, dimension):
     """Convert the values according to the element
        structure given in [[structure]]"""
-    if isinstance(structure,(unicode,str)):   #simple repetition
-        func_def =  "element_convert = convert_single_value('%s')" % structure
-    else:
-        func_def =       "def element_convert(element):\n"
-        func_def +=      "   final_val = []\n"
-        for pos_no in range(len(structure)):
-            func_def +=  "   final_val.append("
-            type_spec = structure[pos_no]
-            if type_spec == 'Real':
-                cf = "float_with_esd("
-            elif type_spec in ('Count','Integer','Index','Binary','Hexadecimal','Octal'):
-                cf = 'int('
-            elif type_spec == 'Complex':
-                cf = 'complex('
-            elif type_spec == 'Imag':
-                cf = 'complex(0,'
-            elif type_spec in ('Code','Name','Tag'):
-                cf = '('
-            else: cf = ''
-            func_def += cf
-            func_def += "element[%d]" % pos_no
-            if "(" in cf: func_def +=")"
-            if type_spec in ('Code','Name','Tag'):
-                func_def +=".lower()"
-            func_def +=")\n"  # close append
-        func_def +=      "   return final_val\n"
-    print(func_def)
-    exec(func_def, globals()) #(re)defines element_convert in global namespace
-    if len(dimension)> 0 and int(dimension[0]) != 1:
-        return lambda a: list(map(element_convert,a))
-    else: return element_convert
+    # short-circuit for a scalar conversion
+    if isinstance(structure, (unicode, str)):   #simple repetition
+        return convert_single_value(structure)
+    # here we assume structure is a list of types
+    fcnv = convert_simple_list(structure)
+    rv = fcnv
+    # setup nested conversion function when dimension differs from 1.
+    if len(dimension) > 0 and int(dimension[0]) != 1:
+        rv = lambda args : [fcnv(a) for a in args]
+    return rv
 
 @  When storing a matrix/array value as a result of a calculation, we remove the
 numpy information and instead store as a StarList.  The following routine will
@@ -4074,22 +4075,20 @@ have to worry.
 def convert_matrix_values(valtype):
     """Convert a dREL String or Float valued List structure to a numpy matrix structure"""
     # first convert to numpy array, then let numpy do the work
-    try: import numpy
-    except:
+    try:
+        import numpy
+    except ImportError:
         return lambda a:a   #cannot do it
-    func_def =     "def matrix_convert(a):\n"
-    func_def +=    "    import numpy\n"
-    func_def +=    "    p = numpy.array(a)\n"
     if valtype == 'Real':
-        func_def+= "    return p.astype('float')\n"
+        dtype = float
     elif valtype == 'Integer':
-        func_def +="    return p.astype('int')\n"
+        dtype = int
     elif valtype == 'Complex':
-        func_def +="    return p.astype('complex')\n"
+        dtype = complex
     else:
         raise ValueError('Unknown matrix value type')
-    exec(func_def,globals())  #matrix convert is defined
-    return matrix_convert
+    fcnv = lambda a : numpy.asarray(a, dtype=dtype)
+    return fcnv
 
 @  DDLm specifies List element composition using a notation of form 'cont(el,el,el...)'
 where 'cont' refers to a container constructor (list or matrix so far) and 'el' is a simple
