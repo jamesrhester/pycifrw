@@ -4055,11 +4055,12 @@ class convert_simple_list(object):
 def convert_list_values(structure, dimension):
     """Convert the values according to the element
        structure given in [[structure]]"""
-    # short-circuit for a scalar conversion
-    if isinstance(structure, (unicode, str)):   #simple repetition
-        return convert_single_value(structure)
-    # here we assume structure is a list of types
-    fcnv = convert_simple_list(structure)
+    # simple repetition
+    if isinstance(structure, (unicode, str)):
+        fcnv = convert_single_value(structure)
+    # assume structure is a list of types
+    else:
+        fcnv = convert_simple_list(structure)
     rv = fcnv
     # setup nested conversion function when dimension differs from 1.
     if len(dimension) > 0 and int(dimension[0]) != 1:
