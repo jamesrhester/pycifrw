@@ -2021,7 +2021,7 @@ def get_final_cats(self,loop_names):
     that are not from loopable categories are ignored."""
     try:
         categories = [self[a][self.cat_spec].lower() for a in loop_names]
-    except KeyError:       #category is mandatory
+    except KeyError:       #category_id is mandatory
         raise ValidCifError( "%s missing from dictionary %s for item in loop containing %s" % (self.cat_spec,self.dicname,loop_names[0]))
     truly_looped = [a for a in categories if a in self.parent_lookup.keys()]
     return [self.parent_lookup[a] for a in truly_looped]
@@ -2064,7 +2064,7 @@ def validate_loop_key_ddlm(self,loop_names):
     """Make sure at least one of the necessary keys are available"""
     final_cats = self.get_final_cats(loop_names)
     if len(final_cats)>0:
-        poss_keys = self.cat_key_table[final_cats[0]]
+        poss_keys = self.cat_key_table[final_cats[0]][0] # 
         found_keys = [a for a in poss_keys if a in loop_names]
         if len(found_keys)>0:
             return {"result":True}

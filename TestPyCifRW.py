@@ -1670,6 +1670,11 @@ save_
         result = self.refdic.run_loop_validation(self.testcif['definition.scope'].loops[1])
         self.failUnless(dict(result['_enumeration_set.detail'])['validate_loop_key_ddlm']['result']==False)
 
+    def testNotMissingKey(self):
+        """Test that a key that should be present is detected"""
+        result = self.refdic.run_loop_validation(self.testcif['definition.scope'].loops[1])
+        print(repr(result))
+        self.failUnless(dict(result['_enumeration_set.state'])['validate_loop_key_ddlm']['result']==True)
 
 class FakeDicTestCase(unittest.TestCase):
 # we test stuff that hasn't been used in official dictionaries to date.
@@ -1951,8 +1956,8 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmImportCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDL1TestCase)
-     #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
+     suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     #unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     unittest.TextTestRunner(verbosity=2).run(suite)
+     #unittest.main()
