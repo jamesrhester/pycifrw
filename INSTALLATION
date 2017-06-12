@@ -1,6 +1,9 @@
 Installation instructions for PyCifRW v 4
 -----------------------------------------
 
+PyCifRW may be installed using Conda, Python pip,
+or directly from source.
+
 Using Conda
 -----------
 If you don't have conda install from either
@@ -11,9 +14,11 @@ miniconda: https://conda.io/docs/install/quick.html
 Then, 
 conda install pycifrw -c conda-forge
 
+Now skip to the "Checking  the installation" section at 
+the end of this document.
 
-Prerequisites
--------------
+Prerequisites for installation from pip or source
+-------------------------------------------------
 
 Python 2.7 or greater must already be installed.  Self-installing
 packages for Python (Windows and Mac) are available from
