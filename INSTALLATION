@@ -1,6 +1,17 @@
 Installation instructions for PyCifRW v 4
 -----------------------------------------
 
+Using Conda
+-----------
+If you don't have conda install from either
+Anaconda: https://docs.continuum.io/anaconda/install
+or 
+miniconda: https://conda.io/docs/install/quick.html
+
+Then, 
+conda install pycifrw -c conda-forge
+
+
 Prerequisites
 -------------
 
