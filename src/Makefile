@@ -5,13 +5,13 @@
 # Instance of Python to be used for the yapps2.py script.
 PYTHON = python2
 
-package: CifFile.py StarFile.py Parsers documentation
+package: CifFile_module.py StarFile.py Parsers documentation
 #
 %.py : %.nw
 	notangle $< > $@
 #
-documentation: CifFile.nw YappsStarParser.nw StarFile.nw
-	noweave -html -index -filter l2h CifFile.nw > CifFile.html
+documentation: CifFile_module.nw YappsStarParser.nw StarFile.nw
+	noweave -html -index -filter l2h CifFile_module.nw > CifFile.html
 	noweave -html -index -filter l2h StarFile.nw > StarFile.html
 	noweave -html -index -filter l2h YappsStarParser.nw > YappsStarParser.html
 	noweave -html -index -filter l2h TypeContentsParser.nw > TypeContentsParser.html

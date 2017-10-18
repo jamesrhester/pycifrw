@@ -2,7 +2,7 @@
 # distribution
 from __future__ import print_function
 
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 
 #### Do the setup
 c_scanner = Extension("CifFile.StarScan",
@@ -27,7 +27,7 @@ setup(name="PyCifRW",
           'Topic :: Scientific/Engineering :: Bio-Informatics',
           'Topic :: Software Development :: Libraries :: Python Modules'
       ],
-      py_modules = ['CifFile.CifFile','CifFile.yapps3_compiled_rt','CifFile.YappsStarParser_1_1','CifFile.YappsStarParser_1_0',
+      py_modules = ['CifFile.CifFile-module','CifFile.yapps3_compiled_rt','CifFile.YappsStarParser_1_1','CifFile.YappsStarParser_1_0',
                     'CifFile.YappsStarParser_STAR2','CifFile.YappsStarParser_2_0','CifFile.StarFile','CifFile.TypeContentsParser'],
       ext_modules = [c_scanner],
       packages = ['CifFile', 'CifFile.drel'],

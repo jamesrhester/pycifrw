@@ -1558,7 +1558,7 @@ def ddlm_import(self,import_mode='All'):
         file_loc = import_ref["file"]
         full_uri = self.resolve_path(file_loc)
         if full_uri not in self.template_cache:
-            dic_as_cif = CifFile(urlopen(full_uri),grammar=self.grammar)
+            dic_as_cif = CifFile(full_uri,grammar=self.grammar)
             self.template_cache[full_uri] = CifDic(dic_as_cif,do_imports=import_mode,do_dREL=False)  #this will recurse internal imports
             print('Added %s to cached dictionaries' % full_uri)
         import_from = self.template_cache[full_uri]
