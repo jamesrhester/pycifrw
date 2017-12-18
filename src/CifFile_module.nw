@@ -4051,7 +4051,6 @@ class convert_simple_list(object):
 
 # End of class convert_single_value
 
-
 def convert_list_values(structure, dimension):
     """Convert the values according to the element
        structure given in [[structure]]"""

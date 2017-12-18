@@ -421,9 +421,18 @@ rule input@<<prepared>>: ( ((
                       )*
                       save_end           {{return monitor('save_frame',savebc)}}
 
-@  STAR2 specifies comma-separated list and table elements, whereas CIF2 has space-separated elements.
+@  STAR2 specifies nested save frames and comma-separated list and table elements,
+whereas CIF2 has space-separated elements.
 
 <<STAR2-specific grammar>>=
+     rule save_frame: save_heading   {{savehead = save_heading[5:];savebc = StarFile();newname = savebc.NewBlock(savehead,StarBlock(overwrite=False));stored_block = savebc[newname] }} 
+                      (
+                      dataseq@<<savebc[savehead]>>
+                      |
+                      save_frame     {{savebc.merge_fast(save_frame,parent=stored_block)}}
+                      )*
+                      save_end           {{return monitor('save_frame',savebc)}}
+
      rule square_bracket_expr: o_s_b            {{this_list = []}}
                             (  data_value       {{this_list.append(data_value)}}
                               ( ","
@@ -447,6 +456,13 @@ rule input@<<prepared>>: ( ((
 
 
 <<CIF2-specific grammar>>=
+     rule save_frame: save_heading   {{savehead = save_heading[5:];savebc = StarFile();newname = savebc.NewBlock(savehead,StarBlock(overwrite=False));stored_block = savebc[newname] }} 
+                      (
+                      dataseq@<<savebc[savehead]>>
+                      )*
+                      save_end           {{return monitor('save_frame',savebc)}}
+
+
       rule square_bracket_expr: o_s_b            {{this_list = []}}
                             (  data_value       {{this_list.append(data_value)}}
                               (
