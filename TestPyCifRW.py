@@ -1185,11 +1185,20 @@ class DDLmTestCase(unittest.TestCase):
 ##########
 class DDLmImportCase(unittest.TestCase):
     def setUp(self):
-        self.testdic = CifFile.CifDic("dictionaries/cif_core_ddlm.dic",grammar="auto")
+        self.testdic = CifFile.CifDic("dictionaries/cif_core_ddlm.dic",grammar="2.0",do_dREL=False)
+        self.lightdic = CifFile.CifDic("dictionaries/cif_core_ddlm.dic",grammar="2.0",
+                                       do_imports='contents',heavy=False,do_dREL=False)
 
     def testEnumImport(self):
         """Test that enumerated types were imported correctly"""
         pp = self.testdic['_atom_type.radius_bond']
+        self.failUnless(pp.has_key('_enumeration_default.index'))
+        c_pos = pp['_enumeration_default.index'].index('C')
+        self.assertEqual(pp['_enumeration_default.value'][c_pos],'0.77')
+
+    def testLightImport(self):
+        """Test that light importation succeeds"""
+        pp = self.lightdic['_atom_type.radius_bond']
         self.failUnless(pp.has_key('_enumeration_default.index'))
         c_pos = pp['_enumeration_default.index'].index('C')
         self.assertEqual(pp['_enumeration_default.value'][c_pos],'0.77')
@@ -1954,10 +1963,10 @@ if __name__=='__main__':
      #suite = unittest.TestLoader().loadTestsFromTestCase(LoopBlockTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BlockChangeTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmValueTestCase)
-     #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmImportCase)
+     suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmImportCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDL1TestCase)
-     suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
+     #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     #unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     unittest.TextTestRunner(verbosity=2).run(suite)
+     #unittest.main()

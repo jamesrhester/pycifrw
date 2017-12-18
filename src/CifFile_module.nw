@@ -388,6 +388,7 @@ appropriate definition, as the save frame name and the definition
 may be slightly (or completely) different.
 
 <<CIF Dictionary type>>=
+<<Dictionary block type>>
 class CifDic(StarFile.StarFile):
     """Create a Cif Dictionary object from the provided source, which can
     be a filename/URL or a CifFile.  Optional arguments (relevant to DDLm
@@ -404,6 +405,9 @@ class CifDic(StarFile.StarFile):
     * do_dREL = True/False:
          Parse and convert all dREL methods to Python. Implies do_imports=All
 
+    * heavy = True/False:
+         (Experimental). If True, importation overwrites definitions. If False,
+         attributes are resolved dynamically. Only available for do_imports = Contents.
     """
     <<Initialise Cif dictionary>>
     <<DDL-specific initialisation routines>>
@@ -424,6 +428,68 @@ class CifDic(StarFile.StarFile):
     <<Convert string to appropriate type>>
     <<Validation routines>>
 
+@ \subsection {Dictionary blocks}
+
+A dictionary block is essentially identical to a StarBlock, with
+the extra semantics of chasing through `_import.get` calls in
+order to transparently return attributes defined in separate
+dictionaries.  If the `_import_cache` is empty, this is skipped.
+
+<<Dictionary block type>>=
+class DicBlock(StarFile.StarBlock):
+    """A definition block within a dictionary, which allows imports
+    to be transparently followed"""
+
+    def __init__(self,*args,**kwargs):
+        super(DicBlock,self).__init__(*args,**kwargs)
+        self._import_cache = {}
+        
+    def __getitem__(self,dataname):
+        value = None
+        if super(DicBlock,self).has_key("_import.get") and self._import_cache:
+            value = self.follow_import(super(DicBlock,self).__getitem__("_import.get"),dataname) 
+        try:
+            final_value = super(DicBlock,self).__getitem__(dataname)
+        except KeyError:    #not there
+            final_value = value
+        if final_value is None:
+            raise(KeyError,"%s not found" % dataname)
+        return final_value
+
+    def has_key(self,key):
+        try:
+            self[key]
+        except KeyError:
+            return False
+        return True
+    
+    def add_dict_cache(self,name,cached):
+        """Add a loaded dictionary to this block's cache"""
+        self._import_cache[name]=cached
+        
+    def follow_import(self,import_info,dataname):
+        """Find the dataname values from the imported dictionary. `import_info`
+        is a list of import locations"""
+        latest_value = None
+        for import_ref in import_info:
+            file_loc = import_ref["file"]
+            if file_loc not in self._import_cache:
+                raise ValueError("Dictionary for import %s not found" % file_loc)
+            import_from = self._import_cache[file_loc]
+            miss = import_ref.get('miss','Exit')
+            target_key = import_ref["save"]
+            try:
+                import_target = import_from[target_key]
+            except KeyError:
+                if miss == 'Exit':
+                    raise CifError('Import frame %s not found in %s' % (target_key,file_loc))
+                else: continue
+            # now import appropriately
+            mode = import_ref.get("mode",'Contents').lower()
+            if mode == "contents":   #only this is used at this level
+                latest_value = import_target.get(dataname,latest_value)
+        return latest_value
+    
 @ \subsection {Initialisation}
 
 We want to be able to accept strings, giving the file name
@@ -451,18 +517,26 @@ will return Numpy arrays from the __getitem__ method instead of StarLists.
 It is intended that the dREL methods will turn this on only during
 execution, then turn it off afterwards.
 
+Note that DDLm importation logic provides many choices. We have a choice
+of 'No', 'Contents', 'Full' and 'All' for the amount that is imported. If
+`heavy` is False, no definition material will be replaced, rather the
+import will be resolved dynamically.  This is only implemented for
+'Content' at the moment. 
+
 <<Initialise Cif dictionary>>=
 def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
-                                                         grammar='auto',**kwargs):
+             grammar='auto',heavy=True,**kwargs):
     self.do_minimum = do_minimum
     if do_minimum:
         do_imports = 'No'
         do_dREL = False
     if do_dREL: do_imports = 'All'
+    if heavy == 'Light' and do_imports not in ('contents','No'):
+        raise(ValueError,"Light imports only available for mode 'contents'")
     self.template_cache = {}    #for DDLm imports
     self.ddlm_functions = {}    #for DDLm functions
     self.switch_numpy(False)    #no Numpy arrays returned
-    super(CifDic,self).__init__(datasource=dic,grammar=grammar,**kwargs)
+    super(CifDic,self).__init__(datasource=dic,grammar=grammar,blocktype=DicBlock,**kwargs)
     self.standard = 'Dic'    #for correct output order
     self.scoping = 'dictionary'
     (self.dicname,self.diclang) = self.dic_determine()
@@ -480,7 +554,7 @@ def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
     elif self.diclang == "DDLm":
         self.scoping = 'dictionary'   #expose all save frames
         if do_imports is not 'No':
-           self.ddlm_import(import_mode=do_imports)#recursively calls this routine
+            self.obtain_imports(import_mode=do_imports,heavy=heavy)#recursively calls this routine
         self.create_alias_table()
         self.create_cat_obj_table()
         self.create_cat_key_table()
@@ -1534,22 +1608,28 @@ definition into a 'Head' definition, we actually make all non-Head categories of
 imported dictionary into child categories of the importing dictionary 'Head' category,
 and the imported 'Head' category disappears.
 
+``Contents'' mode is implemented dynamically, that is, when the value of an attribute is
+requested the dictionary resolves imports.
+
 The merging method of the StarFile object is purely syntactic and so does not understand
 DDLm relationships.  We add all blocks as the children of the top-level dictionary block,
 and then in the case of a new 'Head' block we simply reparent the immediate semantic
 children of the old 'Head' block.
 
 <<Perform DDLm imports>>=
-<<Master import routine>>
+<<Get import information>>
+<<Heavy import routine>>
+<<Light import routine>>
 
-<<Master import routine>>=
-def ddlm_import(self,import_mode='All'):
+<<Get import information>>=
+def obtain_imports(self,import_mode,heavy=True):
+    """Collate import information"""
     import_frames = list([(a,self[a]['_import.get']) for a in self.keys() if '_import.get' in self[a]])
     print('Import mode %s applied to following frames' % import_mode)
     print(str([a[0] for a in import_frames]))
     if import_mode != 'All':
        for i in range(len(import_frames)):
-            import_frames[i] = (import_frames[i][0],[a for a in import_frames[i][1] if a.get('mode','Contents') == import_mode])
+            import_frames[i] = (import_frames[i][0],[a for a in import_frames[i][1] if a.get('mode','Contents').lower() == import_mode.lower()])
        print('Importing following frames in mode %s' % import_mode)
        print(str(import_frames))
     #resolve all references
@@ -1559,7 +1639,7 @@ def ddlm_import(self,import_mode='All'):
         full_uri = self.resolve_path(file_loc)
         if full_uri not in self.template_cache:
             dic_as_cif = CifFile(full_uri,grammar=self.grammar)
-            self.template_cache[full_uri] = CifDic(dic_as_cif,do_imports=import_mode,do_dREL=False)  #this will recurse internal imports
+            self.template_cache[full_uri] = CifDic(dic_as_cif,do_imports=import_mode,heavy=heavy,do_dREL=False)  #this will recurse internal imports
             print('Added %s to cached dictionaries' % full_uri)
         import_from = self.template_cache[full_uri]
         dupl = import_ref.get('dupl','Exit')
@@ -1578,6 +1658,17 @@ def ddlm_import(self,import_mode='All'):
                 raise CifError('Import frame %s already in dictionary' % target_key)
             elif dupl == 'Ignore':
                 continue
+        if heavy:
+            self.ddlm_import(parent_block,import_from,import_target,target_key,mode)
+        else:
+            self.ddlm_import_light(parent_block,import_from,import_target,target_key,file_loc,mode)
+            
+@  The original way of doing imports was to completely merge the information from the
+imported file. This is recommended in order to find all errors ahead of time.
+
+<<Heavy import routine>>=
+def ddlm_import(self,parent_block,import_from,import_target,target_key,mode='All'):
+        """Import other dictionaries in place"""
         if mode == 'contents':   #merge attributes only
             self[parent_block].merge(import_target)
         elif mode =="full":
@@ -1632,6 +1723,19 @@ def resolve_path(self,file_loc):
     new_url = urljoin(self.my_uri,file_loc)
     #print("Transformed %s to %s for import " % (file_loc,new_url))
     return new_url
+
+@  It is possible to not perform imports at reading time, but simply to register the links
+and resolve the imports if and when a definition is accessed.
+    
+<<Light import routine>>=
+def ddlm_import_light(self,parent_block,import_from,import_target,target_key,file_loc,mode='All'):
+    """Register the imported dictionaries but do not alter any definitions. `parent_block`
+    contains the id of the block that is importing. `import_target` is the block that
+    should be imported. `import_from` is the CifFile that contains the definitions."""
+    if mode == 'contents':   #merge attributes only
+        self[parent_block].add_dict_cache(file_loc,import_from)
+    elif mode =="full":
+        pass   #Not implemented.
 
 @ Merging a whole dictionary.  A dictionary is a collection of categories for
 the purposes of merging (later we may want to keep some audit information).

@@ -520,7 +520,7 @@ def NewBlock(self,blockname,blockcontents=None,fix=True,parent=None):
     the output standard, these blocks will be printed out as nested save frames or
     ignored."""
     if blockcontents is None:
-        blockcontents = StarBlock()
+        blockcontents = self.blocktype()
     if self.standard == "CIF":
         blockcontents.setmaxnamelength(75)
     if len(blockname)>75:
