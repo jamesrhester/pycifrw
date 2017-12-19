@@ -520,8 +520,7 @@ execution, then turn it off afterwards.
 Note that DDLm importation logic provides many choices. We have a choice
 of 'No', 'Contents', 'Full' and 'All' for the amount that is imported. If
 `heavy` is False, no definition material will be replaced, rather the
-import will be resolved dynamically.  This is only implemented for
-'Content' at the moment. 
+import will be resolved dynamically. 
 
 <<Initialise Cif dictionary>>=
 def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
@@ -1126,6 +1125,10 @@ have to revert to their blockname, so we use blockname as a default.  We also co
 ignore case, which is a bit liberal, as definitions themselves are case-sensitive. We catch
 duplicate definitions (e.g. as a result of incorrect merging).
 
+If a definition is not found, we search any dictionaries that were imported in 'Full' mode.
+This means that definitions in the dictionary proper override anything in the imported
+dictionaries, as per definitions.
+
 <<Repurpose standard python methods>>=
 def create_def_block_table(self):
     """ Create an internal table matching definition to block id """
@@ -1152,8 +1155,10 @@ def __getitem__(self,key):
     except AttributeError:   #block_id_table not present yet
         return super(CifDic,self).__getitem__(key)
     except KeyError: # key is missing
-        # print(Definition for %s not found, reverting to CifFile' % key)
-        return super(CifDic,self).__getitem__(key)
+        try: # print(Definition for %s not found, reverting to CifFile' % key)
+            return super(CifDic,self).__getitem__(key)
+        except KeyError: # try imports
+            return self.lookup_imports(key)
 
 def __setitem__(self,key,value):
     """Add a new definition block"""
@@ -1608,8 +1613,9 @@ definition into a 'Head' definition, we actually make all non-Head categories of
 imported dictionary into child categories of the importing dictionary 'Head' category,
 and the imported 'Head' category disappears.
 
-``Contents'' mode is implemented dynamically, that is, when the value of an attribute is
-requested the dictionary resolves imports.
+``Contents'' and ``Full'' modes are implemented dynamically, that is,
+when the value of an attribute is requested the dictionary resolves
+imports.
 
 The merging method of the StarFile object is purely syntactic and so does not understand
 DDLm relationships.  We add all blocks as the children of the top-level dictionary block,
@@ -1620,10 +1626,12 @@ children of the old 'Head' block.
 <<Get import information>>
 <<Heavy import routine>>
 <<Light import routine>>
+<<Lookup imports for whole dictionary>>
 
 <<Get import information>>=
-def obtain_imports(self,import_mode,heavy=True):
+def obtain_imports(self,import_mode,heavy=False):
     """Collate import information"""
+    self._import_dics = []
     import_frames = list([(a,self[a]['_import.get']) for a in self.keys() if '_import.get' in self[a]])
     print('Import mode %s applied to following frames' % import_mode)
     print(str([a[0] for a in import_frames]))
@@ -1664,7 +1672,8 @@ def obtain_imports(self,import_mode,heavy=True):
             self.ddlm_import_light(parent_block,import_from,import_target,target_key,file_loc,mode)
             
 @  The original way of doing imports was to completely merge the information from the
-imported file. This is recommended in order to find all errors ahead of time.
+imported file.  This is slightly more efficient if information about import statements
+is not required.
 
 <<Heavy import routine>>=
 def ddlm_import(self,parent_block,import_from,import_target,target_key,mode='All'):
@@ -1735,8 +1744,36 @@ def ddlm_import_light(self,parent_block,import_from,import_target,target_key,fil
     if mode == 'contents':   #merge attributes only
         self[parent_block].add_dict_cache(file_loc,import_from)
     elif mode =="full":
-        pass   #Not implemented.
+         # Check for Head merging Head
+        if self[parent_block].get('_definition.class','Datum')=='Head' and \
+           import_target.get('_definition.class','Datum')=='Head':
+               head_to_head = True
+        else:
+               head_to_head = False
+        # Figure out the actual definition ID
+        head_id = import_target["_definition.id"]
+        # Adjust parent information
+        merging_cat = self[parent_block]['_name.object_id']
+        from_cat_head = import_target['_name.object_id']
+        if not head_to_head:   # imported category is only child
+            import_target["_name.category_id"]=merging_cat
+        self._import_dics = [(import_from,head_id)]+self._import_dics #prepend
 
+@ Lightweight importation simply records the import information without performing the
+import, and then when keys are accessed it checks through the imported dictionaries. The
+semantics are such that the last dictionary imported should be the first dictionary
+checked, as imports overwrite any definitions in preceding imports.
+        
+<<Lookup imports for whole dictionary>>=
+def lookup_imports(self,key):
+    """Check the list of imported dictionaries for this definition"""
+    for one_dic,head_def in self._import_dics:
+        from_cat_head = one_dic[head_def]['_name.object_id']
+        possible_keys = one_dic.ddlm_all_children(from_cat_head)
+        if key in possible_keys:
+            return one_dic[key]
+    raise KeyError("%s not found in import dictionaries" % key)
+    
 @ Merging a whole dictionary.  A dictionary is a collection of categories for
 the purposes of merging (later we may want to keep some audit information).
 
