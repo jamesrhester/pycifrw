@@ -399,15 +399,15 @@ class CifDic(StarFile.StarFile):
          imports.  This implies do_imports=False and do_dREL=False
 
     * do_imports = No/Full/Contents/All:
-         If not 'No', replace _import.get statements with the imported contents for
-         Full mode/Contents mode/Both respectively.
+         If not 'No', intepret _import.get statements for
+         Full mode/Contents mode/Both respectively. See also option 'heavy'
 
     * do_dREL = True/False:
          Parse and convert all dREL methods to Python. Implies do_imports=All
 
     * heavy = True/False:
          (Experimental). If True, importation overwrites definitions. If False,
-         attributes are resolved dynamically. Only available for do_imports = Contents.
+         attributes are resolved dynamically.
     """
     <<Initialise Cif dictionary>>
     <<DDL-specific initialisation routines>>
@@ -453,7 +453,7 @@ class DicBlock(StarFile.StarBlock):
         except KeyError:    #not there
             final_value = value
         if final_value is None:
-            raise(KeyError,"%s not found" % dataname)
+            raise KeyError("%s not found" % dataname)
         return final_value
 
     def has_key(self,key):
@@ -1168,6 +1168,13 @@ def __setitem__(self,key,value):
     except AttributeError:   #does not exist yet
         pass
 
+def NewBlock(self,*args,**kwargs):
+    newname = super(CifDic,self).NewBlock(*args,**kwargs)
+    try:
+        self.block_id_table[self[newname]['_definition.id']]=newname
+    except AttributeError: #no block_id table
+        pass
+            
 def __delitem__(self,key):
     """Remove a definition"""
     try:
