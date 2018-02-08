@@ -109,7 +109,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
         realfunc = py_from_ast.make_python_function(res,"myfunc",'_a.b',have_sn=False,
                                                     cif_dic=self.dic)
         if debug: print("-> %s" % realfunc)
-        exec(realfunc)
+        exec(realfunc,globals())
         answer = myfunc(self)
         if debug: print(" -> {!r}".format(answer))
         if not array:
@@ -252,7 +252,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
        realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
                                                    cif_dic=self.dic)
        print(realfunc)
-       exec(realfunc)
+       exec(realfunc,globals())
        b = myfunc(self)
        self.failUnless(b['bx']==25)
 
@@ -267,7 +267,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
        realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
                                                    cif_dic=self.dic)
        print(realfunc)
-       exec(realfunc)
+       exec(realfunc,globals())
        b = myfunc(self)
        self.failUnless(b==1)
 
@@ -312,7 +312,7 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        realfunc = py_from_ast.make_python_function(res,"myfunc",varname,have_sn=False,
                                                    cif_dic=self.dic)
        if debug: print("-> %s" % realfunc)
-       exec(realfunc)
+       exec(realfunc,globals())
        self.failUnless(myfunc(self) == right_value)
 
    def test_multi_assign(self):
@@ -413,7 +413,7 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc",None, func_def = True)
        # print "Function -> \n" + realfunc
-       exec(realfunc)
+       exec(realfunc,globals())
        retval = Closest(0.2,0.8,None)
        print('Closest 0.2,0.8 returns {!r},{!r}'.format(retval[0], retval[1]))
        self.failUnless(retval == StarList([1.2,1]))
@@ -440,7 +440,7 @@ class MoreComplexTestCase(unittest.TestCase):
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
                                                    cif_dic = self.dic)
-       exec(realfunc)
+       exec(realfunc,globals())
        othertotal = myfunc(self)
        self.failUnless(othertotal==55)
 
@@ -466,7 +466,7 @@ class MoreComplexTestCase(unittest.TestCase):
        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
                                                    cif_dic = self.dic)
-       exec(realfunc)
+       exec(realfunc,globals())
        b = myfunc(self)
        print("if returns {!r}".format(b))
        self.failUnless(b==('B', 'Possible mismatch between cell angles and cell setting'))
@@ -489,7 +489,7 @@ class MoreComplexTestCase(unittest.TestCase):
        realfunc = py_from_ast.make_python_function(res,"myfunc","geom_angle",cat_meth = True,have_sn=False,
                                                    cif_dic = testdic)
        print("Fancy assign: %s" % res[0])
-       exec(realfunc)
+       exec(realfunc,globals())
        b = myfunc(self)
        print("Geom_angle.angle = %s" % b['_geom_angle.value'])
        self.failUnless(b['_geom_angle.value']==[1,2,3,4,5])
@@ -510,7 +510,7 @@ class WithDictTestCase(unittest.TestCase):
        self.testdic = testdic
        #create the global namespace
        self.namespace = self.testblock.keys()
-       self.namespace = dict(map(None,self.namespace,self.namespace))
+       self.namespace = dict(zip(self.namespace,self.namespace))
        self.special_ids = [self.namespace]
 
    def test_loop_with_statement(self):
@@ -526,7 +526,7 @@ class WithDictTestCase(unittest.TestCase):
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.analytical_mass_percent",
                                                    cif_dic=testdic,loopable=loopable_cats)
        print("With statement for looped category -> \n" + realfunc)
-       exec(realfunc)
+       exec(realfunc,globals())
        #
        atmass = myfunc(self.testblock)
        print('test value now {!r}'.format(atmass))
@@ -557,7 +557,7 @@ class WithDictTestCase(unittest.TestCase):
        print('Simple function becomes:')
        print(realfunc)
        print('Depends on: {!r}'.format(dependencies))
-       exec(realfunc in globals())
+       exec(realfunc,globals())
        b = myfunc(self.testblock)
        print("subscription returns {!r}".format(b))
 
@@ -577,7 +577,7 @@ class WithDictTestCase(unittest.TestCase):
        res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_exptl.method",cif_dic=self.testdic)
        print("With statement -> \n" + realfunc)
-       exec(realfunc)
+       exec(realfunc,globals())
        # attach dictionary
        self.testblock.assign_dictionary(self.testdic)
        newmeth = myfunc(self.testblock)
@@ -596,7 +596,7 @@ class WithDictTestCase(unittest.TestCase):
                                                    loopable=loopable_cats,
                                                    cif_dic=testdic)
        print("With statement for looped category -> \n" + realfunc)
-       exec(realfunc)
+       exec(realfunc,globals())
        atmass = myfunc(self.testblock)
        print('test value now {!r}'.format(atmass))
        self.failUnless(atmass == [120,280,240])
@@ -625,7 +625,7 @@ class WithDictTestCase(unittest.TestCase):
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.description",loopable=loopable_cats,
                                                    cif_dic=testdic)
        print("Current row statement -> \n" + realfunc)
-       exec(realfunc)
+       exec(realfunc,globals())
        rownums = myfunc(self.testblock)
        print('row id now {!r}'.format(rownums))
        self.failUnless(rownums == [1,2,3])
@@ -644,7 +644,7 @@ class WithDictTestCase(unittest.TestCase):
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_cell.atomic_mass",loopable=loopable_cats,
                                                    cif_dic=testdic)
        print("Loop statement -> \n" + realfunc)
-       exec(realfunc)
+       exec(realfunc,globals())
        atmass = myfunc(self.testblock)
        print('atomic mass now %f' % atmass)
        self.failUnless(atmass == 552.488)
@@ -681,7 +681,7 @@ class WithDictTestCase(unittest.TestCase):
                                                    cif_dic=testdic)
        print("Incoming AST: {!r}".format(ast))
        print("F_complex statement -> \n" + realfunc)
-       exec(realfunc)
+       exec(realfunc,globals())
 
        # This one also doesn't return anything sensible yet, just a generation check
    def test_fancy_packets(self):
@@ -717,7 +717,7 @@ class WithDictTestCase(unittest.TestCase):
                                                    depends = True,have_sn=False,
                                                         loopable=loopable,cif_dic=testdic)
        print(realfunc)
-       exec(realfunc)
+       exec(realfunc,globals())
        self.testblock.assign_dictionary(testdic)
        b = myfunc(self.testblock)
        print('symops are now {!r}'.format(b))
@@ -728,7 +728,7 @@ class WithDictTestCase(unittest.TestCase):
         teststrg = """
         with a as atom_site
         label = a.label
-        if (a.adp_type == "uani") {
+        if (a.adp_type == "Uani") {
         Loop b as atom_site_aniso     {
            If(label == b.label)           {
                UIJ = b.matrix_U
@@ -761,7 +761,7 @@ class WithDictTestCase(unittest.TestCase):
         for n,l in enumerate(funclines):
             print("%2d:%s"%(n,l))
         #print(realfunc)
-        exec(realfunc)
+        exec(realfunc,globals())
         self.testblock.assign_dictionary(testdic)
         b = myfunc(self.testblock)
         print('tensor beta is now {!r}'.format(b))
