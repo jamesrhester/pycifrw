@@ -275,7 +275,7 @@ token data_heading: "(D|d)(A|a)(T|t)(A|a)_[][!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}
 token start_sc_line: "(\n|\r\n);([^\n\r])*(\r\n|\r|\n)+"
 token sc_line_of_text: "[^;\r\n]([^\r\n])*(\r\n|\r|\n)+"
 token end_sc_line: ";"
-token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$'_\(\{\[\]][^\s]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
+token data_value_1: "((?!(((S|s)(A|a)(V|v)(E|e)_[^\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\s]*)))[^\s\"#$'_\{\[\]][^\s]*)|'(('(?=\S))|([^\n\r\f']))*'+|\"((\"(?=\S))|([^\n\r\"]))*\"+"
 token END: '$'
 
 @ The original CIF specification allowed brackets to begin data values, even if not quoted.  That is the only difference.
