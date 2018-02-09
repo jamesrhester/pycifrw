@@ -238,8 +238,20 @@ existing name changed, by straight assignment:
     cb['_old_data_name'] = 'cucumber'
 ~~~
 
-Old values are overwritten silently. Note that values may be 
-strings or numbers. 
+By default, old values are overwritten silently.  To instead 
+raise an error when an item value is going to be overwritten,
+set attribute 'overwrite' to `False`:
+
+~~~{.python}
+    cb.overwrite = False
+    cb['_old_data_name'] = 'cucumber' # Error is raised
+~~~
+
+To return to the original behaviour, set `overwrite` to True.
+To allow/disallow overwriting for all blocks in a file, call methods
+unlock()/lock() respectively.
+
+Note that values may be strings or numbers. 
 
 #### Creating loops
 

@@ -345,7 +345,7 @@ rule input@<<prepared>>: ( ((
             |
             (
             END                 {{allblocks = prepared}}
-            )))                   {{return allblocks}}
+            )))                   {{allblocks.unlock(); return allblocks}}
 
      rule dblock@<<prepared>>: ( data_heading {{heading = data_heading[5:];thisbc=StarFile(characterset='unicode',standard=prepared.standard);act_heading = thisbc.NewBlock(heading,prepared.blocktype(overwrite=False));stored_block = thisbc[act_heading]}}# a data heading
                   (
@@ -501,7 +501,7 @@ rule input@<<prepared>>: ( ((
             |
             (
             END                 {{allblocks = prepared}}
-            )))                   {{return allblocks}}
+            )))                   {{allblocks.unlock();return allblocks}}
 
     rule dblock@<<prepared>>: ( data_heading {{heading = data_heading[5:];thisbc=StarFile(characterset='unicode',standard=prepared.standard);newname = thisbc.NewBlock(heading,prepared.blocktype(overwrite=False));act_block=thisbc[newname]}}# a data heading
                   (

@@ -768,7 +768,12 @@ _atom_type.number_in_cell
        b.write(outstr)
        b.close()
        testin =  CifFile.CifFile("tests/test3_latin1.cif",grammar="1.0",permissive=True)
-       
+
+   def testItemChange(self):
+        """Test that an item from in input file can be changed"""
+        self.flf['_item_quote']= '2.3'
+        self.failUnless(self.flf['_item_quote']=='2.3')
+        
 class SimpleWriteTestCase(unittest.TestCase):
     def setUp(self):
         self.bf = CifFile.CifBlock()
