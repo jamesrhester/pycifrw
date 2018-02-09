@@ -4,9 +4,11 @@ from __future__ import absolute_import
 
 import sys
 #sys.path.insert(0,"..")
-from CifFile import ReadCif
+from CifFile import ReadCif,CifFile
 
-def runtests(scantype):
+def runtests(scantype,calling_method):
+    """Scantype is flex or standard, calling method is either
+    to construct a CifFile object or using ReadCif"""
     test_table = [
     ["ciftest1", "OK"],
     ["ciftest2", "OK"],
@@ -16,7 +18,7 @@ def runtests(scantype):
 
     for filename, testresult in test_table:
         try:
-            ReadCif(filename,scantype=scantype,grammar="2.0")
+            calling_method(filename,scantype=scantype,grammar="2.0")
         except:
             stype,svalue,sinfo = sys.exc_info()
             if testresult == 'OK':
@@ -33,7 +35,11 @@ def runtests(scantype):
             else:
                 print("%s: Expected %s, got nothing" % (filename,repr(testresult)))
 if __name__ == "__main__":
-    print("Testing interpreted tokenizer")
-    runtests("standard")
-    print("Testing compiled tokenizer")
-    runtests("flex")
+    print("Testing interpreted tokenizer+ReadCif")
+    runtests("standard",ReadCif)
+    print("Testing compiled tokenizer+ReadCif",ReadCif)
+    runtests("flex",ReadCif)
+    print("Testing interpreted tokenizer+CifFile")
+    runtests("standard",CifFile)
+    print("Testing compiled tokenizer+CifFile")
+    runtests("flex",CifFile)

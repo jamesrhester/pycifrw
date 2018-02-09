@@ -936,7 +936,7 @@ line.
 <<Initialise data structures>>=
     def __init__(self,datasource=None,maxinlength=-1,maxoutlength=0,
                 scoping='instance',grammar='1.1',scantype='standard',
-                **kwargs):
+                 permissive=False,**kwargs):
         super(StarFile,self).__init__(datasource=datasource,**kwargs)
         self.my_uri = getattr(datasource,'my_uri','')
         if maxoutlength == 0:
@@ -946,7 +946,7 @@ line.
         self.scoping = scoping
         if isinstance(datasource,(unicode,str)) or hasattr(datasource,"read"):
             ReadStar(datasource,prepared=self,grammar=grammar,scantype=scantype,
-            maxlength = maxinlength)
+                     maxlength = maxinlength,permissive=permissive)
         self.header_comment = \
 """#\\#STAR
 ##########################################################################
@@ -988,7 +988,7 @@ the location of this file e.g. with DDLm dictionary imports.
 
 <<Read in a STAR file>>=
 def ReadStar(filename,prepared = None, maxlength=-1,
-             scantype='standard',grammar='STAR2',CBF=False):
+             scantype='standard',grammar='STAR2',CBF=False, permissive=False):
 
     """ Read in a STAR file, returning the contents in the `prepared` object.
 
@@ -1016,6 +1016,10 @@ def ReadStar(filename,prepared = None, maxlength=-1,
 
     * `CBF` flags that the input file is in Crystallographic Binary File format. The binary block is
     excised from the input data stream before parsing and is not available in the returned object.
+
+    * `permissive` allows non UTF8 encodings (currently only latin1) in the input file. These are a 
+    violation of the standard.
+
     """
 
     # save desired scoping
@@ -1054,13 +1058,27 @@ def ReadStar(filename,prepared = None, maxlength=-1,
             my_uri = urlunparse(relpath)
         # print("Full URL is: " + my_uri)
         filestream = urlopen(my_uri)
-        text = filestream.read().decode('utf-8-sig')
+        try:
+            text = filestream.read().decode('utf-8-sig')
+        except UnicodeDecodeError:
+            if permissive:
+                text = filestream.read().decode('latin1')
+                print("WARNING: %s violates standard (latin1 encoding instead of UTF8)." % filename)
+            else:
+                raise StarError("%s: bad encoding (must be utf8 or ascii)" % filename)
         filestream.close()
     else:
         filestream = filename   #already opened for us
         text = filestream.read()
         if not isinstance(text,unicode):
-            text = text.decode('utf-8-sig')  #CIF is always ascii/utf8
+            try:
+                text = text.decode('utf-8-sig')  #CIF is always ascii/utf8
+            except UnicodeDecodeError:
+                if permissive:
+                    text = filestream.read().decode('latin1')
+                    print("WARNING: text violates CIF standard (latin1 encoding instead of UTF8)")
+                else:
+                    raise StarError("Bad input encoding (must be utf8 or ascii)")
         my_uri = ""
     if not text:      # empty file, return empty block
         return prepared.set_uri(my_uri)

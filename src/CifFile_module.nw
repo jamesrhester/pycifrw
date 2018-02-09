@@ -312,7 +312,8 @@ will be locked for changing ([[overwrite=False]]) and can be unlocked by setting
 block.overwrite to True.
 
 <<Read in a CIF file>>=
-def ReadCif(filename,grammar='auto',scantype='standard',scoping='instance',standard='CIF'):
+def ReadCif(filename,grammar='auto',scantype='standard',scoping='instance',standard='CIF',
+            permissive=False):
     """ Read in a CIF file, returning a `CifFile` object.
 
     * `filename` may be a URL, a file
@@ -341,7 +342,8 @@ def ReadCif(filename,grammar='auto',scantype='standard',scoping='instance',stand
     maximum length of 75 characters for datanames and has no other effect. """
 
     finalcif = CifFile(scoping=scoping,standard=standard)
-    return StarFile.ReadStar(filename,prepared=finalcif,grammar=grammar,scantype=scantype)
+    return StarFile.ReadStar(filename,prepared=finalcif,grammar=grammar,scantype=scantype,
+                             permissive=permissive)
     #return StarFile.StarFile(filename,maxlength,scantype=scantype,grammar=grammar,**kwargs)
 
 @ Defining an error class: we simply derive a 'nothing' class from the root

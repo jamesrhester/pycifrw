@@ -598,6 +598,7 @@ class FileWriteTestCase(unittest.TestCase):
        # test passing a stream directly
        tstream = open('tests/test.cif')
        CifFile.CifFile(tstream,scantype="flex")
+       CifFile.ReadCif(tstream,scantype="flex")  #different code path
        self.flf = flfile['testblock']
        self.flfs = flfile["Test_save_frame"]
 
@@ -747,6 +748,27 @@ _atom_type.number_in_cell
        """Test that strings with forbidden beginnings round-trip OK"""
        self.failUnless(self.cf['_item_bad_beg']==self.df['_item_bad_beg'])
 
+   def testStrayCharacter(self):
+       """Test that CIF1 fails with non-ASCII characters"""
+       outstr = b"""data_block1 _normal_str 'hello sunshine'
+                   _latin1_str abc\xB0efgh"""
+       b = open("tests/test3_latin1.cif","wb")
+       b.write(outstr)
+       b.close()
+       try:
+           testin =  CifFile.CifFile("tests/test3_latin1.cif",grammar="1.0",permissive=False)
+       except CifFile.StarError:
+           pass
+       
+   def testPermissiveRead(self):
+       """Test that stray latin-1 characters are accepted in permissive mode"""
+       outstr = b"""data_block1 _normal_str 'hello sunshine'
+                   _latin1_str abc\xB0efgh"""
+       b = open("tests/test3_latin1.cif","wb")
+       b.write(outstr)
+       b.close()
+       testin =  CifFile.CifFile("tests/test3_latin1.cif",grammar="1.0",permissive=True)
+       
 class SimpleWriteTestCase(unittest.TestCase):
     def setUp(self):
         self.bf = CifFile.CifBlock()
@@ -1960,7 +1982,7 @@ _item4 4
 if __name__=='__main__':
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
-     #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
+     suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
@@ -1975,5 +1997,5 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     #unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     unittest.TextTestRunner(verbosity=2).run(suite)
+     #unittest.main()

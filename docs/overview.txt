@@ -55,6 +55,15 @@ Binary distributions are generally only provided for the 'manylinux'
 target, but may also be generated from the source distribution for any
 platform if the appropriate compilers are available on that platform.
 
+Alternatively, you may initialise a CifFile object with the URI:
+
+          cf = CifFile("mycif.cif",scantype="flex")
+
+If your CIF file contains characters that are not encoded in UTF8 or
+ASCII, you may pass the 'permissive' option to `ReadCif`, which will
+try other encodings (currently only `latin1`).  Use of this option
+is not encouraged.
+
 #### Grammar options
 
 There are three variations in CIF file syntax.  An early, little-used
