@@ -1,37 +1,22 @@
-Release Notes for PyCIFRW-4.3
+Release Notes for PyCIFRW-4.4
 =============================
 
-This is the first version of PyCIFRW to include unified source for
-both Python2 and Python3.  As a side-effect, all strings returned by
-CifFile and StarFile methods are of type unicode (Python 2).  Please
-create an issue on Bitbucket if this causes breakage in your software.
+The ValidCifFile class has been deprecated and will be removed in the
+next release.
 
-The ValidCifFile class will be deprecated from the next release. Please
-advise if this would cause problems.
+Changes since 4.3
+=================
 
-Python 3 notes
-==============
-
-* The semantics of key(), items() and values() have not changed for
-CifFile and CifBlock objects, despite the Python 3 dictionary
-semantics requiring them to be iterators rather than lists.
-
-* In the original Python 2 version, the top-level `CifFile` module
-imported everything from the `CifFile.py` and `StarFile.py`
-modules. This meant that it was sufficient for your code to include
-`from CifFile import x`, where x is anything defined in CifFile.py or
-StarFile.py.  This has been replicated in Python 3 by explicitly
-importing those classes and functions in CifFile.py and StarFile.py
-required for the tests to succeed. If your code uses a function not
-included in the tests (note that all classes and methods are included)
-you will need to refer to it as `CifFile.CifFile.x` (for a function
-named `x` in `CifFile.py`).
-
-* Python 3 conversion relied heavily on getting the 170 unit tests to
-complete successfully.  These tests cover about 80% of the code. If
-your code happens to trigger errors in the remaining code, please create
-an issue.  The code that is not covered well is generally DDL1/2
-validation code or unusual error conditions.
+* Fixed Windows BOM handling
+* Work-around for Python 2.7 bug triggered on import (Pavol Juhas)
+* Nested save frames no longer accepted when reading non-STAR formats
+* CifFile.py filename changed to Ciffile_module.py to avoid class-name ambiguity
+* Many Python 3 fixes and improvements (Pavol Juhas)
+* `permissive` option added to CIF input to try latin1 encoding as a fallback 
+* Bug fixes:
+  - datanames in blocks that have been read in from a file can once again 
+    have their values changed
+  - AddToLoop did not replace looped datanames correctly
 
 Changes since 4.2
 =================
@@ -44,6 +29,7 @@ Changes since 4.2
 * first_block() returns a single block from the file, not necessarily the
   first one in the file, or the first one added to the CifFile object.
 * All strings returned by methods are of type unicode.
+* Single source for Python2 and Python3
 
 Changes since 4.1.1
 ===================
@@ -84,6 +70,36 @@ Incompatible changes (since 3.0 series, unchanged since 4.1)
 * The text prefix protocol and line folding protocol are detected and 
   transparently removed from text values when reading.
 
+Python 3 notes
+==============
+
+In moving to unified Python2/3 source for version 4.3, all strings
+returned by CifFile and StarFile methods are of type unicode in Python
+2.  Please create an issue on Bitbucket if this causes breakage in
+your software.
+
+* The semantics of key(), items() and values() have not changed for
+CifFile and CifBlock objects, despite the Python 3 dictionary
+semantics requiring them to be iterators rather than lists.
+
+* In the original Python 2 version, the top-level `CifFile` module
+imported everything from the `CifFile.py` and `StarFile.py`
+modules. This meant that it was sufficient for your code to include
+`from CifFile import x`, where x is anything defined in CifFile.py or
+StarFile.py.  This has been replicated in Python 3 by explicitly
+importing those classes and functions in CifFile_module.py and
+StarFile.py required for the tests to succeed. If your code uses a
+function not included in the tests (note that all classes and
+therefore their methods are included) you will need to refer to it as
+`CifFile.CifFile_module.x` (for a function named `x` in
+`CifFile_module.py`).
+
+* Python 3 conversion relied heavily on getting the 170 unit tests to
+complete successfully.  These tests cover about 80% of the code. If
+your code happens to trigger errors in the remaining code, please create
+an issue.  The code that is not covered well is generally DDL1/2
+validation code or unusual error conditions.
+
 Deprecated methods
 ==================
 
@@ -91,3 +107,7 @@ Deprecated methods
 adding a whole loop all at once in a single tuple has been deprecated.
 Just assign dataname values using the usual square brackets and then
 call CreateLoop with the datanames that belong in a single loop.
+
+* AddToLoop. Assign individual values and then call AddLoopName for each
+
+* ValidCifFile (whole class). This appears to be unused. 

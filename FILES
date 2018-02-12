@@ -5,10 +5,10 @@ The following are some of the key files included in PyCIFRW:
 
 Original files:
 
-CifFile.py                     Defines the CifFile module for Python
-CifFile.nw                     Noweb file from which CifFile.py is obtained
+CifFile_module.py              Defines the CifFile and CifDic classes
+CifFile_module.nw              Noweb file from which CifFile_module.py is obtained
 CifFile.html                   Programming notes for CifFile derived also from
-                               CifFile.nw
+                               CifFile_module.nw
 StarFile.py                    Defines the StarFile module on which CifFiles are built
 StarFile.nw                    Noweb file from which StarFile.py is obtained
 StarFile.html                  Programming notes for StarFile.py also derived from StarFile.nw

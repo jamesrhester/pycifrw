@@ -9,7 +9,7 @@ Information Format) files using Python.  It was developed at the
 Australian National Beamline Facility (ANBF), run by the Australian
 Synchrotron Research Program (ASRP), as part of a larger project to
 provide CIF input/output capabilities for data collection.  It is
-now (Mar 2017) maintained and developed within the Australian Nuclear Science and
+now (Feb 2018) maintained and developed within the Australian Nuclear Science and
 Technology Organisation (ANSTO).
 
 Conformance
@@ -31,7 +31,7 @@ Supported Platforms
 PyCIFRW is written entirely in Python, and so should run wherever
 Python runs.  Any failures on Mac, Windows or Linux should be
 communicated to the author, either through the BitBucket issues
-tracker or email.
+tracker (http://bitbucket.org/jamesrhester/pycifrw/issues) or email.
 
 The source code of a C extension module is also included in the
 distribution.  This module accelerates CIF file reading. From time to
