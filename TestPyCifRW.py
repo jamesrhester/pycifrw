@@ -358,7 +358,7 @@ class LoopBlockTestCase(unittest.TestCase):
         self.cf['_rings']  = 'True'
         # A loop with compound keys
         self.cf['_ck_1'] = ['1','1','1','2','2','2','3','3','3']
-        self.cf['_ck_2'] = ['r','g','b','r','g','b','r','g','b']
+        self.cf['_Ck_2'] = ['r','g','b','r','g','b','r','g','b']
         self.cf['_stuff'] = ['Q','W','E','R','T','Y','U','I','O']
         self.cf.CreateLoop(['_ck_1','_ck_2','_stuff'])
 
@@ -501,6 +501,21 @@ class LoopBlockTestCase(unittest.TestCase):
        oldpos = testloop.GetItemPosition('_item_name#2')
        testloop['_item_name#2'] = ("I'm",' a ','little','teapot')
        self.assertEqual(testloop.GetItemPosition('_item_name#2'),oldpos)
+
+   def testAddLoopCaseReplaceColumn(self):
+       """Test that a column is correctly replaced by AddToLoop"""
+       newdata = {"_Ck_2":['ho']*9}
+       self.cf.AddToLoop("_ck_1",newdata)
+       # Case problem occurs when outputting
+       print(str(self.cf))
+
+   def testAddLoopLCaseReplaceColumn(self):
+       """Duplicates an error where AddToLoop works incorrectly"""
+       newdata = {"_ck_2":['ho']*9}
+       self.cf.AddToLoop("_ck_1",newdata)
+       # The loop list contains the item twice
+       for l in self.cf.loops:
+           assert(len(set(self.cf.loops[l]))==len(self.cf.loops[l]))
 #
 #  Test setting of block names
 #
@@ -1987,7 +2002,7 @@ _item4 4
 if __name__=='__main__':
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
-     suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(BasicUtilitiesTestCase)
@@ -2002,5 +2017,5 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     unittest.TextTestRunner(verbosity=2).run(suite)
-     #unittest.main()
+     #unittest.TextTestRunner(verbosity=2).run(suite)
+     unittest.main()

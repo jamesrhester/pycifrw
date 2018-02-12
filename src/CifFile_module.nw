@@ -3763,6 +3763,7 @@ class ValidCifFile(CifFile):
 
 <<Initialise valid CIF>>=
 def __init__(self,dic=None,diclist=[],mergemode="replace",*args,**kwargs):
+    print("WARNING: ValidCifFile will be removed in the next release.")
     if not diclist and not dic and not hasattr(self,'bigdic'):
         raise ValidCifError( "At least one dictionary is required to create a ValidCifFile object")
     if not dic and diclist:     #merge here for speed

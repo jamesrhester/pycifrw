@@ -2088,7 +2088,7 @@ def AddLoopName(self,oldname, newname):
     loop_len = len(self[oldname])
     self.provide_value = old_provides
     if len(self[newname]) != loop_len:
-        raise ValueError('Mismatch of loop column lengths for %s: should be %d' % (newname,loop_len))
+        raise StarLengthError('Mismatch of loop column lengths for %s: should be %d' % (newname,loop_len))
     # remove from any other loops
     [self.loops[a].remove(lower_newname) for a in self.loops if lower_newname in self.loops[a]]
     # and add to this loop
@@ -2154,15 +2154,9 @@ def AddToLoop(self,dataname,loopdata):
     Add multiple columns to the loop containing `dataname`. `loopdata` is a
     collection of (key,value) pairs, where `key` is the new dataname and `value`
     is a list of values for that dataname"""
-    # check lengths
-    thisloop = self.FindLoop(dataname)
-    loop_len = len(self[dataname])
-    bad_vals = [a for a in loopdata.items() if len(a[1])!=loop_len]
-    if len(bad_vals)>0:
-       raise StarLengthError("Number of values for looped datanames %s not equal to %d" \
-           % (repr( bad_vals ),loop_len))
     self.update(loopdata)
-    self.loops[thisloop]+=loopdata.keys()
+    for one_name in loopdata:
+        self.AddLoopName(dataname,one_name)
 
 @ The draft DDLm specification uses square brackets next to a
 pre-specified identifier to mean "the packet of this category for
