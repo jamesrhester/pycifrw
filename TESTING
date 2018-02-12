@@ -1,7 +1,9 @@
 Testing procedure for PyCIFRW
 =============================
 
-In Python2 and Python3 virtual environments:
+In Python2 and Python3 virtual environments (create with
+virtualenv -p python<2,3> test-environment, activate with
+source local/bin/activate (Python2) or source bin/activate (Python3)):
 
 0. pip install ply; pip install numpy 
 1. pip install <dist as wheel>

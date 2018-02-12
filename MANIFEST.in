@@ -2,6 +2,7 @@ recursive-include src *.nw
 include LICENSE
 include INSTALLATION
 include TESTING
+include BUILDING
 include CONTRIBUTORS
 include src/*.html
 include TestPyCifRW.py
