@@ -1,0 +1,15 @@
+Release procedure for PyCIFRW
+=============================
+
+After code changes are complete:
+1. Edit all relevant text files in top-level directory
+2. Build source release:
+    python setup.py sdist 
+3. Build binary wheel release for Linux:
+    python setup.py bdist_wheel
+4. Audit wheel for manylinux1 conformance:
+    python3 check_manylinux_package.py show <generated_wheel>
+    (uses auditwheel package from pip)
+5. For each of Python 2,3 and source,wheel conduct testing
+   procedure outlined in TESTING file.
+
