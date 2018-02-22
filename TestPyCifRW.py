@@ -788,7 +788,7 @@ _atom_type.number_in_cell
         """Test that an item from in input file can be changed"""
         self.flf['_item_quote']= '2.3'
         self.failUnless(self.flf['_item_quote']=='2.3')
-        
+                       
 class SimpleWriteTestCase(unittest.TestCase):
     def setUp(self):
         self.bf = CifFile.CifBlock()
@@ -820,6 +820,15 @@ class SimpleWriteTestCase(unittest.TestCase):
         print('vector is ' + repr(df['_a_vector']))
         self.failUnless(df['_a_vector'][2] == ['-1.0','1.0','0.0'])
 
+    def testNDString(self):
+        """Check that a string containing square brackets is properly quoted for CIF2.0"""
+        self.bf['_tst'] = '3[4^6].8^5[3]'
+        self.cf.set_grammar("2.0")
+        open(self.testfile,"w").write(self.cf.WriteOut())
+        df = CifFile.CifFile(self.testfile,grammar="2.0").first_block()
+        result = df['_tst']
+        self.failUnless(df['_tst']== self.bf['_tst'])
+                        
 class TemplateTestCase(unittest.TestCase):
    def setUp(self):
        """Create a template"""
@@ -2001,7 +2010,7 @@ _item4 4
 
 if __name__=='__main__':
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
-     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
+     suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
@@ -2017,5 +2026,5 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     #unittest.TextTestRunner(verbosity=2).run(suite)
-     unittest.main()
+     unittest.TextTestRunner(verbosity=2).run(suite)
+     #unittest.main()

@@ -2732,7 +2732,8 @@ def _formatstring(self,instring,delimiter=None,standard='CIF1',indent=0,hints={}
     if len(instring)==0: allowed_delimiters.difference_update([None])
     if len(instring) > (self.maxoutlength-2) or '\n' in instring:
             allowed_delimiters.intersection_update(["\n;","'''",'"""'])
-    if ' ' in instring or '\t' in instring or '\v' in instring or (len(instring)>0 and instring[0] in '_$#;([{') or ',' in instring:
+    [allowed_delimiters.difference_update([None]) for k in '[]{}\v\t ,' if k in instring]
+    if len(instring)>0 and instring[0] in '_$#;(':
             allowed_delimiters.difference_update([None])
     if len(instring)>3 and (instring[:4].lower()=='data' or instring[:4].lower()=='save'):
             allowed_delimiters.difference_update([None])
