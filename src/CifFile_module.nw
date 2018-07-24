@@ -1485,6 +1485,7 @@ def add_definition(self,itemname,catparent,def_text='PLEASE DEFINE ME',allow_dan
     self[fullname]['_name.category_id']=catparent
     self[fullname]['_definition.class']='Datum'
     self[fullname]['_description.text']=def_text
+    return realname
 
 def remove_definition(self,defname):
     """Remove a definition from the dictionary."""

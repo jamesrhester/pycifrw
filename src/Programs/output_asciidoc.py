@@ -1,6 +1,7 @@
 # A program to produce an Ascii-doc ready presentation of a CIF dictionary
 #
 from CifFile import CifDic,CifFile
+from CifFile.StarFile import CIFStringIO
 import cStringIO,os,re
 
 def make_asciidoc(indic):
@@ -10,7 +11,7 @@ def make_asciidoc(indic):
     sem_dic = CifDic(indic,grammar="2.0",do_imports="Contents",do_dREL=False)
     dep_dics = analyse_deps(sem_dic,in_directory=base_directory)
     blockorder = sem_dic.get_full_child_list()
-    outstring = cStringIO.StringIO()
+    outstring = CIFStringIO()
     categories = sem_dic.get_categories()
     # The first block is the one with the dictionary information
     top_block = sem_dic.master_block
@@ -58,6 +59,12 @@ Datanames making up the keys for these categories have a dot suffix.""")
         if len(alt_defs) != len(alternates):
             # definitions omitted as obvious?
             alt_defs = [None]*len(alternates)
+        # Any examples we should know about?
+        examples = onedef.get('_description_example.case',[])
+        example_explanation = onedef.get('_description_example.detail',[])
+        if len(example_explanation) != len(examples):   # no explanations
+            example_explanation = ['']*len(examples)
+        all_examples = zip(examples,example_explanation)
         if def_type == 'Category':
             outstring.write("[[%s]]\n== " % def_id)
             current_cat = def_header
@@ -103,6 +110,15 @@ Datanames making up the keys for these categories have a dot suffix.""")
             for a in aliases:
                 outstring.write("`"+a+"` +\n")
             outstring.write("*****\n")
+        if len(all_examples)>0:
+            for e,caption in all_examples:
+                outstring.write("\n.Example:%s\n----\n" % prepare_text(caption))
+                # Catch actual values by formatting them first
+                if def_type == 'Item':  #only deal with single values
+                    onedef.format_value(e,outstring)
+                else:
+                    outstring.write(e)
+                outstring.write("\n----\n\n")
     outfile = open(indic+".adoc","w")
     outfile.write(outstring.getvalue())
 
