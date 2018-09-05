@@ -101,6 +101,7 @@ except ImportError:
 
 if isinstance(u"abc",str):   #Python 3
     unicode = str
+    long = int
 
 try:
     import numpy
@@ -2630,7 +2631,7 @@ def format_value(self,itemvalue,stringsink,compound=False,hints={}):
                stringsink.write("'"+key+"'"+":",canbreak=True)
                self.format_value(value,stringsink)   #never break between key and value
        stringsink.write('}',unindent=True)
-    elif isinstance(itemvalue,(float,int)) or \
+    elif isinstance(itemvalue,(float,int,long)) or \
          (have_numpy and isinstance(itemvalue,(numpy.number))):  #TODO - handle uncertainties
        stringsink.write(str(itemvalue),canbreak=True,startcol=startcol)   #numbers
     else:

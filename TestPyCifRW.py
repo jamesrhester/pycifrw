@@ -797,7 +797,10 @@ class SimpleWriteTestCase(unittest.TestCase):
         self.testfile  = "tests/test_3.cif"
 
     def tearDown(self):
-        os.remove(self.testfile)
+        try:
+            os.remove(self.testfile)
+        except:
+            pass
 
     def testNumpyArray(self):
         """Check that an array can be output properly"""
@@ -829,6 +832,14 @@ class SimpleWriteTestCase(unittest.TestCase):
         result = df['_tst']
         self.failUnless(df['_tst']== self.bf['_tst'])
                         
+    def testLong(self):
+        """Check that a long integer is acceptable in Python 2"""
+        if sys.version_info < (3,):
+            self.bf['_tst'] = long(12)
+        else:
+            self.bf['_tst'] = 12
+        q = str(self.bf)    #this will fail if longs are unacceptable
+
 class TemplateTestCase(unittest.TestCase):
    def setUp(self):
        """Create a template"""
@@ -2010,7 +2021,7 @@ _item4 4
 
 if __name__=='__main__':
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicEvalTestCase)
-     suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
+     #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(FileWriteTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(GrammarTestCase)
      #suite = unittest.TestLoader().loadTestsFromTestCase(DicStructureTestCase)
@@ -2026,5 +2037,5 @@ if __name__=='__main__':
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DDLmDicTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(TemplateTestCase)
      #suite =  unittest.TestLoader().loadTestsFromTestCase(DictTestCase)
-     unittest.TextTestRunner(verbosity=2).run(suite)
-     #unittest.main()
+     #unittest.TextTestRunner(verbosity=2).run(suite)
+     unittest.main()

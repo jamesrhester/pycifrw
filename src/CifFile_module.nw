@@ -93,9 +93,12 @@ except:
 # The unicode type does not exist in Python3 as the str type
 # encompasses unicode.  PyCIFRW tests for 'unicode' would fail
 # Suggestions for a better approach welcome.
-
+#
+# long type no longer exists in Python3, so we alias to int
+#
 if isinstance(u"abc",str):   #Python3
     unicode = str
+    long = int
 
 <<Copyright statement>>
 
