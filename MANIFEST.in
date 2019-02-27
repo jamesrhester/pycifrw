@@ -5,7 +5,7 @@ include TESTING
 include BUILDING
 include CONTRIBUTORS
 include src/*.html
-include TestPyCifRW.py
+include TestPyCIFRW.py
 include TestDrel.py
 include RELEASENOTES
 include README.md

@@ -9,7 +9,7 @@ Information Format) files using Python.  It was developed at the
 Australian National Beamline Facility (ANBF), run by the Australian
 Synchrotron Research Program (ASRP), as part of a larger project to
 provide CIF input/output capabilities for data collection.  It is
-now (Feb 2018) maintained and developed within the Australian Nuclear Science and
+now (Feb 2019) maintained and developed within the Australian Nuclear Science and
 Technology Organisation (ANSTO).
 
 Conformance

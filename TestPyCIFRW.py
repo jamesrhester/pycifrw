@@ -788,6 +788,15 @@ _atom_type.number_in_cell
         """Test that an item from in input file can be changed"""
         self.flf['_item_quote']= '2.3'
         self.failUnless(self.flf['_item_quote']=='2.3')
+
+   def testEmptyDict(self):
+       """Test that a dictionary is processed correctly"""
+       outstr = b"""#\#CIF_2.0\ndata_block1 _a_dict {"a":2}\n"""
+       b = open("tests/test4_dict.cif","wb")
+       b.write(outstr)
+       b.close()
+       testin = CifFile.CifFile("tests/test4_dict.cif",grammar="2.0")
+       self.failUnless(testin["block1"]["_a_dict"] == {"a":"2"})
                        
 class SimpleWriteTestCase(unittest.TestCase):
     def setUp(self):

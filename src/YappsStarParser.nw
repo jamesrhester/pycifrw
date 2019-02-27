@@ -180,10 +180,12 @@ def order_update(order_array,new_name):
 
 # and finally...turn a sequence into a python dict (thanks to Stackoverflow)
 def pairwise(iterable):
-    it = iter(iterable)
-    while 1:
-        yield next(it), next(it)
-
+    try:
+        it = iter(iterable)
+        while 1:
+            yield next(it), next(it)
+    except StopIteration:
+        return
 @
 
 We can simplify the BNC specification of Nick Spadaccini.  First of

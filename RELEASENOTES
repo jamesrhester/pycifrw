@@ -1,3 +1,13 @@
+Release Notes for PyCIFRW-4.4.1
+===============================
+
+4.4.1 is a bugfix release.
+
+* Long integers are a valid type in Python 2
+* Parsing CIF2 tables failed due to the Python 3.7 StopIteration changes
+* Improve Cif dictionary -> asciidoc generation demonstration
+  tool
+
 Release Notes for PyCIFRW-4.4
 =============================
 
