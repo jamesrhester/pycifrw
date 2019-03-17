@@ -268,6 +268,11 @@ For example, the following commands create the example loop above:
     cb.CreateLoop(['_item_5','_item_7','_item_6'])
 ~~~
 
+As a special case, if `CreateLoop` is called with data names that are
+*not* list-valued, these items will be first placed into
+single-element lists before creating the loop, resulting in a loop
+with one row.
+
 Another method, `AddToLoop(dataname,newdata)`, adds columns in
 `newdata` to the pre-existing loop containing `dataname`, silently
 overwriting duplicate data. `newdata` should be a Python dictionary of

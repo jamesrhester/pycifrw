@@ -405,6 +405,7 @@ class LoopBlockTestCase(unittest.TestCase):
        self.cf.CreateLoop(["_planet","_satellite","_rings"])
        newloop = self.cf.GetLoop("_rings")
        self.assertTrue(newloop.has_key('_planet'))
+       self.assertTrue(isinstance(self.cf["_planet"],list))
 
 #  Test iteration
 #

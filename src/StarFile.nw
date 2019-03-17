@@ -2021,7 +2021,8 @@ def CreateLoop(self,datanames,order=-1,length_check=True):
        together form a loop.  If length_check is True, they should have been initialised in the block
        to have the same number of elements (possibly 0). If `order` is given,
        the loop will appear at this position in the block when printing
-       out. A loop counts as a single position."""
+       out. A single-row loop will be created if the provided datanames are all
+       non-lists. A loop counts as a single position."""
 
        if length_check:
            # check lengths: these datanames should exist
@@ -2032,6 +2033,9 @@ def CreateLoop(self,datanames,order=-1,length_check=True):
                    raise ValueError('Request to loop datanames %s with different lengths: %s' % (repr( datanames ),repr( len_set )))
            elif len(listed_values) != 0:
                raise ValueError('Request to loop datanames where some are single values and some are not')
+           else:    #all are unlisted, turn into lists
+               for d in datanames:
+                   self[d] = [self[d]]
        # store as lower case
        lc_datanames = [d.lower() for d in datanames]
        # remove these datanames from all other loops
