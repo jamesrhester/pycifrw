@@ -91,7 +91,7 @@ class BasicUtilitiesTestCase(unittest.TestCase):
         """Make sure that a single final backslash is removed when unfolding"""
         test_string = "\n1234567890\\\n r t s 345 19\n\nlife don't talk to me about life"
         folded_string = CifFile.apply_line_folding(test_string,5,10)
-        folded_string = folded_string + "\ "
+        folded_string = folded_string + r"\ "
         old_string = CifFile.remove_line_folding(folded_string)
         self.failUnless(old_string == test_string)
 
@@ -330,14 +330,14 @@ class SyntaxErrorTestCase(unittest.TestCase):
             pass
 
     def testTripleApostropheCase(self):
-        teststrg = "#\#CIF_2.0\ndata_testblock\n _item_1 ''' ''' '''\n"
+        teststrg = "#\\#CIF_2.0\ndata_testblock\n _item_1 ''' ''' '''\n"
         f = open("tests/syntax_check.cif","w")
         f.write(teststrg)
         f.close()
         self.assertRaises(CifFile.StarError, CifFile.ReadCif,"tests/syntax_check.cif",grammar="2.0")
 
     def testTripleQuoteCase(self):
-        teststrg = '#\#CIF_2.0\ndata_testblock\n _item_1 """ """ """\n'
+        teststrg = '#\\#CIF_2.0\ndata_testblock\n _item_1 """ """ """\n'
         f = open("tests/syntax_check.cif","w")
         f.write(teststrg)
         f.close()
@@ -792,7 +792,7 @@ _atom_type.number_in_cell
 
    def testEmptyDict(self):
        """Test that a dictionary is processed correctly"""
-       outstr = b"""#\#CIF_2.0\ndata_block1 _a_dict {"a":2}\n"""
+       outstr = b"""#\\#CIF_2.0\ndata_block1 _a_dict {"a":2}\n"""
        b = open("tests/test4_dict.cif","wb")
        b.write(outstr)
        b.close()
@@ -853,7 +853,7 @@ class SimpleWriteTestCase(unittest.TestCase):
 class TemplateTestCase(unittest.TestCase):
    def setUp(self):
        """Create a template"""
-       template_string = """#\#CIF_2.0
+       template_string = r"""#\#CIF_2.0
 # Template
 #
 data_TEST_DIC
@@ -974,7 +974,7 @@ class GrammarTestCase(unittest.TestCase):
        f = open("tests/test_1.0","w")
        f.write(teststr1_0)
        f.close()
-       teststr2_0 = """#\#CIF_2.0
+       teststr2_0 = r"""#\#CIF_2.0
        data_Test
          _item_1 ['a' 'b' 'c' 'd']
          _item_2 'ordinary string'
@@ -1608,7 +1608,7 @@ class DDL1TestCase(unittest.TestCase):
 class DDLmDicTestCase(unittest.TestCase):
     """Test validation of DDLm dictionaries"""
     def setUp(self):
-        testdic_string = """#\#CIF_2.0
+        testdic_string = r"""#\#CIF_2.0
 #\#CIF_2.0
 ##############################################################################
 #                                                                            #
@@ -2010,7 +2010,7 @@ class BlockOutputOrderTestCase(unittest.TestCase):
             pass
 
     def testOutputOrder(self):
-        outstrg = """#\#CIF_2.0
+        outstrg = r"""#\#CIF_2.0
 data_testa
 _item1 1
 data_testb

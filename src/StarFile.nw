@@ -1102,7 +1102,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
             pos = split.index(toolong[0])
             raise StarError( 'Line %d contains more than %d characters' % (pos+1,maxlength))
     # honour the header string
-    if text[:10] != "#\#CIF_2.0" and ('2.0',Y20) in try_list:
+    if text[:10] != r"#\#CIF_2.0" and ('2.0',Y20) in try_list:
         try_list.remove(('2.0',Y20),)
         if not try_list:
             raise StarError('File %s missing CIF2.0 header' % (filename))
@@ -1490,12 +1490,12 @@ def set_characterset(self,characterset):
     """Set the characterset for checking datanames: may be `ascii` or `unicode`"""
     self.characterset = characterset
     if characterset == 'ascii':
-        self.char_check = re.compile("[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_-]+",re.M)
+        self.char_check = re.compile("[][ \n\r\t!%&\\(\\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\\|~\"#$';_-]+",re.M)
     elif characterset == 'unicode':
         if sys.maxunicode < 1114111:
-           self.char_check = re.compile(u"[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\u00A0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFFD-]+",re.M)
+           self.char_check = re.compile(u"[][ \n\r\t!%&\\(\\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\\|~\"#$';_\u00A0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFFD-]+",re.M)
         else:
-           self.char_check = re.compile(u"[][ \n\r\t!%&\(\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\|~\"#$';_\u00A0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFFD\U00010000-\U0010FFFD-]+",re.M)
+           self.char_check = re.compile(u"[][ \n\r\t!%&\\(\\)*+,./:<=>?@0-9A-Za-z\\\\^`{}\\|~\"#$';_\u00A0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFFD\U00010000-\U0010FFFD-]+",re.M)
 
 @ Adding emulation of a mapping type.  We add any of the other
 functions we would like to emulate.   [[__len__]] returns the number
@@ -2953,7 +2953,7 @@ def process_template(template_file):
         if not isinstance(item,int):    #not nested
             hint_dict = {"dataname":item}
             # find the line in the file
-            start_pos = re.search("(^[ \t]*(?P<name>" + item + ")[ \t\n]+)(?P<spec>([\S]+)|(^;))",template_string,re.I|re.M)
+            start_pos = re.search("(^[ \t]*(?P<name>" + item + ")[ \t\n]+)(?P<spec>([\\S]+)|(^;))",template_string,re.I|re.M)
             if start_pos.group("spec") != None:
                 spec_pos = start_pos.start("spec")-start_pos.start(0)
                 spec_char = template_string[start_pos.start("spec"):start_pos.start("spec")+3]
@@ -2982,13 +2982,13 @@ def process_template(template_file):
             total_items = len(template_as_cif.loops[item])
             testname = testnames[0]
             #find the loop spec line in the file
-            loop_regex = "(^[ \t]*(?P<loop>loop_)[ \t\n\r]+(?P<name>" + testname + ")([ \t\n\r]+_[\S]+){%d}[ \t]*$(?P<packet>(.(?!_loop|_[\S]+))*))" % (total_items - 1)
+            loop_regex = "(^[ \t]*(?P<loop>loop_)[ \t\n\r]+(?P<name>" + testname + ")([ \t\n\r]+_[\\S]+){%d}[ \t]*$(?P<packet>(.(?!_loop|_[\\S]+))*))" % (total_items - 1)
             loop_line = re.search(loop_regex,template_string,re.I|re.M|re.S)
             loop_so_far = loop_line.end()
             packet_text = loop_line.group('packet')
             loop_indent = loop_line.start('loop') - loop_line.start(0)
             form_hints.append({"dataname":'loop','name_pos':loop_indent})
-            packet_regex = "[ \t]*(?P<all>(?P<sqqq>'''([^\n\r\f']*)''')|(?P<sq>'([^\n\r\f']*)'+)|(?P<dq>\"([^\n\r\"]*)\"+)|(?P<none>[^\s]+))"
+            packet_regex = "[ \t]*(?P<all>(?P<sqqq>'''([^\n\r\f']*)''')|(?P<sq>'([^\n\r\f']*)'+)|(?P<dq>\"([^\n\r\"]*)\"+)|(?P<none>[^\\s]+))"
             packet_pos = re.finditer(packet_regex,packet_text)
             line_end_pos = re.finditer("^",packet_text,re.M)
             next_end = next(line_end_pos).end()
