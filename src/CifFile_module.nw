@@ -702,7 +702,7 @@ def DDL1_normalise(self):
     base_types = ["char","numb","null"]
     prim_types = base_types[:]
     base_constructs = [".*",
-        '(-?(([0-9]*[.][0-9]+)|([0-9]+)[.]?)([(][0-9]+[)])?([eEdD][+-]?[0-9]+)?)|\?|\.',
+        '(-?(([0-9]*[.][0-9]+)|([0-9]+)[.]?)([(][0-9]+[)])?([eEdD][+-]?[0-9]+)?)|\\?|\\.',
         "\"\" "]
     for key,value in self.items():
        newnames = [key]  #keep by default
@@ -4097,7 +4097,7 @@ if necessary, apply the exponent.
 
 <<Extract number and esd>>=
 def get_number_with_esd(numstring):
-    numb_re = '((-?(([0-9]*[.]([0-9]+))|([0-9]+)[.]?))([(][0-9]+[)])?([eEdD][+-]?[0-9]+)?)|(\?)|(\.)'
+    numb_re = '((-?(([0-9]*[.]([0-9]+))|([0-9]+)[.]?))([(][0-9]+[)])?([eEdD][+-]?[0-9]+)?)|(\\?)|(\\.)'
     our_match = re.match(numb_re,numstring)
     if our_match:
         a,base_num,b,c,dad,dbd,esd,exp,q,dot = our_match.groups()
