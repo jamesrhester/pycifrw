@@ -1530,6 +1530,14 @@ class DDL1TestCase(unittest.TestCase):
     def tearDown(self):
         del self.cf
 
+    def testUnknownItem(self):
+        """Test that an unknown item returns a key error"""
+        try:
+            a = self.ddl1dic["_this_is_not_defined"]
+        except KeyError: pass
+        else:
+            self.fail()
+            
     def testItemType(self):
         """Test that types are correctly checked and reported"""
         #numbers

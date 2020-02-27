@@ -547,6 +547,7 @@ def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
     print('%s is a %s dictionary' % (self.dicname,self.diclang))
     self.scopes_mandatory = {}
     self.scopes_naughty = {}
+    self._import_dics = []   #Non-empty for DDLm only
     # rename and expand out definitions using "_name" in DDL dictionaries
     if self.diclang == "DDL1":
         self.DDL1_normalise()   #this removes any non-definition entries

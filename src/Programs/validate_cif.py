@@ -3,6 +3,19 @@
 # Usage: validate_cif [-d dictionary_dir] -f dictionary file cifname
 #
 # We need option parsing:
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
+# Python 2,3 compatibility
+try:
+    from urllib2 import urlopen         # for arbitrary opening
+    from urllib.parse import url2pathname
+except:
+    from urllib.request import urlopen,url2pathname
+
+# Option parsing
 from optparse import OptionParser
 # We need our cif library:
 import CifFile
@@ -13,12 +26,14 @@ import urllib
 def cif_by_ftp(ftp_ptr,store=True,directory="."):
     # print "Opening %s" % ftp_ptr
     if store:
-        new_fn = os.path.split(urllib.url2pathname(ftp_ptr))[1]
+        new_fn = os.path.split(url2pathname(ftp_ptr))[1]
         target = os.path.abspath(os.path.join(directory,new_fn))
         if target != ftp_ptr:
-            urllib.urlretrieve(ftp_ptr,target)
-            print "Stored %s as %s" % (ftp_ptr,target)
-        print 'Reading ' + target
+            response = urlopen(ftp_ptr)
+            contents = response.read()
+            open(target,"wb").write(contents)
+            print("Stored %s as %s" % (ftp_ptr,target))
+        print('Reading ' + target)
         ret_cif = CifFile.CifFile(target)
     else:
         ret_cif = CifFile.ReadCif(ftp_ptr)
@@ -34,11 +49,11 @@ def locate_dic(dicname,dicversion,regloc="cifdic.register",store_dir = "."):
     matches = [a for a in dataloop if getattr(a,"_cifdic_dictionary.name")==dicname and \
                getattr(a,"_cifdic_dictionary.version")==dicversion]
     if len(matches)==0:
-        print "Unable to find any matches for %s version %s" % (dicname,dicversion)
+        print( "Unable to find any matches for %s version %s" % (dicname,dicversion))
         return ""
     elif len(matches)>1:
-        print "Warning: found more than one candidate, choosing first."
-        print map(str,matches)
+        print( "Warning: found more than one candidate, choosing first.")
+        print( map(str,matches))
     return getattr(matches[0],"_cifdic_dictionary.URL")    # the location
 
 
@@ -74,27 +89,27 @@ def parse_options():
     # create the dictionary file names
     import sys
     if len(sys.argv) <= 1:
-        print "No arguments given: use option --help to get a help message\n"
+        print( "No arguments given: use option --help to get a help message\n")
         exit
     return options,args
 
 def execute_with_options(options,args):
     if options.dictnames:
         diclist = map(lambda a:os.path.join(options.dirname,a),options.dictnames)
-        print "Using following local dictionaries to validate:"
-        for dic in diclist: print "%s" % dic
-        fulldic = CifFile.merge_dic(diclist,mergemode='overlay')
+        print( "Using following local dictionaries to validate:")
+        for dic in diclist: print( "%s" % dic)
+        fulldic = CifFile.CifFile_module.merge_dic(diclist,mergemode='overlay')
     else:
-        # print "Locating dictionaries using registry at %s" % options.registry
-        dics = map(None,options.iucr_names,options.versions)
+        # print( "Locating dictionaries using registry at %s" % options.registry)
+        dics = zip(options.iucr_names,options.versions)
         dicurls = map(lambda a:locate_dic(a[0],a[1],regloc=options.registry,store_dir=options.dirname),dics)
         diccifs = map(lambda a:cif_by_ftp(a,options.store_flag,options.dirname),dicurls)
-        fulldic = CifFile.merge_dic(diccifs)
+        fulldic = CifFile.CifFile_module.merge_dic(diccifs)
         diclist = dicurls  # for use in reporting later
     # open the cif file
     cf = CifFile.CifFile(args[0],grammar="auto")
     output_header(options.use_html,args[0],diclist)
-    print CifFile.validate_report(CifFile.Validate(cf,dic= fulldic,isdic=options.dict_flag),use_html=options.use_html)
+    print( CifFile.validate_report(CifFile.Validate(cf,dic= fulldic,isdic=options.dict_flag),use_html=options.use_html))
     output_footer(options.use_html)
 
 #
@@ -102,34 +117,34 @@ def execute_with_options(options,args):
 #
 
 def output_header(use_html,filename,dictionaries):
-    prog_info =  "Validate_cif version 0.7, Copyright ASRP 2005-\n"
+    prog_info =  "Validate_cif version 0.7, Copyright ANSTO 2005-2020\n"
     if use_html:
-        print "<html><head><title>PyCIFRW validation report</title></head>"
-        print '<style type="text/css">'
-        print " body {font-family: verdana, sans-serif;}"
-        print " body {margin-left: 5%; margin-right: 5%;}"
-        print " table{background: #f0f0f8;}"
-        print " h4 {background: #f0f8f0;}"
-        print "</style><body>"
-        print "<h1>Validation results for %s</h1>" % filename
-        print "<p>Validation performed by %s</p>" % prog_info
-        print "<p>Dictionaries used:<ul>"
+        print( "<html><head><title>PyCIFRW validation report</title></head>")
+        print( '<style type="text/css">')
+        print( " body {font-family: verdana, sans-serif;}")
+        print( " body {margin-left: 5%; margin-right: 5%;}")
+        print( " table{background: #f0f0f8;}")
+        print( " h4 {background: #f0f8f0;}")
+        print( "</style><body>")
+        print( "<h1>Validation results for %s</h1>" % filename)
+        print( "<p>Validation performed by %s</p>" % prog_info)
+        print( "<p>Dictionaries used:<ul>")
         for one_dic in dictionaries:
-            print "<li>%s" % one_dic
-        print "</ul>"
+            print( "<li>%s" % one_dic)
+        print( "</ul>")
     else:
-        print "Validation results for %s\n" % filename
-        print "Validation performed by %s" % prog_info
-        print "File validated against following dictionaries:"
+        print( "Validation results for %s\n" % filename)
+        print( "Validation performed by %s" % prog_info)
+        print( "File validated against following dictionaries:")
         for one_dic in dictionaries:
-            print "    %s" % one_dic
+            print( "    %s" % one_dic)
 
 def output_footer(use_html):
     if use_html:
-        print "</body></html>"
+        print( "</body></html>")
 
 def main ():
-    apply(execute_with_options,parse_options())
+    execute_with_options(*parse_options())
 
 if __name__ == "__main__":
     main()
