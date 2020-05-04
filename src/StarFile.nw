@@ -1046,7 +1046,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
     if isinstance(filename,(unicode,str)):
         # create an absolute URL
         relpath = urlparse(filename)
-        if relpath.scheme == "":
+        if len(relpath.scheme) <= 1:
             if not os.path.isabs(filename):
                 fullpath = os.path.join(os.getcwd(),filename)
             else:
