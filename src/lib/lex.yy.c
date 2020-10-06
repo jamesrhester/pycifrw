@@ -21,6 +21,14 @@
 #include <errno.h>
 #include <stdlib.h>
 
+// Linux and Mac
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+
+#include <unistd.h>
+
+#endif
+
+
 /* end standard C headers. */
 
 /* flex integer type definitions */
