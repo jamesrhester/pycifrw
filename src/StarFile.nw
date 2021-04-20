@@ -109,6 +109,15 @@ try:
 except ImportError:
     have_numpy = False
 
+# Windows paths require special handling. pathlib is available from
+# Python 3.4. For earlier Python versions dictionary import will not work
+# on Windows
+try:
+    from pathlib import Path
+    have_pathlib = True
+except:
+    have_pathlib = False
+
 <<Define a collection datatype>>
 <<LoopBlock class>>
 <<StarBlock class>>
@@ -1051,10 +1060,13 @@ def ReadStar(filename,prepared = None, maxlength=-1,
                 fullpath = os.path.join(os.getcwd(),filename)
             else:
                 fullpath = filename
-            newrel = list(relpath)
-            newrel[0] = "file"
-            newrel[2] = fullpath
-            my_uri = urlunparse(newrel)
+            if have_pathlib:  # Python > 3.4
+                my_uri = Path(fullpath).as_uri()
+            else:     # works on Linux/Mac only
+                newrel = list(relpath)
+                newrel[0] = "file"
+                newrel[2] = fullpath
+                my_uri = urlunparse(newrel)
         else:
             my_uri = urlunparse(relpath)
         # print("Full URL is: " + my_uri)

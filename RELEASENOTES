@@ -1,8 +1,9 @@
-Release Notes for PyCIFRW-4.4.2
+Release Notes for PyCIFRW-4.4.3
 ===============================
 
-4.4.2 is a bugfix release.  Cumulative list since 4.4:
+4.4.3 is a bugfix release.  Cumulative list since 4.4:
 
+* Further improve path handling on Windows
 * Fix absolute paths in Windows
 * Add missing header for Macs
 * Long integers are a valid type in Python 2
