@@ -95,7 +95,7 @@ def parse_options():
 
 def execute_with_options(options,args):
     if options.dictnames:
-        diclist = map(lambda a:os.path.join(options.dirname,a),options.dictnames)
+        diclist = list(map(lambda a:os.path.join(options.dirname,a),options.dictnames))
         print( "Using following local dictionaries to validate:")
         for dic in diclist: print( "%s" % dic)
         fulldic = CifFile.CifFile_module.merge_dic(diclist,mergemode='overlay')
@@ -109,7 +109,8 @@ def execute_with_options(options,args):
     # open the cif file
     cf = CifFile.CifFile(args[0],grammar="auto")
     output_header(options.use_html,args[0],diclist)
-    print( CifFile.validate_report(CifFile.Validate(cf,dic= fulldic,isdic=options.dict_flag),use_html=options.use_html))
+    cc = CifFile.Validate(cf,dic= fulldic,isdic=options.dict_flag)
+    print( CifFile.validate_report(cc,use_html=options.use_html))
     output_footer(options.use_html)
 
 #

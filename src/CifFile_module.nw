@@ -2242,14 +2242,14 @@ def validate_loop_references(self,loop_names):
     # we expect no more than the order of 10 or 20 looped names.
     def flat_func(a,b):
         if isinstance(b,unicode):
-           a.append(b)       #single name
+           a.append(b.lower())       #single name
         else:
-           a.extend(b)       #list of names
+           a.extend([a.lower() for a in b])       #list of names
         return a
     flat_mh = []
     [flat_func(flat_mh,a) for a in must_haves]
-    group_mh = filter(lambda a:a[-1]=="_",flat_mh)
-    single_mh = filter(lambda a:a[-1]!="_",flat_mh)
+    group_mh = list(filter(lambda a:a[-1]=="_",flat_mh))
+    single_mh = list(filter(lambda a:a[-1]!="_",flat_mh))
     res = [a for a in single_mh if a not in loop_names]
     def check_gr(s_item, name_list):
         nl = map(lambda a:a[:len(s_item)],name_list)
@@ -2258,12 +2258,12 @@ def validate_loop_references(self,loop_names):
     res_g = [a for a in group_mh if check_gr(a,loop_names)]
     if len(res) == 0 and len(res_g) == 0: return {"result":True}
     # construct alternate list
-    alternates = map(lambda a: (a,self.get_alternates(a)),res)
-    alternates = [a for a in alternates if a[1] != []]
+    alternates = [(a,self.get_alternates(a)) for a in res]
+    real_alternates = [a for a in alternates if len(a[1]) != 0]
     # next line purely for error reporting
-    missing_alts = [a[0] for a in alternates if a[1] == []]
-    if len(alternates) != len(res):
-       return {"result":False,"bad_items":missing_alts}   #short cut; at least one
+    missing_alts = [a[0] for a in alternates if len(a[1]) == 0]
+    if len(real_alternates) != len(res):
+       return {"result":False,"bad_items":set(missing_alts)}   #short cut; at least one
                                                    #doesn't have an altern
     #loop over alternates
     for orig_name,alt_names in alternates:
@@ -3997,7 +3997,7 @@ def validate_report(val_result,use_html=False):
 
 def error_report(error_name,error_explanation,error_dics):
    retstring = "\n\n " + error_explanation + ":\n\n"
-   headstring = "%-32s" % "Item name"
+   headstring = "%-40s" % "Item name"
    bodystring = ""
    if "bad_values" in error_dics[0]:
       headstring += "%-20s" % "Bad value(s)"
@@ -4009,7 +4009,7 @@ def error_report(error_name,error_explanation,error_dics):
       headstring += "%-20s" % "Parent"
    headstring +="\n"
    for error in error_dics:
-      bodystring += "\n%-32s" % error["item_name"]
+      bodystring += "\n%-40s" % error["item_name"]
       if "bad_values" in error:
           out_vals = [repr(a)[:50] for a in error["bad_values"]]
           bodystring += "%-20s" % out_vals
