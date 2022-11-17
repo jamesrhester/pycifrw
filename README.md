@@ -9,7 +9,7 @@ Information Format) files using Python.  It was developed at the
 Australian National Beamline Facility (ANBF), run by the Australian
 Synchrotron Research Program (ASRP), as part of a larger project to
 provide CIF input/output capabilities for data collection.  It is
-now (Feb 2019) maintained and developed within the Australian Nuclear Science and
+now (Nov 2022) maintained and developed within the Australian Nuclear Science and
 Technology Organisation (ANSTO).
 
 Conformance
@@ -30,8 +30,8 @@ Supported Platforms
 
 PyCIFRW is written entirely in Python, and so should run wherever
 Python runs.  Any failures on Mac, Windows or Linux should be
-communicated to the author, either through the BitBucket issues
-tracker (http://bitbucket.org/jamesrhester/pycifrw/issues) or email.
+communicated to the author, either through the Github issues
+tracker (http://github.com/jamesrhester/pycifrw/issues) or email.
 
 The source code of a C extension module is also included in the
 distribution.  This module accelerates CIF file reading. From time to
@@ -41,12 +41,12 @@ precompiled versions of this module.
 Installation
 ------------
 
-See file [INSTALLATION](https://bitbucket.org/jamesrhester/pycifrw/src/efd90c5e6dec7caf1e61fac68492a7fd66661d97/INSTALLATION?at=development).
+See file [INSTALLATION](https://github.com/jamesrhester/pycifrw/blob/development/INSTALLATION).
 
 License
 ----------
 
-PyCIFRW is made available using the Python 2.0 license.  The full text is [here](https://bitbucket.org/jamesrhester/pycifrw/src/efd90c5e6dec7caf1e61fac68492a7fd66661d97/LICENSE?at=development)
+PyCIFRW is made available using the Python 2.0 license.  The full text is [here](https://github.com/jamesrhester/pycifrw/blob/development/LICENSE)
 
 Use
 ---

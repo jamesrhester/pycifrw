@@ -1,8 +1,9 @@
-Release Notes for PyCIFRW-4.4.4
+Release Notes for PyCIFRW-4.4.5
 ===============================
 
-4.4.4 is a bugfix release.  Cumulative list since 4.4:
+4.4.5 is a bugfix release.  Cumulative list since 4.4:
 
+* Fix re expression test failure in Python 3.11
 * Fix validate_cif.py for Python 3
 * Fix DDL1 dictionary validation for loop members
 * Further improve path handling on Windows
