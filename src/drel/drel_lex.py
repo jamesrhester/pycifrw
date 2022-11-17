@@ -161,7 +161,7 @@ def t_SHORTSTRING(t):
 
 # special to avoid any ambiguity
 def t_ELSEIF(t):
-    r"(?i)ELSE\s+IF"
+    r"[Ee][Ll][Ss][Ee]\s+[Ii][Ff]"
     return t
 
 reserved = {
