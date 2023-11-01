@@ -9,7 +9,7 @@ c_scanner = Extension("CifFile.StarScan",
             sources = ["src/lib/lex.yy.c","src/lib/py_star_scan.c"])
 
 setup(name="PyCifRW",
-      version = "4.4.5",
+      version = "4.4.6",
       description = "CIF/STAR file support for Python",
       author = "James Hester",
       author_email = "jamesrhester@gmail.com",

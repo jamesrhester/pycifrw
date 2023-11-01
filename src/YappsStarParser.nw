@@ -364,7 +364,7 @@ rule input@<<prepared>>: ( ((
 
      rule data@<<currentblock>>:        top_loop      {{makeloop(currentblock,top_loop)}}
                                         |
-		                        datakvpair    {{currentblock.AddItem(datakvpair[0],datakvpair[1],precheck=False)}} #kv pair
+		                        datakvpair    {{currentblock.AddItem(datakvpair[0],datakvpair[1],precheck=True)}} #kv pair
 
      rule datakvpair: data_name data_value {{return [data_name,data_value]}} # name-value
 
@@ -414,7 +414,7 @@ rule input@<<prepared>>: ( ((
                        )*
 		       )	      {{return dataloop}}
 
-     rule save_frame@<<prepared>>: save_heading   {{savehead = save_heading[5:];savebc = StarFile();newname = savebc.NewBlock(savehead,prepared.blocktype(overwrite=False));stored_block = savebc[newname] }} 
+     rule save_frame@<<prepared>>: save_heading   {{savehead = save_heading[5:];savebc = StarFile(characterset='unicode');newname = savebc.NewBlock(savehead,prepared.blocktype(overwrite=False));stored_block = savebc[newname] }} 
                       (
                       dataseq@<<savebc[savehead]>>
                       |
@@ -426,7 +426,7 @@ rule input@<<prepared>>: ( ((
 whereas CIF2 has space-separated elements.
 
 <<STAR2-specific grammar>>=
-     rule save_frame@<<prepared>>: save_heading   {{savehead = save_heading[5:];savebc = StarFile();newname = savebc.NewBlock(savehead,prepared.blocktype(overwrite=False));stored_block = savebc[newname] }} 
+     rule save_frame@<<prepared>>: save_heading   {{savehead = save_heading[5:];savebc = StarFile(characterset='unicode');newname = savebc.NewBlock(savehead,prepared.blocktype(overwrite=False));stored_block = savebc[newname] }} 
                       (
                       dataseq@<<savebc[savehead]>>
                       |
@@ -457,7 +457,7 @@ whereas CIF2 has space-separated elements.
 
 
 <<CIF2-specific grammar>>=
-     rule save_frame@<<prepared>>: save_heading   {{savehead = save_heading[5:];savebc = StarFile();newname = savebc.NewBlock(savehead,prepared.blocktype(overwrite=False));stored_block = savebc[newname] }} 
+     rule save_frame@<<prepared>>: save_heading   {{savehead = save_heading[5:];savebc = StarFile(characterset='unicode');newname = savebc.NewBlock(savehead,prepared.blocktype(overwrite=False));stored_block = savebc[newname] }} 
                       (
                       dataseq@<<savebc[savehead]>>
                       )*
