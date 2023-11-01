@@ -1,3 +1,10 @@
+Release Notes for version 4.4.6
+===============================
+
+4.4.6 is a bugfix release.
+
+* Fixed failure to accept unicode characters in a DDLm dictionary.
+
 Release Notes for PyCIFRW-4.4.5
 ===============================
 
