@@ -28,20 +28,20 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        outstring = CifFile.apply_line_folding(test_string,5,10)
        out_lines = outstring.split('\n')
        #print(outstring)
-       self.failUnless(out_lines[0]=="\\")
-       self.failUnless(len(out_lines[1])==10)
+       self.assertTrue(out_lines[0]=="\\")
+       self.assertTrue(len(out_lines[1])==10)
 
     def testPreWrappedFolding(self):
        """Test that pre-wrapped lines are untouched"""
        test_string = "123456789\n012345678\n9012"
        outstring = CifFile.apply_line_folding(test_string,5,10)
-       self.failUnless(outstring == test_string)
+       self.assertTrue(outstring == test_string)
 
     def testManyLineEndings(self):
        """Test that empty lines are handled OK"""
        test_string = "123456789\n\n012345678\n\n9012\n\n"
        outstring = CifFile.apply_line_folding(test_string,5,10)
-       self.failUnless(outstring == test_string)
+       self.assertTrue(outstring == test_string)
 
     def testOptionalBreak(self):
        """Test that internal whitespace is used to break"""
@@ -49,13 +49,13 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        outstring = CifFile.apply_line_folding(test_string,5,10)
        #print("\n;" + outstring + "\n;")
        out_lines = outstring.split('\n')
-       self.failUnless(len(out_lines[1]) == 7)
+       self.assertTrue(len(out_lines[1]) == 7)
 
     def testCorrectEnding(self):
        """Make sure that no line feeds are added/removed"""
        test_string = "123456  7890123  45678\n90 12\n\n"
        outstring = CifFile.apply_line_folding(test_string,5,10)
-       self.failUnless(outstring[-4:] == "12\n\n")
+       self.assertTrue(outstring[-4:] == "12\n\n")
 
     def testFoldingRemoval(self):
        """Test that we round-trip correctly"""
@@ -65,7 +65,7 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        #print("Test:" + repr(test_string))
        #print("Fold:" + repr(outstring))
        #print("UnFo:" + repr(old_string))
-       self.failUnless(old_string == test_string)
+       self.assertTrue(old_string == test_string)
 
     def testTrickyFoldingRemoval(self):
        """Try to produce a tough string for unfolding"""
@@ -75,7 +75,7 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        #print("Test:" + repr(test_string))
        #print("Fold:" + repr(outstring))
        #print("UnFo:" + repr(old_string))
-       self.failUnless(old_string == test_string)
+       self.assertTrue(old_string == test_string)
 
     def testTrailingBackslash(self):
        """Make sure that a trailing backslash is not removed"""
@@ -85,7 +85,7 @@ class BasicUtilitiesTestCase(unittest.TestCase):
        #print("Test:" + repr(test_string))
        #print("Fold:" + repr(outstring))
        #print("UnFo:" + repr(old_string))
-       self.failUnless(old_string == test_string)
+       self.assertTrue(old_string == test_string)
 
     def testFinalBackslash(self):
         """Make sure that a single final backslash is removed when unfolding"""
@@ -93,21 +93,21 @@ class BasicUtilitiesTestCase(unittest.TestCase):
         folded_string = CifFile.apply_line_folding(test_string,5,10)
         folded_string = folded_string + r"\ "
         old_string = CifFile.remove_line_folding(folded_string)
-        self.failUnless(old_string == test_string)
+        self.assertTrue(old_string == test_string)
 
     def testAddIndent(self):
         """Test insertion of a line prefix"""
         test_string = "\n12345\n678910\n\n"
         outstring = CifFile.apply_line_prefix(test_string,"abc>")
         print("Converted %s to %s " %(test_string,outstring))
-        self.failUnless(outstring == "abc>\\\nabc>\nabc>12345\nabc>678910\nabc>\nabc>")
+        self.assertTrue(outstring == "abc>\\\nabc>\nabc>12345\nabc>678910\nabc>\nabc>")
 
     def testRemoveIndent(self):
         """Test removal of a line prefix"""
         test_string = "abc>\\\nabc>12345\nabc>678910\nabc>\nabc>"
         outstring = CifFile.remove_line_prefix(test_string)
         print("Removed indent: " + repr(outstring))
-        self.failUnless(outstring == "12345\n678910\n\n")
+        self.assertTrue(outstring == "12345\n678910\n\n")
 
     def testReverseIndent(self):
         """Test reversible indentation of line"""
@@ -117,7 +117,7 @@ class BasicUtilitiesTestCase(unittest.TestCase):
         print('Before indenting: ' + repr(test_string))
         print('After indenting: ' + repr(outstring))
         print('After unindent: ' + repr(newtest))
-        self.failUnless(newtest == test_string)
+        self.assertTrue(newtest == test_string)
 
     def testPrefixAndFold(self):
         """Test reversible folding and indenting"""
@@ -127,7 +127,7 @@ class BasicUtilitiesTestCase(unittest.TestCase):
         newoutstring = CifFile.remove_line_prefix(indoutstring)
         newtest_string = CifFile.remove_line_folding(newoutstring)
         print("%s -> %s -> %s -> %s -> %s" % (repr(test_string),repr(outstring),repr(indoutstring),repr(newoutstring),repr(newtest_string)))
-        self.failUnless(newtest_string == test_string)
+        self.assertTrue(newtest_string == test_string)
 
     def testStringiness(self):
         """Check that we can detect string-valued items correctly"""
@@ -142,7 +142,7 @@ class BasicUtilitiesTestCase(unittest.TestCase):
     def testStarList(self):
         """Test that starlists allow comma-based access"""
         p = StarList([StarList([1,2,3]),StarList([4,5,6])])
-        self.failUnless(p[1,0]==4)
+        self.assertTrue(p[1,0]==4)
 
 # Test basic setting and reading of the CifBlock
 
@@ -160,7 +160,7 @@ class BlockRWTestCase(unittest.TestCase):
     def testTupleNumberSet(self):
         """Test tuple setting with numbers"""
         self.cf['_test_tuple'] = (11,13.5,-5.6)
-        self.failUnless([float(a) for a in self.cf['_test_tuple']]== [11,13.5,-5.6])
+        self.assertTrue([float(a) for a in self.cf['_test_tuple']]== [11,13.5,-5.6])
 
     def testTupleComplexSet(self):
         """DEPRECATED: Test setting multiple names in loop"""
@@ -168,14 +168,14 @@ class BlockRWTestCase(unittest.TestCase):
         values = (((1,2,3,4),('hello','good_bye','a space','# 4'),
               (15.462, -99.34,10804,0.0001)),)
         self.cf.AddCifItem((names,values))
-        self.failUnless(tuple(map(float, self.cf[names[0][0]])) == values[0][0])
-        self.failUnless(tuple(self.cf[names[0][1]]) == values[0][1])
-        self.failUnless(tuple(map(float, self.cf[names[0][2]])) == values[0][2])
+        self.assertTrue(tuple(map(float, self.cf[names[0][0]])) == values[0][0])
+        self.assertTrue(tuple(self.cf[names[0][1]]) == values[0][1])
+        self.assertTrue(tuple(map(float, self.cf[names[0][2]])) == values[0][2])
 
     def testStringSet(self):
         """test string setting"""
         self.cf['_test_string_'] = 'A short string'
-        self.failUnless(self.cf['_test_string_'] == 'A short string')
+        self.assertTrue(self.cf['_test_string_'] == 'A short string')
 
     def testTooLongSet(self):
         """test setting overlong data names"""
@@ -270,7 +270,7 @@ class BlockChangeTestCase(unittest.TestCase):
    def testFullLoopRemove(self):
        """Check removal of all loop items"""
        for name in self.names[0]: self.cf.RemoveCifItem(name)
-       self.failUnless(len(self.cf.loops)==0, repr(self.cf.loops))
+       self.assertTrue(len(self.cf.loops)==0, repr(self.cf.loops))
 
 # test adding data to a loop.  We test straight addition, then make sure the errors
 # happen at the right time
@@ -282,7 +282,7 @@ class BlockChangeTestCase(unittest.TestCase):
        self.cf.AddToLoop('_item_name#2',adddict)
        print(self.cf)
        newkeys = self.cf.GetLoopNames('_item_name#2')
-       self.failUnless(list(adddict.keys())[0] in newkeys)
+       self.assertTrue(list(adddict.keys())[0] in newkeys)
        self.assertEqual(len(self.cf['_item_name#2']),len(self.values[0][0]))
 
    def testBadAddToLoop(self):
@@ -370,15 +370,15 @@ class LoopBlockTestCase(unittest.TestCase):
         results = self.cf.GetLoop(self.names[0][2])
         lowernames = [a.lower() for a in self.names[0]]
         for key in results.keys():
-            self.failUnless(key.lower() in lowernames)
-            self.failUnless(tuple(results[key]) == self.values[0][lowernames.index(key.lower())])
+            self.assertTrue(key.lower() in lowernames)
+            self.assertTrue(tuple(results[key]) == self.values[0][lowernames.index(key.lower())])
 
    def testLoopCharCase(self):
        """Test that upper/lower case names in loops works correctly"""
        # Note the wildly varying case for these two names
        self.cf['_item_name_20'] = ['a','b','c','q']
        self.cf.AddLoopName('_item_Name_1','_Item_name_20')
-       self.failUnless(self.cf.FindLoop('_Item_name_1')==self.cf.FindLoop('_Item_Name_20'))
+       self.assertTrue(self.cf.FindLoop('_Item_name_1')==self.cf.FindLoop('_Item_Name_20'))
 
    def testGetLoopCase(self):
        """Check that getloop works for any case"""
@@ -389,7 +389,7 @@ class LoopBlockTestCase(unittest.TestCase):
        """Check that an item placed in a loop no longer appears in the output order"""
        self.cf['_item_name_20'] = ['a','b','c','q']
        self.cf.AddLoopName('_item_Name_1','_Item_name_20')
-       self.failUnless('_item_name_20' not in self.cf.GetItemOrder())
+       self.assertTrue('_item_name_20' not in self.cf.GetItemOrder())
 
    def testLoopify(self):
        """Test changing unlooped data to looped data"""
@@ -634,27 +634,27 @@ class FileWriteTestCase(unittest.TestCase):
 
    def testStringInOut(self):
        """Test writing short strings in and out"""
-       self.failUnless(self.cf['_item_1']==self.df['_item_1'])
-       self.failUnless(self.cf['_item_2']==self.df['_item_2'])
-       self.failUnless(self.cfs['_sitem_1']==self.dfs['_sitem_1'])
-       self.failUnless(self.cfs['_sitem_2']==self.dfs['_sitem_2'])
-       self.failUnless(self.cfs['_sitem_1']==self.flfs['_sitem_1'])
-       self.failUnless(self.cfs['_sitem_2']==self.flfs['_sitem_2'])
+       self.assertTrue(self.cf['_item_1']==self.df['_item_1'])
+       self.assertTrue(self.cf['_item_2']==self.df['_item_2'])
+       self.assertTrue(self.cfs['_sitem_1']==self.dfs['_sitem_1'])
+       self.assertTrue(self.cfs['_sitem_2']==self.dfs['_sitem_2'])
+       self.assertTrue(self.cfs['_sitem_1']==self.flfs['_sitem_1'])
+       self.assertTrue(self.cfs['_sitem_2']==self.flfs['_sitem_2'])
 
    def testApostropheInOut(self):
        """Test correct behaviour for values starting with apostrophes
        or quotation marks"""
-       self.failUnless(self.cf['_item_quote']==self.df['_item_quote'])
-       self.failUnless(self.cf['_item_apost']==self.df['_item_apost'])
-       self.failUnless(self.cf['_item_quote']==self.flf['_item_quote'])
-       self.failUnless(self.cf['_item_apost']==self.flf['_item_apost'])
+       self.assertTrue(self.cf['_item_quote']==self.df['_item_quote'])
+       self.assertTrue(self.cf['_item_apost']==self.df['_item_apost'])
+       self.assertTrue(self.cf['_item_quote']==self.flf['_item_quote'])
+       self.assertTrue(self.cf['_item_apost']==self.flf['_item_apost'])
 
    def testNumberInOut(self):
        """Test writing number in and out"""
-       self.failUnless(self.cf['_item_3']==(self.df['_item_3']))
-       self.failUnless(self.cfs['_sitem_3']==(self.dfs['_sitem_3']))
-       self.failUnless(self.cf['_item_3']==(self.flf['_item_3']))
-       self.failUnless(self.cfs['_sitem_3']==(self.flfs['_sitem_3']))
+       self.assertTrue(self.cf['_item_3']==(self.df['_item_3']))
+       self.assertTrue(self.cfs['_sitem_3']==(self.dfs['_sitem_3']))
+       self.assertTrue(self.cf['_item_3']==(self.flf['_item_3']))
+       self.assertTrue(self.cfs['_sitem_3']==(self.flfs['_sitem_3']))
 
    def testLongStringInOut(self):
        """Test writing long string in and out
@@ -662,35 +662,35 @@ class FileWriteTestCase(unittest.TestCase):
        so we remove all returns before comparing"""
        import re
        compstring = re.sub('\n','',self.df['_item_4'])
-       self.failUnless(compstring == self.cf['_item_4'])
+       self.assertTrue(compstring == self.cf['_item_4'])
        compstring = re.sub('\n','',self.dfs['_sitem_4'])
-       self.failUnless(compstring == self.cfs['_sitem_4'])
+       self.assertTrue(compstring == self.cfs['_sitem_4'])
        compstring = re.sub('\n','',self.flf['_item_4'])
-       self.failUnless(compstring == self.cf['_item_4'])
+       self.assertTrue(compstring == self.cf['_item_4'])
        compstring = re.sub('\n','',self.flfs['_sitem_4'])
-       self.failUnless(compstring == self.cfs['_sitem_4'])
+       self.assertTrue(compstring == self.cfs['_sitem_4'])
 
    def testEmptyStringInOut(self):
        """An empty string is in fact kosher"""
-       self.failUnless(self.cf['_item_empty']=='')
-       self.failUnless(self.flf['_item_empty']=='')
+       self.assertTrue(self.cf['_item_empty']=='')
+       self.assertTrue(self.flf['_item_empty']=='')
 
    def testSemiWhiteSpace(self):
        """Test that white space in a semicolon string is preserved"""
-       self.failUnless(self.cf['_item_sws']==self.df['_item_sws'])
-       self.failUnless(self.cf['_item_sws']==self.flf['_item_sws'])
+       self.assertTrue(self.cf['_item_sws']==self.df['_item_sws'])
+       self.assertTrue(self.cf['_item_sws']==self.flf['_item_sws'])
 
    def testLoopDataInOut(self):
        """Test writing in and out loop data"""
        olditems = self.cf.GetLoop('_item_5')
        for key,value in olditems.items():
-           self.failUnless(tuple(map(str,value))==tuple(self.df[key]))
-           self.failUnless(tuple(map(str,value))==tuple(self.flf[key]))
+           self.assertTrue(tuple(map(str,value))==tuple(self.df[key]))
+           self.assertTrue(tuple(map(str,value))==tuple(self.flf[key]))
        # save frame test
        olditems = self.cfs.GetLoop('_sitem_5').items()
        for key,value in olditems:
-           self.failUnless(tuple(map(str,value))==tuple(self.dfs[key]))
-           self.failUnless(tuple(map(str,value))==tuple(self.flfs[key]))
+           self.assertTrue(tuple(map(str,value))==tuple(self.dfs[key]))
+           self.assertTrue(tuple(map(str,value))==tuple(self.flfs[key]))
 
    def testLoopStringInOut(self):
        """Test writing in and out string loop data"""
@@ -701,23 +701,23 @@ class FileWriteTestCase(unittest.TestCase):
            compstringa = [re.sub('\n','',a) for a in value]
            compstringb = [re.sub('\n','',a) for a in self.df[key]]
            compstringc = [re.sub('\n','',a) for a in self.flf[key]]
-           self.failUnless(compstringa==compstringb and compstringa==compstringc)
+           self.assertTrue(compstringa==compstringb and compstringa==compstringc)
 
    def testGetLoopData(self):
        """Test the get method for looped data"""
        newvals = self.df.get('_string_1')
-       self.failUnless(len(newvals)==3)
+       self.assertTrue(len(newvals)==3)
 
    def testCopySaveFrame(self):
        """Early implementations didn't copy the save frame properly"""
        jj = CifFile.CifFile(self.ef,scoping='dictionary')  #this will trigger a copy
-       self.failUnless(len(jj["test_save_frame"])>0)
+       self.assertTrue(len(jj["test_save_frame"])>0)
 
    def testFirstBlock(self):
        """Test that first_block returns a block"""
        self.ef.scoping = 'instance'  #otherwise all blocks are available
        jj = self.ef.first_block()
-       self.failUnless(jj==self.df)
+       self.assertTrue(jj==self.df)
 
    def testWrongLoop(self):
        """Test derived from error observed during dREL testing"""
@@ -735,7 +735,7 @@ _atom_type.number_in_cell
        q.write(teststrg)
        q.close()
        testcif = CifFile.CifFile("tests/test2.cif").first_block()
-       self.failUnless(testcif['_atom_type.symbol']==['O','C','H'])
+       self.assertTrue(testcif['_atom_type.symbol']==['O','C','H'])
 
    def testDupName(self):
        """Test that duplicate blocknames are allowed in non-standard mode"""
@@ -762,7 +762,7 @@ _atom_type.number_in_cell
 
    def testBadBeginning(self):
        """Test that strings with forbidden beginnings round-trip OK"""
-       self.failUnless(self.cf['_item_bad_beg']==self.df['_item_bad_beg'])
+       self.assertTrue(self.cf['_item_bad_beg']==self.df['_item_bad_beg'])
 
    def testStrayCharacter(self):
        """Test that CIF1 fails with non-ASCII characters"""
@@ -788,7 +788,7 @@ _atom_type.number_in_cell
    def testItemChange(self):
         """Test that an item from in input file can be changed"""
         self.flf['_item_quote']= '2.3'
-        self.failUnless(self.flf['_item_quote']=='2.3')
+        self.assertTrue(self.flf['_item_quote']=='2.3')
 
    def testEmptyDict(self):
        """Test that a dictionary is processed correctly"""
@@ -797,7 +797,7 @@ _atom_type.number_in_cell
        b.write(outstr)
        b.close()
        testin = CifFile.CifFile("tests/test4_dict.cif",grammar="2.0")
-       self.failUnless(testin["block1"]["_a_dict"] == {"a":"2"})
+       self.assertTrue(testin["block1"]["_a_dict"] == {"a":"2"})
                        
 class SimpleWriteTestCase(unittest.TestCase):
     def setUp(self):
@@ -820,7 +820,7 @@ class SimpleWriteTestCase(unittest.TestCase):
         open(self.testfile,"w").write(self.cf.WriteOut())
         df = CifFile.CifFile(self.testfile,grammar="auto").first_block()
         print('vector is ' + repr(df['_a_vector']))
-        self.failUnless(df['_a_vector'] == ['1','2','3'])
+        self.assertTrue(df['_a_vector'] == ['1','2','3'])
 
     def testNumpyLoop(self):
         """Check that an array in a loop can be output properly"""
@@ -831,7 +831,7 @@ class SimpleWriteTestCase(unittest.TestCase):
         open(self.testfile,"w").write(self.cf.WriteOut())
         df = CifFile.CifFile(self.testfile,grammar="auto").first_block()
         print('vector is ' + repr(df['_a_vector']))
-        self.failUnless(df['_a_vector'][2] == ['-1.0','1.0','0.0'])
+        self.assertTrue(df['_a_vector'][2] == ['-1.0','1.0','0.0'])
 
     def testNDString(self):
         """Check that a string containing square brackets is properly quoted for CIF2.0"""
@@ -840,7 +840,7 @@ class SimpleWriteTestCase(unittest.TestCase):
         open(self.testfile,"w").write(self.cf.WriteOut())
         df = CifFile.CifFile(self.testfile,grammar="2.0").first_block()
         result = df['_tst']
-        self.failUnless(df['_tst']== self.bf['_tst'])
+        self.assertTrue(df['_tst']== self.bf['_tst'])
                         
     def testLong(self):
         """Check that a long integer is acceptable in Python 2"""
@@ -898,13 +898,13 @@ data_TEST_DIC
        p = CifFile.CifFile()
        p.SetTemplate("tests/cif_template.cif")
        #print(p.master_template)
-       self.failUnless(p.master_template[0]['dataname']=='_dictionary.title')
-       self.failUnless(p.master_template[5]['column']==31)
-       self.failUnless(p.master_template[2]['delimiter']=='\n;')
-       self.failUnless(p.master_template[11]['column']==11)
-       self.failUnless(p.master_template[12]['delimiter']=='"')
-       self.failUnless(p.master_template[2]['reformat']==True)
-       self.failUnless(p.master_template[2]['reformat_indent']==5)
+       self.assertTrue(p.master_template[0]['dataname']=='_dictionary.title')
+       self.assertTrue(p.master_template[5]['column']==31)
+       self.assertTrue(p.master_template[2]['delimiter']=='\n;')
+       self.assertTrue(p.master_template[11]['column']==11)
+       self.assertTrue(p.master_template[12]['delimiter']=='"')
+       self.assertTrue(p.master_template[2]['reformat']==True)
+       self.assertTrue(p.master_template[2]['reformat_indent']==5)
 
    def testTemplateOutputOrder(self):
        """Test that items are output in the correct order"""
@@ -950,7 +950,7 @@ to work properly.
         ss = StringIO(s)
         p = CifFile.CifFile()
         p.SetTemplate(ss)
-        self.failUnless(p.master_template[12]['delimiter']=='"')
+        self.assertTrue(p.master_template[12]['delimiter']=='"')
 
        # TODO: check position in loop packets
        # TODO: check delimiters
@@ -1092,58 +1092,58 @@ data_Toplevel
 
    def testGoodRead(self):
        """Check that there is a top level block"""
-       self.failUnless('toplevel+' in [a[0] for a in self.testcif.child_table.items() if a[1].parent is None])
-       self.failUnless(self.testcif.child_table['toplevel'].parent == 'toplevel+')
+       self.assertTrue('toplevel+' in [a[0] for a in self.testcif.child_table.items() if a[1].parent is None])
+       self.assertTrue(self.testcif.child_table['toplevel'].parent == 'toplevel+')
 
    def testGetParent(self):
        """Check that parent is correctly identified"""
-       self.failUnless(self.testcif.get_parent('212')=='21')
-       self.failUnless(self.testcif.get_parent('12')=='1')
+       self.assertTrue(self.testcif.get_parent('212')=='21')
+       self.assertTrue(self.testcif.get_parent('12')=='1')
 
    def testGetChildren(self):
        """Test that our child blocks are constructed correctly"""
        p = self.testcif.get_children('1')
-       self.failUnless(p.has_key('13'))
-       self.failUnless(not p.has_key('1'))
-       self.failUnless(p.get_parent('13')==None)
-       self.failUnless(p['12']['_s12_item1']=='c')
+       self.assertTrue(p.has_key('13'))
+       self.assertTrue(not p.has_key('1'))
+       self.assertTrue(p.get_parent('13')==None)
+       self.assertTrue(p['12']['_s12_item1']=='c')
 
    def testGetChildrenwithParent(self):
        """Test that the parent is included if necessary"""
        p = self.testcif.get_children('1',include_parent=True)
-       self.failUnless(p.has_key('1'))
-       self.failUnless(p.get_parent('13')=='1')
+       self.assertTrue(p.has_key('1'))
+       self.assertTrue(p.get_parent('13')=='1')
 
    def testSetParent(self):
        """Test that the parent is correctly set"""
        self.testcif.set_parent('1','211')
        q = self.testcif.get_children('1')
-       self.failUnless('211' in q.keys())
+       self.assertTrue('211' in q.keys())
 
    def testChangeParent(self):
        """Test that a duplicated save frame is OK if the duplicate name is a data block"""
-       self.failUnless('toplevel+' in self.testcif.keys())
-       self.failUnless(self.testcif.get_parent('1')=='toplevel+')
+       self.assertTrue('toplevel+' in self.testcif.keys())
+       self.assertTrue(self.testcif.get_parent('1')=='toplevel+')
 
    def testRename1(self):
        """Test that re-identifying a datablock works"""
        self.testcif._rekey('2','timey-wimey')
-       self.failUnless(self.testcif.get_parent('21')=='timey-wimey')
-       self.failUnless(self.testcif.has_key('timey-wimey'))
-       self.failUnless(self.testcif['timey-wimey']['_s2_item1']=='f')
+       self.assertTrue(self.testcif.get_parent('21')=='timey-wimey')
+       self.assertTrue(self.testcif.has_key('timey-wimey'))
+       self.assertTrue(self.testcif['timey-wimey']['_s2_item1']=='f')
        print(str(self.testcif))
 
    def testRename2(self):
        """Test that renamng a block works"""
        self.testcif.rename('2','Timey-wimey')
-       self.failUnless(self.testcif.has_key('timey-wimey'))
-       self.failUnless(self.testcif.child_table['timey-wimey'].block_id=='Timey-wimey')
+       self.assertTrue(self.testcif.has_key('timey-wimey'))
+       self.assertTrue(self.testcif.child_table['timey-wimey'].block_id=='Timey-wimey')
 
    def testUnlock(self):
        """Test that unlocking will change overwrite flag"""
        self.testcif['2'].overwrite = False
        self.testcif.unlock()
-       self.failUnless(self.testcif['2'].overwrite is True)
+       self.assertTrue(self.testcif['2'].overwrite is True)
 
 class DDLmTestCase(unittest.TestCase):
    def setUp(self):
@@ -1211,23 +1211,23 @@ class DDLmTestCase(unittest.TestCase):
    def testTables(self):
        """Test that DDLm tables are properly parsed"""
        f = CifFile.ReadCif("tests/goodtest_1.2",grammar="STAR2")
-       self.failUnless(f["test"]["_test.1"]["wiffle"] == '3')
+       self.assertTrue(f["test"]["_test.1"]["wiffle"] == '3')
 
    def testTables2(self):
        """Test that a plain table is properly parsed"""
        f = CifFile.ReadCif("tests/goodtest_1.2",grammar="STAR2")
-       self.failUnless(f["test"]["_import.get"][0]["file"] == 'core_exptl.dic')
+       self.assertTrue(f["test"]["_import.get"][0]["file"] == 'core_exptl.dic')
 
    def testTables3(self):
        """Test that a nested structure is properly parsed"""
        f = CifFile.ReadCif("tests/goodtest_1.2",grammar="STAR2")
-       self.failUnless(f["test"]["_test_3"]["ppp"]["poke"]["jike"][1]["gg"]=='100')
+       self.assertTrue(f["test"]["_test_3"]["ppp"]["poke"]["jike"][1]["gg"]=='100')
 
    def testTripleQuote(self):
        """Test that triple quoted values are treated correctly"""
        f = CifFile.ReadCif("tests/goodtest_1.2",grammar="STAR2")
        print(f["test"]["_triple_quote_test"])
-       self.failUnless(f["test"]["_triple_quote_test"][:9] == 'The comma')
+       self.assertTrue(f["test"]["_triple_quote_test"][:9] == 'The comma')
 
    def testRoundTrip(self):
        """Test that a DDLm file can be read in, written out and read in again"""
@@ -1240,7 +1240,7 @@ class DDLmTestCase(unittest.TestCase):
        #print(h['Test']['_import.get'])
        #print(h['Test']['_import.get'][2])
        #print(h['Test']['_import.get'][2]['file'])
-       self.failUnless(h['Test']['_import.get'][2]['file']=='core_struc.dic')
+       self.assertTrue(h['Test']['_import.get'][2]['file']=='core_struc.dic')
 
    def testUnNest(self):
        """Test that we can convert a nested save frame STAR2 file to a non-nested file"""
@@ -1264,14 +1264,14 @@ class DDLmImportCase(unittest.TestCase):
     def testHeavyImport(self):
         """Test that enumerated types were imported correctly"""
         pp = self.testdic['_atom_type.radius_bond']
-        self.failUnless(pp.has_key('_enumeration_default.index'))
+        self.assertTrue(pp.has_key('_enumeration_default.index'))
         c_pos = pp['_enumeration_default.index'].index('C')
         self.assertEqual(pp['_enumeration_default.value'][c_pos],'0.77')
 
     def testLightImport(self):
         """Test that light importation succeeds"""
         pp = self.lightdic['_atom_type.radius_bond']
-        self.failUnless(pp.has_key('_enumeration_default.index'))
+        self.assertTrue(pp.has_key('_enumeration_default.index'))
         c_pos = pp['_enumeration_default.index'].index('C')
         self.assertEqual(pp['_enumeration_default.value'][c_pos],'0.77')
 
@@ -1279,8 +1279,8 @@ class DDLmImportCase(unittest.TestCase):
         """Test that we properly import nested dictionaries"""
         nested_dic = CifFile.CifDic("dictionaries/cif_nested.dic",grammar="2.0",
                                          do_imports='Full',do_dREL=False,heavy=False)
-        self.failUnless(nested_dic['_refine_diff.density_max']['_enumeration.range']=='-100.:')
-        self.failUnless('_pd_refln.phase_id' in nested_dic['refln']['_category_key.name'])
+        self.assertTrue(nested_dic['_refine_diff.density_max']['_enumeration.range']=='-100.:')
+        self.assertTrue('_pd_refln.phase_id' in nested_dic['refln']['_category_key.name'])
         
 ##############################################################
 #
@@ -1304,93 +1304,93 @@ class DictTestCase(unittest.TestCase):
         testnums = ["5.65","-76.24(3)","8(2)","6.24(3)e3","55.2(2)d4"]
         res = [CifFile.get_number_with_esd(a) for a in testnums]
         print(repr(res))
-        self.failUnless(res[0]==(5.65,None))
-        self.failUnless(res[1]==(-76.24,0.03))
-        self.failUnless(res[2]==(8,2))
-        self.failUnless(res[3]==(6240,30))
-        self.failUnless(res[4]==(552000,2000))
+        self.assertTrue(res[0]==(5.65,None))
+        self.assertTrue(res[1]==(-76.24,0.03))
+        self.assertTrue(res[2]==(8,2))
+        self.assertTrue(res[3]==(6240,30))
+        self.assertTrue(res[4]==(552000,2000))
 
     def testdot(self):
         """Make sure a single dot is skipped"""
         res1,res2 = CifFile.get_number_with_esd(".")
-        self.failUnless(res1==None)
+        self.assertTrue(res1==None)
 
     def testCategoryRename(self):
         """Test that renaming a category works correctly"""
         self.ddldic.change_category_name('Description','Opisanie')
-        self.failUnless(self.ddldic.has_key('opisanie'))
-        self.failUnless(self.ddldic['opisanie']['_name.object_id']=='Opisanie')
-        self.failUnless(self.ddldic.has_key('opisanie.text'))
-        self.failUnless(self.ddldic['opisanie.text']['_name.category_id']=='Opisanie')
-        self.failUnless(self.ddldic['opisanie.text']['_definition.id']=='_Opisanie.text')
-        self.failUnless(self.ddldic.has_key('description_example'))
+        self.assertTrue(self.ddldic.has_key('opisanie'))
+        self.assertTrue(self.ddldic['opisanie']['_name.object_id']=='Opisanie')
+        self.assertTrue(self.ddldic.has_key('opisanie.text'))
+        self.assertTrue(self.ddldic['opisanie.text']['_name.category_id']=='Opisanie')
+        self.assertTrue(self.ddldic['opisanie.text']['_definition.id']=='_Opisanie.text')
+        self.assertTrue(self.ddldic.has_key('description_example'))
 
     def testChangeItemCategory(self):
         """Test that changing an item's category works"""
         self.ddldic.change_category('_description.common','type')
-        self.failUnless('_type.common' in self.ddldic)
-        self.failUnless('_description.common' not in self.ddldic)
-        self.failUnless(self.ddldic['_type.common']['_name.category_id'].lower()=='type')
-        self.failUnless(self.ddldic.get_parent('_type.common')=='type')
+        self.assertTrue('_type.common' in self.ddldic)
+        self.assertTrue('_description.common' not in self.ddldic)
+        self.assertTrue(self.ddldic['_type.common']['_name.category_id'].lower()=='type')
+        self.assertTrue(self.ddldic.get_parent('_type.common')=='type')
 
     def testChangeCategoryCategory(self):
         """Test that changing a category's category works"""
         self.ddldic.change_category('description_example','attributes')
-        self.failUnless(self.ddldic['description_example']['_name.category_id'].lower()=='attributes')
-        self.failUnless(self.ddldic.get_parent('description_example')=='attributes')
+        self.assertTrue(self.ddldic['description_example']['_name.category_id'].lower()=='attributes')
+        self.assertTrue(self.ddldic.get_parent('description_example')=='attributes')
 
     def testChangeName(self):
         """Test that changing the object_id works"""
         self.ddldic.change_name('_description.common','uncommon')
-        self.failUnless('_description.uncommon' in self.ddldic)
-        self.failUnless('_description.common' not in self.ddldic)
-        self.failUnless(self.ddldic['_description.uncommon']['_name.object_id']=='uncommon')
-        self.failUnless(self.ddldic['_description.uncommon']['_definition.id']=='_description.uncommon')
+        self.assertTrue('_description.uncommon' in self.ddldic)
+        self.assertTrue('_description.common' not in self.ddldic)
+        self.assertTrue(self.ddldic['_description.uncommon']['_name.object_id']=='uncommon')
+        self.assertTrue(self.ddldic['_description.uncommon']['_definition.id']=='_description.uncommon')
 
     def testNewCategory(self):
         """Test that we can add a new category"""
         self.ddldic.add_category('brand-new')
-        self.failUnless('brand-new' in self.ddldic)
-        self.failUnless(self.ddldic['brand-new']['_name.object_id']=='brand-new')
-        self.failUnless(self.ddldic.get_parent('brand-new').lower()=='ddl_dic')
-        self.failUnless(self.ddldic['brand-new']['_name.category_id'].lower()=='attributes')
+        self.assertTrue('brand-new' in self.ddldic)
+        self.assertTrue(self.ddldic['brand-new']['_name.object_id']=='brand-new')
+        self.assertTrue(self.ddldic.get_parent('brand-new').lower()=='ddl_dic')
+        self.assertTrue(self.ddldic['brand-new']['_name.category_id'].lower()=='attributes')
 
     def testNewDefinition(self):
         """Test that we can add a new definition"""
         realname = self.ddldic.add_definition('_junkety._junkjunk','description')
         print('Real name for new definition is %s' % realname)
-        self.failUnless('_description.junkjunk' in self.ddldic)
-        self.failUnless(self.ddldic['_description.junkjunk']['_name.category_id'].lower()=='description')
-        self.failUnless(self.ddldic['_description.junkjunk']['_name.object_id']=='junkjunk')
-        self.failUnless(self.ddldic['_description.junkjunk']['_definition.id']=='_description.junkjunk')
+        self.assertTrue('_description.junkjunk' in self.ddldic)
+        self.assertTrue(self.ddldic['_description.junkjunk']['_name.category_id'].lower()=='description')
+        self.assertTrue(self.ddldic['_description.junkjunk']['_name.object_id']=='junkjunk')
+        self.assertTrue(self.ddldic['_description.junkjunk']['_definition.id']=='_description.junkjunk')
 
     def testNewDanglerDef(self):
         """Test that we can add a new definition with external category"""
         self.ddldic.add_definition('_junkety._junkjunk','external_cat',allow_dangler=True)
-        self.failUnless('_external_cat.junkjunk' in self.ddldic)
-        self.failUnless(self.ddldic['_external_cat.junkjunk']['_name.category_id'].lower()=='external_cat')
-        self.failUnless(self.ddldic['_external_cat.junkjunk']['_name.object_id']=='junkjunk')
-        self.failUnless(self.ddldic['_external_cat.junkjunk']['_definition.id']=='_external_cat.junkjunk')
+        self.assertTrue('_external_cat.junkjunk' in self.ddldic)
+        self.assertTrue(self.ddldic['_external_cat.junkjunk']['_name.category_id'].lower()=='external_cat')
+        self.assertTrue(self.ddldic['_external_cat.junkjunk']['_name.object_id']=='junkjunk')
+        self.assertTrue(self.ddldic['_external_cat.junkjunk']['_definition.id']=='_external_cat.junkjunk')
 
 
     def testNewDanglerCat(self):
         """Test that we can add a new category with external parent"""
         self.ddldic.add_category('internal_cat','atom_site',allow_dangler=True)
-        self.failUnless('internal_cat' in self.ddldic)
-        self.failUnless(self.ddldic['internal_cat']['_name.object_id']=='internal_cat')
-        self.failUnless(self.ddldic.get_parent('internal_cat').lower()=='ddl_dic')
-        self.failUnless(self.ddldic['internal_cat']['_name.category_id'].lower()=='atom_site')
+        self.assertTrue('internal_cat' in self.ddldic)
+        self.assertTrue(self.ddldic['internal_cat']['_name.object_id']=='internal_cat')
+        self.assertTrue(self.ddldic.get_parent('internal_cat').lower()=='ddl_dic')
+        self.assertTrue(self.ddldic['internal_cat']['_name.category_id'].lower()=='atom_site')
 
     def testDeleteDefinition(self):
         """Test that we can delete a definition"""
         self.ddldic.remove_definition('_alias.deprecation_date')
-        self.failUnless('_alias.deprecation_date' not in self.ddldic)
+        self.assertTrue('_alias.deprecation_date' not in self.ddldic)
 
     def testDeleteCategory(self):
         """test that we can delete whole categories"""
         self.ddldic.remove_definition('description')
-        self.failUnless('description' not in self.ddldic)
-        self.failUnless('description_example' not in self.ddldic)
+        self.assertTrue('description' not in self.ddldic)
+        self.assertTrue('description_example' not in self.ddldic)
 
     def testWriteDic(self):
         """Test that we can write a dictionary after adding a category"""
@@ -1403,28 +1403,28 @@ class DictTestCase(unittest.TestCase):
         ff.write(final_str)
         ff.close()
         incif = CifFile.CifDic("file:"+ffurl,grammar='2.0',do_minimum=True)
-        self.failUnless(incif.has_key('_description.junkjunk'))
+        self.assertTrue(incif.has_key('_description.junkjunk'))
 
     def testSemanticChildren(self):
         """Test that we can obtain the semantic children of a category"""
         children = self.ddldic.ddlm_immediate_children('enumeration_set')
-        self.failUnless('_enumeration_set.xref_dictionary' in children)
+        self.assertTrue('_enumeration_set.xref_dictionary' in children)
         children = self.ddldic.ddlm_immediate_children('enumeration')
-        self.failUnless('enumeration_set' in children)
+        self.assertTrue('enumeration_set' in children)
 
     def testDanglers(self):
         """Test that we correctly locate missing categories"""
         self.ddldic['_description.text'].overwrite = True
         self.ddldic['_description.text']['_name.category_id'] = 'NNN'
         p = self.ddldic.ddlm_danglers()
-        self.failUnless('_description.text' in p)
-        self.failUnless('ddl_dic' not in p)
-        self.failUnless('attributes' not in p)
+        self.assertTrue('_description.text' in p)
+        self.assertTrue('ddl_dic' not in p)
+        self.assertTrue('attributes' not in p)
 
     def testAllChildren(self):
         """Test that we can pick up all children"""
         children = self.ddldic.ddlm_all_children('description')
-        self.failUnless('_description_example.detail' in children)
+        self.assertTrue('_description_example.detail' in children)
 
     def testDanglerChildren(self):
         """Test that danglers are found when outputting"""
@@ -1432,9 +1432,9 @@ class DictTestCase(unittest.TestCase):
         self.ddldic.add_category('some_other_cat','atom_site',allow_dangler=True)
         self.ddldic.add_definition('_xxx.more_junk','some_other_cat')
         names = self.ddldic.get_full_child_list()
-        self.failUnless('some_other_cat' in names)
-        self.failUnless('_external_cat.junkjunk' in names)
-        self.failUnless('_some_other_cat.more_junk' in names)
+        self.assertTrue('some_other_cat' in names)
+        self.assertTrue('_external_cat.junkjunk' in names)
+        self.assertTrue('_some_other_cat.more_junk' in names)
 
     def testFunnyLayout(self):
         """Test that having some of the data block at the end is OK"""
@@ -1465,18 +1465,18 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
         p = t.TypeParser(t.TypeParserScanner('List(Real,Real,Real)'))
         q = getattr(p,"input")()
         print(repr(q))
-        self.failUnless(q == ['Real','Real','Real'])
+        self.assertTrue(q == ['Real','Real','Real'])
         p = t.TypeParser(t.TypeParserScanner('List(Real,List(Integer,Real),Real)'))
         q = getattr(p,"input")()
         print(repr(q))
-        self.failUnless(q == ['Real',['Integer','Real'],'Real'])
+        self.assertTrue(q == ['Real',['Integer','Real'],'Real'])
 
     def testSingleConversion(self):
         namedef = CifFile.CifBlock()
         namedef['_type.container'] = 'Single'
         namedef['_type.contents'] = 'Real'
         result = CifFile.convert_type(namedef)(self.testblock['_float.value'])
-        self.failUnless(result == 4.2)
+        self.assertTrue(result == 4.2)
 
     def testListConversion(self):
         namedef = CifFile.CifBlock()
@@ -1485,7 +1485,7 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
         namedef['_type.dimension'] = CifFile.StarList([3])
         result = CifFile.convert_type(namedef)(self.testblock['_list2.value'])
         print('Result: ' + repr(result))
-        self.failUnless(result ==  [['i',4.2],['j',1.5],['lmnop',-4.5]])
+        self.assertTrue(result ==  [['i',4.2],['j',1.5],['lmnop',-4.5]])
 
     def testSimpleListConversion(self):
         namedef = CifFile.CifBlock()
@@ -1500,7 +1500,7 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
         namedef['_type.container'] = 'Matrix'
         namedef['_type.contents'] = 'Integer'
         result = CifFile.convert_type(namedef)(self.testblock['_matrix.value'])
-        self.failUnless(result[1][2] == 6)
+        self.assertTrue(result[1][2] == 6)
 
     def testValuesReturned(self):
         """Test that values are returned transparently converted when a dictionary is supplied"""
@@ -1735,18 +1735,18 @@ save_
         """Test that missing mandatory items are found"""
         del self.testcif['alias.definition_id']['_name.category_id']
         result = self.refdic.run_block_validation(self.testcif['alias.definition_id'])
-        self.failUnless(dict(result['whole_block'])['check_mandatory_items']['result']==False)
+        self.assertTrue(dict(result['whole_block'])['check_mandatory_items']['result']==False)
 
     def testProhibited(self):
         """Test that prohibited items are found"""
         self.testcif['alias']['_enumeration_set.state'] = [1,2,3,4]
         result = self.refdic.run_block_validation(self.testcif['alias'])
-        self.failUnless(dict(result['whole_block'])['check_prohibited_items']['result']==False)
+        self.assertTrue(dict(result['whole_block'])['check_prohibited_items']['result']==False)
 
     def testUnlooped(self):
         """Test that unloopable data items are found"""
         result = self.refdic.run_loop_validation(self.testcif['definition.scope'].loops[1])
-        self.failUnless(dict(result['_enumeration_set.state'])['validate_looping_ddlm']['result']==False)
+        self.assertTrue(dict(result['_enumeration_set.state'])['validate_looping_ddlm']['result']==False)
 
     def testWrongLoop(self):
         """Test that non-co-loopable data items are found"""
@@ -1757,20 +1757,20 @@ save_
                                                       '_description_example.case'])
         loop_no = self.testcif['definition.scope'].FindLoop('_enumeration_set.state')
         result = self.refdic.run_loop_validation(self.testcif['definition.scope'].loops[loop_no])
-        self.failUnless(dict(result['_enumeration_set.state'])['validate_loop_membership']['result']==False)
+        self.assertTrue(dict(result['_enumeration_set.state'])['validate_loop_membership']['result']==False)
 
     def testUnKeyed(self):
         """Test that a missing key is found"""
         del self.testcif['definition.scope']['_description.common']
         del self.testcif['definition.scope']['_enumeration_set.state']
         result = self.refdic.run_loop_validation(self.testcif['definition.scope'].loops[1])
-        self.failUnless(dict(result['_enumeration_set.detail'])['validate_loop_key_ddlm']['result']==False)
+        self.assertTrue(dict(result['_enumeration_set.detail'])['validate_loop_key_ddlm']['result']==False)
 
     def testNotMissingKey(self):
         """Test that a key that should be present is detected"""
         result = self.refdic.run_loop_validation(self.testcif['definition.scope'].loops[1])
         print(repr(result))
-        self.failUnless(dict(result['_enumeration_set.state'])['validate_loop_key_ddlm']['result']==True)
+        self.assertTrue(dict(result['_enumeration_set.state'])['validate_loop_key_ddlm']['result']==True)
 
 class FakeDicTestCase(unittest.TestCase):
 # we test stuff that hasn't been used in official dictionaries to date.
@@ -1798,7 +1798,7 @@ class DicEvalTestCase(unittest.TestCase):
         result = self.fb[dataname]
         print("Result: {!r} Target: {!r}".format(result,target))
         if scalar:
-            self.failUnless(abs(float(target)-float(result))<0.01)
+            self.assertTrue(abs(float(target)-float(result))<0.01)
         else:
             self.assertEqual(target,result,"Target = %s, Result = %s" % (repr(target),repr(result)))
 
@@ -1821,7 +1821,7 @@ class DicEvalTestCase(unittest.TestCase):
         target = self.fb['_cell.volume']
         print("CalcOldAlias target is {!r}".format(target))
         del self.fb['_cell.volume']
-        self.failUnless(abs(self.fb['_cell_volume']-float(target))<0.01)
+        self.assertTrue(abs(self.fb['_cell_volume']-float(target))<0.01)
 
     def testFullCalcAlias(self):
         """Test that a calculation is performed if dependent datanames
@@ -1846,8 +1846,8 @@ class DicEvalTestCase(unittest.TestCase):
         self.fb.provide_value = False
         print('**Updated block:')
         print(str(self.fb))
-        self.failUnless(self.fb.has_key('_model_site.Cartn_xyz'))
-        self.failUnless(self.fb.has_key('_model_site.mole_index'))
+        self.assertTrue(self.fb.has_key('_model_site.Cartn_xyz'))
+        self.assertTrue(self.fb.has_key('_model_site.mole_index'))
 
     def testEmptyKey(self):
         """Test that empty keys are not stored"""
@@ -1856,7 +1856,7 @@ class DicEvalTestCase(unittest.TestCase):
         del self.fb['_atom_type_scat.dispersion_imag']
         del self.fb['_atom_type_scat.source']
         p = self.fb.GetKeyedSemanticPacket('O','atom_type')
-        self.failUnless(not hasattr(p,'_atom_type_scat.symbol'))
+        self.assertTrue(not hasattr(p,'_atom_type_scat.symbol'))
 
 
 class DicStructureTestCase(unittest.TestCase):
@@ -1869,11 +1869,11 @@ class DicStructureTestCase(unittest.TestCase):
 
     def testOldAlias(self):
         """Test finding an older form of a new dataname"""
-        self.failUnless(self.fb['_symmetry.space_group_name_H_M']=='P_1_21/a_1')
+        self.assertTrue(self.fb['_symmetry.space_group_name_H_M']=='P_1_21/a_1')
 
     def testNewAlias(self):
         """Test finding a newer form of an old dataname"""
-        self.failUnless(self.fb['_symmetry_space_group_name_Hall']=='-p_2yab')
+        self.assertTrue(self.fb['_symmetry_space_group_name_Hall']=='-p_2yab')
 
     def testCatObj(self):
         """Test that we can obtain a name by category/object specification"""
@@ -1895,7 +1895,7 @@ class DicStructureTestCase(unittest.TestCase):
     def testChildPacket(self):
         """Test that a case-insensitive child packet is included in attributes of parent category"""
         target = self.fb.GetKeyedSemanticPacket("o2",'atom_site')
-        self.failUnless(hasattr(target,'_atom_site_aniso.u_23'))
+        self.assertTrue(hasattr(target,'_atom_site_aniso.u_23'))
         self.assertEqual(getattr(target,'_atom_site_aniso.U_33'),'.040(3)')
 
     @unittest.skip("Functionality not yet implemented")
@@ -1904,7 +1904,7 @@ class DicStructureTestCase(unittest.TestCase):
         using the compound key routine"""
         target = self.fb.GetMultiKeyedSemanticPacket({'_atom_site.label':("o2",True)},'atom_site')
         self.assertEqual(getattr(target,'_atom_site_aniso.U_33'),'.040(3)')
-        self.failUnless(hasattr(target,'_atom_site_aniso.u_23'))
+        self.assertTrue(hasattr(target,'_atom_site_aniso.u_23'))
 
     def testPacketCalcs(self):
         """Test that a star packet can calculate missing values"""
@@ -1915,7 +1915,7 @@ class DicStructureTestCase(unittest.TestCase):
     def testEnumDefault(self):
         """Test that we can obtain enumerated values"""
         target = self.fb['_atom_type.radius_bond']
-        self.failUnless(0.77 in target)
+        self.assertTrue(0.77 in target)
 
     def testCatObjKey(self):
         """Test that keys are correctly handled by the cat/obj table"""
@@ -1952,8 +1952,8 @@ class DicStructureTestCase(unittest.TestCase):
         q = start_data['_diffrn_detector_monolithic_element.key']
         p = start_data['_diffrn_detector_monolithic_element.detector_id']
         print('p,q = ' + repr(p) + '\n' + repr(q))
-        self.failUnless(q==[['element1','adscq210-sn457']])
-        self.failUnless(p==['ADSCQ210-SN457'])
+        self.assertTrue(q==[['element1','adscq210-sn457']])
+        self.assertTrue(p==['ADSCQ210-SN457'])
 
     def testMultiPullback(self):
         """Test that pullbacks with multiple matches work properly"""
@@ -1961,29 +1961,29 @@ class DicStructureTestCase(unittest.TestCase):
         q = start_data['_full_frame.id']
         r = start_data['_full_frame.detector_element_id']
         print('Frames from monolithic detector:' + repr(q))
-        self.failUnless(['scan1','frame1'] in q)
-        self.failUnless(['scan1','frame3'] in q)
+        self.assertTrue(['scan1','frame1'] in q)
+        self.assertTrue(['scan1','frame3'] in q)
 
     def testIntegerFilter(self):
         """Test construction of a block that is filtered from another category"""
         start_data = self.pullbacksetup()
         q = start_data['_diffrn_detector_monolithic.id']
-        self.failUnless(q == ['ADSCQ210-SN457'])
+        self.assertTrue(q == ['ADSCQ210-SN457'])
 
     def testTextFilter(self):
         """Test construction of a block that is filtered using a text string"""
         start_data = self.pullbacksetup()
         q = start_data['_detector_axis.id']
         print('q is ' + repr(q))
-        self.failUnless(['detector_y','detector'] in q)
-        self.failUnless(['goniometer_phi','goniometer'] not in q)
+        self.assertTrue(['detector_y','detector'] in q)
+        self.assertTrue(['goniometer_phi','goniometer'] not in q)
 
     def testPopulateFromPullback(self):
         """Test population of a category with id items from a pulled-back category"""
         start_data = self.unpullbacksetup()
         q = start_data['_diffrn_data_frame.key']
-        self.failUnless(['SCAN1','FRAME1'] in q)
-        self.failUnless(['SCAN1','Frame3'] in q)
+        self.assertTrue(['SCAN1','FRAME1'] in q)
+        self.assertTrue(['SCAN1','Frame3'] in q)
 
     def testPopulateFromFilter(self):
         """Test population of a category that has been filtered"""
@@ -1991,8 +1991,8 @@ class DicStructureTestCase(unittest.TestCase):
         q = start_data['_diffrn_detector.id']
         r = start_data['_diffrn_detector.number_of_elements']
         print('q,r = ' + repr(q) + ' , ' + repr(r))
-        self.failUnless(q==['ADSCQ210-SN457'])
-        self.failUnless(r == [1])
+        self.assertTrue(q==['ADSCQ210-SN457'])
+        self.assertTrue(r == [1])
 
     def testPopulateFromMultiFilters(self):
         """Test population of a category that is filtered into multiple
@@ -2000,14 +2000,14 @@ class DicStructureTestCase(unittest.TestCase):
         start_data = self.unpullbacksetup()
         q = start_data['_axis.key']
         print('q ends up as:' + repr(q))
-        self.failUnless(['detector_x','detector'] in q)
-        self.failUnless(['GONIOMETER_PHI','goniometer'] in q)
+        self.assertTrue(['detector_x','detector'] in q)
+        self.assertTrue(['GONIOMETER_PHI','goniometer'] in q)
 
     def testPopulateNonIDFromFilter(self):
         """Test that duplicate datanames are populated"""
         start_data = self.unpullbacksetup()
         q = start_data['_diffrn_data_frame.binary_id']
-        self.failUnless('3' in q)
+        self.assertTrue('3' in q)
 
 class BlockOutputOrderTestCase(unittest.TestCase):
     def tearDown(self):
@@ -2033,7 +2033,7 @@ _item4 4
         f.close()
         q = CifFile.CifFile("tests/order_test.cif",grammar="auto")
         print(repr(q.block_input_order))
-        self.failUnless(q.block_input_order[1] == "testb")
+        self.assertTrue(q.block_input_order[1] == "testb")
         f = open("tests/round_trip_test.cif","w")
         f.write(str(q))
 
