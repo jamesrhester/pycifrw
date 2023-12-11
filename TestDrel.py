@@ -24,9 +24,9 @@ class dRELRuntimeTestCase(unittest.TestCase):
         b = drel_runtime.aug_append(a,1)
         c = drel_runtime.aug_append(a,[3])
         d = drel_runtime.aug_append(a,[[4,5,6]])
-        self.failUnless(b == [[1,2],[3,4],1])
-        self.failUnless(c == [[1,2],[3,4],[3]])
-        self.failUnless(d == [[1,2],[3,4],[[4,5,6]]])
+        self.assertTrue(b == [[1,2],[3,4],1])
+        self.assertTrue(c == [[1,2],[3,4],[3]])
+        self.assertTrue(d == [[1,2],[3,4],[[4,5,6]]])
 
     def testListAdd(self):
         a = [[1,2],[3,4]]
@@ -34,14 +34,14 @@ class dRELRuntimeTestCase(unittest.TestCase):
         b = drel_runtime.aug_add(a,1)
         c = drel_runtime.aug_add(a,[[1,2],[7,6]])
         d = drel_runtime.aug_add(5,2)
-        self.failUnless((c == numpy.array([[2,4],[10,10]])).all())
-        self.failUnless((b == numpy.array([[2,3],[4,5]])).all())
-        self.failUnless(d == 7)
+        self.assertTrue((c == numpy.array([[2,4],[10,10]])).all())
+        self.assertTrue((b == numpy.array([[2,3],[4,5]])).all())
+        self.assertTrue(d == 7)
 
     def testListUnappend(self):
         a = [[1,2],[3,4]]
         c = drel_runtime.aug_remove(a,[1,2])
-        self.failUnless(c == [[3,4]])
+        self.assertTrue(c == [[3,4]])
 
     def testListSubtract(self):
         a = [[1,2],[3,4]]
@@ -49,23 +49,23 @@ class dRELRuntimeTestCase(unittest.TestCase):
         b = drel_runtime.aug_sub(a,1)
         c = drel_runtime.aug_sub(a,[[1,2],[7,6]])
         d = drel_runtime.aug_sub(5,2)
-        self.failUnless((c == numpy.array([[0,0],[-4,-2]])).all())
-        self.failUnless((b == numpy.array([[0,1],[2,3]])).all())
-        self.failUnless(d == 3)
+        self.assertTrue((c == numpy.array([[0,0],[-4,-2]])).all())
+        self.assertTrue((b == numpy.array([[0,1],[2,3]])).all())
+        self.assertTrue(d == 3)
 
     def testDotProduct(self):
         """Test that multiplication works correctly"""
         a = numpy.array([1,2,3])
         b = numpy.array([4,5,6])
         d = drel_runtime.drel_dot(a,b)
-        self.failUnless(d == 32)
+        self.assertTrue(d == 32)
 
     def testMatrixMultiply(self):
         """Test that matrix * matrix works"""
         a = numpy.matrix([[1,0,0],[0,1,0],[0,0,1]])
         b = numpy.matrix([[3,4,5],[6,7,8],[9,10,11]])
         c = drel_runtime.drel_dot(a,b)
-        self.failUnless((c == numpy.matrix([[3,4,5],[6,7,8],[9,10,11]])).any())
+        self.assertTrue((c == numpy.matrix([[3,4,5],[6,7,8],[9,10,11]])).any())
 
     def testMatVecMultiply(self):
         """Test that matrix * vec works"""
@@ -73,8 +73,8 @@ class dRELRuntimeTestCase(unittest.TestCase):
         b = numpy.matrix([[3,4,5],[6,7,8],[9,10,11]])
         c = drel_runtime.drel_dot(a,b)
         d = drel_runtime.drel_dot(b,a)
-        self.failUnless((d == numpy.matrix([4,7,10])).any())
-        self.failUnless((c == numpy.matrix([6,7,8])).any())
+        self.assertTrue((d == numpy.matrix([4,7,10])).any())
+        self.assertTrue((c == numpy.matrix([6,7,8])).any())
 
     def testScalarVecMult(self):
         """Test that multiplying by a scalar works"""
@@ -82,14 +82,14 @@ class dRELRuntimeTestCase(unittest.TestCase):
         b = 4
         c = drel_runtime.drel_dot(b,a)
         d = drel_runtime.drel_dot(a,b)
-        self.failUnless((c == numpy.matrix([4,8,12])).any())
-        self.failUnless((d == numpy.matrix([4,8,12])).any())
+        self.assertTrue((c == numpy.matrix([4,8,12])).any())
+        self.assertTrue((d == numpy.matrix([4,8,12])).any())
 
     def testArrayAppend(self):
         a = numpy.array([0,1,0])
         b = numpy.array([1,0,0])
         a = drel_runtime.aug_append(a,b)
-        self.failUnless((a == numpy.array([[0,1,0],[1,0,0]])).any())
+        self.assertTrue((a == numpy.array([[0,1,0],[1,0,0]])).any())
 
 # Test simple statements
 
@@ -113,12 +113,12 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
         answer = myfunc(self)
         if debug: print(" -> {!r}".format(answer))
         if not array:
-            self.failUnless(answer == right_value)
+            self.assertTrue(answer == right_value)
         else:
             try:
-                self.failUnless((answer == right_value).all())
+                self.assertTrue((answer == right_value).all())
             except:
-                self.failUnless(answer == right_value)
+                self.assertTrue(answer == right_value)
 
 # as we disallow simple expressions on a separate line to avoid a
 # reduce/reduce conflict for identifiers, we need at least an
@@ -254,7 +254,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
        print(realfunc)
        exec(realfunc,globals())
        b = myfunc(self)
-       self.failUnless(b['bx']==25)
+       self.assertTrue(b['bx']==25)
 
     def test_Tables_2(self):
        """Test that brace-delimited tables are parsed correctly"""
@@ -269,7 +269,7 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
        print(realfunc)
        exec(realfunc,globals())
        b = myfunc(self)
-       self.failUnless(b==1)
+       self.assertTrue(b==1)
 
     def test_subscription(self):
        """Test proper list of dependencies is returned"""
@@ -313,7 +313,7 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
                                                    cif_dic=self.dic)
        if debug: print("-> %s" % realfunc)
        exec(realfunc,globals())
-       self.failUnless(myfunc(self) == right_value)
+       self.assertTrue(myfunc(self) == right_value)
 
    def test_multi_assign(self):
        """ Test that multiple assignments are parsed """
@@ -416,7 +416,7 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        exec(realfunc,globals())
        retval = Closest(0.2,0.8,None)
        print('Closest 0.2,0.8 returns {!r},{!r}'.format(retval[0], retval[1]))
-       self.failUnless(retval == StarList([1.2,1]))
+       self.assertTrue(retval == StarList([1.2,1]))
 
 class MoreComplexTestCase(unittest.TestCase):
    def setUp(self):
@@ -442,7 +442,7 @@ class MoreComplexTestCase(unittest.TestCase):
                                                    cif_dic = self.dic)
        exec(realfunc,globals())
        othertotal = myfunc(self)
-       self.failUnless(othertotal==55)
+       self.assertTrue(othertotal==55)
 
    def test_complex_if(self):
        """Test if with single-statement suite"""
@@ -469,7 +469,7 @@ class MoreComplexTestCase(unittest.TestCase):
        exec(realfunc,globals())
        b = myfunc(self)
        print("if returns {!r}".format(b))
-       self.failUnless(b==('B', 'Possible mismatch between cell angles and cell setting'))
+       self.assertTrue(b==('B', 'Possible mismatch between cell angles and cell setting'))
 
 
 # We don't test the return value until we have a way to actually access it!
@@ -492,7 +492,7 @@ class MoreComplexTestCase(unittest.TestCase):
        exec(realfunc,globals())
        b = myfunc(self)
        print("Geom_angle.angle = %s" % b['_geom_angle.value'])
-       self.failUnless(b['_geom_angle.value']==[1,2,3,4,5])
+       self.assertTrue(b['_geom_angle.value']==[1,2,3,4,5])
 
 class WithDictTestCase(unittest.TestCase):
    """Now test flow control which requires a dictionary present"""
@@ -530,7 +530,7 @@ class WithDictTestCase(unittest.TestCase):
        #
        atmass = myfunc(self.testblock)
        print('test value now {!r}'.format(atmass))
-       self.failUnless(atmass == [120,280,240])
+       self.assertTrue(atmass == [120,280,240])
 
    def test_Lists(self):
        """Test case found in Cif dictionary """
@@ -582,7 +582,7 @@ class WithDictTestCase(unittest.TestCase):
        self.testblock.assign_dictionary(self.testdic)
        newmeth = myfunc(self.testblock)
        print('exptl method now %s' % newmeth)
-       self.failUnless(newmeth == "single-crystal diffraction")
+       self.assertTrue(newmeth == "single-crystal diffraction")
 
 
    def test_loop_with_stmt_2(self):
@@ -599,7 +599,7 @@ class WithDictTestCase(unittest.TestCase):
        exec(realfunc,globals())
        atmass = myfunc(self.testblock)
        print('test value now {!r}'.format(atmass))
-       self.failUnless(atmass == [120,280,240])
+       self.assertTrue(atmass == [120,280,240])
 
    def test_subscription(self):
        """Test proper list of dependencies is returned"""
@@ -613,7 +613,7 @@ class WithDictTestCase(unittest.TestCase):
                                                                 loopable=loopable_cats,depends=True,
                                                                 cif_dic=testdic)
        print(realfunc, repr(dependencies))
-       self.failUnless(dependencies == set(['_model_site.id']))
+       self.assertTrue(dependencies == set(['_model_site.id']))
 
    def test_current_row(self):
        """Test that methods using Current_Row work properly"""
@@ -628,7 +628,7 @@ class WithDictTestCase(unittest.TestCase):
        exec(realfunc,globals())
        rownums = myfunc(self.testblock)
        print('row id now {!r}'.format(rownums))
-       self.failUnless(rownums == [1,2,3])
+       self.assertTrue(rownums == [1,2,3])
 
    def test_loop_statement(self):
        """Test proper processing of loop statements"""
@@ -647,7 +647,7 @@ class WithDictTestCase(unittest.TestCase):
        exec(realfunc,globals())
        atmass = myfunc(self.testblock)
        print('atomic mass now %f' % atmass)
-       self.failUnless(atmass == 552.488)
+       self.assertTrue(atmass == 552.488)
 
    def test_complex_f(self):
        """This calculation failed during testing"""
@@ -702,7 +702,7 @@ class WithDictTestCase(unittest.TestCase):
        print('model_site.adp_matrix_beta becomes...')
        print(realfunc)
        print(deps)
-       self.failUnless('_space_group_symop.RT' in deps)
+       self.assertTrue('_space_group_symop.RT' in deps)
 
    def test_array_access(self):
        """Test that arrays are converted and returned correctly"""
@@ -721,7 +721,7 @@ class WithDictTestCase(unittest.TestCase):
        self.testblock.assign_dictionary(testdic)
        b = myfunc(self.testblock)
        print('symops are now {!r}'.format(b))
-       self.failUnless(b[1] == '1_555')
+       self.assertTrue(b[1] == '1_555')
 
    def testIfStatement(self):
         """Test that we handle optional values appropriately"""
@@ -765,7 +765,7 @@ class WithDictTestCase(unittest.TestCase):
         self.testblock.assign_dictionary(testdic)
         b = myfunc(self.testblock)
         print('tensor beta is now {!r}'.format(b))
-        self.failUnless(b[1][1][1] == 0.031)  #U22 for O2
+        self.assertTrue(b[1][1][1] == 0.031)  #U22 for O2
 
 if __name__=='__main__':
     global testdic
