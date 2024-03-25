@@ -3,7 +3,7 @@
 # Customizable variables:
 #
 # Instance of Python to be used for the yapps2.py script.
-PYTHON = python2
+PYTHON = python3
 
 package: CifFile_module.py StarFile.py Parsers documentation
 #

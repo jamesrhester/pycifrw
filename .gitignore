@@ -5,8 +5,8 @@
 
 # generated Python sources
 /src/CifFile.py
-/src/StarFile.py
-/src/YappsStarParser_*.py
+#/src/StarFile.py
+#/src/YappsStarParser_*.py
 /src/TypeContentsParser.py
 
 # build directories
