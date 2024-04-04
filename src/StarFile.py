@@ -114,7 +114,7 @@ class LoopBlock(object):
     def __init__(self,parent_block,dataname):
         self.loop_no = parent_block.FindLoop(dataname)
         if self.loop_no < 0:
-            raise KeyError('%s is not in a loop structure' % dataname)
+            raise KeyError('{} is not in a loop structure'.format(dataname))
         self.parent_block = parent_block
 
     def keys(self):
@@ -133,7 +133,7 @@ class LoopBlock(object):
         if dataname in self.keys():
             return self.parent_block[dataname]
         else:
-            raise KeyError('%s not in loop block' % dataname)
+            raise KeyError('{} not in loop block'.format(dataname))
 
     def __setitem__(self,dataname,value):
         self.parent_block[dataname] = value
@@ -212,7 +212,7 @@ class LoopBlock(object):
             if len(drill_values)>0:            #this block has values
                 drill_values=drill_values[0]   #drill in
             else:
-                raise StarError("Malformed loop packet %s" % repr( top_items[0] ))
+                raise StarError("Malformed loop packet {}".format(repr( top_items[0] )))
         my_length = len(drill_values[0])       #length of 'string' entry
         if self.dimension == 0:                #top level
             for aloop in self.loops:
@@ -225,7 +225,9 @@ class LoopBlock(object):
         else:                                  #in some loop
             for i in range(my_length):
                 kvpairs = map(lambda a:(a,self.coord_to_group(a,coord)[i]),self.block.keys())
+                kvpairs = list(kvpairs)
                 kvvals = map(lambda a:a[1],kvpairs)   #just values
+                kvvals = list(kvvals)
                 # print "Recursive kvpairs at %d: %s" % (i,repr( kvpairs ))
                 if self.loops:
                   for aloop in self.loops:
@@ -322,7 +324,7 @@ class LoopBlock(object):
             # return loop position
             return (-1, self.item_order.index(itemname))
         if not itemname in self:
-            raise ValueError('No such dataname %s' % itemname)
+            raise ValueError('No such dataname {}'.format(itemname))
         testname = itemname.lower()
         if testname in self.item_order:
             return (-1,self.item_order.index(testname))
@@ -346,7 +348,7 @@ class LoopBlock(object):
         if loop_no >= 0:
             return self.loops[loop_no]
         else:
-            raise KeyError('%s is not in any loop' % keyname)
+            raise KeyError('{} is not in any loop'.format(keyname))
 
     def AddToLoop(self,dataname,loopdata):
         thisloop = self.GetLoop(dataname)
@@ -439,19 +441,19 @@ class StarBlock(object):
                        new_value = self.dictionary.derive_item(key,self,store_value=self.cache_vals,allow_defaults=True)
                    except StarDerivationFailure as s:
                        print("In StarBlock.__getitem__, " + repr(s))
-                       raise KeyError('No such item: %s' % key)
-               print('Set %s to derived value %s' % (key, repr(new_value)))
+                       raise KeyError('No such item: {}'.format(key))
+               print('Set {} to derived value {}'.format(key, repr(new_value)))
                return new_value
            else:
-               raise KeyError('No such item: %s' % key)
+               raise KeyError('No such item: {}'.format(key))
         # we now have an item, we can try to convert it to a number if that is appropriate
         # note numpy values are never stored but are converted to lists
         if not self.dictionary or not key in self.dictionary: return rawitem
-        print('%s: is_value %s provide_value %s value %s' % (key,repr( is_value ),repr( self.provide_value ),repr( rawitem )))
+        print('{}: is_value {} provide_value {} value {}'.format(key,repr( is_value ),repr( self.provide_value ),repr( rawitem )))
         if is_value:
             if self.provide_value: return rawitem
             else:
-               print('Turning %s into string' % repr( rawitem ))
+               print('Turning {} into string'.format(repr( rawitem )))
                return self.convert_to_string(key)
         else:    # a string
             if self.provide_value and ((not isinstance(rawitem,list) and rawitem != '?' and rawitem != ".") or \
@@ -475,10 +477,10 @@ class StarBlock(object):
                            new_value = self.dictionary.derive_item(key,self,store_value=True,allow_defaults=True)
                        except StarDerivationFailure as s:
 
-                           print("Could not turn %s into a value:" + repr(s))
+                           print("Could not turn {} into a value:".format(repr(s)))
                            return rawitem
                    else:
-                       print('Set %s to derived value %s' % (key, repr( new_value )))
+                       print('Set {} to derived value {}'.format(key, repr( new_value )))
                        return new_value
             return rawitem   #can't do anything
 
@@ -559,7 +561,7 @@ class StarBlock(object):
             # return loop position
             return (-1, self.item_order.index(itemname))
         if not itemname in self:
-            raise ValueError('No such dataname %s' % itemname)
+            raise ValueError('No such dataname {}'.format(itemname))
         testname = itemname.lower()
         if testname in self.item_order:
             return (-1,self.item_order.index(testname))
@@ -626,14 +628,14 @@ class StarBlock(object):
         `precheck` is True, this checking is bypassed.  No checking is necessary
         when values are read from a CIF file as they are already in correct form."""
         if not isinstance(key,(unicode,str)):
-             raise TypeError('Star datanames are strings only (got %s)' % repr( key ))
+             raise TypeError('Star datanames are strings only (got {})'.format(repr( key )))
         key = unicode(key)    #everything is unicode internally
         if not precheck:
              self.check_data_name(key,self.maxnamelength)    # make sure no nasty characters
         # check for overwriting
         if key in self:
              if not self.overwrite:
-                 raise StarError( 'Attempt to insert duplicate item name %s' % key)
+                 raise StarError( 'Duplicated item name: {}'.format(key))
         if not precheck:   #need to sanitise
             regval,empty_val = self.regularise_data(value)
             pure_string = check_stringiness(regval)
@@ -670,7 +672,7 @@ class StarBlock(object):
                self.AddItem(key,value)
            self.CreateLoop(incomingdata[0])
         elif not isinstance(incomingdata[0],(unicode,str)):
-             raise TypeError('Star datanames are strings only (got %s)' % repr( incomingdata[0] ))
+             raise TypeError('Star datanames are strings only (got {})'.format(repr( incomingdata[0] )))
         else:
             self.AddItem(incomingdata[0],incomingdata[1])
 
@@ -695,14 +697,14 @@ class StarBlock(object):
             if len ([a for a in dataname if ord(a) == 0xFFFE or ord(a) == 0xFFFF]) > 0:
                 raise StarError( 'Dataname ' + dataname + ' contains unsupported characters (U+FFFE and/or U+FFFF)')
             if len ([a for a in dataname if ord(a) > 0x10000 and (ord(a) & 0xE == 0xE)]) > 0:
-                print('%s fails' % dataname)
-                for a in dataname: print('%x' % ord(a),end="")
+                print('{} fails'.format(dataname))
+                for a in dataname: print('{}'.format(ord(a)),end="")
                 print()
                 raise StarError( u'Dataname ' + dataname + u' contains unsupported characters (U+xFFFE and/or U+xFFFF)')
 
     def check_name_length(self,dataname,maxlength):
         if len(dataname)>maxlength:
-            raise StarError( 'Dataname %s exceeds maximum length %d' % (dataname,maxlength))
+            raise StarError( 'Dataname {} exceeds maximum length {}'.format((dataname,maxlength)))
         return
 
     def check_item_value(self,item):
@@ -714,11 +716,11 @@ class StarBlock(object):
                 if it=='': return
                 me = self.char_check.match(it)
                 if not me:
-                    print("Fail value check: %s" % it)
-                    raise StarError('Bad character in %s' % it)
+                    print("Fail value check: {}".format(it))
+                    raise StarError('Bad character in {}'.format(it))
                 else:
                     if me.span() != (0,len(it)):
-                        print("Fail value check, match only %d-%d in string %s" % (me.span()[0],me.span()[1],repr( it )))
+                        print("Fail value check, match only {}-{} in string {}".format(me.span()[0],me.span()[1],repr( it )))
                         raise StarError('Data item "' + repr( it ) +  u'"... contains forbidden characters')
         [check_one(a) for a in test_item]
 
@@ -774,7 +776,7 @@ class StarBlock(object):
         try:
             s,v = self.block[itemname.lower()]
         except KeyError:
-            raise KeyError('Itemname %s not in datablock' % itemname)
+            raise KeyError('Itemname {} not in datablock'.format(itemname))
         # prefer string value unless all are None
         # are we a looped value?
         if not isinstance(s,(tuple,list)) or isinstance(s,StarList):
@@ -803,7 +805,7 @@ class StarBlock(object):
                if len(listed_values) == len(datanames):
                    len_set = set([len(self[a]) for a in datanames])
                    if len(len_set)>1:
-                       raise ValueError('Request to loop datanames %s with different lengths: %s' % (repr( datanames ),repr( len_set )))
+                       raise ValueError('Request to loop datanames {} with different lengths: {}'.format(repr( datanames ),repr( len_set )))
                elif len(listed_values) != 0:
                    raise ValueError('Request to loop datanames where some are single values and some are not')
                else:    #all are unlisted, turn into lists
@@ -838,7 +840,7 @@ class StarBlock(object):
         lower_newname = newname.lower()
         loop_no = self.FindLoop(oldname)
         if loop_no < 0:
-            raise KeyError('%s not in loop' % oldname)
+            raise KeyError('{} not in loop'.format(oldname))
         if lower_newname in self.loops[loop_no]:
             return
         # check length
@@ -847,7 +849,7 @@ class StarBlock(object):
         loop_len = len(self[oldname])
         self.provide_value = old_provides
         if len(self[newname]) != loop_len:
-            raise StarLengthError('Mismatch of loop column lengths for %s: should be %d' % (newname,loop_len))
+            raise StarLengthError('Mismatch of loop column lengths for {}: should be {}'.format((newname,loop_len)))
         # remove from any other loops
         [self.loops[a].remove(lower_newname) for a in self.loops if lower_newname in self.loops[a]]
         # and add to this loop
@@ -889,7 +891,7 @@ class StarBlock(object):
         if loop_no >= 0:
             return self.loops[loop_no]
         else:
-            raise KeyError('%s is not in any loop' % keyname)
+            raise KeyError('{} is not in any loop'.format(keyname))
 
     def AddLoopName(self,oldname, newname):
         """Add `newname` to the loop containing `oldname`. If it is already in the new loop, no
@@ -899,7 +901,7 @@ class StarBlock(object):
         lower_newname = newname.lower()
         loop_no = self.FindLoop(oldname)
         if loop_no < 0:
-            raise KeyError('%s not in loop' % oldname)
+            raise KeyError('{} not in loop'.format(oldname))
         if lower_newname in self.loops[loop_no]:
             return
         # check length
@@ -908,7 +910,7 @@ class StarBlock(object):
         loop_len = len(self[oldname])
         self.provide_value = old_provides
         if len(self[newname]) != loop_len:
-            raise StarLengthError('Mismatch of loop column lengths for %s: should be %d' % (newname,loop_len))
+            raise StarLengthError('Mismatch of loop column lengths for {}: should be {}'.format(newname,loop_len))
         # remove from any other loops
         [self.loops[a].remove(lower_newname) for a in self.loops if lower_newname in self.loops[a]]
         # and add to this loop
@@ -959,8 +961,8 @@ class StarBlock(object):
         else:
            one_pack= [a for a in my_loop if getattr(a,keyname)==keyvalue]
         if len(one_pack)!=1:
-            raise ValueError("Bad packet key %s = %s: returned %d packets" % (keyname,keyvalue,len(one_pack)))
-        print("Keyed packet: %s" % one_pack[0])
+            raise ValueError("Bad packet key {} = {}: returned {} packets".format(keyname,keyvalue,len(one_pack)))
+        print("Keyed packet: {}".format(one_pack[0]))
         return one_pack[0]
 
     def GetCompoundKeyedPacket(self,keydict):
@@ -977,8 +979,8 @@ class StarBlock(object):
             else:
                my_loop = list([a for a in my_loop if getattr(a,one_key)==keyval])
         if len(my_loop)!=1:
-            raise ValueError("Bad packet keys %s: returned %d packets" % (repr(keydict),len(my_loop)))
-        print("Compound keyed packet: %s" % my_loop[0])
+            raise ValueError("Bad packet keys {}: returned {} packets".format(repr(keydict),len(my_loop)))
+        print("Compound keyed packet: {}".format(my_loop[0]))
         return my_loop[0]
 
     def GetKeyedSemanticPacket(self,keyvalue,cat_id):
@@ -1002,10 +1004,10 @@ class StarBlock(object):
             except KeyError:        #missing key
                 try:
                     test_key = self[cat_key]  #generate key if possible
-                    print('Test key is %s' % repr( test_key ))
+                    print('Test key is {}'.format(repr( test_key )))
                     if test_key is not None and\
                     not (isinstance(test_key,list) and (None in test_key or len(test_key)==0)):
-                        print('Getting packet for key %s' % repr( keyvalue ))
+                        print('Getting packet for key {}'.format(repr( keyvalue )))
                         extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
                 except:             #cannot be generated
                     continue
@@ -1019,7 +1021,7 @@ class StarBlock(object):
                 p.key = [keyname]
                 break
         if not hasattr(p,"key"):
-            raise ValueError("No key found for %s, packet is %s" % (cat_id,str(p)))
+            raise ValueError("No key found for {}, packet is {}".format(cat_id,str(p)))
         p.cif_dictionary = self.dictionary
         p.fulldata = self
         return p
@@ -1085,14 +1087,14 @@ class StarBlock(object):
         elif new_grammar == 'STAR2':
             self.list_delimiter = ", "
         elif new_grammar not in ['1.0','1.1']:
-            raise StarError('Request to set unknown grammar %s' % new_grammar)
+            raise StarError('Request to set unknown grammar {}'.format(new_grammar))
 
     def SetOutputLength(self,wraplength=80,maxoutlength=2048):
         """Set the maximum output line length (`maxoutlength`) and the line length to
         wrap at (`wraplength`).  The wrap length is a target only and may not always be
         possible."""
         if wraplength > maxoutlength:
-            raise StarError("Wrap length (requested %d) must be <= Maximum line length (requested %d)" % (wraplength,maxoutlength))
+            raise StarError("Wrap length (requested {}) must be <= Maximum line length (requested {})".format((wraplength,maxoutlength)))
         self.wraplength = wraplength
         self.maxoutlength = maxoutlength
 
@@ -1256,7 +1258,7 @@ class StarBlock(object):
              (have_numpy and isinstance(itemvalue,(numpy.number))):  #TODO - handle uncertainties
            stringsink.write(str(itemvalue),canbreak=True,startcol=startcol)   #numbers
         else:
-           raise ValueError('Value in unexpected format for output: %s' % repr( itemvalue ))
+           raise ValueError('Value in unexpected format for output: {}'.format(repr( itemvalue )))
 
     def create_ordering(self,finish_at,start_from):
         """Create a canonical ordering that includes loops using our formatting hints dictionary"""
@@ -1288,7 +1290,7 @@ class StarBlock(object):
                 if len(loop_order)>0:
                     cand_pos = min(cand_pos,self.output_order.index(loop_order[0]))
                 if cand_pos < len(self.output_order):
-                    print('Output starts from %s, requested %s' % (self.output_order[cand_pos],start_from))
+                    print('Output starts from {}, requested {}'.format(self.output_order[cand_pos],start_from))
                     self.output_order = self.output_order[cand_pos:]
                 else:
                     print('Start is beyond end of output list')
@@ -1308,7 +1310,7 @@ class StarBlock(object):
                 if len(loop_order)>0:
                     cand_pos = min(cand_pos,self.output_order.index(loop_order[0]))
                 if cand_pos < len(self.output_order):
-                    print('Output finishes before %s, requested before %s' % (self.output_order[cand_pos],finish_at))
+                    print('Output finishes before {}, requested before {}'.format(self.output_order[cand_pos],finish_at))
                     self.output_order = self.output_order[:cand_pos]
                 else:
                     print('All of block output')
@@ -1344,7 +1346,7 @@ class StarBlock(object):
         if mode == 'strict':
            for key in new_block.keys():
                if key in self and key not in match_att:
-                  raise StarError( "Identical keys %s in strict merge mode" % key)
+                  raise StarError( "Identical keys {} in strict merge mode".format(key))
                elif key not in match_att:           #a new dataname
                    self[key] = new_block[key]
            # we get here if there are no keys in common, so we can now copy
@@ -1369,7 +1371,7 @@ class StarBlock(object):
            # we have lost case information
            self.true_case.update(new_block.true_case)
         elif mode == 'overlay':
-           print('Overlay mode, current overwrite is %s' % self.overwrite)
+           print('Overlay mode, current overwrite is {}'.format(self.overwrite))
            raise StarError('Overlay block merge mode not implemented')
            save_overwrite = self.overwrite
            self.overwrite = True
@@ -1423,7 +1425,7 @@ class StarBlock(object):
 
     def assign_dictionary(self,dic):
         if not dic.diclang=="DDLm":
-            print("Warning: ignoring dictionary %s" % dic.my_uri)
+            print("Warning: ignoring dictionary {}".format(dic.my_uri))
             return
         self.dictionary = dic
 
@@ -1446,7 +1448,7 @@ class StarPacket(list):
         if att_name.lower() in self.__dict__:
             return getattr(self,att_name.lower())
         if att_name in ('cif_dictionary','fulldata','key'):
-            raise AttributeError('Programming error: can only assign value of %s' % att_name)
+            raise AttributeError('Programming error: can only assign value of {}'.format(att_name))
         d = self.cif_dictionary
         c = self.fulldata
         k = self.key
@@ -1516,7 +1518,7 @@ class BlockCollection(object):
     def set_grammar(self,new_grammar):
         """Set the syntax and grammar for output to `new_grammar`"""
         if new_grammar not in ['1.1','1.0','2.0','STAR2']:
-            raise StarError('Unrecognised output grammar %s' % new_grammar)
+            raise StarError('Unrecognised output grammar {}'.format(new_grammar))
         self.grammar = new_grammar
 
     def set_characterset(self,characterset):
@@ -1550,7 +1552,7 @@ class BlockCollection(object):
            #print 'Visible keys:' + `self.visible_keys`
            #print 'All keys' + `self.lower_keys`
            #print 'Child table' + `self.child_table`
-           raise KeyError('No such item %s' % key)
+           raise KeyError('No such item {}'.format(key))
 
     # we have to get an ordered list of the current keys,
     # as we'll have to delete one of them anyway.
@@ -1644,7 +1646,7 @@ class BlockCollection(object):
         if self.standard == "CIF":
             blockcontents.setmaxnamelength(75)
         if len(blockname)>75:
-                 raise StarError('Blockname %s is longer than 75 characters' % blockname)
+                 raise StarError('Blockname {} is longer than 75 characters'.format(blockname))
         if fix:
             newblockname = re.sub('[  \t]','_',blockname)
         else: newblockname = blockname
@@ -1679,7 +1681,7 @@ class BlockCollection(object):
                  self.child_table[new_lowerbn]=self.PC(newblockname,parent.lower())
                  self.visible_keys.append(new_lowerbn)
            else:
-               print('Warning:Parent block %s does not exist for child %s' % (parent,newblockname))
+               print('Warning:Parent block {} does not exist for child {}'.format(parent,newblockname))
         self[new_lowerbn].set_grammar(self.grammar)
         self[new_lowerbn].set_characterset(self.characterset)
         self[new_lowerbn].formatting_hints = self.master_template
@@ -1712,9 +1714,9 @@ class BlockCollection(object):
         realoldname = oldname.lower()
         realnewname = newname.lower()
         if realnewname in self.lower_keys:
-            raise StarError('Cannot change blockname %s to %s as %s already present' % (oldname,newname,newname))
+            raise StarError('Cannot change blockname {} to {} as {} already present'.format((oldname,newname,newname)))
         if realoldname not in self.lower_keys:
-            raise KeyError('Cannot find old block %s' % realoldname)
+            raise KeyError('Cannot find old block {}'.format(realoldname))
         self._rekey(realoldname,realnewname,block_id=newname)
 
     def makebc(self,namelist,scoping='dictionary'):
@@ -1744,7 +1746,7 @@ class BlockCollection(object):
         if parent is not None:
             parent_name = [a[0] for a in self.dictionary.items() if a[1] == parent]
             if len(parent_name)==0 or len(parent_name)>1:
-                raise StarError("Unable to find unique parent block name: have %s" % str(parent_name))
+                raise StarError("Unable to find unique parent block name: have {}".format(str(parent_name)))
             parent_name = parent_name[0]
         else:
             parent_name = None  #an error will be thrown if we treat as a string
@@ -1765,7 +1767,7 @@ class BlockCollection(object):
                     while start_key in new_bc.lower_keys: start_key = start_key+'+'
                     new_bc._rekey(dup_key,start_key)
                   else:
-                    raise StarError("In strict merge mode:duplicate keys %s" % dup_key)
+                    raise StarError("Duplicated keys {}".format(dup_key))
         self.dictionary.update(new_bc.dictionary)
         self.lower_keys.update(new_bc.lower_keys)
         self.visible_keys += (list(new_bc.lower_keys))
@@ -1821,12 +1823,12 @@ class BlockCollection(object):
                 self.NewBlock(basekey,new_bc[key],parent=new_parent)   #add the block
             else:
                 if mode=="strict":
-                    raise StarError( "In strict merge mode: block %s in old and block %s in new files" % (basekey,key))
+                    raise StarError( "In strict merge mode: block {} in old and block {} in new files".format(basekey,key))
                 elif mode=="overlay":
                     # print "Merging block %s with %s" % (basekey,key)
                     self[basekey].merge(new_bc[key],mode,match_att=match_att)
                 else:
-                    raise StarError( "Merge called with unknown mode %s" % mode)
+                    raise StarError( "Merge called with unknown mode {}".format(mode))
 
     def checknamelengths(self,target_block,maxlength=-1):
         if maxlength < 0:
@@ -1853,7 +1855,7 @@ class BlockCollection(object):
     def __setattr__(self,attr_name,newval):
         if attr_name == 'scoping':
             if newval not in ('dictionary','instance'):
-                raise StarError("Star file may only have 'dictionary' or 'instance' scoping, not %s" % newval)
+                raise StarError("Star file may only have 'dictionary' or 'instance' scoping, not {}".format(newval))
             if newval == 'dictionary':
                 self.visible_keys = [a for a in self.lower_keys]
             else:
@@ -1867,12 +1869,12 @@ class BlockCollection(object):
         try:
             first = next(possibles)   #get first one
         except:
-            raise StarError('no parent for %s' % blockname)
+            raise StarError('no parent for {}'.format(blockname))
         try:
            second = next(possibles)
         except StopIteration:
            return first[1].parent
-        raise StarError('More than one parent for %s' % blockname)
+        raise StarError('More than one parent for {}'.format(blockname))
 
     def get_roots(self):
         """Get the top-level blocks"""
@@ -1923,9 +1925,9 @@ class BlockCollection(object):
         """Set the parent block"""
         # first check that both blocks exist
         if parentname.lower() not in self.lower_keys:
-            raise KeyError('Parent block %s does not exist' % parentname)
+            raise KeyError('Parent block {} does not exist'.format(parentname))
         if childname.lower() not in self.lower_keys:
-            raise KeyError('Child block %s does not exist' % childname)
+            raise KeyError('Child block {} does not exist'.format(childname))
         old_entry = self.child_table[childname.lower()]
         self.child_table[childname.lower()]=self.PC(old_entry.block_id,
                parentname.lower())
@@ -1989,7 +1991,7 @@ class BlockCollection(object):
                     outstring.write('\n\n' + 'save_' + '\n')
                     all_names.remove(child_ref.lower())
             else:
-                raise StarError('Grammar %s is not recognised for output' % self.grammar)
+                raise StarError('Grammar {} is not recognised for output'.format(self.grammar))
             if self.standard != 'Dic':              #put contents after save frames
                 outstring.write(str(self[blockref]))
             else:
@@ -1997,7 +1999,9 @@ class BlockCollection(object):
         returnstring =  outstring.getvalue()
         outstring.close()
         if len(all_names)>0:
-            print('WARNING: following blocks not output: %s' % repr(all_names))
+            print('WARNING: following blocks not output: {}'.format(repr(all_names)))
+        else:
+            print('All blocks output.')
         return returnstring
 
     def block_to_string_nested(self,block_ref,block_id,outstring,indentlevel=0):
@@ -2060,7 +2064,7 @@ class CIFStringIO(StringIO):
         # do we need to break?
         if delimiter:
             if len(outstring)>1:
-                raise ValueError('Delimiter %s is longer than one character' % repr( outstring ))
+                raise ValueError('Delimiter {} is longer than one character'.format(repr( outstring )))
             output_delimiter = True
         if mustbreak:    #insert a new line and indent
             temp_string = '\n' + ' ' * self.indentlist[-1]
@@ -2083,7 +2087,7 @@ class CIFStringIO(StringIO):
                 self.currentpos = startcol
                 self.last_char = ' '
             else:
-                print('Could not format %s at column %d as already at %d' % (outstring,startcol,self.currentpos))
+                print('Could not format {} at column {} as already at {}'.format(outstring,startcol,self.currentpos))
                 startcol = -1   #so that tabbing works as a backup
         #handle tabs
         if self.tabwidth >0 and do_tab and startcol < 0:
@@ -2140,7 +2144,7 @@ class StarDerivationError(Exception):
     def __init__(self,fail_name):
         self.fail_name = fail_name
     def __str__(self):
-        return "Derivation of %s failed, None returned" % self.fail_name
+        return "Derivation of {} failed, None returned".format(self.fail_name)
 
 #
 # This is subclassed from AttributeError in order to allow hasattr
@@ -2150,7 +2154,7 @@ class StarDerivationFailure(AttributeError):
     def __init__(self,fail_name):
         self.fail_name = fail_name
     def __str__(self):
-        return "Derivation of %s failed" % self.fail_name
+        return "Derivation of {} failed".format(self.fail_name)
 
 def ReadStar(filename,prepared = None, maxlength=-1,
              scantype='standard',grammar='STAR2',CBF=False, permissive=False):
@@ -2206,7 +2210,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
     elif grammar == 'STAR2':
         try_list = [('STAR2',YST)]
     else:
-        raise AttributeError('Unknown STAR/CIF grammar requested, %s' % repr( grammar ))
+        raise AttributeError('Unknown STAR/CIF grammar requested, {}'.format(repr( grammar )))
     if isinstance(filename,(unicode,str)):
         # create an absolute URL
         relpath = urlparse(filename)
@@ -2231,9 +2235,9 @@ def ReadStar(filename,prepared = None, maxlength=-1,
         except UnicodeDecodeError:
             if permissive:
                 text = filestream.read().decode('latin1')
-                print("WARNING: %s violates standard (latin1 encoding instead of UTF8)." % filename)
+                print("WARNING: {} violates standard (latin1 encoding instead of UTF8).".format(filename))
             else:
-                raise StarError("%s: bad encoding (must be utf8 or ascii)" % filename)
+                raise StarError("{}: bad encoding (must be utf8 or ascii)".format(filename))
         filestream.close()
     else:
         filestream = filename   #already opened for us
@@ -2267,12 +2271,12 @@ def ReadStar(filename,prepared = None, maxlength=-1,
         toolong = [a for a in split if len(a)>maxlength]
         if toolong:
             pos = split.index(toolong[0])
-            raise StarError( 'Line %d contains more than %d characters' % (pos+1,maxlength))
+            raise StarError( 'Line {} contains more than {} characters'.format(pos+1,maxlength))
     # honour the header string
     if text[:10] != r"#\#CIF_2.0" and ('2.0',Y20) in try_list:
         try_list.remove(('2.0',Y20),)
         if not try_list:
-            raise StarError('File %s missing CIF2.0 header' % (filename))
+            raise StarError('File {} missing CIF2.0 header'.format(filename))
     for grammar_name,Y in try_list:
        if scantype == 'standard' or grammar_name in ['2.0','STAR2']:
             parser = Y.StarParser(Y.StarParserScanner(text))
@@ -2300,8 +2304,8 @@ def ReadStar(filename,prepared = None, maxlength=-1,
            proto_star.set_grammar(grammar_name)   #remember for output
            break
     if proto_star is None:
-        errorstring = 'Syntax error in input file: last value parsed was %s' % Y.lastval
-        errorstring = errorstring + '\nParser status: %s' % repr( parser._scanner )
+        errorstring = 'Syntax error in input file: last value parsed was {}'.format(Y.lastval)
+        errorstring = errorstring + '\nParser status: {}'.format(repr( parser._scanner ))
         raise StarError( errorstring)
     # set visibility correctly
     proto_star.scoping = 'dictionary'
@@ -2380,7 +2384,7 @@ def remove_line_prefix(instring):
     prefix_match = re.match("(?P<prefix>[^;\\\n][^\n\\\\]+)(?P<folding>\\\\{1,2}[ \t\v\f]*\n)",instring)
     if prefix_match is not None:
         prefix_text = prefix_match.group('prefix')
-        print('Found prefix %s' % prefix_text)
+        print('Found prefix {}'.format(prefix_text))
         prefix_end = prefix_match.end('folding')
         # keep any line folding instructions
         if prefix_match.group('folding')[:2]=='\\\\':  #two backslashes
@@ -2491,7 +2495,7 @@ def process_template(template_file):
             total_items = len(template_as_cif.loops[item])
             testname = testnames[0]
             #find the loop spec line in the file
-            loop_regex = "(^[ \t]*(?P<loop>loop_)[ \t\n\r]+(?P<name>" + testname + ")([ \t\n\r]+_[\\S]+){%d}[ \t]*$(?P<packet>(.(?!_loop|_[\\S]+))*))" % (total_items - 1)
+            loop_regex = "(^[ \t]*(?P<loop>loop_)[ \t\n\r]+(?P<name>" + testname + ")([ \t\n\r]+_[\\S]+){" + str(total_items - 1) + "}[ \t]*$(?P<packet>(.(?!_loop|_[\\S]+))*))"
             loop_line = re.search(loop_regex,template_string,re.I|re.M|re.S)
             loop_so_far = loop_line.end()
             packet_text = loop_line.group('packet')
@@ -2514,10 +2518,10 @@ def process_template(template_file):
                     try:
                         last_end = next_end
                         next_end = next(line_end_pos).start()
-                        print('next end %d' % next_end)
+                        print('next end {}'.format(next_end))
                     except StopIteration:
                         break
-                print('Start %d, last_end %d' % (thismatch.start('all'),last_end))
+                print('Start {}, last_end {}'.format(thismatch.start('all'),last_end))
                 col_pos = thismatch.start('all') - last_end + 1
                 if thismatch.group('none') is None:
                     if thismatch.group('sqqq') is not None:
@@ -2525,7 +2529,7 @@ def process_template(template_file):
                     else:
                         hint_dict.update({'delimiter':thismatch.groups()[0][0]})
                 hint_dict.update({'column':col_pos})
-                print('%s: %s' % (loopname,repr( hint_dict )))
+                print('{}: {}'.format(loopname,repr( hint_dict )))
                 form_hints.append(hint_dict)
     return form_hints
 
