@@ -1767,7 +1767,7 @@ class BlockCollection(object):
                     while start_key in new_bc.lower_keys: start_key = start_key+'+'
                     new_bc._rekey(dup_key,start_key)
                   else:
-                    raise StarError("Duplicated keys {}".format(dup_key))
+                    raise StarError("Duplicated keys: {}".format(dup_key))
         self.dictionary.update(new_bc.dictionary)
         self.lower_keys.update(new_bc.lower_keys)
         self.visible_keys += (list(new_bc.lower_keys))
@@ -2022,7 +2022,7 @@ class BlockCollection(object):
 
 class StarFile(BlockCollection):
     def __init__(self,datasource=None,maxinlength=-1,maxoutlength=0,
-                scoping='instance',grammar='1.1',scantype='standard',
+                scoping='instance',grammar=None,from_str=False,scantype='standard',
                  permissive=False,**kwargs):
         super(StarFile,self).__init__(datasource=datasource,**kwargs)
         self.my_uri = getattr(datasource,'my_uri','')
@@ -2031,9 +2031,12 @@ class StarFile(BlockCollection):
         else:
             self.maxoutlength = maxoutlength
         self.scoping = scoping
+        self.parsing_result = []
         if isinstance(datasource,(unicode,str)) or hasattr(datasource,"read"):
-            ReadStar(datasource,prepared=self,grammar=grammar,scantype=scantype,
-                     maxlength = maxinlength,permissive=permissive)
+            proto_star, result = ReadStar(datasource,prepared=self,grammar=grammar,scantype=scantype,
+                     maxlength = maxinlength,permissive=permissive, from_str=from_str)
+            self.parsing_result = result
+
         self.header_comment = \
 """#\\#STAR
 ##########################################################################
@@ -2157,7 +2160,7 @@ class StarDerivationFailure(AttributeError):
         return "Derivation of {} failed".format(self.fail_name)
 
 def ReadStar(filename,prepared = None, maxlength=-1,
-             scantype='standard',grammar='STAR2',CBF=False, permissive=False):
+             scantype='standard',grammar='STAR2',CBF=False, permissive=False, from_str=False):
 
     """ Read in a STAR file, returning the contents in the `prepared` object.
 
@@ -2211,47 +2214,53 @@ def ReadStar(filename,prepared = None, maxlength=-1,
         try_list = [('STAR2',YST)]
     else:
         raise AttributeError('Unknown STAR/CIF grammar requested, {}'.format(repr( grammar )))
-    if isinstance(filename,(unicode,str)):
-        # create an absolute URL
-        relpath = urlparse(filename)
-        if len(relpath.scheme) <= 1:
-            if not os.path.isabs(filename):
-                fullpath = os.path.join(os.getcwd(),filename)
-            else:
-                fullpath = filename
-            if have_pathlib:  # Python > 3.4
-                my_uri = Path(fullpath).as_uri()
-            else:     # works on Linux/Mac only
-                newrel = list(relpath)
-                newrel[0] = "file"
-                newrel[2] = fullpath
-                my_uri = urlunparse(newrel)
-        else:
-            my_uri = urlunparse(relpath)
-        # print("Full URL is: " + my_uri)
-        filestream = urlopen(my_uri)
-        try:
-            text = filestream.read().decode('utf-8-sig')
-        except UnicodeDecodeError:
-            if permissive:
-                text = filestream.read().decode('latin1')
-                print("WARNING: {} violates standard (latin1 encoding instead of UTF8).".format(filename))
-            else:
-                raise StarError("{}: bad encoding (must be utf8 or ascii)".format(filename))
-        filestream.close()
+
+    if from_str:
+        text = filename
+        my_uri = ''
+
     else:
-        filestream = filename   #already opened for us
-        text = filestream.read()
-        if not isinstance(text,unicode):
+        if isinstance(filename,(unicode,str)):
+            # create an absolute URL
+            relpath = urlparse(filename)
+            if len(relpath.scheme) <= 1:
+                if not os.path.isabs(filename):
+                    fullpath = os.path.join(os.getcwd(),filename)
+                else:
+                    fullpath = filename
+                if have_pathlib:  # Python > 3.4
+                    my_uri = Path(fullpath).as_uri()
+                else:     # works on Linux/Mac only
+                    newrel = list(relpath)
+                    newrel[0] = "file"
+                    newrel[2] = fullpath
+                    my_uri = urlunparse(newrel)
+            else:
+                my_uri = urlunparse(relpath)
+            # print("Full URL is: " + my_uri)
+            filestream = urlopen(my_uri)
             try:
-                text = text.decode('utf-8-sig')  #CIF is always ascii/utf8
+                text = filestream.read().decode('utf-8-sig')
             except UnicodeDecodeError:
                 if permissive:
                     text = filestream.read().decode('latin1')
-                    print("WARNING: text violates CIF standard (latin1 encoding instead of UTF8)")
+                    print("WARNING: {} violates standard (latin1 encoding instead of UTF8).".format(filename))
                 else:
-                    raise StarError("Bad input encoding (must be utf8 or ascii)")
-        my_uri = ""
+                    raise StarError("{}: bad encoding (must be utf8 or ascii)".format(filename))
+            filestream.close()
+        else:
+            filestream = filename   #already opened for us
+            text = filestream.read()
+            if not isinstance(text,unicode):
+                try:
+                    text = text.decode('utf-8-sig')  #CIF is always ascii/utf8
+                except UnicodeDecodeError:
+                    if permissive:
+                        text = filestream.read().decode('latin1')
+                        print("WARNING: text violates CIF standard (latin1 encoding instead of UTF8)")
+                    else:
+                        raise StarError("Bad input encoding (must be utf8 or ascii)")
+            my_uri = ""
     if not text:      # empty file, return empty block
         return prepared.set_uri(my_uri)
     # filter out non-ASCII characters in CBF files if required.  We assume
@@ -2277,6 +2286,12 @@ def ReadStar(filename,prepared = None, maxlength=-1,
         try_list.remove(('2.0',Y20),)
         if not try_list:
             raise StarError('File {} missing CIF2.0 header'.format(filename))
+
+    # Only search for grammar 2.0 if CIF2.0
+    if text[:10] == "#\#CIF_2.0" and ('2.0',Y20) in try_list:
+        try_list = [('2.0',Y20)]
+
+    result = [0, None, None, None]
     for grammar_name,Y in try_list:
        if scantype == 'standard' or grammar_name in ['2.0','STAR2']:
             parser = Y.StarParser(Y.StarParserScanner(text))
@@ -2290,28 +2305,27 @@ def ReadStar(filename,prepared = None, maxlength=-1,
        proto_star = None
        try:
            proto_star = getattr(parser,"input")(prepared)
-       except Y.yappsrt.YappsSyntaxError as e:
-           input = parser._scanner.input
-           Y.yappsrt.print_error(input, e, parser._scanner)
-       except Y.yappsrt.NoMoreTokens:
-           print('Could not complete parsing; stopped around here:',file=sys.stderr)
-           print(parser._scanner,file=sys.stderr)
-       except ValueError:
-           print('Unexpected error:')
-           import traceback
-           traceback.print_exc()
+
+       # Syntax error
+       except Exception as error:
+           # List that stores information about the syntax error
+           if isinstance(error, yappsrt.YappsSyntaxError):
+                result = [-1, error, parser, Y]
+
+           if isinstance(error, StarError):
+                result = [-2, error, None, None]
+
        if proto_star is not None:
            proto_star.set_grammar(grammar_name)   #remember for output
            break
     if proto_star is None:
-        errorstring = 'Syntax error in input file: last value parsed was {}'.format(Y.lastval)
-        errorstring = errorstring + '\nParser status: {}'.format(repr( parser._scanner ))
-        raise StarError( errorstring)
+        return proto_star, result
+
     # set visibility correctly
     proto_star.scoping = 'dictionary'
     proto_star.set_uri(my_uri)
     proto_star.scoping = save_scoping
-    return proto_star
+    return proto_star, result
 
 def get_dim(dataitem,current=0,packlen=0):
     zerotypes = [int, float, str]
