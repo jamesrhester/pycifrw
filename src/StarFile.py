@@ -798,6 +798,38 @@ class StarBlock(object):
         loop_pos = self.loops[loop_no].index(testname)
         return loop_no,loop_pos
 
+    def ChangeTagName(self, old_name, new_name):
+        lower_new_name = new_name.lower()
+        lower_old_name = old_name.lower()
+        loop_pos, pos = self.GetItemPosition(old_name)
+
+        if loop_pos > 0:
+            self.loops[loop_pos][pos] = lower_new_name
+
+        else:
+            self.item_order[pos] = lower_new_name
+
+        updated_block = {}
+
+        for lower_tag, value in self.block.items():
+            if lower_tag == lower_old_name:
+                updated_block[lower_new_name] = value
+
+            else:
+                updated_block[lower_tag] = value
+
+        updated_true_case = {}
+
+        for lower_key, original_key in self.true_case.items():
+            if lower_key == lower_old_name:
+                updated_true_case[lower_new_name] = new_name
+
+            else:
+                updated_true_case[lower_key] = original_key
+
+        self.block = updated_block
+        self.true_case = updated_true_case
+
     #  This routine moves around the order of objects in the printout.  We can
     # only move an item within the loop in which it appears.                  
     #                                                                         
@@ -3108,7 +3140,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
     * `CBF` flags that the input file is in Crystallographic Binary File format. The binary block is
     excised from the input data stream before parsing and is not available in the returned object.
 
-    * `permissive` allows non UTF8 encodings (currently only latin1) in the input file. These are a 
+    * `permissive` allows non UTF8 encodings (currently only latin1) in the input file. These are a
     violation of the standard.
 
     """
