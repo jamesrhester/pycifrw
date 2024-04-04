@@ -1960,8 +1960,10 @@ class BlockCollection(object):
             blockorder = self.block_input_order
         top_block_names = [(a,self.child_table[a].block_id) for a in blockorder if self.child_table[a].parent is None]
         for blockref,blockname in top_block_names:
-            # print('Writing %s, ' % blockname + repr(self[blockref]))
-            outstring.write('\n' + 'data_' +blockname+'\n')
+            data_str = 'data_'
+            if blockname.startswith('_'):
+                data_str = 'data'
+            outstring.write('\n' + data_str +blockname+'\n')
             all_names.remove(blockref)
             if self.standard == 'Dic':              #put contents before save frames
                 outstring.write(self[blockref].printsection(finish_at='_dictionary_valid.application'))
