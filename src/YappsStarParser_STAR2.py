@@ -212,7 +212,7 @@ class StarParser(yappsrt.Parser):
             makeloop(currentblock,top_loop)
         else: # == 'data_name'
             datakvpair = self.datakvpair(_context)
-            currentblock.AddItem(datakvpair[0],datakvpair[1],precheck=True)
+            currentblock.AddItem(datakvpair[0],datakvpair[1],precheck=False)
 
     def datakvpair(self, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'datakvpair', [])
