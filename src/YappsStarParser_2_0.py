@@ -332,7 +332,10 @@ class StarParser(yappsrt.Parser):
             this_list.append(data_value)
             while self._peek('data_value_1', 'triple_quote_data_value', 'single_quote_data_value', 'start_sc_line', 'c_s_b', 'o_s_b', 'o_c_b') != 'c_s_b':
                 data_value = self.data_value(_context)
-                this_list.append(data_value)
+
+                # Avoid inserting "," character as an element of the list
+                if data_value != ",":
+                    this_list.append(data_value)
             if self._peek() not in ['data_value_1', 'triple_quote_data_value', 'single_quote_data_value', 'start_sc_line', 'c_s_b', 'o_s_b', 'o_c_b']:
                 raise yappsrt.YappsSyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(['data_value_1', 'triple_quote_data_value', 'single_quote_data_value', 'start_sc_line', 'o_s_b', 'o_c_b', 'c_s_b']))
         if self._peek() not in ['c_s_b', 'data_value_1', 'triple_quote_data_value', 'single_quote_data_value', 'start_sc_line', 'o_s_b', 'o_c_b']:
