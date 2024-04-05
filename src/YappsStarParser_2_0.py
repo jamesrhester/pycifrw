@@ -203,13 +203,19 @@ class StarParser(yappsrt.Parser):
 
     def data(self, currentblock, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'data', [currentblock])
+        # Store char position for raising error
+        charpos = _context.scanner.get_prev_char_pos()
         _token = self._peek('LBLOCK', 'data_name')
-        if _token == 'LBLOCK':
-            top_loop = self.top_loop(_context)
-            makeloop(currentblock,top_loop)
-        else: # == 'data_name'
-            datakvpair = self.datakvpair(_context)
-            currentblock.AddItem(datakvpair[0],datakvpair[1],precheck=True)
+        try:
+            if _token == 'LBLOCK':
+                top_loop = self.top_loop(_context)
+                makeloop(currentblock,top_loop)
+            else: # == 'data_name'
+                datakvpair = self.datakvpair(_context)
+                currentblock.AddItem(datakvpair[0],datakvpair[1],precheck=False)
+
+        except Exception as e:
+                raise yappsrt.YappsSyntaxError(charpos=charpos, context=_context, msg=e)
 
     def datakvpair(self, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'datakvpair', [])
