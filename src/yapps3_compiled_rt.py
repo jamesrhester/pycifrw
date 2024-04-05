@@ -337,33 +337,30 @@ def print_line_with_pointer(text, p):
     # 80-column line to stderr.
 
     # Now try printing part of the line
-    text = text[max(p-80, 0):p+80]
-    p = p - max(p-80, 0)
+    text = text[max(p-130, 0):p+130]
+    p = p - max(p-130, 0)
 
     # Strip to the left
     i = text[:p].rfind('\n')
     j = text[:p].rfind('\r')
-    if i < 0 or (0 <= j < i): i = j
+    if i < 0 or (0 <= j < i): j = i
     if 0 <= i < p:
         p = p - i - 1
         text = text[i+1:]
 
-    # Strip to the right
-    i = text.find('\n', p)
-    j = text.find('\r', p)
-    if i < 0 or (0 <= j < i): i = j
-    if i >= 0:
-        text = text[:i]
-
-    # Now shorten the text
-    while len(text) > 70 and p > 60:
-        # Cut off 10 chars
-        text = "..." + text[10:]
-        p = p - 7
+    if not text.startswith("loop_"):
+        # Strip to the right
+        i = text.find('\n', p)
+        j = text.find('\r', p)
+        if i < 0 or (0 <= j < i): i = j
+        if i >= 0:
+            text = text[:i]
 
     # Now print the string, along with an indicator
-    print('> ',text,file=sys.stderr)
-    print('> ',' '*p + '^',file=sys.stderr)
+    out_str = "\n> " + text + "\n"
+    out_str += "...\n"
+
+    return out_str
 
 def print_error(input, err, scanner):
     """Print error messages, the parser stack, and the input text -- for human-readable error messages."""
