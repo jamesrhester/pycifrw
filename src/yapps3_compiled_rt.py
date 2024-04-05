@@ -143,6 +143,10 @@ class Scanner:
         # TODO: make this work at any token/char position
         return self.first_line_number + self.get_input_scanned().count('\n')
 
+    def get_line_number_with_pos(self, pos):
+        pos_input = self.input[:pos]
+        return self.first_line_number + pos_input.count('\n')
+
     def get_column_number(self):
         """Get the column number of the current position in the input text."""
         s = self.get_input_scanned()
