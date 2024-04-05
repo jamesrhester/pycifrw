@@ -153,7 +153,7 @@ class StarParserScanner(yappsrt.Scanner):
          ('o_s_b', '\\['),
          ('dat_val_internal_sq', '\\[([^\\s\\[\\]]*)\\]'),
          ('triple_quote_data_value', '(?s)\'\'\'.*?\'\'\'|""".*?"""'),
-         ('single_quote_data_value', '\'([^\n\r\x0c\'])*\'+|"([^\n\r"])*"+'),
+         ('single_quote_data_value', '\'([^\n\r\x0c\']|\'[a-zA-Z])*\'|"([^\n\r"])*"+'),
          ('data_value_1', '((?!(((S|s)(A|a)(V|v)(E|e)_[^\\s]*)|((G|g)(L|l)(O|o)(B|b)(A|a)(L|l)_[^\\s]*)|((S|s)(T|t)(O|o)(P|p)_[^\\s]*)|((D|d)(A|a)(T|t)(A|a)_[^\\s]*)))[^\\s"#$\'_\\{\\}\\[\\]][^\\s\\{\\}\\[\\]]*)'),
          ('END', '$'),
         ]
