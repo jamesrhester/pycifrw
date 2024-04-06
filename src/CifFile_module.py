@@ -128,7 +128,7 @@ def track_recursion(in_this_func):
     def wrapper(*args,**kwargs):
         key_arg = args[1]
         if key_arg in wrapper.called_list:
-            print('Recursion watch: %s already called %d times' % (key_arg,wrapper.called_list.count(key_arg)))
+            print('Recursion watch: {} already called {} times'.format(key_arg,wrapper.called_list.count(key_arg)))
             raise CifRecursionError( key_arg,wrapper.called_list[:])    #failure
         if len(wrapper.called_list) == 0:   #first time
             wrapper.stored_use_defaults = kwargs.get("allow_defaults",False)
@@ -361,7 +361,7 @@ class CifRecursionError(Exception):
         self.key_value = key_value
         self.call_stack = call_stack
     def __str__(self):
-        return "Derivation has recursed, %s seen twice (call stack %s)" % (self.key_value,repr(self.call_stack))
+        return "Derivation has recursed, {} seen twice (call stack {})".format(self.key_value,repr(self.call_stack))
 
 
 # \section {Dictionaries}                                                 
@@ -401,30 +401,34 @@ class DicBlock(StarFile.StarBlock):
     def __init__(self,*args,**kwargs):
         super(DicBlock,self).__init__(*args,**kwargs)
         self._import_cache = {}
-        
+
     def __getitem__(self,dataname):
         value = None
         if super(DicBlock,self).has_key("_import.get") and self._import_cache:
-            value = self.follow_import(super(DicBlock,self).__getitem__("_import.get"),dataname) 
+            value = self.follow_import(super(DicBlock,self).__getitem__("_import.get"),dataname)
         try:
             final_value = super(DicBlock,self).__getitem__(dataname)
         except KeyError:    #not there
             final_value = value
         if final_value is None:
-            raise KeyError("%s not found" % dataname)
+            raise KeyError("{} not found".format(dataname))
         return final_value
 
+    #
+    # We cannot just do `key in self` as we need to mirror
+    # the logic in __getitem__
+    #
     def has_key(self,key):
         try:
             self[key]
         except KeyError:
             return False
-        return True
-    
+        return True     
+
     def add_dict_cache(self,name,cached):
         """Add a loaded dictionary to this block's cache"""
         self._import_cache[name]=cached
-        
+
     def follow_import(self,import_info,dataname):
         """Find the dataname values from the imported dictionary. `import_info`
         is a list of import locations"""
@@ -432,7 +436,7 @@ class DicBlock(StarFile.StarBlock):
         for import_ref in import_info:
             file_loc = import_ref["file"]
             if file_loc not in self._import_cache:
-                raise ValueError("Dictionary for import %s not found" % file_loc)
+                raise ValueError("Dictionary for import {} not found".format(file_loc))
             import_from = self._import_cache[file_loc]
             miss = import_ref.get('miss','Exit')
             target_key = import_ref["save"]
@@ -440,14 +444,14 @@ class DicBlock(StarFile.StarBlock):
                 import_target = import_from[target_key]
             except KeyError:
                 if miss == 'Exit':
-                    raise CifError('Import frame %s not found in %s' % (target_key,file_loc))
+                    raise CifError('Import frame {} not found in {}'.format(target_key,file_loc))
                 else: continue
             # now import appropriately
             mode = import_ref.get("mode",'Contents').lower()
             if mode == "contents":   #only this is used at this level
                 latest_value = import_target.get(dataname,latest_value)
         return latest_value
-    
+
 class CifDic(StarFile.StarFile):
     """Create a Cif Dictionary object from the provided source, which can
     be a filename/URL or a CifFile.  Optional arguments (relevant to DDLm
@@ -518,7 +522,7 @@ class CifDic(StarFile.StarFile):
         self.standard = 'Dic'    #for correct output order
         self.scoping = 'dictionary'
         (self.dicname,self.diclang) = self.dic_determine()
-        print('%s is a %s dictionary' % (self.dicname,self.diclang))
+        print('{} is a {} dictionary'.format(self.dicname,self.diclang))
         self.scopes_mandatory = {}
         self.scopes_naughty = {}
         self._import_dics = []   #Non-empty for DDLm only
@@ -920,7 +924,7 @@ class CifDic(StarFile.StarFile):
        # now dodgy_defs contains all definition blocks with more than one child/parent link
        for item_def in dodgy_defs: self.create_pcloop(item_def)           #regularise appearance
        for item_def in dodgy_defs:
-             print('Processing %s' % item_def)
+             print('Processing {}'.format(item_def))
              thisdef = self[item_def]
              child_list = thisdef['_item_linked.child_name']
              parents = thisdef['_item_linked.parent_name']
@@ -931,14 +935,14 @@ class CifDic(StarFile.StarFile):
              while len(notmychildren):
                 # get all children of first entry
                 mychildren = [a for a in family if a[0]==notmychildren[0][0]]
-                print("Parent %s: %d children" % (notmychildren[0][0],len(mychildren)))
+                print("Parent {}: {} children".format(notmychildren[0][0],len(mychildren)))
                 for parent,child in mychildren:   #parent is the same for all
                          # Make sure that we simply add in the new entry for the child, not replace it,
                          # otherwise we might spoil the child entry loop structure
                          try:
                              childloop = self[child].GetLoop('_item_linked.parent_name')
                          except KeyError:
-                             print('Creating new parent entry %s for definition %s' % (parent,child))
+                             print('Creating new parent entry {} for definition {}'.format(parent,child))
                              self[child]['_item_linked.parent_name'] = [parent]
                              childloop = self[child].GetLoop('_item_linked.parent_name')
                              childloop.AddLoopItem(('_item_linked.child_name',[child]))
@@ -949,9 +953,9 @@ class CifDic(StarFile.StarFile):
                              pars = [a for a in childloop if getattr(a,'_item_linked.child_name','')==child]
                              goodpars = [a for a in pars if getattr(a,'_item_linked.parent_name','')==parent]
                              if len(goodpars)>0:   #no need to add it
-                                 print('Skipping duplicated parent - child entry in %s: %s - %s' % (child,parent,child))
+                                 print('Skipping duplicated parent - child entry in {}: {} - {}'.format(child,parent,child))
                                  continue
-                             print('Adding %s to %s entry' % (parent,child))
+                             print('Adding {} to {} entry'.format(parent,child))
                              newpacket = childloop.GetPacket(0)   #essentially a copy, I hope
                              setattr(newpacket,'_item_linked.child_name',child)
                              setattr(newpacket,'_item_linked.parent_name',parent)
@@ -966,11 +970,11 @@ class CifDic(StarFile.StarFile):
                 old_parents = self[parent_name].get('_item_linked.parent_name',[])
                 oldfamily = zip(old_parents,old_children)
                 newfamily = []
-                print('Old parents -> %s' % repr(old_parents))
+                print('Old parents -> {}'.format(repr(old_parents)))
                 for jj, childname in mychildren:
                     alreadythere = [a for a in oldfamily if a[0]==parent_name and a[1] ==childname]
                     if len(alreadythere)>0: continue
-                    'Adding new child %s to parent definition at %s' % (childname,parent_name)
+                    'Adding new child {} to parent definition at {}'.format(childname,parent_name)
                     old_children.append(childname)
                     old_parents.append(parent_name)
                 # Now output the loop, blowing away previous definitions.  If there is something
@@ -981,7 +985,7 @@ class CifDic(StarFile.StarFile):
                 del self[parent_name]['_item_linked.parent_name']
                 del self[parent_name]['_item_linked.child_name']
                 self[parent_name].insert_loop(newloop)
-                print('New parents -> %s' % repr(self[parent_name]['_item_linked.parent_name']))
+                print('New parents -> {}'.format(repr(self[parent_name]['_item_linked.parent_name'])))
                 # now make a new,smaller list
                 notmychildren = [a for a in notmychildren if a[0]!=mychildren[0][0]]
 
@@ -1045,12 +1049,12 @@ class CifDic(StarFile.StarFile):
         """Collate import information"""
         self._import_dics = []
         import_frames = list([(a,self[a]['_import.get']) for a in self.keys() if '_import.get' in self[a]])
-        print('Import mode %s applied to following frames' % import_mode)
+        print('Import mode {} applied to following frames'.format(import_mode))
         print(str([a[0] for a in import_frames]))
         if import_mode != 'All':
            for i in range(len(import_frames)):
                 import_frames[i] = (import_frames[i][0],[a for a in import_frames[i][1] if a.get('mode','Contents').lower() == import_mode.lower()])
-           print('Importing following frames in mode %s' % import_mode)
+           print('Importing following frames in mode {}'.format(import_mode))
            print(str(import_frames))
         #resolve all references
         for parent_block,import_list in import_frames:
@@ -1060,7 +1064,7 @@ class CifDic(StarFile.StarFile):
             if full_uri not in self.template_cache:
                 dic_as_cif = CifFile(full_uri,grammar=self.grammar, characterset=self.characterset)
                 self.template_cache[full_uri] = CifDic(dic_as_cif,do_imports=import_mode,heavy=heavy,do_dREL=False)  #this will recurse internal imports
-                print('Added %s to cached dictionaries' % full_uri)
+                print('Added {} to cached dictionaries'.format(full_uri))
             import_from = self.template_cache[full_uri]
             dupl = import_ref.get('dupl','Exit')
             miss = import_ref.get('miss','Exit')
@@ -1069,26 +1073,26 @@ class CifDic(StarFile.StarFile):
                 import_target = import_from[target_key]
             except KeyError:
                 if miss == 'Exit':
-                   raise CifError('Import frame %s not found in %s' % (target_key,full_uri))
+                   raise CifError('Import frame {} not found in {}'.format(target_key,full_uri))
                 else: continue
             # now import appropriately
             mode = import_ref.get("mode",'Contents').lower()
             if target_key in self and mode=='full':  #so blockname will be duplicated
                 if dupl == 'Exit':
-                    raise CifError('Import frame %s already in dictionary' % target_key)
+                    raise CifError('Import frame {} already in dictionary'.format(target_key))
                 elif dupl == 'Ignore':
                     continue
             if heavy:
                 self.ddlm_import(parent_block,import_from,import_target,target_key,mode)
             else:
                 self.ddlm_import_light(parent_block,import_from,import_target,target_key,file_loc,mode)
-                
     #  The original way of doing imports was to completely merge the information from the
     # imported file.  This is slightly more efficient if information about import statements
     # is not required.                                                        
     #                                                                         
     #                                                                         
     # <Heavy import routine>=                                                 
+
     def ddlm_import(self,parent_block,import_from,import_target,target_key,mode='All'):
             """Import other dictionaries in place"""
             if mode == 'contents':   #merge attributes only
@@ -1111,11 +1115,11 @@ class CifDic(StarFile.StarFile):
                 # Prune out any datablocks that have identical definitions
                 from_defs = dict([(a,child_blocks[a].get('_definition.id','').lower()) for a in child_blocks.keys()])
                 double_defs = list([b for b in from_defs.items() if self.has_key(b[1])])
-                print('Definitions for %s superseded' % repr(double_defs))
+                print('Definitions for {} superseded'.format(repr(double_defs)))
                 for b in double_defs:
                     del child_blocks[b[0]]
                 super(CifDic,self).merge_fast(child_blocks,parent=syntactic_head)      #
-                print('Syntactic merge of %s (%d defs) in %s mode, now have %d defs' % (target_key,len(child_frames),
+                print('Syntactic merge of {} ({} defs) in {} mode, now have {} defs'.format(target_key,len(child_frames),
                    mode,len(self)))
                 # Now the semantic merge
                 # First expand our definition <-> blockname tree
@@ -1130,12 +1134,12 @@ class CifDic(StarFile.StarFile):
                         self[f].overwrite = False
                     # remove the old head
                     del self[from_cat_head]
-                    print('Semantic merge: %d defs reparented from %s to %s' % (len(child_frames),from_cat_head,merging_cat))
+                    print('Semantic merge: {} defs reparented from {} to {}'.format(len(child_frames),from_cat_head,merging_cat))
                 else:  #imported category is only child
                     from_frame = import_from[target_key]['_definition.id'] #so we can find it
                     child_frame = [d for d in self.keys() if self[d]['_definition.id']==from_frame][0]
                     self[child_frame]['_name.category_id'] = merging_cat
-                    print('Semantic merge: category for %s : now %s' % (from_frame,merging_cat))
+                    print('Semantic merge: category for {} : now {}'.format(from_frame,merging_cat))
             # it will never happen again...
             del self[parent_block]["_import.get"]
 
@@ -1187,8 +1191,8 @@ class CifDic(StarFile.StarFile):
             possible_keys = one_dic.ddlm_all_children(from_cat_head)
             if key in possible_keys:
                 return one_dic[key]
-        raise KeyError("%s not found in import dictionaries" % key)
-        
+        raise KeyError("{} not found in import dictionaries".format(key))
+
 
 
     #  CIF Dictionaries use the square bracket notation to refer to the definition, as for CifFile
@@ -1248,7 +1252,7 @@ class CifDic(StarFile.StarFile):
             self.block_id_table[self[newname]['_definition.id']]=newname
         except AttributeError: #no block_id table
             pass
-                
+
     def __delitem__(self,key):
         """Remove a definition"""
         try:
@@ -1330,7 +1334,7 @@ class CifDic(StarFile.StarFile):
         """Get the single 'Head' category of this dictionary"""
         root_cats = [r for r in self.keys() if self[r].get('_definition.class','Datum')=='Head']
         if len(root_cats)>1 or len(root_cats)==0:
-            raise CifError("Cannot determine a unique Head category, got" % repr(root_cats))
+            raise CifError("Cannot determine a unique Head category, got".format(repr(root_cats)))
         return root_cats[0]
 
     def ddlm_immediate_children(self,catname):
@@ -1368,7 +1372,7 @@ class CifDic(StarFile.StarFile):
         """Get the parent category of itemname"""
         parent = self[itemname].get('_name.category_id','')
         if parent == '':  # use the top block by default
-            raise CifError("%s has no parent" % itemname)
+            raise CifError("{} has no parent".format(itemname))
         return parent
 
     #  Some methods for interrogating categories for names.                   
@@ -1620,14 +1624,14 @@ class CifDic(StarFile.StarFile):
                         parent = [a for a in looped_cats if self[this_cat]['_name.category_id'].lower()==a]
                         #print(Processing %s, keys %s, parent %s" % (this_cat,repr(lower_keys),repr(parent)))
                         if len(parent)>1:
-                            raise CifError("Category %s has more than one parent: %s" % (one_cat,repr(parent)))
+                            raise CifError("Category {} has more than one parent: {}".format(one_cat,repr(parent)))
                         if len(parent)==0: break
                         parent = parent[0]
                         parent_keys = listify(self[parent]['_category_key.name'])
                         linked_keys = [self[l]["_name.linked_item_id"] for l in lower_keys]
                         # sanity check
                         if set(parent_keys) != set(linked_keys):
-                            raise CifError("Parent keys and linked keys are different! %s/%s" % (parent_keys,linked_keys))
+                            raise CifError("Parent keys and linked keys are different! {}/{}".format(parent_keys,linked_keys))
                             # now add in our information
                         for parent,child in zip(linked_keys,start_keys):
                             self.key_equivs[child] = self.key_equivs.get(child,[])+[parent]
@@ -1652,9 +1656,9 @@ class CifDic(StarFile.StarFile):
         self.unlock()
         """Change the category name from [[oldname]] to [[newname]]"""
         if oldname not in self:
-            raise KeyError('Cannot rename non-existent category %s to %s' % (oldname,newname))
+            raise KeyError('Cannot rename non-existent category {} to {}'.format(oldname,newname))
         if newname in self:
-            raise KeyError('Cannot rename %s to %s as %s already exists' % (oldname,newname,oldname))
+            raise KeyError('Cannot rename {} to {} as {} already exists'.format(oldname,newname,oldname))
         child_defs = self.ddlm_immediate_children(oldname)
         self.rename(oldname,newname)   #NB no name integrity checks
         self[newname]['_name.object_id']=newname
@@ -1678,7 +1682,7 @@ class CifDic(StarFile.StarFile):
             print('Already in category, no change')
             return itemname
         if catname not in self:    #don't have it
-            print('No such category %s' % catname)
+            print('No such category {}'.format(catname))
             return itemname
         self.unlock()
         objid = defid['_name.object_id']
@@ -1718,7 +1722,7 @@ class CifDic(StarFile.StarFile):
            [[is_loop]] is false, a Set category is created. If [[allow_dangler]]
            is true, the parent category does not have to exist."""
         if catname in self:
-            raise CifError('Attempt to add existing category %s' % catname)
+            raise CifError('Attempt to add existing category {}'.format(catname))
         self.unlock()
         syntactic_root = self.get_roots()[0][0]
         if catparent is None:
@@ -1757,9 +1761,9 @@ class CifDic(StarFile.StarFile):
             objname = itemname
         objname = objname.strip('_')
         if not allow_dangler and (catparent not in self or self[catparent]['_definition.scope']!='Category'):
-            raise CifError('No category %s in dictionary' % catparent)
+            raise CifError('No category {} in dictionary'.format(catparent))
         fullname = '_'+catparent.lower()+'.'+objname
-        print('New name: %s' % fullname)
+        print('New name: {}'.format(fullname))
         syntactic_root = self.get_roots()[0][0]
         realname = super(CifDic,self).NewBlock(fullname, fix=False, parent=syntactic_root) #low-level change
         # update our dictionary structures
@@ -1812,7 +1816,7 @@ class CifDic(StarFile.StarFile):
         except KeyError:
             if give_default:
                return '_'+true_cat+'.'+object
-        raise KeyError('No such category,object in the dictionary: %s %s' % (true_cat,object))
+        raise KeyError('No such category,object in the dictionary: {} {}'.format(true_cat,object))
 
 
     # \subsection {Outputting dictionaries}                                   
@@ -1839,7 +1843,7 @@ class CifDic(StarFile.StarFile):
             unrooted = self.ddlm_danglers()
             double_names =  set(unrooted).intersection(set(all_names))
             if len(double_names)>0:
-                raise CifError('Names are children of internal and external categories:%s' % repr(double_names))
+                raise CifError('Names are children of internal and external categories:{}'.format(repr(double_names)))
             remaining = unrooted[:]
             for no_root in unrooted:
                 if self[no_root].get('_definition.scope','Item')=='Category':
@@ -1946,7 +1950,7 @@ class CifDic(StarFile.StarFile):
             minimum = regexp.group(1)
             maximum = regexp.group(7)
         except AttributeError:
-            print("Can't match %s" % rangeexp)
+            print("Can't match {}".format(rangeexp))
         if minimum == None: minimum = "."
         else: minimum = float(minimum)
         if maximum == None: maximum = "."
@@ -2009,7 +2013,7 @@ class CifDic(StarFile.StarFile):
             target_id = derivable
             # reset the list of visible names for parser
             special_ids = [dict(zip(self.keys(),self.keys()))]
-            print("Target id: %s" % derivable)
+            print("Target id: {}".format(derivable))
             drel_exprs = self[derivable]["_method.expression"]
             drel_purposes = self[derivable]["_method.purpose"]
             all_methods = []
@@ -2025,7 +2029,7 @@ class CifDic(StarFile.StarFile):
                 try:
                     meth_ast = parser.parse(drel_expr+"\n",lexer=lexer)
                 except:
-                    print('Syntax error in method for %s; leaving as is' % derivable)
+                    print('Syntax error in method for {}; leaving as is'.format(derivable))
                     a,b = sys.exc_info()[:2]
                     print((repr(a),repr(b)))
                     print(traceback.print_tb(sys.exc_info()[-1],None,sys.stdout))
@@ -2137,7 +2141,7 @@ class CifDic(StarFile.StarFile):
             return corrected_type
         # now do the reverse check - any alternative form
         alias_name = [a for a in self.alias_table.items() if key in a[1]]
-        print('Aliases for %s: %s' % (key,repr(alias_name)))
+        print('Aliases for {}: {}'.format(key,repr(alias_name)))
         if len(alias_name)==1:
             key = alias_name[0][0]   #actual definition name
             if key in cifdata: return self.change_type(key,cifdata[key])
@@ -2176,23 +2180,23 @@ class CifDic(StarFile.StarFile):
                                ) for k in pulled_from_cats]
             pulled_to_cats = [k[0] for k in pulled_from_cats if the_category in k[1]]
             if '_category_construct_local.type' in self[the_category]:
-                print("**Now constructing category %s using DDLm attributes**" % the_category)
+                print("**Now constructing category {} using DDLm attributes**".format(the_category))
                 try:
                     cat_result = self.construct_category(the_category,cifdata,store_value=True)
                 except (CifRecursionError,StarFile.StarDerivationError):
-                    print('** Failed to construct category %s (error)' % the_category)
+                    print('** Failed to construct category {} (error)'.format(the_category))
             # Trying a pull-back when the category is partially populated
             # will not work, hence we test that cat_result has no keys
             if len(pulled_to_cats)>0 and len(cat_result)==0:
-                print("**Now populating category %s from pulled-back category %s" % (the_category,repr(pulled_to_cats)))
+                print("**Now populating category {} from pulled-back category {}".format(the_category,repr(pulled_to_cats)))
                 try:
                     cat_result = self.push_from_pullback(the_category,pulled_to_cats,cifdata,store_value=True)
                 except (CifRecursionError,StarFile.StarDerivationError):
-                    print('** Failed to construct category %s from pullback information (error)' % the_category)
+                    print('** Failed to construct category {} from pullback information (error)'.format(the_category))
             if '_method.py_expression' in self[the_category] and key not in cat_result:
-                print("**Now applying category method for %s in search of %s**" % (the_category,key))
+                print("**Now applying category method for {} in search of {}**".format(the_category,key))
                 cat_result = self.derive_item(the_category,cifdata,store_value=True)
-            print("**Tried pullbacks, obtained for %s " % the_category + repr(cat_result))
+            print("**Tried pullbacks, obtained for {} ".format(the_category + repr(cat_result)))
             # do we now have our value?
             if key in cat_result:
                 return cat_result[key]
@@ -2214,7 +2218,7 @@ class CifDic(StarFile.StarFile):
             #global_table = globals()
             #global_table.update(self.ddlm_functions)
             for one_func in the_funcs:
-                print('Executing function for %s:' % key)
+                print('Executing function for {}:'.format(key))
                 #print(one_func)
                 exec(one_func, globals())  #will access dREL functions, puts "pyfunc" in scope
                 # print('in following global environment: ' + repr(global_table))
@@ -2270,11 +2274,11 @@ class CifDic(StarFile.StarFile):
                     result = self[key]["_enumeration_default.value"][keypos]
                     default_result = True   #flag that it must be extended
                 result = self.change_type(key,result)
-                print("Indexed on %s to get %s for %s" % (def_index_val,repr(result),repr(val_to_index)))
+                print("Indexed on {} to get {} for {}".format(def_index_val,repr(result),repr(val_to_index)))
 
         # read it in
         if result is None:   #can't do anything else
-            print('Warning: no way of deriving item %s, allow_defaults is %s' % (key,repr(allow_defaults)))
+            print('Warning: no way of deriving item {}, allow_defaults is {}'.format(key,repr(allow_defaults)))
             raise StarFile.StarDerivationError(start_key)
         # Adjusting our calculated value. If we have used a default value or we have None, we
         # need to make the dimension match the currently-existing length of the category.
@@ -2290,7 +2294,7 @@ class CifDic(StarFile.StarFile):
                     out_result = [result]*loop_len
                     result = out_result
             else:   #nothing exists in this category, we can't store this at all
-                print('Resetting result %s for %s to null list as category is empty' % (key,result))
+                print('Resetting result {} for {} to null list as category is empty'.format(key,result))
                 result = []
 
         # now try to insert the new information into the right place
@@ -2438,7 +2442,7 @@ class CifDic(StarFile.StarFile):
             if len(components) == 2:  # not a filter
                 element_pos = comp_cats.index(target_category)
                 old_id = source_ids[element_pos]
-                print('Using %s to populate %s' % (old_id,target_key))
+                print('Using {} to populate {}'.format(old_id,target_key))
                 result[target_key].extend(cifdata[old_id])
                 # project through all identical names
                 extra_result = self.duplicate_datanames(cifdata,sc,target_category,skip_names=new_ids+[target_key])
@@ -2448,7 +2452,7 @@ class CifDic(StarFile.StarFile):
                 else:
                     for k in extra_result.keys():
                         if k in result:
-                            print('Updating %s: was %s' % (k,repr(result[k])))
+                            print('Updating {}: was {}'.format(k,repr(result[k])))
                             result[k].extend(extra_result[k])
             else:
                 extra_result = self.duplicate_datanames(cifdata,sc,target_category,skip_names=new_ids)
@@ -2456,7 +2460,7 @@ class CifDic(StarFile.StarFile):
                     result[target_key].extend(cifdata[source_ids[0]])
                     for k in extra_result.keys():
                         if k in result:
-                            print('Reverse filter: Updating %s: was %s' % (k,repr(result[k])))
+                            print('Reverse filter: Updating {}: was {}'.format(k,repr(result[k])))
                             result[k].extend(extra_result[k])
                         else:
                             result[k]=extra_result[k]
@@ -2500,7 +2504,7 @@ class CifDic(StarFile.StarFile):
         source_key = self[from_category]['_category.key_id']
         print('Source dataname set: ' + repr(s_names_in_cat))
         print('Target dataname set: ' + repr(t_names_in_cat))
-        print('Projecting through following datanames from %s to %s' % (from_category,to_category) + repr(can_project))
+        print('Projecting through following datanames from {} to {}'.format(from_category,to_category) + repr(can_project))
         for project_name in can_project:
             full_from_name = self.cat_obj_lookup_table[(from_category.lower(),project_name.lower())][0]
             full_to_name = self.cat_obj_lookup_table[(to_category.lower(),project_name.lower())][0]
@@ -2536,13 +2540,13 @@ class CifDic(StarFile.StarFile):
         if len(double_names)>0:
             already_present = [a for a in self.names_in_cat(the_category) if a in cifdata]
             if set(already_present) != set(result.keys()):
-                print("Category %s not updated, mismatched datanames: %s" % (the_category, repr(set(already_present)^set(result.keys()))))
+                print("Category {} not updated, mismatched datanames: {}".format(the_category, repr(set(already_present)^set(result.keys()))))
                 return
             #check key values
             old_keys = set(cifdata[the_key])
             common_keys = old_keys & set(result[the_key])
             if len(common_keys)>0:
-                print("Category %s not updated, key values in common:" % (common_keys))
+                print("Category {} not updated, key values in common:".format(common_keys))
                 return
             #extend result values with old values
             for one_name,one_value in result.items():
@@ -2551,7 +2555,7 @@ class CifDic(StarFile.StarFile):
             try:
                 self.store_new_looped_value(one_name,cifdata,one_value,False)
             except StarFile.StarError:
-                print('%s: Not replacing %s with calculated %s' % (one_name,repr(cifdata[one_name]),repr(one_value)))
+                print('{}: Not replacing {} with calculated {}'.format(one_name,repr(cifdata[one_name]),repr(one_value)))
         #put the key as the first item
         print('Fixing item order for {}'.format(repr(the_key)))
         for one_key in the_key:  #should only be one
@@ -2908,7 +2912,7 @@ class CifDic(StarFile.StarFile):
         try:
             categories = [self[a][self.cat_spec].lower() for a in loop_names]
         except KeyError:       #category_id is mandatory
-            raise ValidCifError( "%s missing from dictionary %s for item in loop containing %s" % (self.cat_spec,self.dicname,loop_names[0]))
+            raise ValidCifError( "{} missing from dictionary {} for item in loop containing {}".format(self.cat_spec,self.dicname,loop_names[0]))
         truly_looped = [a for a in categories if a in self.parent_lookup.keys()]
         return [self.parent_lookup[a] for a in truly_looped]
 
@@ -2952,7 +2956,7 @@ class CifDic(StarFile.StarFile):
         """Make sure at least one of the necessary keys are available"""
         final_cats = self.get_final_cats(loop_names)
         if len(final_cats)>0:
-            poss_keys = self.cat_key_table[final_cats[0]][0] # 
+            poss_keys = self.cat_key_table[final_cats[0]][0] #
             found_keys = [a for a in poss_keys if a in loop_names]
             if len(found_keys)>0:
                 return {"result":True}
@@ -3068,7 +3072,7 @@ class CifDic(StarFile.StarFile):
        item_name_list.extend([a.lower() for a in provisional_items.keys()])
        bad = [a for a in alternates if a in item_name_list]
        if len(bad)>0:
-           print("Bad: %s, alternates %s" % (repr(bad),repr(alternates)))
+           print("Bad: {}, alternates {}".format(repr(bad),repr(alternates)))
            return {"result":False,"bad_items":bad}
        else: return {"result":True}
 
@@ -3108,7 +3112,7 @@ class CifDic(StarFile.StarFile):
                 return {"result":None}
             else:
                 self.done_parents.append(parent_item)
-                print("Done parents %s" % repr(self.done_parents))
+                print("Done parents {}".format(repr(self.done_parents)))
         # initialise parent/child values
         if isinstance(item_value,unicode):
             child_values = [item_value]
@@ -3169,7 +3173,7 @@ class CifDic(StarFile.StarFile):
                     return {"result":None}
                 else:
                     self.done_children.append(child_item)
-                    print("Done children %s" % repr(self.done_children))
+                    print("Done children {}".format(repr(self.done_children)))
             if child_item in provisional_items:
                 child_values = provisional_items[child_item][:]
             elif child_item in whole_block:
@@ -3258,7 +3262,7 @@ class CifDic(StarFile.StarFile):
                                                                   globals={}):
         category = self[item_name].get(self.cat_spec)
         if category == None:
-            print("No category found for %s" % item_name)
+            print("No category found for {}".format(item_name))
             return {"result":None}
         # print("Category {!r} for item {}".format(category, item_name))
         # we make a copy in the following as we will be removing stuff later!
@@ -3660,11 +3664,11 @@ class ValidCifBlock(CifBlock):
        outstr = StringIO()
        outstr.write( "Validation results\n")
        outstr.write( "------------------\n")
-       print("%d invalid items found\n" % len(self.v_result))
+       print("{} invalid items found\n".format(len(self.v_result)))
        for item_name,val_func_list in self.v_result.items():
-           outstr.write("%s fails following tests:\n" % item_name)
+           outstr.write("{} fails following tests:\n".format(item_name))
            for val_func in val_func_list:
-               outstr.write("\t%s\n")
+               outstr.write("\t{}\n".format(val_func))
        return outstr.getvalue()
 
 
@@ -3807,7 +3811,7 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
                 new_vals.extend(curr_parent)
                 if len(new_vals)>0:
                     check_file[parent] = new_vals
-                print("Added %s (len %d)" % (parent,len(check_file[parent])))
+                print("Added {} (len {})".format(parent,len(check_file[parent])))
     # now run the validations
     for block in check_file.keys():
         if isdic and block == top_level:
@@ -3821,7 +3825,7 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
         print("Not matched: " + repr(no_matches[block]))
         for nogood in no_matches[block]:
              del check_file[block][nogood]
-        print("Validating block %s, scope %s" % (block,block_scope))
+        print("Validating block {}, scope {}".format(block,block_scope))
         valid_result[block] = run_data_checks(check_file[block],fulldic,block_scope=block_scope)
     return valid_result,no_matches
 
@@ -3842,25 +3846,25 @@ def validate_report(val_result,use_html=False):
     for block in valid_result.keys():
         block_result = valid_result[block]
         if block_result[0]:
-            out_line = "Block '%s' is VALID" % block
+            out_line = "Block '{}' is VALID".format(block)
         else:
-            out_line = "Block '%s' is INVALID" % block
+            out_line = "Block '{}' is INVALID".format(block)
         if use_html:
             if (block_result[0] and (not suppress_valid or len(no_matches[block])>0)) or not block_result[0]:
-                outstr.write( "<h3>%s</h3><p>" % out_line)
+                outstr.write( "<h3>{}</h3><p>".format(out_line))
         else:
-                outstr.write( "\n %s\n" % out_line)
+                outstr.write( "\n {}\n".format(out_line))
         if len(no_matches[block])!= 0:
             if use_html:
                 outstr.write( "<p>The following items were not found in the dictionary")
                 outstr.write(" (note that this does not invalidate the data block):</p>")
                 outstr.write("<p><table>\n")
-                [outstr.write("<tr><td>%s</td></tr>" % it) for it in no_matches[block]]
+                [outstr.write("<tr><td>{}</td></tr>".format(it)) for it in no_matches[block]]
                 outstr.write("</table>\n")
             else:
                 outstr.write( "\n The following items were not found in the dictionary:\n")
                 outstr.write("Note that this does not invalidate the data block\n")
-                [outstr.write("%s\n" % it) for it in no_matches[block]]
+                [outstr.write("{}\n".format(it)) for it in no_matches[block]]
         # now organise our results by type of error, not data item...
         error_type_dic = {}
         for error_item, error_list in block_result[1].items():
@@ -4128,7 +4132,7 @@ class convert_simple_list(object):
 
     def __call__(self, element):
         if len(element) != len(self.converters):
-            emsg = "Expected iterable of %i values, got %i." % (
+            emsg = "Expected iterable of {} values, got {}.".format(
                 (len(self.converters), len(element)))
             raise ValueError(emsg)
         rv = [f(e) for f, e in zip(self.converters, element)]
