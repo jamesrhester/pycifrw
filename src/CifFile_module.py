@@ -567,7 +567,7 @@ class CifDic(StarFile.StarFile):
     #                                                                         
     # <Initialise Cif dictionary>=                                            
     def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
-                 grammar='auto',heavy=True,**kwargs):
+                 grammar='auto',heavy=True,verbose_import=True,verbose_validation=True,**kwargs):
         self.do_minimum = do_minimum
         if do_minimum:
             do_imports = 'No'
@@ -579,10 +579,13 @@ class CifDic(StarFile.StarFile):
         self.ddlm_functions = {}    #for DDLm functions
         self.switch_numpy(False)    #no Numpy arrays returned
         super(CifDic,self).__init__(datasource=dic,grammar=grammar,blocktype=DicBlock,**kwargs)
+        self.verbose_import=verbose_import
+        self.verbose_validation=verbose_validation
         self.standard = 'Dic'    #for correct output order
         self.scoping = 'dictionary'
         (self.dicname,self.dicversion,self.diclang) = self.dic_determine()
-        print('{} is a {} dictionary'.format(self.dicname,self.diclang))
+        if self.verbose_import:
+            print('{} is a {} dictionary'.format(self.dicname,self.diclang))
         self.scopes_mandatory = {}
         self.scopes_naughty = {}
         self._import_dics = []   #Non-empty for DDLm only
@@ -1161,8 +1164,9 @@ class CifDic(StarFile.StarFile):
         """Collate import information"""
         self._import_dics = []
         import_frames = list([(a,self[a]['_import.get']) for a in self.keys() if '_import.get' in self[a]])
-        print('Import mode {} applied to following frames'.format(import_mode))
-        print(str([a[0] for a in import_frames]))
+        if self.verbose_import:
+            print('Import mode {} applied to following frames'.format(import_mode))
+            print(str([a[0] for a in import_frames]))
         if import_mode != 'All':
            for i in range(len(import_frames)):
                 import_frames[i] = (import_frames[i][0],[a for a in import_frames[i][1] if a.get('mode','Contents').lower() == import_mode.lower()])
@@ -1175,8 +1179,10 @@ class CifDic(StarFile.StarFile):
             full_uri = self.resolve_path(file_loc)
             if full_uri not in self.template_cache:
                 dic_as_cif = CifFile(full_uri,grammar=self.grammar, characterset=self.characterset)
-                self.template_cache[full_uri] = CifDic(dic_as_cif,do_imports=import_mode,heavy=heavy,do_dREL=False)  #this will recurse internal imports
-                print('Added {} to cached dictionaries'.format(full_uri))
+                self.template_cache[full_uri] = CifDic(dic_as_cif,do_imports=import_mode,heavy=heavy,do_dREL=False, verbose_import=self.verbose_import)  #this will recurse internal imports
+
+                if self.verbose_import:
+                    print('Added {} to cached dictionaries'.format(full_uri))
             import_from = self.template_cache[full_uri]
             dupl = import_ref.get('dupl','Exit')
             miss = import_ref.get('miss','Exit')
@@ -1561,10 +1567,12 @@ class CifDic(StarFile.StarFile):
                            for a in self.keys() if self[a].get('_definition.scope','Item')=='Item'])
         loopable = self.get_loopable_cats()
         loopers = [self.ddlm_immediate_children(a) for a in loopable]
-        print('Loopable cats:' + repr(loopable))
+        if self.verbose_import:
+            print('Loopable cats:' + repr(loopable))
         loop_children = [[b for b in a if b.lower() in loopable ] for a in loopers]
         expand_list = dict([(a,b) for a,b in zip(loopable,loop_children) if len(b)>0])
-        print("Expansion list:" + repr(expand_list))
+        if self.verbose_import:
+            print("Expansion list:" + repr(expand_list))
         extra_table = {}   #for debugging we keep it separate from base_table until the end
         def expand_base_table(parent_cat,child_cats):
             extra_names = []
@@ -1589,7 +1597,8 @@ class CifDic(StarFile.StarFile):
                             for n in self.names_in_cat(parent_cat) if self[n].get('_type.purpose','')!='Key']
             return child_names
         [expand_base_table(parent,child) for parent,child in expand_list.items()]
-        print('Expansion cat/obj values: ' + repr(extra_table))
+        if self.verbose_import:
+            print('Expansion cat/obj values: ' + repr(extra_table))
         # append repeated ones
         non_repeats = dict([a for a in extra_table.items() if a[0] not in base_table])
         repeats = [a for a in extra_table.keys() if a in base_table]
@@ -1621,7 +1630,8 @@ class CifDic(StarFile.StarFile):
                 return kk
         for k,v in self.loop_expand_list.items():
             collect_keys(k,v)
-        print('Keys for categories' + repr(self.cat_key_table))
+        if self.verbose_import:
+            print('Keys for categories' + repr(self.cat_key_table))
 
     # Preparing our type expressions                                          
     #                                                                         
