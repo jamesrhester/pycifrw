@@ -4120,7 +4120,7 @@ class ValidationResult:
         if block_name is not None:
             block_names = [block_name]
         else:
-            block_names = self.valid_result.iterkeys()
+            block_names = self.valid_result.keys()
         for block_name in block_names:
             if not self.valid_result[block_name] == (True,{}):
                 valid = False
@@ -4889,7 +4889,7 @@ def make_immutable(values):
 # <Merge dictionaries as CIFs>=                                           
 # merge ddl dictionaries.  We should be passed filenames or CifFile
 # objects
-def merge_dic(diclist,mergemode="replace",ddlspec=None):
+def merge_dic(diclist,mergemode="replace",ddlspec=None, verbose_import=True, verbose_validation=True):
     dic_as_cif_list = []
     for dic in diclist:
         if not isinstance(dic,CifFile) and \
@@ -4901,7 +4901,7 @@ def merge_dic(diclist,mergemode="replace",ddlspec=None):
     basedic = dic_as_cif_list[0]
     if "on_this_dictionary" in basedic:   #DDL1 style only
         for dic in dic_as_cif_list[1:]:
-           basedic.merge(dic,mode=mergemode,match_att=["_name"])
+           basedic.merge(dic,mode=mergemode,match_att=[], idblock="on_this_dictionary")
     elif len(basedic.keys()) == 1:                     #One block: DDL2/m style
         old_block = basedic[basedic.keys()[0]]
         for dic in dic_as_cif_list[1:]:
@@ -4909,7 +4909,13 @@ def merge_dic(diclist,mergemode="replace",ddlspec=None):
            basedic.merge(dic,mode=mergemode,
                          single_block=[basedic.keys()[0],dic.keys()[0]],
                          match_att=["_item.name"],match_function=find_parent)
-    return CifDic(basedic)
+    final_dic = CifDic(basedic, do_dREL=False, verbose_import=verbose_import, verbose_validation=verbose_validation)
+
+    # Add all the alias blocks once the dictionary is fully formed
+    if final_dic.diclang == "DDLm":
+        final_dic = final_dic.add_alias_blocks()
+
+    return final_dic
 
 # Find the main item from a parent-child list.  We are asked to find the  
 # topmost parent in a ddl2 definition block containing multiple item.names.
