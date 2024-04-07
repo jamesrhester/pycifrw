@@ -3227,18 +3227,49 @@ class CifDic(StarFile.StarFile):
 
         return {"result":True}
 
-    def validate_loop_key_ddlm(self,loop_names):
-        """Make sure at least one of the necessary keys are available"""
-        final_cats = self.get_final_cats(loop_names)
-        if len(final_cats)>0:
-            poss_keys = self.cat_key_table[final_cats[0]][0] #
-            found_keys = [a for a in poss_keys if a in loop_names]
-            if len(found_keys)>0:
-                return {"result":True}
-            else:
-                return {"result":False,"bad_items":poss_keys}
-        else:
+    def validate_loop_key_ddlm(self, loop_names):
+        '''
+        New version of the validation of the loop keys for the DDLm dictionaries.
+        It checks if the _category_key.name of a given looped category appears.
+        '''
+
+        # Get the parent categories of the input loop names
+        temp_final_cats = self.get_final_cats(loop_names)
+        final_cats = [final_cat for final_cat in temp_final_cats if final_cat not in self.black_list_categories]
+
+        if not final_cats:
             return {"result":True}
+
+        poss_keys = self.cat_key_table[final_cats[0]]
+
+        poss_keys_set = set()
+
+        # As we want to validate CIF1.0 against DDLm dictionaries,
+        # we have to take into account that the category keys may have
+        # alias.
+        # The input loop tags may also be CIF1.0 tags.
+        # Retrieve those alias to make a more complete validation
+        for poss_key in poss_keys:
+            for temp in poss_key:
+                if temp is None: continue
+                key = temp
+                key_alias = self[key].get(self.alias_spec, [])
+
+                poss_keys_set.add(key.lower())
+
+                if isinstance(key_alias, list):
+                    for alias in key_alias:
+                        poss_keys_set.add(alias.lower())
+
+                else:
+                    poss_keys_set.add(key_alias.lower())
+
+        # If one of the tags exists, the loop is valid
+        for loop_name in loop_names:
+            if loop_name.lower() in poss_keys_set:
+                return {"result":True}
+
+        return {"result":False, "bad_items":poss_keys_set}
 
     # The [[_list_reference]] value specifies data names which must co-occur with the
     # defined data name.  We check that this is indeed the case for all items in the
@@ -3248,6 +3279,8 @@ class CifDic(StarFile.StarFile):
     #                                                                         
     #                                                                         
     # <Validate loop mandatory items>=                                        
+        # Get the category keys
+
     def validate_loop_references(self,loop_names):
         must_haves = [self[a].get(self.list_ref_spec,None) for a in loop_names]
         must_haves = [a for a in must_haves if a != None]
