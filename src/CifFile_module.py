@@ -480,6 +480,20 @@ class CifDic(StarFile.StarFile):
             self.primitive_type = "_type"
             self.dep_spec = "xxx"
             self.cat_list = []   #to save searching all the time
+
+            # Categories to which their loop id uniqueness validation
+            # needs to be avoided due to dictionary ambiguities
+            self.black_list_categories = {
+                'refln',
+                'diffrn_refln',
+                'diffrn_standard_refln',
+                'exptl_crystal_face',
+                'geom_bond',
+                'geom_angle',
+                'geom_contact',
+                'geom_hbond',
+                'geom_torsion'
+            }
             name = super(CifDic,self).__getitem__("on_this_dictionary")["_dictionary_name"]
             version = super(CifDic,self).__getitem__("on_this_dictionary")["_dictionary_version"]
             return (name,version,"DDL1")
@@ -497,6 +511,14 @@ class CifDic(StarFile.StarFile):
                 self.primitive_type = '_type.contents'
                 self.cat_id_spec = "_definition.id"
                 self.def_id_spec = "_definition.id"
+                self.unique_spec = "_category_key.name"
+                self.alias_spec = "_alias.definition_id"
+                self.related_func = "_definition_replaced.by"
+                # Categories to which their loop id uniqueness validation
+                # needs to be avoided due to dictionary ambiguities
+                self.black_list_categories = {
+                    'publ_author'
+                }
                 return(name,version,"DDLm")
             else:   #DDL2
                 self.cat_id_spec = "_category.id"
@@ -516,6 +538,7 @@ class CifDic(StarFile.StarFile):
                 self.unique_spec = "_category_key.name"
                 self.list_ref_spec = "xxx"
                 self.primitive_type = "_type"
+                self.alias_spec = "_alias.definition_id"
                 self.dep_spec = "_item_dependent.dependent_name"
                 return (name,version,"DDL2")
         else:
