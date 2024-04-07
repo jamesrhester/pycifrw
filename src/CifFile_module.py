@@ -87,6 +87,7 @@ try:
 except ImportError:
     pass                       #will fail when using dictionaries for calcs
 from copy import copy          #must be in global scope for exec statement
+import json
 
 def track_recursion(in_this_func):
     """Keep an eye on a function call to make sure that the key argument hasn't been
@@ -256,6 +257,29 @@ class CifFile(StarFile.StarFile):
                     self[block_name].ChangeTagName(tag, tag_name_ddlm)
 
         return tags_without_alias
+
+    def to_json(self):
+        cif_dict = {}
+
+        # Add meta data
+        cif_dict['filename'] = self.my_uri
+        cif_dict['version'] = self.grammar
+
+        tags_dict = {}
+        for key in self.keys():
+            datablock_dict = {}
+            datablock = self[key]
+
+            for tag in datablock.keys():
+                value = self[key][tag]
+                datablock_dict[tag] = value
+
+            tags_dict[key] = datablock_dict
+
+        cif_dict['tags'] = tags_dict
+        cif_json = json.dumps(cif_dict, indent=2)
+
+        return cif_json
 
 class CifError(Exception):
     def __init__(self,value):
