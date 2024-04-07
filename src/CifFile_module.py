@@ -804,7 +804,7 @@ class CifDic(StarFile.StarFile):
         base_types = ["char","numb","null"]
         prim_types = base_types[:]
         base_constructs = [".*",
-            '(-?(([0-9]*[.][0-9]+)|([0-9]+)[.]?)([(][0-9]+[)])?([eEdD][+-]?[0-9]+)?)|\\?|\\.',
+            '(-?(([0-9]*[.][0-9]+)|([0-9]+)[.]?)([(][0-9]+[)])?([eEdD][+-]?[0-9]+)?([(][0-9]+[)])?)|\\?|\\.',
             "\"\" "]
         for key,value in self.items():
            newnames = [key]  #keep by default
@@ -848,8 +848,14 @@ class CifDic(StarFile.StarFile):
 
         #make categories conform with ddl2
         #note that we must remove everything from the last underscore
-           if value.get("_category",None) == "category_overview":
+           if value.get("_category",None) == "category_overview" \
+               and value.get("_name",None) is not None:
                 last_under = value["_name"].rindex("_")
+
+                # Take into account the bracket
+                if "]" in value["_name"]:
+                    last_under = len(value["_name"])
+
                 catid = value["_name"][1:last_under]
                 value["_category.id"] = catid  #remove square bracks
                 if catid not in self.cat_list: self.cat_list.append(catid)
@@ -1101,7 +1107,7 @@ class CifDic(StarFile.StarFile):
                 for jj, childname in mychildren:
                     alreadythere = [a for a in oldfamily if a[0]==parent_name and a[1] ==childname]
                     if len(alreadythere)>0: continue
-                    'Adding new child {} to parent definition at {}'.format(childname,parent_name)
+                    #'Adding new child %s to parent definition at %s' % (childname,parent_name)
                     old_children.append(childname)
                     old_parents.append(parent_name)
                 # Now output the loop, blowing away previous definitions.  If there is something
@@ -1762,9 +1768,15 @@ class CifDic(StarFile.StarFile):
                 # <Create key hierarchy>=                                                 
                 self.key_equivs = {}
                 for one_cat in looped_cats:   #follow them up
+                    if '_category_key.name' not in self[one_cat].keys():
+                        continue
+
                     lower_keys = listify(self[one_cat]['_category_key.name'])
                     start_keys = lower_keys[:]
                     while len(lower_keys)>0:
+                        if lower_keys[0] not in self.keys():
+                            break
+
                         this_cat = self[lower_keys[0]]['_name.category_id']
                         parent = [a for a in looped_cats if self[this_cat]['_name.category_id'].lower()==a]
                         #print(Processing %s, keys %s, parent %s" % (this_cat,repr(lower_keys),repr(parent)))
@@ -1773,14 +1785,25 @@ class CifDic(StarFile.StarFile):
                         if len(parent)==0: break
                         parent = parent[0]
                         parent_keys = listify(self[parent]['_category_key.name'])
-                        linked_keys = [self[l]["_name.linked_item_id"] for l in lower_keys]
-                        # sanity check
-                        if set(parent_keys) != set(linked_keys):
-                            raise CifError("Parent keys and linked keys are different! {}/{}".format(parent_keys,linked_keys))
-                            # now add in our information
-                        for parent,child in zip(linked_keys,start_keys):
-                            self.key_equivs[child] = self.key_equivs.get(child,[])+[parent]
-                        lower_keys = linked_keys  #preserves order of start keys
+
+                        linked_key_found = True
+                        for l in lower_keys:
+                            if "_name.linked_item_id" not in self[l].keys():
+                                linked_key_found = False
+
+                        if linked_key_found:
+                            linked_keys = [self[l]["_name.linked_item_id"] for l in lower_keys]
+                            # sanity check
+                            if set(parent_keys) != set(linked_keys):
+                                raise CifError("Parent keys and linked keys are different! {}/{}".format(parent_keys,linked_keys))
+                                # now add in our information
+                            for parent,child in zip(linked_keys,start_keys):
+                                self.key_equivs[child] = self.key_equivs.get(child,[])+[parent]
+                            lower_keys = linked_keys  #preserves order of start keys
+
+                        else:
+                            # It is assumed that there are no more linked_keys, therefore return an empty list
+                            lower_keys = []
 
         else:
             self.parent_lookup = {}
@@ -2147,8 +2170,8 @@ class CifDic(StarFile.StarFile):
         my_namespace = dict(zip(my_namespace,my_namespace))
         # we provide a table of loopable categories {cat_name:((key1,key2..),[item_name,...]),...})
         loopable_cats = self.get_loopable_cats()
-        loop_keys = [listify(self[a]["_category_key.name"]) for a in loopable_cats]
-        loop_keys = [[self[a]['_name.object_id'] for a in b] for b in loop_keys]
+        loop_keys = [listify(self[a]["_category_key.name"]) for a in loopable_cats if "_category_key.name" in self[a].keys()]
+        loop_keys = [[self[a]['_name.object_id'] for a in b if a in self.keys()] for b in loop_keys]
         cat_names = [self.names_in_cat(a,names_only=True) for a in loopable_cats]
         loop_info = dict(zip(loopable_cats,zip(loop_keys,cat_names)))
         # parser.listable_items = [a for a in self.keys() if "*" in self[a].get("_type.dimension","")]
@@ -2207,14 +2230,22 @@ class CifDic(StarFile.StarFile):
         from .drel import drel_ast_yacc
         from .drel import py_from_ast
         funclist = [a for a in self.keys() if self[a].get("_name.category_id","")=='function']
-        funcnames = [(self[a]["_name.object_id"],
-                      getattr(self[a].GetKeyedPacket("_method.purpose","Evaluation"),"_method.expression")) for a in funclist]
+        # LOOK AT _function.sawtooth
+        # It is trying to take the code expression because in some dics it appears inside a loop
+        funcnames = []
+        for a in funclist:
+            if not self[a].loops.keys():
+                temp = (self[a]["_name.object_id"],self[a]["_method.expression"])
+            else:
+                temp = (self[a]["_name.object_id"], getattr(self[a].GetKeyedPacket("_method.purpose","Evaluation"),"_method.expression"))
+
+            funcnames.append(temp)
         # create executable python code...
         parser = drel_ast_yacc.parser
         # we provide a table of loopable categories {cat_name:(key,[item_name,...]),...})
         loopable_cats = self.get_loopable_cats()
-        loop_keys = [listify(self[a]["_category_key.name"]) for a in loopable_cats]
-        loop_keys = [[self[a]['_name.object_id'] for a in b] for b in loop_keys]
+        loop_keys = [listify(self[a]["_category_key.name"]) for a in loopable_cats if "_category_key.name" in self[a].keys()]
+        loop_keys = [[self[a]['_name.object_id'] for a in b if a in self.keys()] for b in loop_keys]
         cat_names = [self.names_in_cat(a,names_only=True) for a in loopable_cats]
         loop_info = dict(zip(loopable_cats,zip(loop_keys,cat_names)))
         for funcname,funcbody in funcnames:
@@ -2892,13 +2923,13 @@ class CifDic(StarFile.StarFile):
         item_values = listify(item_value)
         if container_type == 'Single':
            okcheck = [a for a in item_values if not isinstance(a,(int,float,long,unicode))]
-           return decide(okcheck)
+           return self.decide(okcheck)
         if container_type in ('Multiple','List'):
            okcheck = [a for a in item_values if not isinstance(a,StarList)]
-           return decide(okcheck)
+           return self.decide(okcheck)
         if container_type == 'Array':    #A list with numerical values
            okcheck = [a for a in item_values if not isinstance(a,StarList)]
-           first_check = decide(okcheck)
+           first_check = self.decide(okcheck)
            if not first_check['result']: return first_check
            #num_check = [a for a in item_values if len([b for b in a if not isinstance
 
@@ -2989,11 +3020,12 @@ class CifDic(StarFile.StarFile):
             enum_list = self[item_name][self.enum_spec][:]
         except KeyError:
             return {"result":None}
+        enum_list = [value.lower() for value in enum_list]
         enum_list.append(".")   #default value
         enum_list.append("?")   #unknown
         item_values = listify(item_value)
         #print("Enum check: {!r} in {!r}".format(item_values, enum_list))
-        check_all = [a for a in item_values if a not in enum_list]
+        check_all = [a for a in item_values if a.lower() not in enum_list]
         if len(check_all)>0: return {"result":False,"bad_values":check_all}
         else: return {"result":True}
 
