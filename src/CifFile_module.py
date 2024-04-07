@@ -2737,6 +2737,9 @@ class CifDic(StarFile.StarFile):
     def run_loop_validation(self,loop_names):
         return {loop_names[0]:list([(f.__name__,f(loop_names)) for f in self.loop_validation_funs])}
 
+    def run_loop_id_uniqueness(self, loop_names, block):
+        return {loop_names[0]:list([(f.__name__, f(loop_names, block)) for f in self.loop_id_uniqueness_funs])}
+
     def run_global_validation(self,item_name,item_value,data_block,provisional_items={},globals={}):
         results = list([(f.__name__,f(item_name,item_value,data_block,provisional_items,globals)) for f in self.global_validation_funs])
         return {item_name:results}
@@ -3213,6 +3216,7 @@ def run_data_checks(check_block,fulldic,block_scope='Item'):
         update_value(v_result, fulldic.run_global_validation(key,check_block[key],check_block))
     for loopnames in check_block.loops.values():
         update_value(v_result, fulldic.run_loop_validation(loopnames))
+        update_value(v_result, fulldic.run_loop_id_uniqueness(loopnames, check_block))
     update_value(v_result,fulldic.run_block_validation(check_block,block_scope=block_scope))
     # return false and list of baddies if anything didn't match
     all_keys = list(v_result.keys())
