@@ -4138,6 +4138,86 @@ class ValidationResult:
                 has_no_match_items = False
         return has_no_match_items
 
+def get_no_matches_warning(checkfile, block, fulldic):
+    no_matches = [a for a in checkfile[block].keys() if a not in fulldic]
+    return no_matches
+
+def get_obsolete_tags_warning_ddl1(checkfile, block, fulldic):
+    result = {}
+    for tag, tag_value in checkfile[block].items():
+        dict_tag_entry = fulldic.get(tag, None)
+        if dict_tag_entry is None:
+            continue
+
+        if dict_tag_entry.get(fulldic.related_func, "") == "replace":
+            related_tag = fulldic.get(tag, None).get(fulldic.related_item)
+            result[tag] = related_tag
+
+    return result
+
+def get_obsolete_tags_warning_ddlm(checkfile, block, fulldic):
+    result = {}
+    for tag, tag_value in checkfile[block].items():
+        dict_tag_entry = fulldic.get(tag, None)
+        if dict_tag_entry is None:
+            continue
+
+        new_tags = dict_tag_entry.get(fulldic.related_func, [])
+        if new_tags:
+            result[tag] = new_tags
+
+    return result
+
+def get_case_sensitive_warning(checkfile, block, fulldic):
+    result = {}
+    for tag, tag_value in checkfile[block].items():
+        dict_tag_entry = fulldic.get(tag, None)
+        # The tag is not found in the dictionary
+        if dict_tag_entry is None:
+            continue
+
+        enum_values = dict_tag_entry.get(fulldic.enum_spec, [])
+        temp_result = []
+
+        # The tag has not any enumeration values
+        if enum_values is None or not enum_values:
+            continue
+
+        if isinstance(tag_value, list):
+            for temp_tag_value in tag_value:
+                if temp_tag_value not in enum_values and temp_tag_value.lower() in enum_values:
+                    temp_result.append(temp_tag_value)
+
+        else:
+            if tag_value not in enum_values and tag_value.lower() in enum_values:
+                temp_result.append(tag_value)
+
+        if temp_result:
+            result[tag] = temp_result
+
+    return result
+
+def get_blacklist_warning(checkfile, block, fulldic):
+    result = []
+    for tag, tag_value in checkfile[block].items():
+        if tag in fulldic.black_list_categories:
+            result.append(tag)
+
+    return result
+
+def get_warnings(checkfile, block, fulldic):
+    warnings = {}
+    warnings["no_matches"] = get_no_matches_warning(checkfile, block, fulldic)
+    warnings["blacklist"] = get_blacklist_warning(checkfile, block, fulldic)
+    warnings["case_sensitive"] = get_case_sensitive_warning(checkfile, block, fulldic)
+
+    if fulldic.diclang == "DDL1":
+        warnings["obsolete"] = get_obsolete_tags_warning_ddl1(checkfile, block, fulldic)
+
+    else:
+        warnings["obsolete"] = get_obsolete_tags_warning_ddlm(checkfile, block, fulldic)
+
+    return warnings
 
 
 # We provide a function to do straight validation, using the built-in     
@@ -4164,8 +4244,11 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
         fulldic = merge_dic(diclist,mergemode)
     else:
         fulldic = dic
+
     no_matches = {}
+    warnings = {}
     valid_result = {}
+
     if isdic:          #assume one block only
         check_file.scoping = 'instance' #only data blocks visible
         top_level = check_file.keys()[0]
@@ -4188,14 +4271,14 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
            block_scope = 'Item'
         else:
            block_scope = 'Datablock'
-        no_matches[block] = [a for a in check_file[block].keys() if a not in fulldic]
+        warnings[block] = get_warnings(check_file, block, fulldic)
         # remove non-matching items
         print("Not matched: " + repr(no_matches[block]))
         for nogood in no_matches[block]:
              del check_file[block][nogood]
         print("Validating block {}, scope {}".format(block,block_scope))
         valid_result[block] = run_data_checks(check_file[block],fulldic,block_scope=block_scope)
-    return valid_result,no_matches
+    return valid_result, warnings
 
 def validate_report(val_result,use_html=False):
     valid_result,no_matches = val_result
