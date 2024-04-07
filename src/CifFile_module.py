@@ -338,6 +338,9 @@ class CifFile(StarFile.StarFile):
 ##########################################################################
 """
 
+    def get_parsing_result(self):
+        return self.parsing_result
+
 
 # Defining an error class: we simply derive a 'nothing' class from the root
 # Python class                                                            
