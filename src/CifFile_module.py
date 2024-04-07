@@ -416,6 +416,45 @@ class CifDic(StarFile.StarFile):
         self.add_type_info()
         self.install_validation_functions()
 
+    def add_alias_blocks(self):
+        '''
+        Function to add alias tags to the dictionary. If a datablock has the "_alias.definition_id" tag,
+        a new datablock is created with the same information of the original datablock.
+
+        It requires the dictionary to be fully formed.
+        '''
+        # Retrieve all the alias blocks
+        data_blocks_to_edit = []
+        for block_name in self.keys():
+            block = self[block_name]
+
+            if "_alias.definition_id" in block.keys():
+                data_blocks_to_edit.append(block_name)
+
+        # Add the alias blocks to the dictionary
+        for data_block in data_blocks_to_edit:
+            alias_temp = self[data_block]["_alias.definition_id"]
+            contents = self[data_block]
+
+            # Remove alias tag from original datablock ?
+            #del self[data_block]["_alias.definition_id"]
+
+            if isinstance(alias_temp, list):
+                for alias in alias_temp:
+                    #contents["_definition.id"] = alias.lower()
+                    #self[alias.lower()] = contents
+                    self.NewBlock(alias.lower(), contents)
+                    self.block_id_table[alias.lower()] = alias.lower()
+
+            else:
+                # Keep the DDLm version of the tag
+                #contents["_definition.id"] = alias_temp.lower()
+                #self[alias_temp.lower()] = contents
+                self.NewBlock(alias_temp.lower(), contents)
+                self.block_id_table[alias_temp.lower()] = alias_temp.lower()
+
+        return self
+
     def dic_determine(self):
         if "on_this_dictionary" in self:
             self.master_block = super(CifDic,self).__getitem__("on_this_dictionary")
