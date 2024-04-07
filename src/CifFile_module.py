@@ -228,6 +228,9 @@ class CifFile(StarFile.StarFile):
 ##########################################################################
 """
 
+    def get_parsing_result(self):
+        return self.parsing_result
+
 
 class CifError(Exception):
     def __init__(self,value):
