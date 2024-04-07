@@ -28,9 +28,13 @@ setup(name="PyCifRW",
           'Topic :: Software Development :: Libraries :: Python Modules'
       ],
       py_modules = ['CifFile.CifFile_module','CifFile.yapps3_compiled_rt','CifFile.YappsStarParser_1_1','CifFile.YappsStarParser_1_0',
-                    'CifFile.YappsStarParser_STAR2','CifFile.YappsStarParser_2_0','CifFile.StarFile','CifFile.TypeContentsParser'],
+                    'CifFile.YappsStarParser_STAR2','CifFile.YappsStarParser_2_0','CifFile.StarFile','CifFile.TypeContentsParser',
+                    'CifFile.cif_files_validator'],
       ext_modules = [c_scanner],
       packages = ['CifFile', 'CifFile.drel'],
       test_suite = 'TestPyCIFRW',
-      package_dir = {'CifFile':'src'}
+      package_dir = {'CifFile':'src'},
+      install_requires = [
+          "prettytable"
+      ]
       )
