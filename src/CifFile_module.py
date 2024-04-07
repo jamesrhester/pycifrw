@@ -4,6 +4,8 @@ from __future__ import unicode_literals
 from __future__ import division
 from __future__ import absolute_import
 
+import collections
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -2089,6 +2091,13 @@ class CifDic(StarFile.StarFile):
                 self.validate_loop_key,
                 self.validate_loop_references
             ]
+
+            # Ensure that loop id tags are unique, more functions may be added
+            # in the future
+            self.loop_id_uniqueness_funs = [
+                self.validate_loop_key_uniqueness
+            ]
+
             # where we need to look at other values
             self.global_validation_funs = [
                 self.validate_exclusion,
@@ -2115,6 +2124,9 @@ class CifDic(StarFile.StarFile):
                 self.validate_loop_key_ddlm,
                 self.validate_loop_membership
                 ]
+            self.loop_id_uniqueness_funs = [
+                self.validate_loop_key_uniqueness_ddlm
+            ]
             self.global_validation_funs = []
             self.block_validation_funs = [
                 self.check_mandatory_items,
@@ -2291,6 +2303,92 @@ class CifDic(StarFile.StarFile):
                         alt = [a for a in alt_names if a in loop_names]
                         if len(alt) == 0:
                             return {"result":False,"bad_items":loop_key}  # no alternates
+        return {"result":True}
+
+    def validate_loop_key_uniqueness(self, loop_names, block):
+        '''
+        Function to validate if the id tags of a loop are unique. Function for the DDL1 dictionaries.
+        Tags that have a category in self.black_list_categories are ignored.
+        '''
+
+        loop_names_to_check = []
+        for loop_name in loop_names:
+            # Get the _list_mandatory tag value (empty if the loop does not have it)
+            list_mandatory = self[loop_name].get(self.must_exist_spec, "")
+
+            # Get the tag's category to check if has to be avoided or not
+            category = self[loop_name].get(self.cat_spec, "")
+
+            # Check if the tag actually is mandatory
+            list_mandatory = list_mandatory == 'yes'
+
+            # Only check the categories that ARE NOT in self.black_list_categories
+            if list_mandatory and category not in self.black_list_categories:
+                loop_names_to_check.append(loop_name)
+
+        # No loop ids to check, the loop is valid
+        if not loop_names_to_check:
+            return {"result": True}
+
+        # Group the tag values by the number of ids in the loop
+        if len(loop_names_to_check) > 1:
+            values_list = [block[loop_name] for loop_name in loop_names_to_check]
+            values = list(zip(*values_list))
+
+        else:
+            loop_name = loop_names_to_check[0]
+
+            values = block[loop_name]
+
+        # The set only allows unique values
+        set_values = set(values)
+
+        # If the lengths are different, it means that there are repeated values
+        if len(values) != len(set_values):
+            repeated_values = [item for item, count in collections.Counter(values).items() if count > 1]
+            return {"result":False, "bad_items":repeated_values}
+
+        return {"result":True}
+
+    def validate_loop_key_uniqueness_ddlm(self, loop_names, block):
+        '''
+        Function to validate if the id tags of a loop are unique. Function for the DDLm dictionaries.
+        Tags that have a category in self.black_list_categories are ignored.
+        '''
+        # Get the final categories
+        final_cats = self.get_final_cats(loop_names)
+
+        # Get the category ids
+        cat_keys = []
+        for cat in final_cats:
+            temp_cat_key = self[cat].get(self.unique_spec, "")
+            if temp_cat_key not in cat_keys:
+                cat_keys.append(temp_cat_key)
+
+        # Only take into account the loop ids from our loop tags
+        loop_names_to_check = [loop_name for loop_name in loop_names if loop_name in cat_keys]
+
+        # There are no tags to check
+        if not loop_names_to_check:
+            return {"result":True}
+
+        # Group the tag values by the number of ids in the group
+        if len(loop_names_to_check) > 1:
+            values_list = [block[loop_name] for loop_name in loop_names_to_check]
+            values = list(zip(*values_list))
+
+        else:
+            loop_name = loop_names_to_check[0]
+            values = block[loop_name]
+
+        # The set only allows unique values
+        set_values = set(values)
+
+        # If the lengths are different, it means that there are repeated values
+        if len(values) != len(set_values):
+            repeated_values = [item for item, count in collections.Counter(values).items() if count > 1]
+            return {"result":False, "bad_items":repeated_values}
+
         return {"result":True}
 
     def validate_loop_key_ddlm(self,loop_names):
