@@ -42,6 +42,8 @@ except:
     from urllib.request import urlopen
     from urllib.parse import urlparse, urljoin
 
+from prettytable import PrettyTable
+
 # The unicode type does not exist in Python3 as the str type
 # encompasses unicode.  PyCIFRW tests for 'unicode' would fail
 # Suggestions for a better approach welcome.
@@ -4291,12 +4293,12 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
     return valid_result, warnings
 
 def validate_report(val_result,use_html=False):
-    valid_result,no_matches = val_result
+    valid_result,warnings = val_result
     outstr = StringIO()
     if use_html:
         outstr.write("<h2>Validation results</h2>")
     else:
-        outstr.write( "Validation results\n")
+        outstr.write( "\nValidation results\n")
         outstr.write( "------------------\n")
     if len(valid_result) > 10:
         suppress_valid = True         #don't clutter with valid messages
@@ -4304,28 +4306,52 @@ def validate_report(val_result,use_html=False):
            outstr.write("<p>For brevity, valid blocks are not reported in the output.</p>")
     else:
         suppress_valid = False
+
+    dict_summary = {}
+    dict_summary['blocks'] = {}
+    cif_is_valid = True
+    cif_has_warnings = False
     for block in valid_result.keys():
         block_result = valid_result[block]
+
+        dict_summary['blocks'][block] = {}
+        dict_summary['blocks'][block]['is_valid'] = block_result[0]
+        dict_summary['blocks'][block]['warnings'] = {}
+        dict_summary['blocks'][block]['has_warnings'] = False
+        dict_summary['blocks'][block]['errors'] = {}
+
+        dict_summary['blocks'][block]['output_str'] = ""
+        dict_summary['blocks'][block]['error_str'] = ""
+        dict_summary['blocks'][block]['warning_str'] = ""
+
+        if not dict_summary['blocks'][block]['is_valid']:
+            cif_is_valid = False
+
         if block_result[0]:
             out_line = "Block '{}' is VALID".format(block)
         else:
             out_line = "Block '{}' is INVALID".format(block)
         if use_html:
-            if (block_result[0] and (not suppress_valid or len(no_matches[block])>0)) or not block_result[0]:
+            if (block_result[0] and (not suppress_valid or len(warnings[block])>0)) or not block_result[0]:
                 outstr.write( "<h3>{}</h3><p>".format(out_line))
         else:
-                outstr.write( "\n {}\n".format(out_line))
-        if len(no_matches[block])!= 0:
-            if use_html:
-                outstr.write( "<p>The following items were not found in the dictionary")
-                outstr.write(" (note that this does not invalidate the data block):</p>")
-                outstr.write("<p><table>\n")
-                [outstr.write("<tr><td>{}</td></tr>".format(it)) for it in no_matches[block]]
-                outstr.write("</table>\n")
-            else:
-                outstr.write( "\n The following items were not found in the dictionary:\n")
-                outstr.write("Note that this does not invalidate the data block\n")
-                [outstr.write("{}\n".format(it)) for it in no_matches[block]]
+                outstr.write( "\n{} \n".format(out_line))
+
+        warning_table = {
+            'no_matches':'Warning: The following items were not found in the dictionary.',
+            'obsolete':'Warning: Obsolete definitions found. Obsolete tags should be replaced by their related tags.',
+            'case_sensitive':'Warning: Case-sensitive match failure for enumeration values.',
+            'blacklist':'Warning: The following tags can cause validation problems so they have not been taken into account for validation.'
+        }
+
+        warnings_str, warning_dict = get_warning_report(warnings.get(block), warning_table)
+
+        if warnings_str:
+            outstr.write(warnings_str)
+            cif_has_warnings = True
+            dict_summary['blocks'][block]['warnings'] = warning_dict
+            dict_summary['blocks'][block]['has_warnings'] = True
+
         # now organise our results by type of error, not data item...
         error_type_dic = {}
         for error_item, error_list in block_result[1].items():
@@ -4338,47 +4364,170 @@ def validate_report(val_result,use_html=False):
         # make a table of test name, test message
         info_table = {\
         'validate_item_type':\
-            "The following data items had badly formed values",
+            "Error: The following data items had badly formed values",
         'validate_item_esd':\
-            "The following data items should not have esds appended",
+            "Error: The following data items should not have esds appended",
         'validate_enum_range':\
-            "The following data items have values outside permitted range",
+            "Error: The following data items have values outside permitted range",
         'validate_item_enum':\
-            "The following data items have values outside permitted set",
+            "Error: The following data items have values outside permitted set",
         'validate_looping':\
-            "The following data items violate looping constraints",
+            "Error: The following data items violate looping constraints",
         'validate_loop_membership':\
-            "The following looped data names are of different categories to the first looped data name",
+            "Error: The following looped data names are of different categories to the first looped data name",
         'validate_loop_key':\
-            "A required dataname for this category is missing from the loop\n containing the dataname",
+            "Error: A required dataname for this category is missing from the loop\n containing the dataname",
         'validate_loop_key_ddlm':\
-            "A loop key is missing for the category containing the dataname",
+            "Error: A loop key is missing for the category containing the dataname",
+        'validate_loop_key_uniqueness':\
+            "Error: There are repeated values for a _list_mandatory type tag",
         'validate_loop_references':\
-            "A dataname required by the item is missing from the loop",
+            "Error: A dataname required by the item is missing from the loop",
         'validate_parent':\
-            "A parent dataname is missing or contains different values",
+            "Error: A parent dataname is missing or contains different values",
         'validate_child':\
-            "A child dataname contains different values to the parent",
+            "Error: A child dataname contains different values to the parent",
         'validate_uniqueness':\
-            "One or more data items do not take unique values",
+            "Error: One or more data items do not take unique values",
         'validate_dependents':\
-            "A dataname required by the item is missing from the data block",
+            "Error: A dataname required by the item is missing from the data block",
         'validate_exclusion': \
-            "Both dataname and exclusive alternates or aliases are present in data block",
+            "Error: Both dataname and exclusive alternates or aliases are present in data block",
         'validate_mandatory_category':\
-            "A required category is missing from this block",
+            "Error: A required category is missing from this block",
         'check_mandatory_items':\
-            "A required data attribute is missing from this block",
+            "Error: A required data attribute is missing from this block",
         'check_prohibited_items':\
-            "A prohibited data attribute is present in this block"}
+            "Error: A prohibited data attribute is present in this block"}
 
+        block_validation_str = "\n" + out_line + " \n" + warnings_str + "\n"
+        block_warning_str = "\n" + out_line + "\n" + warnings_str + "\n"
+        block_error_str = "\n" + out_line + "\n"
         for test_name,test_results in error_type_dic.items():
            if use_html:
                outstr.write(html_error_report(test_name,info_table[test_name],test_results))
            else:
-               outstr.write(error_report(test_name,info_table[test_name],test_results))
+               temp_str = error_report(test_name,info_table[test_name],test_results)
+               outstr.write(temp_str)
                outstr.write("\n\n")
-    return outstr.getvalue()
+
+               block_error_str += temp_str + "\n\n"
+               block_validation_str += temp_str + "\n\n"
+               dict_summary['blocks'][block]['errors'][test_name] = temp_str
+
+               #outstr.write(error_report(test_name,info_table[test_name],test_results))
+               #outstr.write("\n\n")
+
+        dict_summary['blocks'][block]["error_str"] = block_error_str
+        dict_summary['blocks'][block]["warning_str"] = block_warning_str
+        dict_summary['blocks'][block]["output_str"] = block_validation_str
+
+    dict_summary['cif_has_warnings'] = cif_has_warnings
+    dict_summary['cif_is_valid'] = cif_is_valid
+
+    return outstr.getvalue(), dict_summary
+
+def warning_report_no_matches(no_matches_warnings, warning_table):
+    if not no_matches_warnings:
+        return ""
+
+    warning_header = "\n" + warning_table.get('no_matches')
+    table = PrettyTable()
+
+    field_names = ["Tags not found in the dictionaries"]
+
+    table.field_names = field_names
+    table.align["Tags not found in the dictionaries"] = "l"
+
+    for idx, tag_name in enumerate(no_matches_warnings):
+        table.add_row([tag_name])
+
+    table_str = table.get_string() + "\n"
+
+    return "\n".join((warning_header, table_str))
+
+
+def warning_report_obsolete(obsolete_tags, warning_table):
+    if not obsolete_tags:
+        return ""
+
+    warning_header = "\n" + warning_table.get('obsolete')
+    table = PrettyTable()
+
+    field_names = ["Obsolete tags", "Related tags"]
+
+    table.field_names = field_names
+    table.align["Obsolete tags"] = "l"
+    table.align["Related tags"] = "l"
+
+    for obsolete_tag, related_tag in obsolete_tags.items():
+        row = [obsolete_tag, related_tag]
+        table.add_row(row)
+
+    table_str = table.get_string() + "\n"
+
+    return "\n".join((warning_header, table_str))
+
+def warning_report_case_sensitive(case_sensitive_tags, warning_table):
+    if not case_sensitive_tags:
+        return ""
+
+    warning_header = "\n" + warning_table.get('case_sensitive')
+    table = PrettyTable()
+
+    field_names = ["Tag name", "Case sensitive value"]
+
+    table.field_names = field_names
+    table.align["Tag name"] = "l"
+    table.align["Case sensitive value"] = "l"
+
+    for tag, wrong_values in case_sensitive_tags.items():
+        row = [tag, wrong_values]
+        table.add_row(row)
+
+    table_str = table.get_string() + "\n"
+
+    return "\n".join((warning_header, table_str))
+
+def warning_report_blacklist(blacklist_tags, warning_table):
+    if not blacklist_tags:
+        return ""
+
+    warning_header = warning_table.get('blacklist') + "\n"
+    table = PrettyTable()
+
+    field_names = ["Tags in the black list"]
+
+    table.field_names = field_names
+    table.align["Tags in the black list"] = "l"
+
+    for idx, blacklist_tag in enumerate(blacklist_tags):
+        table.add_row([blacklist_tag])
+
+    table_str = table.get_string() + "\n"
+
+    return "\n".join((warning_header, table_str))
+
+def get_warning_report(warnings, warning_table):
+    out_str = ""
+    out_dict = {}
+
+    no_matches_str = warning_report_no_matches(warnings.get('no_matches'), warning_table)
+    obsolete_str = warning_report_obsolete(warnings.get('obsolete'), warning_table)
+    case_sensitive_str = warning_report_case_sensitive(warnings.get('case_sensitive'), warning_table)
+    blacklist_str = warning_report_blacklist(warnings.get('blacklist'), warning_table)
+
+    out_dict['no_matches'] = no_matches_str
+    out_dict['obsolete'] = obsolete_str
+    out_dict['case_sensitive_str'] = case_sensitive_str
+    out_dict['blacklist_str'] = blacklist_str
+
+    out_str = "".join((
+                no_matches_str, obsolete_str,
+                case_sensitive_str, blacklist_str
+            ))
+
+    return out_str, out_dict
 
 # A function to lay out a single error report.  We are passed
 # the name of the error (one of our validation functions), the
@@ -4386,30 +4535,61 @@ def validate_report(val_result,use_html=False):
 # information.  We print no more than 50 characters of the item
 
 def error_report(error_name,error_explanation,error_dics):
-   retstring = "\n\n " + error_explanation + ":\n\n"
-   headstring = "%-40s" % "Item name"
+   retstring = "\n\n" + error_explanation + ":\n\n"
+   headstring = "{}".format("Item name, ")
    bodystring = ""
+
+   table = PrettyTable()
+   field_names = ["Wrong item name"]
+
    if "bad_values" in error_dics[0]:
-      headstring += "%-20s" % "Bad value(s)"
+      headstring += "{}".format("Bad value(s)")
+      field_names.append("Wrong value(s)")
    if "bad_items" in error_dics[0]:
-      headstring += "%-20s" % "Bad dataname(s)"
+      headstring += "{}".format("Bad dataname(s)")
+      field_names.append("Bad dataname(s)")
    if "child" in error_dics[0]:
-      headstring += "%-20s" % "Child"
+      headstring += "{}".format("Child")
+      field_names.append("Child")
    if "parent" in error_dics[0]:
-      headstring += "%-20s" % "Parent"
+      headstring += "{}".format("Parent")
+      field_names.append("Parent")
    headstring +="\n"
+
+   table.field_names = field_names
+
+   for field_name in table.field_names:
+       table.align[field_name] = "l"
+
    for error in error_dics:
-      bodystring += "\n%-40s" % error["item_name"]
+      bodystring += "\n{}".format(error["item_name"])
+      row = [error["item_name"]]
       if "bad_values" in error:
-          out_vals = [repr(a)[:50] for a in error["bad_values"]]
-          bodystring += "%-20s" % out_vals
+          max_items = 8
+          if len(error["bad_values"]) > max_items:
+              out_vals = []
+              for i in range(max_items):
+                  out_vals.append(error["bad_values"][i])
+
+              out_vals.append("...")
+          else:
+            out_vals = [repr(a)[:50] for a in error["bad_values"]]
+          row.append(out_vals)
+          bodystring += "{}".format(out_vals)
       if "bad_items" in error:
-          bodystring += "%-20s" % repr(error["bad_items"])
+          bodystring += "{}".format(repr(error["bad_items"]))
+          row.append(repr(error["bad_items"]))
       if "child" in error:
-          bodystring += "%-20s" % repr(error["child"])
+          bodystring += "{}".format(repr(error["child"]))
+          row.append(repr(error["child"]))
       if "parent" in error:
-          bodystring += "%-20s" % repr(error["parent"])
-   return retstring + headstring + bodystring
+          bodystring += "{}".format(repr(error["parent"]))
+          row.append(repr(error["parent"]))
+
+      table.add_row(row)
+
+   bodystring = table.get_string()
+   return retstring + bodystring
 
 #  This lays out an HTML error report
 
@@ -4428,15 +4608,15 @@ def html_error_report(error_name,error_explanation,error_dics,annotate=[]):
       headstring += "<th>Parent</th>"
    headstring +="</tr>\n"
    for error in error_dics:
-      bodystring += "<tr><td><tt>%s</tt></td>" % error["item_name"]
+      bodystring += "<tr><td><tt>{}</tt></td>".format(error["item_name"])
       if "bad_values" in error:
-          bodystring += "<td>%s</td>" % error["bad_values"]
+          bodystring += "<td>{}</td>".format(error["bad_values"])
       if "bad_items" in error:
-          bodystring += "<td><tt>%s</tt></td>" % error["bad_items"]
+          bodystring += "<td><tt>{}</tt></td>".format(error["bad_items"])
       if "child" in error:
-          bodystring += "<td><tt>%s</tt></td>" % error["child"]
+          bodystring += "<td><tt>{}</tt></td>".format(error["child"])
       if "parent" in error:
-          bodystring += "<td><tt>%s</tt></td>" % error["parent"]
+          bodystring += "<td><tt>{}</tt></td>".format(error["parent"])
       bodystring += "</tr>\n"
    return retstring + headstring + bodystring + "</table>\n"
 
