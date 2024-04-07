@@ -3437,7 +3437,8 @@ class CifDic(StarFile.StarFile):
        item_name_list.extend([a.lower() for a in provisional_items.keys()])
        bad = [a for a in alternates if a in item_name_list]
        if len(bad)>0:
-           print("Bad: {}, alternates {}".format(repr(bad),repr(alternates)))
+           if self.verbose_validation:
+                print("Bad: {}, alternates {}".format(repr(bad),repr(alternates)))
            return {"result":False,"bad_items":bad}
        else: return {"result":True}
 
@@ -3538,7 +3539,8 @@ class CifDic(StarFile.StarFile):
                     return {"result":None}
                 else:
                     self.done_children.append(child_item)
-                    print("Done children {}".format(repr(self.done_children)))
+                    if self.verbose_validation:
+                        print("Done children {}".format(repr(self.done_children)))
             if child_item in provisional_items:
                 child_values = provisional_items[child_item][:]
             elif child_item in whole_block:
@@ -3627,7 +3629,8 @@ class CifDic(StarFile.StarFile):
                                                                   globals={}):
         category = self[item_name].get(self.cat_spec)
         if category == None:
-            print("No category found for {}".format(item_name))
+            if self.verbose_validation:
+                print("No category found for {}".format(item_name))
             return {"result":None}
         # print("Category {!r} for item {}".format(category, item_name))
         # we make a copy in the following as we will be removing stuff later!
@@ -4273,10 +4276,17 @@ def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
            block_scope = 'Datablock'
         warnings[block] = get_warnings(check_file, block, fulldic)
         # remove non-matching items
-        print("Not matched: " + repr(no_matches[block]))
-        for nogood in no_matches[block]:
+        if fulldic.verbose_validation:
+            print()
+            print("The following tags were not found in the dictionary: " + str(warnings[block]["no_matches"]))
+            print("The following tags are obsolete: " + str(warnings[block]["obsolete"]))
+            print("The following tags have not been taken into account for validation: " + str(warnings[block]["blacklist"]))
+            print("The followings tags' values have a case-sensitive match failure: " + str(warnings[block]["case_sensitive"]))
+            print()
+        for nogood in warnings[block]["no_matches"]:
              del check_file[block][nogood]
-        print("Validating block {}, scope {}".format(block,block_scope))
+        if fulldic.verbose_validation:
+            print("Validating block {}, scope {}".format(block,block_scope))
         valid_result[block] = run_data_checks(check_file[block],fulldic,block_scope=block_scope)
     return valid_result, warnings
 
