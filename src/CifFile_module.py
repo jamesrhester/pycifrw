@@ -596,6 +596,7 @@ class CifDic(StarFile.StarFile):
             self.DDL2_normalise()   #iron out some DDL2 tricky bits
         elif self.diclang == "DDLm":
             self.scoping = 'dictionary'   #expose all save frames
+            self._import_dics = self.get_dictionaries_to_import()
             if do_imports != 'No':
                 self.obtain_imports(import_mode=do_imports,heavy=heavy)#recursively calls this routine
             self.create_alias_table()
@@ -1145,6 +1146,17 @@ class CifDic(StarFile.StarFile):
     #                                                                         
     # <Perform DDLm imports>=                                                 
     # <Get import information>=                                               
+    def get_dictionaries_to_import(self):
+        import_frames = list([(a,self[a]['_import.get']) for a in self.keys() if '_import.get' in self[a]])
+
+        dictionaries = set()
+        for parent_block,import_list in import_frames:
+            for import_ref in import_list:
+                dictionary_name = import_ref.get("file", "")
+                dictionaries.add(dictionary_name)
+
+        return list(dictionaries)
+
     def obtain_imports(self,import_mode,heavy=False):
         """Collate import information"""
         self._import_dics = []
