@@ -231,6 +231,31 @@ class CifFile(StarFile.StarFile):
     def get_parsing_result(self):
         return self.parsing_result
 
+    def convert_to_cif_2_0(self, dictionary):
+        """There are alias with . in their name. Those must be taken into account.
+        """
+
+        tags_without_alias = []
+        for block_name, block_contents in self.items():
+
+            for tag, value in block_contents.items():
+                # The tag does not have any point
+                # The tag is DDL1
+                tag_definition = dictionary.get(tag, None)
+
+                if tag_definition is None:
+                    tags_without_alias.append(tag)
+                    continue
+
+                tag_name_ddlm = tag_definition.get("_definition.id").lower()
+
+                # The tag of the definition and the one that appears in the cif
+                # file are different. Therefore the tag in the cif is an alias.
+                if tag_name_ddlm != tag:
+                    # Add a new block with the proper tag
+                    self[block_name].ChangeTagName(tag, tag_name_ddlm)
+
+        return tags_without_alias
 
 class CifError(Exception):
     def __init__(self,value):
