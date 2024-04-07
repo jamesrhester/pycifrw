@@ -386,7 +386,7 @@ class CifDic(StarFile.StarFile):
         super(CifDic,self).__init__(datasource=dic,grammar=grammar,blocktype=DicBlock,**kwargs)
         self.standard = 'Dic'    #for correct output order
         self.scoping = 'dictionary'
-        (self.dicname,self.diclang) = self.dic_determine()
+        (self.dicname,self.dicversion,self.diclang) = self.dic_determine()
         print('{} is a {} dictionary'.format(self.dicname,self.diclang))
         self.scopes_mandatory = {}
         self.scopes_naughty = {}
@@ -478,7 +478,7 @@ class CifDic(StarFile.StarFile):
             self.cat_list = []   #to save searching all the time
             name = super(CifDic,self).__getitem__("on_this_dictionary")["_dictionary_name"]
             version = super(CifDic,self).__getitem__("on_this_dictionary")["_dictionary_version"]
-            return (name+version,"DDL1")
+            return (name,version,"DDL1")
         elif len(self.get_roots()) == 1:              # DDL2/DDLm
             self.master_block = super(CifDic,self).__getitem__(self.get_roots()[0][0])
             # now change to dictionary scoping
@@ -493,7 +493,7 @@ class CifDic(StarFile.StarFile):
                 self.primitive_type = '_type.contents'
                 self.cat_id_spec = "_definition.id"
                 self.def_id_spec = "_definition.id"
-                return(name+version,"DDLm")
+                return(name,version,"DDLm")
             else:   #DDL2
                 self.cat_id_spec = "_category.id"
                 self.def_id_spec = "_item.name"
@@ -513,7 +513,7 @@ class CifDic(StarFile.StarFile):
                 self.list_ref_spec = "xxx"
                 self.primitive_type = "_type"
                 self.dep_spec = "_item_dependent.dependent_name"
-                return (name+version,"DDL2")
+                return (name,version,"DDL2")
         else:
             raise CifError("Unable to determine dictionary DDL version")
 
