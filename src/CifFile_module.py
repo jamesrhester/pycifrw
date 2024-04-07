@@ -111,6 +111,7 @@ try:
 except ImportError:
     pass                       #will fail when using dictionaries for calcs
 from copy import copy          #must be in global scope for exec statement
+import json
 
 # Decorators. The following decorator keeps track of calls in order to    
 # detect recursion.  We raise a special recursion error to allow the      
@@ -374,11 +375,35 @@ class CifFile(StarFile.StarFile):
 
         return tags_without_alias
 
+    def to_json(self):
+        cif_dict = {}
+
+        # Add meta data
+        cif_dict['filename'] = self.my_uri
+        cif_dict['version'] = self.grammar
+
+        tags_dict = {}
+        for key in self.keys():
+            datablock_dict = {}
+            datablock = self[key]
+
+            for tag in datablock.keys():
+                value = self[key][tag]
+                datablock_dict[tag] = value
+
+            tags_dict[key] = datablock_dict
+
+        cif_dict['tags'] = tags_dict
+        cif_json = json.dumps(cif_dict, indent=2)
+
+        return cif_json
+
 # Defining an error class: we simply derive a 'nothing' class from the root
 # Python class                                                            
 #                                                                         
 #                                                                         
 # <Define an error class>=                                                
+
 class CifError(Exception):
     def __init__(self,value):
         self.value = value
