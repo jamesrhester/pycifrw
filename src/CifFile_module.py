@@ -1244,6 +1244,13 @@ class CifDic(StarFile.StarFile):
 
     def ddlm_import(self,parent_block,import_from,import_target,target_key,mode='All'):
             """Import other dictionaries in place"""
+
+            """
+            Parent_block -> Key of the tag that imports data
+            Import_from -> Dictionary to import
+            Import_target -> Block to be imported
+            Target_key -> Key to be imported
+            """
             if mode == 'contents':   #merge attributes only
                 self[parent_block].merge(import_target)
             elif mode =="full":
@@ -1265,6 +1272,10 @@ class CifDic(StarFile.StarFile):
                 from_defs = dict([(a,child_blocks[a].get('_definition.id','').lower()) for a in child_blocks.keys()])
                 double_defs = list([b for b in from_defs.items() if self.has_key(b[1])])
                 print('Definitions for {} superseded'.format(repr(double_defs)))
+
+                # Merge different tags of duplicated blocks
+                self.merge_duplicates(child_blocks, double_defs)
+
                 for b in double_defs:
                     del child_blocks[b[0]]
                 super(CifDic,self).merge_fast(child_blocks,parent=syntactic_head)      #
@@ -1291,6 +1302,52 @@ class CifDic(StarFile.StarFile):
                     print('Semantic merge: category for {} : now {}'.format(from_frame,merging_cat))
             # it will never happen again...
             del self[parent_block]["_import.get"]
+
+    def merge_duplicates(self, child_blocks, double_defs):
+        '''
+        Duplicated blocks may have different definitions. Therefore deleting them will end up
+        creating an incomplete dictionary.
+        This functions checks among the duplicated tags, and if a duplicated pair has different
+        tags, the remaining tags of the imported block are added to the base block.
+        '''
+
+        for double_def in double_defs:
+            # Tag name in the dictionary to be imported
+            tag_name = double_def[0]
+            # Tag name in the base dictionary
+            base_tag_name = double_def[1]
+
+            duplicated_block = child_blocks[tag_name]
+            base_block = self[base_tag_name]
+
+            duplicated_block_keys = set(duplicated_block.keys())
+            base_block_keys = set(base_block.keys())
+
+            # Add category key name
+
+            # What to do in case of lists?
+            # Half the ids are the same, and the other half are not
+            #if self.unique_spec in duplicated_block_keys and \
+            #    base_block[self.unique_spec] != duplicated_block[self.unique_spec]:
+            #        original_cat_key = base_block[self.unique_spec]
+            #        duplicated_cat_key = duplicated_block[self.unique_spec]
+            #
+            #        cat_key_set = {original_cat_key, duplicated_cat_key}
+            #
+            #
+            #
+            #        self[base_tag_name][self.unique_spec] = cat_key_set
+
+            # Both blocks are equal, continue to the next duplicated block
+            if len(duplicated_block_keys) == len(base_block_keys) \
+                and duplicated_block_keys == base_block_keys:
+                    continue
+
+            # Only add the missing tag values to the base dictionary
+            for property_name in duplicated_block.keys():
+                if property_name not in base_block_keys:
+                    property_value = duplicated_block[property_name]
+                    self[base_tag_name][property_name] = property_value
 
     def resolve_path(self,file_loc):
         url_comps = urlparse(file_loc)
