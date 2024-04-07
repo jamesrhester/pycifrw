@@ -320,8 +320,8 @@ class CifFile(StarFile.StarFile):
 #                                                                         
 #                                                                         
 # <Initialise data structures>=                                           
-    def __init__(self,datasource=None,strict=1,standard='CIF',**kwargs):
-        super(CifFile,self).__init__(datasource=datasource,standard=standard, **kwargs)
+    def __init__(self,datasource=None,strict=1,standard='CIF',from_str=False,**kwargs):
+        super(CifFile,self).__init__(datasource=datasource,standard=standard, from_str=from_str, **kwargs)
         self.strict = strict
         self.header_comment = \
 """
