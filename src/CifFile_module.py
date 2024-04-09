@@ -2475,6 +2475,8 @@ class CifDic(StarFile.StarFile):
         return {"result":True}        #found alternates
 
     def get_alternates(self,main_name,exclusive_only=False):
+        if self.get(main_name, None) is None:
+            return []
         alternates = self[main_name].get(self.related_func,None)
         alt_names = []
         if alternates != None:
