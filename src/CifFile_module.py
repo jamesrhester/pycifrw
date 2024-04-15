@@ -897,7 +897,8 @@ class CifDic(StarFile.StarFile):
                 # Prune out any datablocks that have identical definitions
                 from_defs = dict([(a,child_blocks[a].get('_definition.id','').lower()) for a in child_blocks.keys()])
                 double_defs = list([b for b in from_defs.items() if self.has_key(b[1])])
-                print('Definitions for {} superseded'.format(repr(double_defs)))
+                if self.verbose_import:
+                    print('Definitions for {} superseded'.format(repr(double_defs)))
 
                 # Merge different tags of duplicated blocks
                 self.merge_duplicates(child_blocks, double_defs)
@@ -905,8 +906,9 @@ class CifDic(StarFile.StarFile):
                 for b in double_defs:
                     del child_blocks[b[0]]
                 super(CifDic,self).merge_fast(child_blocks,parent=syntactic_head)      #
-                print('Syntactic merge of {} ({} defs) in {} mode, now have {} defs'.format(target_key,len(child_frames),
-                   mode,len(self)))
+                if self.verbose_import:
+                    print('Syntactic merge of {} ({} defs) in {} mode, now have {} defs'.format(target_key,len(child_frames),
+                        mode,len(self)))
                 # Now the semantic merge
                 # First expand our definition <-> blockname tree
                 self.create_def_block_table()
@@ -920,12 +922,14 @@ class CifDic(StarFile.StarFile):
                         self[f].overwrite = False
                     # remove the old head
                     del self[from_cat_head]
-                    print('Semantic merge: {} defs reparented from {} to {}'.format(len(child_frames),from_cat_head,merging_cat))
+                    if self.verbose_import:
+                        print('Semantic merge: {} defs reparented from {} to {}'.format(len(child_frames),from_cat_head,merging_cat))
                 else:  #imported category is only child
                     from_frame = import_from[target_key]['_definition.id'] #so we can find it
                     child_frame = [d for d in self.keys() if self[d]['_definition.id']==from_frame][0]
                     self[child_frame]['_name.category_id'] = merging_cat
-                    print('Semantic merge: category for {} : now {}'.format(from_frame,merging_cat))
+                    if self.verbose_import:
+                        print('Semantic merge: category for {} : now {}'.format(from_frame,merging_cat))
             # it will never happen again...
             del self[parent_block]["_import.get"]
 
