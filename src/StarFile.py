@@ -1767,7 +1767,7 @@ class BlockCollection(object):
                     while start_key in new_bc.lower_keys: start_key = start_key+'+'
                     new_bc._rekey(dup_key,start_key)
                   else:
-                    raise StarError("Duplicated keys: {}".format(dup_key))
+                    raise StarError("The following key is duplicated: {}".format(dup_key))
         self.dictionary.update(new_bc.dictionary)
         self.lower_keys.update(new_bc.lower_keys)
         self.visible_keys += (list(new_bc.lower_keys))
