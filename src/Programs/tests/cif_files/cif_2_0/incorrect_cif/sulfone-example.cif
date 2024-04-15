@@ -1,0 +1,234 @@
+#\#CIF_2.0
+
+data_global
+
+_publ_section.title
+;
+Structure of the Incommensurate Phase of 4,4'-Dichlorobiphenyl Sulfone at 90 K
+;
+
+loop_
+_publ_author.id
+_publ_author.name
+1 'F. J. Z\'u\~niga'
+2 'J. M. P\'erez-Mato'
+3 'T. Breczewski'
+
+#=======================================================================
+data_I
+#=======================================================================
+
+# 5. CHEMICAL DATA
+
+_chemical_formula.sum                    'C12 H8 S O2 Cl2'
+_chemical_formula.weight                 287.2
+
+#=======================================================================
+
+# 6. CRYSTAL DATA
+
+_symmetry.cell_setting                   monoclinic
+_space_group.ssg_name_WJJ               'P:I2/a:s -1'
+
+loop_
+ _space_group_symop.ssg_id
+ _space_group_symop.ssg_operation_algebraic
+ 1   x1,x2,x3,x4
+ 2   -x1+1/2,x2,-x3,x4+1/2
+ 3   -x1,-x2,-x3,-x4
+ 4   x1+1/2,-x2,x3,-x4+1/2
+ 5   x1+1/2,x2+1/2,x3+1/2,x4
+ 6   -x1,x2+1/2,-x3+1/2,x4+1/2
+ 7   -x1+1/2,-x2+1/2,-x3+1/2,-x4
+ 8   x1,-x2+1/2,x3+1/2,-x4+1/2
+_cell.length_a                           20.20(2)
+_cell.length_b                           4.910(2)
+_cell.length_c                           12.054(9)
+_cell.angle_alpha                        90
+_cell.angle_beta                         90.02(4)
+_cell.angle_gamma                        90
+_cell.volume                             1195(2)
+
+
+_cell.modulation_dimension               1
+loop_
+ _cell_wave_vector.seq_id
+ _cell_wave_vector.xyz
+  1  [0,0.780(3),0]
+
+_cell.formula_units_Z                    4
+
+_cell_measurement.temperature            90
+
+_exptl_crystal.density_diffrn            1.597
+_exptl_crystal.F_000                     584
+
+_exptl_crystal.type_of_structure         mod
+
+_exptl_absorpt.coefficient_mu            0.67
+
+#=======================================================================
+
+# 7. EXPERIMENTAL DATA
+
+_diffrn.ambient_temperature              90
+_diffrn_source.device                    tube
+
+loop_
+ _diffrn_radiation_waveLength.id
+ _diffrn_radiation_wavelength.value
+ 1 0.71069
+
+_diffrn_radiation.probe                  x-ray
+
+#=======================================================================
+
+# 8. REFINEMENT DATA
+
+_reflns.number_total                     6086
+_reflns.number_gt                        5050
+_reflns.threshold_expression             'I>3\s(I)'
+
+_refine_ls.structure_factor_coef         F
+_refine_ls.R_factor_gt                   0.0115
+_refine_ls.wR_factor_gt                  0.1208
+_refine_ls.number_reflns                 5050
+_refine_ls.weighting_scheme              sigma
+_refine_ls.weighting_details             'w=1/(\s^2^(F))'
+_refine_ls.shift_over_su_max             0.0100
+_refine_ls.extinction_method             'none'
+
+loop_
+ _atom_type.symbol
+ _atom_type.scat_dispersion_real
+ _atom_type.scat_dispersion_imag
+ _atom_type.scat_source
+ S   0.1246  0.1234
+ 'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+ Cl  0.1484  0.1585
+ 'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+ O   0.0106  0.0060
+ 'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+ C   0.0033  0.0016
+ 'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+ H   0.0000  0.0000
+ 'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+
+#=======================================================================
+
+# 9. ATOMIC COORDINATES AND DISPLACEMENT PARAMETERS
+
+loop_
+  _atom_site.label
+  _atom_site.fract_x
+  _atom_site.fract_y
+  _atom_site.fract_z
+  _atom_site.U_iso_or_equiv
+   S      0.2500      0.1380(1)  0.0000     0.015(1)
+   Cl     0.03032(2)  0.9377(1)  0.15944(3) 0.028(1)
+   O      0.22528(4) -0.0080(2) -0.0951(1)  0.020(1)
+   C(1)   0.18652(4)  0.3583(2)  0.0448(1)  0.015(1)
+   C(2)   0.1345(1)   0.4210(2) -0.0269(1)  0.019(1)
+   C(3)   0.0861(1)   0.6010(3)  0.0079(1)  0.021(1)
+   C(4)   0.0902(1)   0.7107(2)  0.1143(1)  0.020(1)
+   C(5)   0.1414(1)   0.6460(2)  0.1861(1)  0.020(1)
+   C(6)   0.1901(1)   0.4686(2)  0.1509(1)  0.018(1)
+   H(2)   0.1330(8)   0.338(4)  -0.099(1)   0.011(1)
+   H(3)   0.0484(8)   0.651(3)  -0.036(1)   0.011(1)
+   H(5)   0.1419(8)   0.711(4)   0.257(1)   0.011(1)
+   H(6)   0.2273(8)   0.421(3)   0.201(1)   0.011(1)
+   DCBPS  0.25        0.529      0.0000     .
+
+loop_
+ _atom_site_Fourier_wave_vector.seq_id
+ _atom_site_Fourier_wave_vector.q_coeff_seq_id
+ _atom_site_Fourier_wave_vector.q_coeff
+    1  [1]  [1]
+    2  [1]  [2]
+
+loop_
+_atom_sites_axes.matrix_seq_id
+_atom_sites_axes.matrix
+_atom_sites_axes.transf_description
+1 [[-0.2197,0.1148,0.2739],[0.7997,0.0,0.0],[0.1594,0.4592,-0.1924]]
+;
+a1 is along the line S--C(1)--C(4)--Cl.
+a2 is perpendicular to the C(1)--S--C(1)[-x+1/2, y, -z] plane.
+a3 is perpendicular to a2 and the b axis.
+;
+2 [[1,0,0],[0,1,0],[0,0,1]]
+;
+a1, a2 and a3 coincide with a, b and c but the displacements do not belong
+to the same Fourier series.
+;
+
+loop_
+ _atom_site_displace_Fourier.id
+ _atom_site_displace_Fourier.atom_site_label
+ _atom_site_displace_Fourier.axis
+ _atom_site_displace_Fourier.matrix_seq_id
+ _atom_site_displace_Fourier.wave_vector_seq_id
+ _atom_site_displace_Fourier_param.modulus
+ _atom_site_displace_Fourier_param.phase
+  S_x_1     S      x  .  1 -0.00453(2)  0.388(1)
+  S_y_1     S      y  .  1  0.0000      0.000
+  S_z_1     S      z  .  1  0.02053(4)  0.3190(3)
+  S_x_2     S      x  .  2  0.0000      0.0000
+  S_y_2     S      y  .  2  0.0015(3)   0.23(3)
+  S_z_2     S      z  .  2  0.0000      0.0000
+  Cl_x_1    Cl     x  .  1  0.01112(2) -0.0583
+  Cl_y_1    Cl     y  .  1  0.0582(1)  -0.1424(3)
+  Cl_z_1    Cl     z  .  1  0.01571(4) -0.1787(4)
+  Cl_x_2    Cl     x  .  2 -0.0036(4)   0.00(2)
+  Cl_y_2    Cl     y  .  2 -0.011(1)   -0.06(2)
+  Cl_z_2    Cl     z  .  2 -0.0029(7)  -0.07(4)
+  O_x_1     O      x  .  1 -0.0065(1)  -0.438(1)
+  O_y_1     O      y  .  1 -0.0145(2)   0.226(2)
+  O_z_1     O      z  .  1  0.0220(1)  -0.580(1)
+  O_x_2     O      x  .  2 -0.0007(1)  -0.04(2)
+  O_y_2     O      y  .  2 -0.0025(5)  -0.004(3)
+  O_z_2     O      z  .  2  0.0004(2)   0.01(8)
+  T_x_1     DCBPS  x  .  1  0.09        0.30
+  T_y_1     DCBPS  y  .  1  0.02        0.44
+  T_y_2     DCBPS  y  .  2  0.01        0.62
+  T_z_1     DCBPS  z  .  1  0.28        0.05
+  T_a2_1    DCBPS  a2 1  1  0.26        0.07
+  T_a3_1    DCBPS  a3 1  1  0.14        0.95
+  T_y_2_nm  DCBPS  a2 2  2  0.01        0.62
+# - - - - data truncated for brevity - - - -
+
+loop_
+ _atom_site_rot_Fourier.id
+ _atom_site_rot_Fourier.atom_site_label
+ _atom_site_rot_Fourier.axis
+ _atom_site_rot_Fourier.matrix_seq_id
+ _atom_site_rot_Fourier.wave_vector_seq_id
+ _atom_site_rot_Fourier_param.modulus
+ _atom_site_rot_Fourier_param.phase
+  R_x_1      DCBPS  x   .  1  1.60  0.19
+  R_y_1      DCBPS  y   .  1  2.20  0.48
+  R_z_1      DCBPS  z   .  1  4.30  0.68
+  R_x_2      DCBPS  x   .  2  0.40  0.40
+  R_y_2      DCBPS  y   .  2  0.60  0.99
+  R_z_2      DCBPS  z   .  2  0.80  0.65
+  R_a1_1     DCBPS  a1  1  1  3.50  0.48
+  R_a2_1     DCBPS  a2  1  1  3.30  0.68
+  R_a3_1     DCBPS  a3  1  1  3.50  0.32
+  R_a1_2     DCBPS  a1  1  2  0.60  0.78
+  R_a2_2     DCBPS  a2  1  2  0.70  0.62
+  R_y_2_nm   DCBPS  a2  2  2  0.70  0.10
+
+#Rigid rotations and translations of the molecule (DCBPS) are expressed in
+#two different ways: as movements around and along the crystallographic axes
+#(R_x_1...R_z_2 and T_x_1...T_z_1) or through nine normal modes (R_a1_1...R_y_2_nm)
+#and T_a2_1...T_y_2_nm). The rotation R_y_2_nm and the translation T_y_2_nm are
+#around and along the b-axis but are independent, in the sense that they
+#do not belong to the same Fourier series, of T_y_1, T_y_2 and R_y_1. Therefore
+#they need a different (but trivial) transformation matrix.
+
+#=======================================================================
+
+#Example based on the article:
+#F.J. Z\'u\~niga, J.M. P\'erez-Mato and T. Breczewski(1993)
+#Acta Cryst. B49, 1060-1068. doi:10.1107/S0108768193008195
+#Structure of the Incommensurate Phase of 4,4'-Dichlorobiphenyl Sulfone at 90 K

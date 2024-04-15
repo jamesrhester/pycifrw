@@ -1,0 +1,417 @@
+#\#CIF_2.0
+##############################################################################
+#                                                                            #
+# This CIF contains the data in a paper accepted for publication in Acta     #
+# Crystallographica Section B. It has been peer reviewed under the auspices  #
+# of the IUCr Commission on Journals.                                        #
+#                                                                            #
+# Full details of the Crystallographic Information File format               #
+# are given in the paper "The Crystallographic Information File(CIF):        #
+# a New Standard Archive File for Crystallography" by S. R. Hall, F. H.      #
+# Allen and I. D. Brown [Acta Cryst.(1991), A47, 655-685].                   #
+#                                                                            #
+# The current version of the core CIF dictionary may be obtained from        #
+# ftp://ftp.iucr.org/pub/cif_core.dic. The current version number is 2.1.    #
+#                                                                            #
+# Software is freely available for graphical display of the structure(s) in  #
+# this CIF.  For information consult the CIF home page http://www.iucr.org/  #
+# cif/home.html                                                              #
+#                                                                            #
+#           Copyright International Union of Crystallography                 #
+#                                                                            #
+##############################################################################
+
+data_global
+_audit.creation_method     'Jana2000 Version : 21/02/2002'
+_journal_date.recd_electronic     2002-03-05
+_journal_date.accepted     2002-09-27
+_journal.name_full     'Acta Crystallographica, Section B'
+_journal.year     2002
+_journal.volume     58
+_journal.issue      6
+_journal.page_first     977
+_journal.page_last     985
+_journal.paper_category     FA
+_publ_contact_author.name     'Vaclav Petricek'
+_publ_contact_author.address
+;
+Institute of Physics
+Academy of Sciences of the Czech Republic
+Na Slovance 2
+18221 Praha 8
+Czech Republic
+;
+_publ_contact_author.email     'petricek@fzu.cz'
+_publ_contact_author.fax     '+420 2 20318 598'
+_publ_contact_author.phone     '+420 2 3334 3184'
+_publ_section.title
+;
+Synthesis and Crystal Structure of Hexabromotellurate(IV)
+bis{dibromodiselenates(I)} - [(C~2~H~5~)~n~(C~6~H~5~)~4-~nP]~2~
+[TeBr~6~(Se~2~Br~2~)~2~], n=0,1.
+;
+loop_
+    _publ_author.id
+    _publ_author.name
+    _publ_author.address
+1   'Vitalijus Janickis'
+;
+Faculty of Chemical Technology
+Kaunas University of Technology
+Radvilenu pl. 19
+LT-3028 Kaunas
+Lithuania
+;
+2   'Marek Ne\<cas'
+;
+Department of Inorganic Chemistry
+Faculty of Science
+Masaryk University, Kotla\<rsk\'a 2
+611 37 Brno
+Czech Republic
+;
+3   'Josef  Novosad'
+;
+Department of Inorganic Chemistry
+Faculty of Science
+Masaryk University, Kotla\<rsk\'a 2
+611 37 Brno
+Czech Republic
+;
+4   'Michal Du\<sek'
+;
+Institute of Physics
+Academy of Sciences of the Czech Republic
+Na Slovance 2
+18221 Praha 8
+Czech Republic
+;
+5   'Vaclav Pet\<r\'i\<cek'
+;
+Institute of Physics
+Academy of Sciences of the Czech Republic
+Na Slovance 2
+18221 Praha 8
+Czech Republic
+;
+
+data_II
+_chemical_formula.sum                    'C24 H20 Br5 P1 Se2 Te0.5'
+_chemical_formula.weight                 960.6
+_symmetry.cell_setting                   monoclinic
+_space_group.ssg_name                    'C2/m(\a0\g)0s'
+
+loop_
+ #_space_group_symop.ssg_id
+ _space_group_symop.id
+ _space_group_symop.ssg_operation_algebraic
+ 1   x1,x2,x3,x4
+ 2  -x1,x2,-x3,-x4+1/2
+ 3  -x1,-x2,-x3,-x4
+ 4   x1,-x2,x3,x4+1/2
+ 5   x1+1/2,x2+1/2,x3,x4
+ 6  -x1+1/2,x2+1/2,-x3,-x4+1/2
+ 7  -x1+1/2,-x2+1/2,-x3,-x4
+ 8   x1+1/2,-x2+1/2,x3,x4+1/2
+_cell.length_a                           11.261(2)
+_cell.length_b                           24.543(4)
+_cell.length_c                           10.814(2)
+_cell.angle_alpha                        90
+_cell.angle_beta                         102.84(3)
+_cell.angle_gamma                        90
+_cell.volume                             2913.9(10)
+_cell.formula_units_Z                    4
+_cell_measurement.temperature            120(2)
+
+_cell.modulation_dimension               1
+loop_
+ _cell_wave_vector.seq_id
+ _cell_wave_vector.xyz
+  1  [0.7363(5),0.000000,0.5452(4)]
+
+_exptl_crystal.description               'parallelepiped'
+_exptl_crystal.colour                    'dark red'
+_exptl_crystal.size_max                  0.22
+_exptl_crystal.size_mid                  0.2
+_exptl_crystal.size_min                  0.12
+_exptl_crystal.density_diffrn            2.1890(7)
+_exptl_crystal.F_000                     1792
+
+_exptl_crystal.type_of_structure         mod
+
+_exptl_absorpt.coefficient_mu            9.952
+_exptl_absorpt.correction_type           gaussian
+_exptl_absorpt.process_details           '(Jana2000; Petricek and Dusek, 2000)'
+_exptl_absorpt.correction_T_min          0.159
+_exptl_absorpt.correction_T_max          0.337
+
+_diffrn_radiation.type                   'Mo K\a'
+
+loop_
+ _diffrn_radiation_waveLength.id
+ _diffrn_radiation_wavelength.value
+ 1 0.71069
+
+_diffrn_measurement.device_make         'Oxford Instruments CCD'
+_diffrn_measurement.method              'integration technique'
+_diffrn_reflns.number                   17374
+_diffrn_reflns.av_R_equivalents         0.0604
+_diffrn_reflns.av_sigmaI_over_netI      0.0822
+_diffrn_reflns.theta_min                3.29
+_diffrn_reflns.theta_max                28.53
+_diffrn_reflns.limit_h_min              -15
+_diffrn_reflns.limit_h_max              14
+_diffrn_reflns.limit_k_min              -31
+_diffrn_reflns.limit_k_max              31
+_diffrn_reflns.limit_l_min              -11
+_diffrn_reflns.limit_l_max              14
+_diffrn_reflns.limit_index_m_min_list   [-1]
+_diffrn_reflns.limit_index_m_max_list   [1]
+
+_reflns.number_total                    8052
+_reflns.number_gt                       4247
+_reflns.threshold_expression            'I>3\s(I)'
+_refine_ls.structure_factor_coef        F
+_refine_ls.R_factor_all                 0.0501
+_refine_ls.R_factor_gt                  0.0501
+_refine_ls.wR_factor_gt                 0.0487
+_refine_ls.wR_factor_ref                0.0487
+_refine_ls.goodness_of_fit_ref          1.84
+_refine_ls.number_reflns                4247
+_refine_ls.number_parameters            219
+_refine_ls.weighting_scheme             sigma
+_refine_ls.weighting_details            'w=1/(\s^2^(F)+0.0001F^2^)'
+_refine_ls.shift_over_su_max            0.0025
+_refine_ls.shift_over_su_mean           0.0003
+_refine_diff.density_max                2.35
+_refine_diff.density_min                -1.32
+_refine_ls.extinction_method            'none'
+
+loop_
+ _atom_type.symbol
+ _atom_type.scat_dispersion_real
+ _atom_type.scat_dispersion_imag
+ _atom_type.scat_source
+ Te -0.531 1.675 'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+ Br -0.290 2.460 'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+ Se -0.093 2.226 'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+ P 0.102 0.094 'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+ C 0.003 0.002 'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+ H 0.000 0.000 'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+
+loop_
+ _atom_site.label
+ _atom_site.fract_x
+ _atom_site.fract_y
+ _atom_site.fract_z
+ _atom_site.U_iso_or_equiv
+ _atom_site.adp_type
+ _atom_site.calc_flag
+ _atom_site.refinement_flags
+ _atom_site.occupancy
+ _atom_site.disorder_assembly
+ _atom_site.disorder_group
+ _atom_site.type_symbol
+  Te       0           0           0           0.0121(3)  Uani d . 1 . . Te
+  Br1      0.04905(10) 0.01155(9) -0.23200(13) 0.0198(5)  Uani d . 1 . . Br
+  Br2      0.1730(2)   0.07696(13) 0.0938(4)   0.0207(5)  Uani d . 1 . . Br
+  Br3      0.1738(3)  -0.07701(13) 0.0556(2)   0.0200(7)  Uani d . 1 . . Br
+  Se1      0.35249(11) 0.05142(5) -0.08605(15) 0.0243(4)  Uani d . 1 . . Se
+  Br4      0.45624(12) 0.01994(5) -0.24449(17) 0.0337(4)  Uani d . 1 . . Br
+  Se2      0.50538(12) 0.09093(5)  0.05825(15) 0.0264(4)  Uani d . 1 . . Se
+  Br5      0.52143(13) 0.17905(5) -0.02883(17) 0.0361(5)  Uani d . 1 . . Br
+  P        0.5         0.19078(10) 0.5         0.0174(9)  Uani d . 1 . . P
+  C1a      0.3758(5)   0.1470(2)   0.5156(6)   0.0189(17) Uani d . 1 . . C
+  C2a      0.3205(8)   0.1507(3)   0.6203(9)   0.0262(19) Uani d . 1 . . C
+  C3a      0.2234(8)   0.1156(4)   0.6251(10)  0.030(2)   Uani d . 1 . . C
+  C4a      0.1845(9)   0.0780(4)   0.5309(11)  0.029(2)   Uani d . 1 . . C
+  C5a      0.2396(9)   0.0740(4)   0.4299(10)  0.028(2)   Uani d . 1 . . C
+  C6a      0.3358(8)   0.1084(3)   0.4208(9)   0.025(2)   Uani d . 1 . . C
+  H2a      0.350(4)    0.1772(14)  0.685(3)    0.025(6)   Uiso d . 1 . . H
+  H3a      0.192(4)    0.1176(18)  0.701(3)    0.025(6)   Uiso d . 1 . . H
+  H4a      0.119(3)    0.0542(14)  0.537(5)    0.025(6)   Uiso d . 1 . . H
+  H5a      0.209(4)    0.0500(16)  0.360(3)    0.025(6)   Uiso d . 1 . . H
+  H6a      0.377(4)    0.1032(18)  0.352(3)    0.025(6)   Uiso d . 1 . . H
+  C1b      0.4548(5)   0.2342(2)   0.3625(5)   0.0189(18) Uani d . 1 . . C
+  C2b      0.5347(8)   0.2767(4)   0.3468(8)   0.026(2)   Uani d . 1 . . C
+  C3b      0.5024(9)   0.3101(4)   0.2397(9)   0.030(2)   Uani d . 1 . . C
+  C4b      0.3945(9)   0.3022(4)   0.1531(9)   0.029(2)   Uani d . 1 . . C
+  C5b      0.3162(9)   0.2613(4)   0.1695(9)   0.028(2)   Uani d . 1 . . C
+  C6b      0.3453(8)   0.2268(4)   0.2742(8)   0.025(2)   Uani d . 1 . . C
+  H2b      0.609(3)    0.2815(14)  0.410(3)    0.025(6)   Uiso d . 1 . . H
+  H3b      0.556(4)    0.3400(15)  0.236(4)    0.025(6)   Uiso d . 1 . . H
+  H4b      0.374(4)    0.3260(19)  0.081(3)    0.025(6)   Uiso d . 1 . . H
+  H5b      0.244(4)    0.2536(15)  0.106(4)    0.025(6)   Uiso d . 1 . . H
+  H6b      0.287(4)    0.2000(16)  0.287(4)    0.025(6)   Uiso d . 1 . . H
+  Phenyl1  0.3747      0.1465      0.5149      .          .    . . 1 . . .
+  Phenyl2  0.3747      0.1465      0.5149      .          .    . . 1 . . .
+
+
+loop_
+ _atom_site_aniso.label
+ _atom_site_aniso.U_11
+ _atom_site_aniso.U_22
+ _atom_site_aniso.U_33
+ _atom_site_aniso.U_12
+ _atom_site_aniso.U_13
+ _atom_site_aniso.U_23
+ _atom_site_aniso.type_symbol
+  Te  0.0123(4) 0.0127(4)  0.0122(5)   0            0.0045(4)   0          Te
+  Br1 0.0203(6) 0.0264(11) 0.0141(7)  -0.0039(11)   0.0066(6)   0.0002(12) Br
+  Br2 0.0159(7) 0.0215(8)  0.0236(11) -0.0021(6)    0.0024(8)  -0.0039(6)  Br
+  Br3 0.0206(8) 0.0195(8)  0.0189(17)  0.0065(6)    0.0023(11) -0.0047(8)  Br
+  Se1 0.0199(5) 0.0254(6)  0.0267(7)  -0.0037(4)    0.0032(5)   0.0005(5)  Se
+  Br4 0.0345(7) 0.0393(6)  0.0286(9)   0.0013(5)    0.0096(6)   0.0018(5)  Br
+  Se2 0.0181(5) 0.0270(5)  0.0324(8)  -0.0029(4)    0.0021(6)   0.0016(5)  Se
+  Br5 0.0350(7) 0.0268(6)  0.0420(11) -0.0110(5)   -0.0011(7)   0.0042(5)  Br
+  P 0.0134(13)  0.0179(14) 0.0206(16)  0            0.0026(12)  0          P
+  C1a 0.016(3)  0.017(2)   0.023(3)    0.000(2)     0.005(2)    0.001(2)   C
+  C2a 0.029(3)  0.019(3)   0.033(4)   -0.001(2)     0.012(3)    0.000(2)   C
+  C3a 0.028(3)  0.032(3)   0.035(4)    0.000(2)     0.020(3)    0.006(3)   C
+  C4a 0.025(3)  0.031(3)   0.031(4)   -0.010(2)     0.005(3)    0.015(3)   C
+  C5a 0.033(3)  0.025(3)   0.022(4)   -0.012(3)    -0.002(3)    0.003(3)   C
+  C6a 0.028(3)  0.021(3)   0.027(4)    0.001(2)     0.008(3)    0.004(3)   C
+  C1b 0.020(3)  0.020(3)   0.018(2)    0.002(2)     0.006(2)    0.002(2)   C
+  C2b 0.023(3)  0.026(4)   0.030(3)    0.004(3)     0.006(2)    0.006(2)   C
+  C3b 0.033(4)  0.022(4)   0.037(3)   -0.002(3)     0.015(3)    0.010(3)   C
+  C4b 0.049(4)  0.014(5)   0.024(3)    0.006(3)     0.007(3)    0.007(3)   C
+  C5b 0.036(4)  0.020(4)   0.021(3)    0.004(3)    -0.006(3)   -0.001(3)   C
+  C6b 0.026(4)  0.020(4)   0.030(3)    0.003(3)     0.007(2)    0.002(3)   C
+
+loop_
+ _atom_site_Fourier_wave_vector.seq_id
+ _atom_site_Fourier_wave_vector.q_coeff_seq_id
+ _atom_site_Fourier_wave_vector.q_coeff
+    0  [1]  [0]
+    1  [1]  [1]
+
+loop_
+ _atom_site_displace_Fourier.id
+ _atom_site_displace_Fourier.atom_site_label
+ _atom_site_displace_Fourier.axis
+ _atom_site_displace_Fourier.wave_vector_seq_id
+ _atom_site_displace_Fourier_param.sin
+ _atom_site_displace_Fourier_param.cos
+ Te_x_1    Te      x  1     0            0
+ Te_y_1    Te      y  1     0.00117(4)   0
+ Te_z_1    Te      z  1     0            0
+ P_x_1     P       x  1     0           -0.0177(3)
+ P_y_1     P       y  1    -0.01044(14)  0
+ P_z_1     P       z  1     0            0.0047(4)
+ Ph1_x_0   Phenyl1 x  0     0            0.0011(5)
+ Ph1_y_0   Phenyl1 y  0     0            0.0005(2)
+ Ph1_z_0   Phenyl1 z  0     0            0.0006(6)
+ Ph1_x_1   Phenyl1 x  1    -0.0057(3)   -0.0009(4)
+ Ph1_y_1   Phenyl1 y  1     0.00040(16)  0.00362(16)
+ Ph1_z_1   Phenyl1 z  1    -0.0003(3)   -0.0013(4)
+ Ph2_x_0   Phenyl2 x  0     0            0.0801(5)
+ Ph2_y_0   Phenyl2 y  0     0            0.0877(2)
+ Ph2_z_0   Phenyl2 z  0     0           -0.1524(5)
+ Ph2_x_1   Phenyl2 x  1     0.0079(3)    0.0056(3)
+ Ph2_y_1   Phenyl2 y  1     0.00007(15) -0.00063(15)
+ Ph2_z_1   Phenyl2 z  1     0.0033(3)    0.0000(3)
+
+loop_
+ _atom_site_occ_special_func.atom_site_label
+ _atom_site_occ_special_func.crenel_c
+ _atom_site_occ_special_func.crenel_w
+ Br1  0.54955    0.5
+ Br2  0.80077    0.5
+ Br3  0.81410    0.5
+ Br4  0.83877    0.5
+ Br5  0.99178    0.5
+ Se1  0.84432    0.5
+ Se2  0.03662    0.5
+
+loop_
+ _atom_sites_ortho.func_id
+ _atom_sites_ortho.wave_vector_seq_id_list
+ _atom_sites_ortho.coeff_cos_list
+ _atom_sites_ortho.coeff_sin_list
+ o1  [0,1]   [0.287,0]        [0,1.471]
+ o2  [0,1]   [2.049,3.123]    [0,0.799]
+ o3  [0,1]   [1.648,0]        [0,2.726]
+ o4  [0,1]   [-1.250,1.686]   [0,-1.512]
+ o5  [0,1]   [1.478,0]        [0,2.524]
+ o6  [0,1]   [-1.447,1.821]   [0,-1.695]
+ o7  [0,1]   [1.184,0]        [0,2.191]
+ o8  [0,1]   [-1.696,2.097]   [0,-1.833]
+ o9  [0,1]   [0.047,0]        [0,1.416]
+ o10 [0,1]   [-2.068,3.246]   [0,-0.136]
+ o11 [0,1]   [1.123,0]        [0,2.126]
+ o42 [0,1]   [-1.737,2.161]   [0,-1.835]
+ o13 [0,1]   [-0.210,0]       [0,1.445]
+ o14 [0,1]   [-2.058,3.180]   [0,0.598]
+
+loop_
+ _atom_site_displace_ortho.id
+ _atom_site_displace_ortho.atom_site_label
+ _atom_site_displace_ortho.axis
+ _atom_site_displace_ortho.func_id
+ _atom_site_displace_ortho.coeff
+ Br1_o1_x   Br1  x  o1  -0.0021(2)
+ Br1_o1_y   Br1  y  o1   0.01045(10)
+ Br1_o1_z   Br1  z  o1   0.0017(3)
+ Br1_o2_x   Br1  x  o2   0.0023(3)
+ Br1_o2_y   Br1  y  o2  -0.00657(16)
+ Br1_o2_z   Br1  z  o2   0.0043(4)
+ Br2_o3_x   Br2  x  o3  -0.0003(7)
+ Br2_o3_y   Br2  y  o3   0.0022(3)
+ Br2_o3_z   Br2  z  o3  -0.0120(6)
+ Br2_o4_x   Br2  x  o4   0.0037(4)
+ Br2_o4_y   Br2  y  o4   0.0004(2)
+ Br2_o4_z   Br2  z  o4  -0.0074(4)
+ Br3_o5_x   Br3  x  o5   0.0036(4)
+ Br3_o5_y   Br3  y  o5   0.0026(2)
+ Br3_o5_z   Br3  z  o5   0.0244(3)
+ Br3_o6_x   Br3  x  o6  -0.0030(4)
+ Br3_o6_y   Br3  y  o6  -0.00059(18)
+ Br3_o6_z   Br3  z  o6   0.0037(6)
+ Br4_o7_x   Br4  x  o7   0.0010(3)
+ Br4_o7_y   Br4  y  o7  -0.00073(15)
+ Br4_o7_z   Br4  z  o7  -0.0025(3)
+ Br4_o8_x   Br4  x  o8  -0.0013(4)
+ Br4_o8_y   Br4  y  o8  -0.00147(18)
+ Br4_o8_z   Br4  z  o8  -0.0034(4)
+ Br5_o9_x   Br5  x  o9   0.00172(15)
+ Br5_o9_y   Br5  y  o9  -0.00077(5)
+ Br5_o9_z   Br5  z  o9  -0.00089(18)
+ Br5_o10_x  Br5  x  o10  0.0026(4)
+ Br5_o10_y  Br5  y  o10 -0.00013(19)
+ Br5_o10_z  Br5  z  o10  0.0039(6)
+ Se1_o11_x  Se1  x  o11  0.0000(2)
+ Se1_o11_y  Se1  y  o11 -0.00109(10)
+ Se1_o11_z  Se1  z  o11 -0.0037(3)
+ Se1_o12_x  Se1  x  o12 -0.0004(3)
+ Se1_o12_y  Se1  y  o12 -0.00001(14)
+ Se1_o12_z  Se1  z  o12 -0.0017(4)
+ Se2_o13_x  Se2  x  o13  0.00057(13)
+ Se2_o13_y  Se2  y  o13 -0.00124(6)
+ Se2_o13_z  Se2  z  o13 -0.00409(16)
+ Se2_o14_x  Se2  x  o14  0.0008(4)
+ Se2_o14_y  Se2  y  o14 -0.00015(16)
+ Se2_o14_z  Se2  z  o14 -0.0016(5)
+
+loop_
+ _atom_site_rot_Fourier.id
+ _atom_site_rot_Fourier.atom_site_label
+ _atom_site_rot_Fourier.axis
+ _atom_site_rot_Fourier.wave_vector_seq_id
+ _atom_site_rot_Fourier_param.sin
+ _atom_site_rot_Fourier_param.cos
+  R_Ph1_x_1    Phenyl1  x   1  7.9(3)  -9.4(3)
+  R_Ph1_y_1    Phenyl1  y   1 -13.5(3) -5.9(3)
+  R_Ph1_z_1    Phenyl1  z   1  4.6(4)   8.9(4)
+  R_Ph2_x_1    Phenyl2  x   1 -0.4(3)   7.2(3)
+  R_Ph2_y_1    Phenyl2  y   1  7.3(3)  -3.0(3)
+  R_Ph2_z_1    Phenyl2  z   1 -9.7(4)  -12.4(4)
+
+
+#=======================================================================
+
+#Example based on the article:
+#Vitalijus Janickis, Marek Ne\<cas, Josef  Novosad, Michal Du\<sek and V\'aclav Pet\<r\'i\<cek(2002)
+#Acta Cryst. B58, 977-985. doi:10.1107/S010876810201772X
+#Synthesis and Crystal Structure of Hexabromotellurate(IV)
+#bis{dibromodiselenates(I)} - [(C~2~H~5~)~n~(C~6~H~5~)~4-~nP]~2~
+#[TeBr~6~(Se~2~Br~2~)~2~], n=0,1.

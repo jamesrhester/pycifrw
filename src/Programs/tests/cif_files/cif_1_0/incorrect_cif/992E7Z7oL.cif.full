@@ -1,0 +1,277 @@
+data_CuBr
+
+loop_
+  _publ_author_name
+  'Madariaga, G.'
+  'Zuniga, F.J.'
+  'Paciorek, W.A.'
+  'Bocanegra, E.H.'
+
+_publ_section_title               'Disordered incommensurate structure of (N(CH~3~)~4~)~2~CuBr~4~at 248K.'
+_journal_name_full                'Acta Cryst. B'
+_journal_volume                   46
+_journal_year                     1990
+_journal_page_first               620
+_journal_page_last                628
+_chemical_formula_structural      '(N (C H3)4)2 Cu Br4'
+_cell_length_a                    9.331(1)
+_cell_length_b                    15.708(2)
+_cell_length_c                    12.598(3)
+_cell_angle_alpha                 90
+_cell_angle_beta                  90
+_cell_angle_gamma                 90
+_cell_volume                      1846.5(9)
+_cell_formula_units_Z             4
+_cell_measurement_temperature     248
+_space_group_crystal_system       orthorhombic
+_space_group_ssg_name_WJJ         'P:P m c n:s -1 1'
+_exptl_crystal_type_of_structure  mod
+_cell_modulation_dimension        1
+_diffrn_ambient_temperature       248
+_diffrn_ambient_pressure          ?
+_diffrn_radiation_type            'Mo K\a'
+_diffrn_source                    'X-ray tube'
+_diffrn_reflns_satellite_order_max 1
+_exptl_special_details            ?
+_refine_special_details
+;
+Soft restrictions for Cu-Br,Br-Br,N-C and C-C distances.One occupational wave
+per tetrahedron.
+;
+loop_
+  _space_group_symop_ssg_id
+  _space_group_symop_ssg_operation_algebraic
+  1  x1,x2,x3,x4
+  2  1/2-x1,x2,x3,1/2+x4
+  3  1/2+x1,1/2+x2,1/2-x3,x4
+  4  -x1,1/2+x2,1/2-x3,1/2+x4
+  5  -x1,-x2,-x3,-x4
+  6  1/2+x1,-x2,-x3,1/2-x4
+  7  1/2-x1,1/2-x2,1/2+x3,-x4
+  8  x1,1/2-x2,1/2+x3,1/2-x4
+
+loop_
+  _atom_type_symbol
+  Cu Br N C
+
+loop_
+  _atom_site_description
+  _atom_site_label
+  _atom_site_site_symmetry_multiplicity
+  _atom_site_occupancy
+  _atom_site_fract_x
+  _atom_site_fract_y
+  _atom_site_fract_z
+  _atom_site_U_iso_or_equiv
+  _atom_site_adp_type
+  ?  Cu   8  0.5  0.2559(8)  0.4060(2)  0.2377(3)  0.062(1)  Uani
+  ?  Br1  8  0.5  0.2682(9)  0.3755(3)  0.0540(3)  0.088(1)  Uani
+  ?  Br2  8  0.5  0.0190(6)  0.3616(5)  0.2804(5)  0.118(2)  Uani
+  ?  Br3  8  0.5  0.2719(9)  0.5409(2)  0.3216(3)  0.100(2)  Uani
+  ?  Br4  8  0.5  0.4690(6)  0.3419(4)  0.2676(5)  0.100(2)  Uani
+  ?  N1   8  0.5   0.237(4)   0.098(1)   0.135(1)  0.064(5)  Uani
+  ?  C11  8  0.5   0.291(4)   0.112(2)   0.243(2)   0.09(1)  Uani
+  ?  C12  8  0.5   0.115(4)   0.149(2)   0.109(3)   0.08(2)  Uani
+  ?  C13  8  0.5   0.217(4)   0.008(1)   0.122(3)   0.08(1)  Uani
+  ?  C14  8  0.5   0.357(4)   0.119(2)   0.061(3)   0.07(1)  Uani
+  ?  N2   8  0.5   0.249(5)   0.667(1)   0.005(1)  0.063(5)  Uani
+  ?  C21  8  0.5   0.279(4)   0.743(1)  -0.062(2)  0.065(9)  Uani
+  ?  C22  8  0.5   0.147(3)   0.671(2)   0.089(3)   0.06(1)  Uani
+  ?  C23  8  0.5   0.214(4)   0.595(1)  -0.063(2)   0.07(1)  Uani
+  ?  C24  8  0.5   0.390(4)   0.645(2)   0.051(3)   0.09(1)  Uani
+
+_refine_ls_mod_func_description
+;
+Displacive modulation:Fourier series. 1-st harmonics.
+Occupational modulation:Fourier series. 1-st harmonics.
+;
+
+_refine_ls_F_calc_details         'Gaussian integration'
+loop_
+  _cell_wave_vector_seq_id
+  _cell_wave_vector_x
+  _cell_wave_vector_y
+  _cell_wave_vector_z
+  1  0  0.604(3)  0
+
+loop_
+  _atom_site_Fourier_wave_vector_seq_id
+  _atom_site_Fourier_wave_vector_x
+  _atom_site_Fourier_wave_vector_y
+  _atom_site_Fourier_wave_vector_z
+  1  0  0.604(3)  0
+
+loop_
+  _atom_site_displace_Fourier_id
+  _atom_site_displace_Fourier_atom_site_label
+  _atom_site_displace_Fourier_axis
+  _atom_site_displace_Fourier_wave_vector_seq_id
+  Cux1  Cu   x  1
+  Cuy1  Cu   y  1
+  Cuz1  Cu   z  1
+  Br1x1 Br1  x  1
+  Br1y1 Br1  y  1
+  Br1z1 Br1  z  1
+  Br2x1 Br2  x  1
+  Br2y1 Br2  y  1
+  Br2z1 Br2  z  1
+  Br3x1 Br3  x  1
+  Br3y1 Br3  y  1
+  Br3z1 Br3  z  1
+  Br4x1 Br4  x  1
+  Br4y1 Br4  y  1
+  Br4z1 Br4  z  1
+  N1x1  N1   x  1
+  N1y1  N1   y  1
+  N1z1  N1   z  1
+  C11x1 C11  x  1
+  C11y1 C11  y  1
+  C11z1 C11  z  1
+  C12x1 C12  x  1
+  C12y1 C12  y  1
+  C12z1 C12  z  1
+  C13x1 C13  x  1
+  C13y1 C13  y  1
+  C13z1 C13  z  1
+  C14x1 C14  x  1
+  C14y1 C14  y  1
+  C14z1 C14  z  1
+  N2x1  N2   x  1
+  N2y1  N2   y  1
+  N2z1  N2   z  1
+  C21x1 C21  x  1
+  C21y1 C21  y  1
+  C21z1 C21  z  1
+  C22x1 C22  x  1
+  C22y1 C22  y  1
+  C22z1 C22  z  1
+  C23x1 C23  x  1
+  C23y1 C23  y  1
+  C23z1 C23  z  1
+  C24x1 C24  x  1
+  C24y1 C24  y  1
+  C24z1 C24  z  1
+
+loop_
+  _atom_site_displace_Fourier_param_id
+  _atom_site_displace_Fourier_param_modulus
+  _atom_site_displace_Fourier_param_phase
+  Cux1    0.0145(7)  0.371(7)
+  Cuy1    0.0042(5)  0.91(4)
+  Cuz1    0.0089(7)  -0.05(2)
+  Br1x1   0.0270(9)  0.285(5)
+  Br1y1   0.0016(7)  0.52(9)
+  Br1z1    0.004(6)  -0.02(1)
+  Br2x1   0.0127(7)  0.404(9)
+  Br2y1   0.0066(8)  0.78(2)
+  Br2z1   0.0162(8)  0.875(9)
+  Br3x1  0.0160(10)  0.44(1)
+  Br3y1   0.0072(5)  -0.17(2)
+  Br3z1  0.0030(13)  0.04(4)
+  Br4x1   0.0112(8)  0.43(1)
+  Br4y1   0.0086(6)  0.01(1)
+  Br4z1   0.0143(8)  0.100(9)
+  N1x1   0.0035(35)  0.2(2)
+  N1y1   0.0051(40)  -0.3(1)
+  N1z1   0.0047(46)  0.0(2)
+  C11x1  0.0285(66)  0.62(4)
+  C11y1  0.0203(32)  0.32(4)
+  C11z1  0.0120(37)  0.00(5)
+  C12x1  0.0228(49)  0.44(3)
+  C12y1  0.0245(30)  0.54(30)
+  C12z1  0.0234(48)  0.75(3)
+  C13x1  0.0443(60)  0.05(2)
+  C13y1  0.0083(29)  0.70(6)
+  C13z1  0.0323(38)  0.35(3)
+  C14x1  0.0202(48)  0.19(4)
+  C14y1  0.0294(29)  0.86(2)
+  C14z1  0.0238(40)  0.04(3)
+  N2x1   0.0065(37)  0.07(9)
+  N2y1   0.0072(34)  -0.07(9)
+  N2z1   0.0068(47)  0.3(1)
+  C21x1  0.0055(50)  -0.1(2)
+  C21y1  0.0089(25)  0.32(6)
+  C21z1  0.0303(32)  0.33(3)
+  C22x1  0.0346(50)  0.10(2)
+  C22y1  0.0321(28)  0.94(2)
+  C22z1  0.0214(37)  0.16(3)
+  C23x1  0.0368(65)  0.66(3)
+  C23y1  0.0122(28)  0.32(4)
+  C23z1  0.0236(36)  0.98(3)
+  C24x1  0.0172(47)  0.12(4)
+  C24y1  0.0195(36)  0.76(3)
+  C24z1  0.0236(45)  0.62(3)
+
+loop_
+  _atom_site_occ_Fourier_id
+  _atom_site_occ_Fourier_atom_site_label
+  _atom_site_occ_Fourier_wave_vector_seq_id
+  Cuo1  Cu   1
+  Br1o1 Br1  1
+  Br2o1 Br2  1
+  Br3o1 Br3  1
+  Br4o1 Br4  1
+  N1o1  N1   1
+  C11o1 C11  1
+  C12o1 C12  1
+  C13o1 C13  1
+  C14o1 C14  1
+  N2o1  N2   1
+  C21o1 C21  1
+  C22o1 C22  1
+  C23o1 C23  1
+  C24o1 C24  1
+
+loop_
+  _atom_site_occ_Fourier_param_id
+  _atom_site_occ_Fourier_param_modulus
+  _atom_site_occ_Fourier_param_phase
+  Cuo1  0.397(11)    0.392(6)
+  Br1o1 0.397(11)    0.392(6)
+  Br2o1 0.397(11)    0.392(6)
+  Br3o1 0.397(11)    0.392(6)
+  Br4o1 0.397(11)    0.392(6)
+  N1o1  0.216(42)  -0.047(33)
+  C11o1 0.216(42)  -0.047(33)
+  C12o1 0.216(42)  -0.047(33)
+  C13o1 0.216(42)  -0.047(33)
+  C14o1 0.216(42)  -0.047(33)
+  N2o1  0.208(48)   0.132(27)
+  C21o1 0.208(48)   0.132(27)
+  C22o1 0.208(48)   0.132(27)
+  C23o1 0.208(48)   0.132(27)
+  C24o1 0.208(48)   0.132(27)
+
+loop_
+  _atom_site_aniso_label
+  _atom_site_aniso_U_11
+  _atom_site_aniso_U_22
+  _atom_site_aniso_U_33
+  _atom_site_aniso_U_12
+  _atom_site_aniso_U_13
+  _atom_site_aniso_U_23
+  . . . . . . .
+
+_reflns_number_gt                 841
+
+loop_
+  _reflns_class_code
+  _reflns_class_number_gt
+  Main  571
+  Sat1  270
+
+_refine_ls_R_factor_gt            0.054
+_refine_ls_wR_factor_all          0.062
+loop_
+  _diffrn_reflns_class_description
+  _diffrn_reflns_class_code
+  Main  'Main reflections'
+  Sat1  '1st-order satellites'
+
+loop_
+  _refine_ls_class_code
+  _refine_ls_class_R_factor_gt
+  _refine_ls_class_wR_factor_all
+  Main  0.046  0.057
+  Sat1  0.062  0.100
+

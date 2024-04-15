@@ -1,0 +1,318 @@
+#\#CIF_2.0
+data_I
+_chemical_formula.sum                    'Sr0.364 Co O3'
+_chemical_formula.weight                 2402.91
+_symmetry.cell_setting                   trigonal
+_space_group.ssg_name                    'R-3m(00\g)0s'
+loop_
+ _space_group_symop.ssg_id
+ _space_group_symop.ssg_operation_algebraic
+ 1  x1,x2,x3,x4
+ 2  -x2,x1-x2,x3,x4
+ 3  -x1+x2,-x1,x3,x4
+ 4  x2,x1,-x3,-x4+1/2
+ 5  x1-x2,-x2,-x3,-x4+1/2
+ 6  -x1,-x1+x2,-x3,-x4+1/2
+ 7  -x1,-x2,-x3,-x4
+ 8  x2,-x1+x2,-x3,-x4
+ 9  x1-x2,x1,-x3,-x4
+ 10 -x2,-x1,x3,x4+1/2
+ 11 -x1+x2,x2,x3,x4+1/2
+ 12 x1,x1-x2,x3,x4+1/2
+ 13 x1+2/3,x2+1/3,x3+1/3,x4
+ 14 -x2+2/3,x1-x2+1/3,x3+1/3,x4
+ 15 -x1+x2+2/3,-x1+1/3,x3+1/3,x4
+ 16  x2+2/3,x1+1/3,-x3+1/3,-x4+1/2
+ 17  x1-x2+2/3,-x2+1/3,-x3+1/3,-x4+1/2
+ 18 -x1+2/3,-x1+x2+1/3,-x3+1/3,-x4+1/2
+ 19 -x1+2/3,-x2+1/3,-x3+1/3,-x4
+ 20 x2+2/3,-x1+x2+1/3,-x3+1/3,-x4
+ 21 x1-x2+2/3,x1+1/3,-x3+1/3,-x4
+ 22 -x2+2/3,-x1+1/3,x3+1/3,x4+1/2
+ 23 -x1+x2+2/3,x2+1/3,x3+1/3,x4+1/2
+ 24 x1+2/3,x1-x2+1/3,x3+1/3,x4+1/2
+ 25 x1+2/3,x2+1/3,x3+1/3,x4
+ 26 -x2+1/3,x1-x2+2/3,x3+2/3,x4
+ 27 -x1+x2+1/3,-x1+2/3,x3+2/3,x4
+ 28  x2+1/3,x1+2/3,-x3+2/3,-x4+1/2
+ 29  x1-x2+1/3,-x2+2/3,-x3+2/3,-x4+1/2
+ 30 -x1+1/3,-x1+x2+2/3,-x3+2/3,-x4+1/2
+ 31 -x1+1/3,-x2+2/3,-x3+2/3,-x4
+ 32 x2+1/3,-x1+x2+2/3,-x3+2/3,-x4
+ 33 x1-x2+1/3,x1+2/3,-x3+2/3,-x4
+ 34 -x2+1/3,-x1+2/3,x3+2/3,x4+1/2
+ 35 -x1+x2+1/3,x2+2/3,x3+2/3,x4+1/2
+ 36 x1+1/3,x1-x2+2/3,x3+2/3,x4+1/2
+
+_cell.length_a                           9.508(2)
+_cell.length_b                           9.508(2)
+_cell.length_c                           2.5343(7)
+_cell.angle_alpha                        90
+_cell.angle_beta                         90
+_cell.angle_gamma                        120
+_cell.volume                             198.40(13)
+_cell.formula_units_Z                    3
+
+_cell.modulation_dimension               1
+loop_
+ _cell_wave_vector.seq_id
+ _cell_wave_vector.xyz
+     1  [0,0,0.63646(11)]
+
+_atom_sites_modulation.global_phase_list
+ [0.75]
+
+_cell_subsystems.number                  2
+
+loop_
+ _cell_subsystem.code
+ _cell_subsystem.description
+ _cell_subsystem.matrix_W
+  1 '1-st subsystem: CoO3'
+  [[1,0,0,0,0,0,0,0,0,0,0],
+   [0,1,0,0,0,0,0,0,0,0,0],
+   [0,0,1,0,0,0,0,0,0,0,0],
+   [0,0,0,1,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0]]
+  2 '2-nd subsystem: Sr'
+  [[1,0,0,0,0,0,0,0,0,0,0]
+   [0,1,0,0,0,0,0,0,0,0,0],
+   [0,0,0,1,0,0,0,0,0,0,0],
+   [0,0,1,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0]]
+
+_exptl_crystal.description               needle
+_exptl_crystal.size_max                  0.16
+_exptl_crystal.size_mid                  0.03
+_exptl_crystal.size_min                  0.03
+_exptl_crystal.F_000                     298
+
+_exptl_crystal.type_of_structure         comp
+
+_exptl_crystal.density_diffrn            5.412
+_exptl_absorpt.coefficient_mu            31.73
+_exptl_absorpt.correction_type           analytical
+_exptl_absorpt.correction_T_min          0.10
+_exptl_absorpt.correction_T_max          0.25
+_diffrn.ambient_temperature              293
+_diffrn_radiation.type                   'Mo K\a'
+
+loop_
+ _diffrn_radiation_waveLength.id
+ _diffrn_radiation_wavelength.value
+ 1 0.71069
+
+_diffrn_reflns.number                    25403
+_diffrn_reflns.av_R_equivalents          0.032
+_diffrn_reflns.theta_min                 0
+_diffrn_reflns.theta_max                 34.65
+_diffrn_reflns.limit_h_min               -10
+_diffrn_reflns.limit_h_max               14
+_diffrn_reflns.limit_k_min               -14
+_diffrn_reflns.limit_k_max               14
+_diffrn_reflns.limit_l_min               -44
+_diffrn_reflns.limit_l_max               44
+_reflns.number_total                     29574
+_reflns.threshold_expression             'I>3\s(I)'
+
+loop_
+ _reflns_class.code
+ _reflns_class.description
+ _reflns_class.number_gt
+ 'Main'    'Main reflections'                            519
+ 'S1'      '1-st order satellites'                       508
+ 'S2'      '2-nd order satellites'                       126
+ 'S3'      '3-rd order satellites'                        16
+ 'CO3'     'Main reflections of the 1-st subsystem'      244
+ 'Sr'      'Main reflections of the 2-nd subsystem'      230
+ 'Common'  'Common mains reflections to both subsystems'  45
+
+_refine_ls.structure_factor_coef         F
+_refine_ls.R_factor_gt                   0.0351
+_refine_ls.wR_factor_gt                  0.0351
+
+loop_
+ _refine_ls_class.code
+ _refine_ls_class.R_factor_gt
+ 'Main'    0.0304
+ 'S1'      0.0371
+ 'S2'      0.0677
+ 'S3'      0.1822
+ 'CO3'     0.0376
+ 'Sr'      0.0257
+ 'Common'  0.0245
+
+_refine_ls.goodness_of_fit_ref           1.06
+_refine_ls.number_reflns                 1169
+_refine_ls.number_parameters             47
+_refine_ls.weighting_scheme              sigma
+_refine_ls.weighting_details             'w=1/(\s^2^(F)+0.01F^2^)'
+_refine_diff.density_max                 1.7
+_refine_diff.density_min                 -1.2
+
+loop_
+ _twin_individual.id
+ _twin_individual.mass_fraction_refined
+ _twin_individual.twin_matrix
+1 11.32(6) [[ 1,0,0 ],
+            [ 0,1,0 ],
+            [ 0,0,1 ]]
+2 88.68    [[-1, 0,0 ],
+            [ 0,-1,0 ],
+            [ 0, 0,1 ]]
+
+loop_
+ _atom_type.symbol
+ _atom_type.scat_dispersion_real
+ _atom_type.scat_dispersion_imag
+ _atom_type.scat_source
+ Pb -3.394  10.111  'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+ Sb -0.587  1.546   'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+ S   0.125  0.123   'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+ Sn -0.654  1.425   'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+ Cu  0.320  1.265   'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+
+loop_
+ _atom_site.type_symbol
+ _atom_site.label
+ _atom_site.subsystem_code
+ _atom_site.fract_x
+ _atom_site.fract_y
+ _atom_site.fract_z
+ _atom_site.B_iso_or_equiv
+ _atom_site.adp_type
+ _atom_site.occupancy
+  Sr Sr  2 0.33333     0         0.25    1.189(9)   Uani 1
+  Co Co1 1 0           0         0       0.517(9)   Uani 0.7273
+  Co Co2 1 0           0         0       2.17(3)    Uani 0.2727
+  O  O   1 0.1546(2)   0.1546    0.5     1.42(4)    Uani 1
+
+loop_
+ _atom_site_aniso.label
+ _atom_site_aniso.U_11
+ _atom_site_aniso.U_22
+ _atom_site_aniso.U_33
+ _atom_site_aniso.U_12
+ _atom_site_aniso.U_13
+ _atom_site_aniso.U_23
+  Sr  0.0148(2)   0.0148     0.0156(2)   0.00738(8)  0  0
+  Co1 0.00645(12) 0.00645    0.0067(3)   0.00322(6)  0  0
+  Co2 0.0306(4)   0.0306     0.0214(10)  0.0153(2)   0  0
+  O   0.00645(12) 0.00645    0.0067(3)   0.00322(6)  0  0
+
+loop_
+ _atom_site_Fourier_wave_vector.seq_id
+ _atom_site_Fourier_wave_vector.q_coeff_seq_id
+ _atom_site_Fourier_wave_vector.q_coeff
+    0  [1]   [0]
+    1  [1]   [1]
+    2  [1]   [2]
+    3  [1]   [3]
+    4  [1]   [4]
+
+loop_
+ _atom_site_occ_special_func.atom_site_label
+ _atom_site_occ_special_func.crenel_c
+ _atom_site_occ_special_func.crenel_w
+ Co1   0      0.3636
+ Co2   0.25   0.1364
+ O     0.25   0.5
+
+loop_
+ _atom_site_displace_Fourier.id
+ _atom_site_displace_Fourier.atom_site_label
+ _atom_site_displace_Fourier.axis
+ _atom_site_displace_Fourier.wave_vector_seq_id
+ _atom_site_displace_Fourier_param.sin
+ _atom_site_displace_Fourier_param.cos
+ Sr_x_1  Sr  x  1   -0.01114(2)   0.01928(4)
+ Sr_x_2  Sr  x  2    0.00483(4)   0.00837(6)
+ Sr_x_4  Sr  x  4   -0.00007(9)   0.0001(2)
+ Sr_z_3  Sr  z  3   -0.0026(4)    0
+
+loop_
+ _atom_site_U_Fourier.id
+ _atom_site_U_Fourier.atom_site_label
+ _atom_site_U_Fourier.tens_elem
+ _atom_site_U_Fourier.wave_vector_seq_id
+ _atom_site_U_Fourier_param.sin
+ _atom_site_U_Fourier_param.cos
+ Sr_U11_1  Sr  U11  1   0.00494(12)   0.00283(7)
+ Sr_U11_2  Sr  U11  2   0.0346(13)   -0.00200(8)
+ Sr_U11_4  Sr  U11  4  -0.0056(5)    -0.0032(39
+ Sr_U33_3  Sr  U33  3   0            -0.0061(5)
+ Sr_U13_1  Sr  U13  1  -0.00860(13)  -0.00496(7)
+ Sr_U13_2  Sr  U13  2  -0.0066(2)     0.00382(9)
+ Sr_U13_4  Sr  U13  4   0.00382(9)    0.0017(2)
+
+loop_
+ _atom_sites_ortho.func_id
+ _atom_sites_ortho.wave_vector_seq_id_list
+ _atom_sites_ortho.coeff_cos_list
+ _atom_sites_ortho.coeff_sin_list
+ o1  [1]         [0]                               [1.729]
+ o2  [0,1]       [-0.623,1.882]                    [0,0]
+ o3  [1,2]       [0,0]                             [-1.681,2.055]
+ o4  [0,1,2]     [1.216,-2.203,2.249]              [0,0,0]
+ o5  [1,2,3]     [0,0,0]                           [3.394,-2.819,2.464]
+ o6  [0,1,2,3]   [-2.504,4.608,-3.542,2.702]       [0,0,0,0]
+ o7  [1,2,3,4]   [0,0,0,0]                         [-7.155,6.120,-4.384,2.964]
+ o8  [0,1,2,3,4] [5.347,-9.961,7.986,-5.363,3.253] [0,0,0,0,0]
+ o9  [0,1]       [-2.069,0]                        [0,3.249]
+ o10 [1]         [1.414]                           [0]
+ o11 [1,2]       [-2.271,0]                        [0,2.675]
+ o12 [0,1,2]     [-9.102,0,6.381]                  [0,14.297,0]
+ o13 [1]         [0]                               [4.118]
+ o14 [0,1]       [-1.632,2.826]                    [0,0]
+
+loop_
+ _atom_site_displace_ortho.id
+ _atom_site_displace_ortho.atom_site_label
+ _atom_site_displace_ortho.axis
+ _atom_site_displace_ortho.func_id
+ _atom_site_displace_ortho.coeff
+ Co1_o1_z   Co1  z  o1   -0.0271(4)
+ Co1_o3_z   Co1  z  o3    0.0041(6)
+ Co1_o5_z   Co1  z  o5   -0.0110(10)
+ Co1_o7_z   Co1  z  o7    0.0080(11)
+ Co2_o13_z  Co2  z  o13   0.0033(14)
+ O_o9_x     O    x  o9    0.0028(39)
+ O_o10_x    O    x  o10  -0.00113(14)
+ O_o11_x    O    x  o11  -0.0034(2)
+ O_o12_x    O    x  o12   0.0025(4)
+ O_o10_z    O    z  o10   0.0528(9)
+ O_o11_z    O    z  o11  -0.0009(14)
+# - - - - data truncated for brevity - - - -
+
+ loop_
+ _atom_site_U_ortho.id
+ _atom_site_U_ortho.atom_site_label
+ _atom_site_U_ortho.tens_elem
+ _atom_site_U_ortho.func_id
+ _atom_site_U_ortho.coeff
+ O_o9_U11     O    U11  o9   -0.0097(7)
+ O_o10_U11    O    U11  o10  -0.0012(6)
+ O_o9_U33     O    U33  o9   -0.0069(14)
+ O_o9_U12     O    U12  o9   -0.0021(8)
+ O_o9_U13     O    U13  o9    0.0003(5)
+ O_o10_U13    O    U13  o10   0.0049(6)
+
+
+#=======================================================================
+
+#Example based on the article:
+#O. Gourdon, V. Petricek, M. Dusek, P. Bezdicka, S.  Durovic, D. Gyepesovad and M. Evain (1999)
+#Acta Cryst. B55, 841-848. doi:10.1107/S0108768199006485
+#Determination of the modulated structure of Sr~14/11~CoO~3~ through a (3 + 1)-dimensional space description and using non-harmonic ADPs
