@@ -30,7 +30,7 @@ _description.text
    Head categories from other dictionaries are reparented to this category.
 ;
 _import.get  [{"file":"cif_core.dic" "save":"CIF_CORE" "mode":"Full"}
-              {"file":"cif_ms_20240412.dic"   "save":"MS_GROUP"   "mode":"Full"}
+              {"file":"cif_ms.dic"   "save":"MS_GROUP"   "mode":"Full"}
               {"file":"cif_twin.dic" "save":"TWIN_GROUP" "mode":"Full"}]
               #{"file":"jana-mod.dic" "save":"JANA_GROUP" "mode":"Full"}]
               #{"file":"cif_ms.dic"   "save":"CIF_MS"   "mode":"Full"}]
