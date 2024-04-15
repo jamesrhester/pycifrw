@@ -1,0 +1,122 @@
+##############################################################################
+#                                                                            #
+#                     CIF THIRD-PARTY CCDC DEFINITIONS                       #
+#                     --------------------------------                       #
+#                                                                            #
+# This dictionary contains the names and definitions of "private" data items #
+# used in third-party software                                               #
+# recognised by the Cambridge Crystallographic Data Centre for the           #
+# processing of CIFs.                                                        #
+#                                                                            #
+# Copyright 2014 Cambridge Crystallographic Data Centre                      #
+##############################################################################
+
+
+data_on_this_dictionary
+    _dictionary_name            cif_third_party.dic
+    _dictionary_version         1.0.1
+    _dictionary_update          2014-07-03
+    _dictionary_history
+;
+   2014-01-01  Initial version GPS
+   2014-07-03  Added further SHELX items GPS
+;
+
+##############
+##   HKL    ##
+##############
+
+data_hkl_[]
+    _name                      '_hkl_[]'
+    _category                    category_overview
+    _type                        null
+    _definition
+;              Structure factor data
+;
+
+data_shelx_hkl_checksum
+    _name                      '_shelx_hkl_checksum'
+    _category                    hkl
+    _type                        char
+    _definition
+;              SHELX HKL data
+;
+
+data_shelx_hkl_file
+    _name                      '_shelx_hkl_file'
+    _category                    hkl
+    _type                        char
+    _definition
+;              Checksum for SHELX HKL data in _shelx_hkl_file
+;
+
+
+##############
+##  SHELX   ##
+##############
+
+data_shelx_[]
+    _name                      '_shelx_[]'
+    _category                    category_overview
+    _type                        null
+    _definition
+;              SHELX Program Data Items
+;
+
+data_shelxl_version_number
+    _name                      '_shelxl_version_number'
+    _category                    shelx
+    _type                        char
+    _definition
+;              SHELXL version number
+;
+
+data_shelx_SHELXL_version_number
+    _name                      '_shelx_SHELXL_version_number'
+    _category                    shelx
+    _type                        char
+    _definition
+;              SHELXL version number
+;
+
+data_shelx_space_group_comment
+    _name                      '_shelx_space_group_comment'
+    _category                    shelx
+    _type                        char
+    _definition
+;              SHELX space group comment
+;
+
+data_shelx_estimated_absorpt_T_min
+    _name                      '_shelx_estimated_absorpt_T_min'
+    _category                    shelx
+    _type                        numb
+    _definition
+;              SHELX Estimated minimum absorption 
+               transmission factors from crystal size
+;
+
+data_shelx_estimated_absorpt_T_max
+    _name                      '_shelx_estimated_absorpt_T_max'
+    _category                    shelx
+    _type                        numb
+    _definition
+;              SHELX Estimated maximum absorption 
+               transmission factors from crystal size
+;
+
+data_shelx_res_checksum
+    _name                      '_shelx_res_checksum'
+    _category                    shelx
+    _type                        char
+    _definition
+;              SHELX RES results data
+;
+
+data_shelx_res_file
+    _name                      '_shelx_res_file'
+    _category                    shelx
+    _type                        char
+    _definition
+;              Checksum for SHELX RES data in _shelx_res_file
+;

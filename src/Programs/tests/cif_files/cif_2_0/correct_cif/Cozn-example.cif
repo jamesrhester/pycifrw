@@ -1,0 +1,399 @@
+#\#CIF_2.0
+##############################################################################
+#                                                                            #
+# This CIF contains the data in a paper accepted for publication in Acta     #
+# Crystallographica Section B. It has been peer reviewed under the auspices  #
+# of the IUCr Commission on Journals.                                        #
+#                                                                            #
+# Full details of the Crystallographic Information File format               #
+# are given in the paper "The Crystallographic Information File (CIF):       #
+# a New Standard Archive File for Crystallography" by S. R. Hall, F. H.      #
+# Allen and I. D. Brown [Acta Cryst. (1991), A47, 655-685].                  #
+#                                                                            #
+# The current version of the core CIF dictionary may be obtained from        #
+# ftp://ftp.iucr.org/pub/cif_core.dic. The current version number is 2.1.    #
+#                                                                            #
+# Software is freely available for graphical display of the structure(s) in  #
+# this CIF.  For information consult the CIF home page http://www.iucr.org/  #
+# cif/home.html                                                              #
+#                                                                            #
+#           Copyright International Union of Crystallography                 #
+#                                                                            #
+##############################################################################
+
+data_global
+_audit.creation_method     'Jana2000 Version : 16/05/2003'
+_journal_date.recd_electronic     2003-06-11
+_journal_date.accepted     2003-09-08
+_journal.name_full     'Acta Crystallographica, Section B'
+_journal.year     2003
+_journal.volume     59
+_journal.issue      6
+_journal.page_first     720
+_journal.page_last     729
+_journal.paper_category     FA
+_publ_contact_author.name     'Lind, H.'
+_publ_contact_author.address
+; Inorganic Chemistry
+  Stockholm University
+  S-106 91 Stockholm
+  Sweden
+;
+_publ_contact_author.email     'hanna@inorg.su.se'
+_publ_contact_author.fax     '46 8152187'
+_publ_contact_author.phone     '46 8162434'
+_publ_section.title
+; The structure of \g~1~-CoZn~7.8~, an example
+ of a phason pinning-unpinning transformation?
+;
+loop_
+    _publ_author.id
+    _publ_author.name
+    _publ_author.address
+1   'H. Lind'
+;
+Inorganic Chemistry
+Stockholm University
+S-106 91 Stockholm
+Sweden
+;
+2   'M. Bostr\"om'
+;
+Structural Chemistry
+Stockholm University
+S-106 91 Stockholm
+Sweden
+;
+3   'V. Petricek'
+;Institute of Physics
+Academy of Sciences of the Czech Republic
+Na Slovance 2
+180 40 Praha 8
+Czech Republic
+;
+4   'S. Lidin'
+;
+Inorganic Chemistry
+Stockholm University
+S-106 91 Stockholm
+Sweden
+;
+_chemical_formula.sum                    'Co Zn7.8'
+_chemical_formula.weight                 568.90
+_symmetry.cell_setting                   'monoclinic'
+_space_group.ssg_name                    'F2/m(0\b0)'
+loop_
+ #_space_group_symop.ssg_id
+ _space_group_symop.id
+ _space_group_symop.ssg_operation_algebraic
+ 1   x1,x2,x3,x4
+ 2   -x1,x2,-x3,x4+1/2
+ 3   -x1,-x2,-x3,-x4
+ 4   x1,-x2,x3,x4+1/2
+ 5   x1+1/2,x2+1/2,x3,x4
+ 6   -x1+1/2,x2+1/2,-x3,-x4
+ 7   -x1+1/2,-x2+1/2,-x3,-x4
+ 8   x1+1/2,-x2+1/2,x3,x4+1/2
+ 9   x1+1/2,x2,x3+1/2,x4
+ 10  -x1+1/2,x2,-x3+1/2,x4+1/2
+ 11  -x1+1/2,-x2,-x3+1/2,-x4
+ 12  x1+1/2,-x2,x3+1/2,x4+1/2
+ 13  x1,x2+1/2,x3+1/2,x4
+ 14  -x1,x2+1/2,-x3+1/2,x4+1/2
+ 15  -x1,-x2+1/2,-x3+1/2,-x4
+ 16  x1,-x2+1/2,x3+1/2,x4+1/2
+_cell.length_a                           9.030(2)
+_cell.length_b                           4.3380(10)
+_cell.length_c                           12.511(3)
+_cell.angle_alpha                        90
+_cell.angle_beta                         89.90(3)
+_cell.angle_gamma                        90
+_cell.volume                             490.1(2)
+
+_cell.modulation_dimension               1
+loop_
+ _cell_wave_vector.seq_id
+ _cell_wave_vector.xyz
+  1  [0.000000,0.234000,0.000000]
+
+_cell.formula_units_Z                    2
+_cell_measurement.reflns_used            2026
+_cell_measurement.theta_min              2.9
+_cell_measurement.theta_max              48.4
+_cell_measurement.temperature            293
+_exptl_crystal.description               'tabular'
+_exptl_crystal.colour                    'metallic'
+_exptl_crystal.size_max                  0.082
+_exptl_crystal.size_mid                  0.045
+_exptl_crystal.size_min                  0.015
+_exptl_crystal.density_diffrn            3.8539(15)
+_exptl_crystal.F_000                     1006
+
+_exptl_crystal.type_of_structure         mod
+
+_exptl_absorpt.coefficient_mu            20.290
+_exptl_absorpt.correction_type           numerical
+_exptl_absorpt.correction_T_min          0.2627
+_exptl_absorpt.correction_T_max          0.7244
+_diffrn.ambient_temperature              293
+_diffrn_radiation.type                   'Mo K\a'
+
+loop_
+ _diffrn_radiation_waveLength.id
+ _diffrn_radiation_wavelength.value
+ 1 0.71069
+
+_diffrn_source.device                    tube
+_diffrn_radiation.monochromator          'graphite'
+_diffrn_measurement.device_make          'STOE IPDS'
+_diffrn_measurement.method               '\q-2\q'
+_diffrn_reflns.number                    8488
+_diffrn_reflns.av_R_equivalents          0.0750
+_diffrn_reflns.theta_min                 2.9
+_diffrn_reflns.theta_max                 48.4
+_diffrn_reflns.limit_h_min               -10
+_diffrn_reflns.limit_h_max               10
+_diffrn_reflns.limit_k_min               0
+_diffrn_reflns.limit_k_max               5
+_diffrn_reflns.limit_l_min               0
+_diffrn_reflns.limit_l_max               14
+_reflns.number_total                     2026
+_reflns.number_gt                        1095
+_reflns.threshold_expression             'I>3\s(I)'
+
+loop_
+ _reflns_class.code
+ _reflns_class.description
+ 'Main'    'Main reflections'
+ 'S1'      '1-st order satellites'
+ 'S2'      '2-nd order satellites'
+ 'S3'      '3-rd order satellites'
+ 'S4'      '4-th order satellites'
+
+_refine_ls.structure_factor_coef         'F'
+_refine_ls.R_factor_all                  0.1140
+_refine_ls.R_factor_gt                   0.0624
+_refine_ls.wR_factor_gt                  0.0668
+_refine_ls.wR_factor_ref                 0.0687
+
+loop_
+ _refine_ls_class.code
+ _refine_ls_class.R_factor_gt
+ 'Main'    0.0416
+ 'S1'      0.0521
+ 'S2'      0.0641
+ 'S3'      0.1039
+ 'S4'      0.2110
+
+_refine_ls.goodness_of_fit_ref           2.92
+_refine_ls.number_reflns                 2026
+_refine_ls.number_parameters             104
+_refine_ls.weighting_scheme              'sigma'
+_refine_ls.weighting_details             'w=1/(\s^2^(F)+0.0001F^2^)'
+_refine_ls.shift_over_su_max             0.0002
+_refine_ls.shift_over_su_mean            0.0000
+_refine_diff.density_max                 4.98
+_refine_diff.density_min                  -4.53
+_refine_ls.extinction_method             'none'
+loop_
+ _atom_type.symbol
+ _atom_type.scat_dispersion_real
+ _atom_type.scat_dispersion_imag
+ _atom_type.scat_source
+ Co 0.349 0.972 'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+ Zn 0.284 1.430 'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+_computing_data_reduction
+                           'XRED: Data Reduction Program, Stoe and Cie, (1996)'
+_computing_structure_refinement          '(Jana2000; Petricek and Dusek, 2000)'
+_computing_publication_material          '(Jana2000; Petricek and Dusek, 2000)'
+
+loop_
+ _atom_site.label
+ _atom_site.fract_x
+ _atom_site.fract_y
+ _atom_site.fract_z
+ _atom_site.U_iso_or_equiv
+ _atom_site.adp_type
+ _atom_site.calc_flag
+ _atom_site.refinement_flags
+ _atom_site.occupancy
+ _atom_site.disorder_assembly
+ _atom_site.disorder_group
+ _atom_site.type_symbol
+  Co  -0.16084(16) -0.3052(4) 0.0879(2)    0.0105(4)  Uani d . 1 . . Co
+  Zn1 -0.21276(11)  0         0.09149(9)   0.0174(3)  Uani d . 1 . . Zn
+  Zn2  0.41599(17)  0         0.02151(12)  0.0215(5)  Uani d . 1 . . Zn
+  Zn3  0.27052(14)  0         0.23105(11)  0.0136(4)  Uani d . 1 . . Zn
+  Zn4  0.07312(9)   0         0.09012(7)   0.0146(3)  Uani d . 1 . . Zn
+  Zn5 -0.43014(9)   0         0.21472(7)   0.0140(3)  Uani d . 1 . . Zn
+
+loop_
+ _atom_site_aniso.label
+ _atom_site_aniso.U_11
+ _atom_site_aniso.U_22
+ _atom_site_aniso.U_33
+ _atom_site_aniso.U_12
+ _atom_site_aniso.U_13
+ _atom_site_aniso.U_23
+ _atom_site_aniso.type_symbol
+ Co   0.0060(7)  0.0193(9)  0.0064(7) -0.0114(6)  -0.0023(6)  0.0028(6) Co
+ Zn1  0.0160(5)  0.0225(6)  0.0138(6)  0           0.0030(5)  0         Zn
+ Zn2  0.0378(9)  0.0081(7)  0.0187(8)  0          -0.0074(7)  0         Zn
+ Zn3  0.0136(6)  0.0148(7)  0.0126(6)  0          -0.0028(5)  0         Zn
+ Zn4  0.0160(5)  0.0152(5)  0.0126(5)  0          -0.0005(4)  0         Zn
+ Zn5  0.0183(5)  0.0097(5)  0.0140(5)  0           0.0032(4)  0         Zn
+
+loop_
+ _atom_site_Fourier_wave_vector.seq_id
+ _atom_site_Fourier_wave_vector.q_coeff_seq_id
+ _atom_site_Fourier_wave_vector.q_coeff
+    0  [1]  [0]
+    1  [1]  [1]
+    2  [1]  [2]
+    3  [1]  [3]
+    4  [1]  [4]
+
+loop_
+ _atom_site_displace_Fourier.id
+ _atom_site_displace_Fourier.atom_site_label
+ _atom_site_displace_Fourier.axis
+ _atom_site_displace_Fourier.wave_vector_seq_id
+ _atom_site_displace_Fourier_param.sin
+ _atom_site_displace_Fourier_param.cos
+ Zn4_x_1  Zn4 x 1   0.0070(2)   0
+ Zn4_y_1  Zn4 y 1   0          -0.0309(3)
+ Zn4_z_1  Zn4 z 1   0.00314(9)  0
+ Zn4_x_2  Zn4 x 2   0          -0.0012(2)
+ Zn4_y_2  Zn4 y 2   0.0004(3)   0
+ Zn4_z_2  Zn4 z 2   0           0.0012(2)
+ Zn4_x_3  Zn4 x 3   0.0023(2)   0
+ Zn4_y_3  Zn4 y 3   0           0.0085(3)
+ Zn4_z_3  Zn4 z 3   0.0011(2)   0
+ Zn4_x_4  Zn4 x 4   0           0.0005(3)
+ Zn4_y_4  Zn4 y 4   0.0055(6)   0
+ Zn4_z_4  Zn4 z 4   0          -0.0005(3)
+ Zn5_x_1  Zn5 x 1   0.0090(2)   0
+ Zn5_y_1  Zn5 y 1   0          -0.0169(2)
+ Zn5_z_1  Zn5 z 1  -0.0174(2)   0
+ Zn5_x_2  Zn5 x 2   0          -0.0135(2)
+ Zn5_y_2  Zn5 y 2   0.0081(3)   0
+ Zn5_z_2  Zn5 z 2   0          -0.0004(1)
+ Zn5_x_3  Zn5 x 3  -0.0035(2)   0
+ Zn5_y_3  Zn5 y 3   0           0.0050(3)
+ Zn5_z_3  Zn5 z 3   0.0012(2)   0
+ Zn5_x_4  Zn5 x 4   0           0.0006(3)
+ Zn5_y_4  Zn5 y 4   0.0015(6)   0
+ Zn5_z_4  Zn5 z 4   0          -0.0015(2)
+
+loop_
+ _atom_site_occ_special_func.atom_site_label
+ _atom_site_occ_special_func.crenel_c
+ _atom_site_occ_special_func.crenel_w
+ Zn2  0.75   0.5
+ Zn3  0.75   0.5
+
+loop_
+ _atom_site_displace_special_func.atom_site_label
+ _atom_site_displace_special_func.sawtooth_ay
+ _atom_site_displace_special_func.sawtooth_c
+ _atom_site_displace_special_func.sawtooth_w
+ Co   0.01(2)   0.161(6)  0.241(1)
+ Zn1  0.082(7)  0.75      0.759(1)
+
+loop_
+ _atom_sites_ortho.func_id
+ _atom_sites_ortho.wave_vector_seq_id_list
+ _atom_sites_ortho.coeff_cos_list
+ _atom_sites_ortho.coeff_sin_list
+ o1  [0,1]      [-3.322,0]        [0,4.323]
+ o2  [0,1]      [-20.803,11.454]  [0,31.365]
+ o3  [0,1]      [0.497,0]         [0,1.774]
+ o4  [0,1]      [0,1.287]         [0,0]
+ o5  [0,1,2]    [0,0.199,0]       [0,0,1.417]
+ o6  [0,1,2]    [-0.870,0,2.020]  [0,-1.611,0]
+ o7  [0,1]      [2.069,0]         [0,3.249]
+ o8  [0,1]      [0,1.414]         [0,0]
+ o9  [0,1,2]    [0,2.271,0]       [0,0,2.267]
+ o10 [0,1,2]    [2.187,0,1.973]   [0,2.785,0]
+
+
+loop_
+ _atom_site_displace_ortho.id
+ _atom_site_displace_ortho.atom_site_label
+ _atom_site_displace_ortho.axis
+ _atom_site_displace_ortho.func_id
+ _atom_site_displace_ortho.coeff
+ Co_o1_x    Co   x  o1   0.0012(3)
+ Co_o2_x    Co   x  o2  -0.00013(3)
+ Co_o1_y    Co   y  o1  -0.002(2)
+ Co_o2_y    Co   y  o2   0.0003(2)
+ Co_o1_z    Co   z  o1   0.0004(2)
+ Co_o2_z    Co   z  o2   0.00003(3)
+ Zn1_o3_x   Zn1  x  o3   0.0050(1)
+ Zn1_o6_x   Zn1  x  o6  -0.0015(1)
+ Zn1_o4_y   Zn1  y  o4   0.012(3)
+ Zn1_o5_y   Zn1  y  o5   0.003(1)
+ Zn1_o3_z   Zn1  z  o3   0.00101(7)
+ Zn1_o6_z   Zn1  z  o6  -0.00069(5)
+# - - - - data truncated for brevity - - - -
+
+loop_
+ _atom_site_U_Fourier.id
+ _atom_site_U_Fourier.atom_site_label
+ _atom_site_U_Fourier.tens_elem
+ _atom_site_U_Fourier.wave_vector_seq_id
+ _atom_site_U_Fourier_param.sin
+ _atom_site_U_Fourier_param.cos
+ Zn1_U11_1 Zn1  U11  1     0.012(5)     0
+ Zn1_U22_1 Zn1  U22  1     0.057(7)     0
+ Zn1_U33_1 Zn1  U33  1     0.0015(6)    0
+ Zn1_U12_1 Zn1  U12  1     0            0.062(4)
+ Zn1_U13_1 Zn1  U13  1    -0.0010(5)    0
+ Zn1_U23_1 Zn1  U23  1     0           -0.0009(4)
+ Zn2_U11_1 Zn2  U11  1     0.017(2)     0
+ Zn2_U22_1 Zn2  U22  1    -0.008(8)     0
+ Zn2_U33_1 Zn2  U33  1     0.0051(9)    0
+ Zn2_U12_1 Zn2  U12  1     0           -0.0024(6)
+ Zn2_U13_1 Zn2  U13  1    -0.0109(8)    0
+ Zn2_U23_1 Zn2  U23  1     0            0.0008(5)
+
+loop_
+ _geom_bond.atom_site_label_1
+ _geom_bond.atom_site_label_2
+ _geom_bond.site_ssg_symmetry_1
+ _geom_bond.site_ssg_symmetry_2
+ _geom_bond.distance_av
+ _geom_bond.distance_min
+ _geom_bond.distance_max
+ Co  Zn1  .   1_5455  2.7(4)    2.7(5)    2.8(3)
+ Co  Zn1  .   7_4455  2.66(18)  2.7(2)    2.66(14)
+ Co  Zn2  .   3       2.9(2)    2.83(15)  2.9(3)
+ Co  Zn2  .   7_4555  2.77(17)  2.74(13)  2.8(2)
+ Co  Zn3  .  15_5455  2.65(18)  2.63(13)  2.7(2)
+ Co  Zn4  .   1_5455  3.8(3)    3.8(2)    3.8(4)
+# - - - - data truncated for brevity - - - -
+
+loop_
+ _geom_angle.atom_site_label_1
+ _geom_angle.atom_site_label_2
+ _geom_angle.atom_site_label_3
+ _geom_angle.site_ssg_symmetry_1
+ _geom_angle.site_ssg_symmetry_2
+ _geom_angle.site_ssg_symmetry_3
+ _geom_angle.av
+ _geom_angle.min
+ _geom_angle.max
+ Co  Co  Zn1  4  .  1_5455  171(6)  171(5)  172(7)
+ Co  Co  Zn1  4  .  5_5455   95(5)   95(5)   95(5)
+ Co  Co  Zn1  4  .  3        72(6)   72(7)   73(5)
+ Co  Co  Zn1  4  . 11_4555   72(6)   72(7)   72(5)
+ Co  Co  Zn1  4  .  7_4455  112(9)  110(11) 114(7)
+ Co  Co  Zn1  4  .  7_4555   34(4)   33(4)   35(4)
+# - - - - data truncated for brevity - - - -
+
+#=======================================================================
+
+#Example based on the article:
+#Hanna Lind, Magnus Bostr\�om, V\'aclav Pet\<r\'i\<cek and Sven Lidin (203)
+#Acta Cryst. B59, 720-729. doi:10.1107/S0108768103019694
+#Structure of \d~1~-CoZn~7.8~, an example of a phason pinning-unpinning transformation?

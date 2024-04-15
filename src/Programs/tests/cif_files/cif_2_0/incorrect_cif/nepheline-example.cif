@@ -1,0 +1,358 @@
+#\#CIF_2.0
+##############################################################################
+#                                                                            #
+# This CIF contains the data in a paper accepted for publication in Acta     #
+# Crystallographica Section B. It has been peer reviewed under the auspices  #
+# of the IUCr Commission on Journals.                                        #
+#                                                                            #
+# Full details of the Crystallographic Information File format               #
+# are given in the paper "The Crystallographic Information File (CIF):       #
+# a New Standard Archive File for Crystallography" by S. R. Hall, F. H.      #
+# Allen and I. D. Brown [Acta Cryst. (1991), A47, 655-685].                  #
+#                                                                            #
+# The current version of the core CIF dictionary may be obtained from        #
+# ftp://ftp.iucr.org/pub/cif_core.dic. The current version number is 2.4.    #
+#                                                                            #
+# Software is freely available for graphical display of the structure(s) in  #
+# this CIF.  For information consult the CIF home page http://www.iucr.org/  #
+# cif/home.html                                                              #
+#                                                                            #
+# This file may be used for bona fide research purposes within the           #
+# scientific community so long as proper attribution is given to the journal #
+# article from which it was obtained.                                        #
+#                                                                            #
+##############################################################################
+
+data_global
+_audit.creation_method     'Jana2006 Version : 28/06/2010'
+_journal_date.recd_electronic     2010-07-01
+_journal_date.accepted     2010-12-03
+_journal.name_full     'Acta Crystallographica, Section B'
+_journal.year     2011
+_journal.volume     67
+_journal.issue      1
+_journal.page_first     18
+_journal.page_last     29
+_journal.paper_category     FA
+_journal.coeditor_code     CK5042
+_publ_contact_author.name     'K. Friese'
+_publ_contact_author.address
+;
+Departamento Fisica Materia Condensada
+Universidad del Pais Vasco
+Apartado 644
+48080 Bilbao
+Spain
+;
+_publ_contact_author.email     'karen.friese@ehu.es'
+_publ_contact_author.fax     '+34 94 601 3500'
+_publ_contact_author.phone     '+34 94 601 5481'
+_publ_section.title
+;
+The modulated structure of nepheline
+;
+_publ_section.title_footnote
+; ?
+;
+loop_
+    _publ_author.id
+    _publ_author.name
+    _publ_author.address
+1   'Friese, K.'
+;
+Departamento F\'isica Materia Condensada
+Facultad de Ciencia y Tecnolog\'ia
+Universidad del Pa\'is Vasco
+Apartado 644
+E-48080 Bilbao
+Spain
+;
+2   'Grzechnik, A.'
+;
+Departamento F\'isica Materia Condensada
+Facultad de Ciencia y Tecnolog\'ia
+Universidad del Pa\'is Vasco
+Apartado 644
+E-48080 Bilbao
+Spain
+;
+3   'Petricek, V.'
+;
+Institute of Physics ASCR
+v.v.i.
+Na Slovance 2
+18221 Praha 8
+Czech Republic
+;
+4   'Sch\"onleber, A.'
+;
+Laboratory of Crystallography
+University of Bayreuth
+Germany
+USA
+;
+5   'van Smaalen, S.'
+;
+Laboratory of Crystallography
+University of Bayreuth
+Germany
+;
+6   'Morgenroth, W.'
+;
+Institute for Geosciences
+Section Crystallography
+University of Frankfurt
+Germany
+;
+data_Incommensurate
+
+_chemical_formula.sum                    'Al4 Ca0.03 K0.54 Na3.24 O16 Si4'
+_chemical_formula.weight                 573
+_symmetry.cell_setting                   trigonal
+_space_group.ssg_name                    'X3(00\g)0'
+
+loop_
+ _space_group_symop.ssg_id
+ _space_group_symop.ssg_operation_algebraic
+ 1   x1,x2,x3,x4
+ 2   -x2,x1-x2,x3,x4
+ 3   -x1+x2,-x1,x3,x4
+ 4   x1+1/3,x2+2/3,x3,x4+2/3
+ 5   -x2+1/3,x1-x2+2/3,x3,x4+2/3
+ 6   -x1+x2+1/3,-x1+2/3,x3,x4+2/3
+ 7   x1+2/3,x2+1/3,x3,x4+1/3
+ 8   -x2+2/3,x1-x2+1/3,x3,x4+1/3
+ 9   -x1+x2+2/3,-x1+1/3,x3,x4+1/3
+_cell.length_a                           17.2889(8)
+_cell.length_b                           17.2889(8)
+_cell.length_c                           8.3622(10)
+_cell.angle_alpha                        90
+_cell.angle_beta                         90
+_cell.angle_gamma                        120
+_cell.volume                             2164.6(3)
+
+_cell.modulation_dimension               1
+loop_
+ _cell_wave_vector.seq_id
+ _cell_wave_vector.xyz
+  1  [0.00000,0.00000,0.20480]
+
+_cell.formula_units_Z                    6
+_cell_measurement.reflns_used            12279
+_cell_measurement.theta_min              1.6
+_cell_measurement.theta_max              27.6
+_cell_measurement.temperature            293
+_exptl_crystal.description               irregular
+_exptl_crystal.colour                    colourless
+_exptl_crystal.size_max                  0.43
+_exptl_crystal.size_mid                  0.20
+_exptl_crystal.size_min                  0.12
+_exptl_crystal.density_diffrn            2.6366
+_exptl_crystal.F_000                     1695
+
+_exptl_crystal.type_of_structure         mod
+
+_exptl_absorpt.coefficient_mu            0.208
+_exptl_absorpt.correction_type           numerical
+_exptl_absorpt.process_details
+                                 'Jana2006  (Petricek, Dusek & Palatinus, 2000)'
+_exptl_absorpt.correction_T_min          0.8719
+_exptl_absorpt.correction_T_max          0.9602
+_exptl.special_details
+;
+Beamline D3, Synchrotron HASYLAB/DESY,
+MarCCD165
+;
+_diffrn.ambient_temperature              293
+
+loop_
+ _diffrn_radiation_waveLength.id
+ _diffrn_radiation_wavelength.value
+ 1 0.4
+
+_diffrn_source.device                    synch
+_diffrn_radiation.monochromator          'unknown'
+_diffrn_measurement.device_class         'Huber-4-circle'
+_diffrn_measurement.method               'rotation method?'
+_diffrn_reflns.number                    569470
+_diffrn_reflns.av_R_equivalents          0.0834
+_diffrn_reflns.av_sigmaI_over_netI       0.0323
+_diffrn_reflns.theta_min                 1.56
+_diffrn_reflns.theta_max                 27.62
+_diffrn_reflns.theta_full                27.41
+_diffrn.measured_fraction_theta_max      0.96
+_diffrn.measured_fraction_theta_full     0.98
+_diffrn_reflns.limit_h_min               -39
+_diffrn_reflns.limit_h_max               38
+_diffrn_reflns.limit_k_min               -40
+_diffrn_reflns.limit_k_max               37
+_diffrn_reflns.limit_l_min               -17
+_diffrn_reflns.limit_l_max               17
+_diffrn_reflns.limit_index_m_1_min       -1
+_diffrn_reflns.limit_index_m_1_max       1
+_reflns.number_total                     24784
+_reflns.number_gt                        11997
+_reflns.threshold_expression             'I>3\s(I)'
+_refine_ls.structure_factor_coef         F
+_refine_ls.R_factor_all                  0.0762
+_refine_ls.R_factor_gt                   0.0380
+_refine_ls.wR_factor_gt                  0.0479
+_refine_ls.wR_factor_ref                 0.0510
+_refine_ls.goodness_of_fit_ref           1.73
+_refine_ls.number_reflns                 24784
+_refine_ls.number_parameters             282
+_refine_ls.weighting_scheme              sigma
+_refine_ls.weighting_details             'w=1/(\s^2^(F)+0.0001F^2^)'
+_refine_ls.shift_over_su_max             0.0381
+_refine_ls.shift_over_su_mean            0.0041
+_refine_diff.density_max                 1.50
+_refine_diff.density_min                 -0.74
+_refine.ls_abs_structure_Flack           0.4984(8)
+
+loop_
+ _atom_type.symbol
+ _atom_type.scat_dispersion_real
+ _atom_type.scat_dispersion_imag
+ _atom_type.scat_source
+ K   0.076  0.080  'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+ Na  0.009  0.007  'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+ Al  0.018  0.016  'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+ Si  0.025  0.021  'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+ O   0.002  0.002  'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+ Ca  0.090  0.099  'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+
+loop_
+ _atom_site.type_symbol
+ _atom_site.label
+ _atom_site.fract_x
+ _atom_site.fract_y
+ _atom_site.fract_z
+ _atom_site.U_iso_or_equiv
+ _atom_site.adp_type
+ _atom_site.calc_flag
+ _atom_site.refinement_flags
+ _atom_site.occupancy
+ _atom_site.disorder_assembly
+ _atom_site.disorder_group
+  K  K1a   -0.00185(8)  -0.00146(7)   0.25       0.0390(7)  Uani d . 0.19 . .
+  Na Na1a  -0.00185(8)  -0.00146(7)   0.25       0.0390(7)  Uani d . 0.08 . .
+  K  K1b    0.00185(8)   0.00146(7)  -0.2516(4)  0.0390(7)  Uani d . 0.19 . .
+  Na Na1b   0.00185(8)   0.00146(7)  -0.2516(4)  0.0390(7)  Uani d . 0.08 . .
+  Na Na2a   0.36891(9)   0.18630(9)   0.2465(3)  0.02327(8) Uani d . 1 . .
+  Na Na2b  -0.37180(9)  -0.18686(9)  -0.2570(2)  0.02327(8) Uani d . 1 . .
+  Si Si1    0.333334     0.333333    -0.0609(3)  0.0123(3)  Uani d . 1 . .
+  Al Al1   -0.333334    -0.333333     0.0515(3)  0.0111(3)  Uani d . 1 . .
+  Si Si2   -0.333334    -0.333333    -0.5608(3)  0.0115(3)  Uani d . 1 . .
+  Al Al2    0.333334     0.333333     0.5505(3)  0.0115(3)  Uani d . 1 . .
+  Si Si3   -0.19104(4)  -0.14272(4)  -0.0698(2)  0.0105(2)  Uani d . 1 . .
+# - - - - data truncated for brevity - - - -
+
+loop_
+ _atom_site_aniso.label
+ _atom_site_aniso.U_11
+ _atom_site_aniso.U_22
+ _atom_site_aniso.U_33
+ _atom_site_aniso.U_12
+ _atom_site_aniso.U_13
+ _atom_site_aniso.U_23
+ _atom_site_aniso.type_symbol
+  K1a  0.0673(9)    0.0362(8)    0.0434(3)    0.0484(8)   -0.0235(9)   -0.0193(8)   K
+  Na1a 0.0673(9)    0.0362(8)    0.0434(3)    0.0484(8)   -0.0235(9)   -0.0193(8)   Na
+  K1b  0.0673(9)    0.0362(8)    0.0434(3)    0.0484(8)   -0.0235(9)   -0.0193(8)   K
+  Na1b 0.0673(9)    0.0362(8)    0.0434(3)    0.0484(8)   -0.0235(9)   -0.0193(8)   Na
+  Na2a 0.01941(11)  0.02504(11)  0.02000(10)  0.00708(9)  -0.0003(3)    0.0010(4)   Na
+  Na2b 0.01941(11)  0.02504(11)  0.02000(10)  0.00708(9)  -0.0003(3)    0.0010(4)   Na
+  Si1  0.0116(3)    0.0116(3)    0.0136(5)    0.00582(16)  0            0           Si
+  Al1  0.0106(3)    0.0106(3)    0.0120(6)    0.00532(17)  0            0           Al
+  Si2  0.0118(3)    0.0118(3)    0.0108(5)    0.00589(15)  0            0           Si
+  Al2  0.0114(4)    0.0114(4)    0.0116(5)    0.00570(18)  0            0           Al
+  Si3  0.0116(3)    0.0088(3)    0.0131(3)    0.0066(2)   -0.00047(19) -0.00040(18) Si
+  Al3  0.0097(3)    0.0096(3)    0.0128(3)    0.0054(3)   -0.0004(2)   -0.0009(2)   Al
+# - - - - data truncated for brevity - - - -
+
+loop_
+ _atom_site_Fourier_wave_vector.seq_id
+ _atom_site_Fourier_wave_vector.x
+ _atom_site_Fourier_wave_vector.z
+    1  0.00000  0.20480
+
+loop_
+ _atom_site_displace_Fourier.id
+ _atom_site_displace_Fourier.atom_site_label
+ _atom_site_displace_Fourier.axis
+ _atom_site_displace_Fourier.wave_vector_seq_id
+ _atom_site_displace_Fourier_param.cos
+ _atom_site_displace_Fourier_param.sin
+ K1a_x_1  K1a   x  1   0           0.0036(4)
+ K1a_y_1  K1a   y  1   0           0.0026(4)
+ K1a_z_1  K1a   z  1  -0.0092(3)   0
+ Na1a_x_1 Na1a  x  1   0           0.0036(4)
+ Na1a_y_1 Na1a  y  1   0           0.0026(4)
+ Na1a_z_1 Na1a  z  1  -0.0092(3)   0
+ K1b_x_1  K1b   x  1   0           0.0070(4)
+ K1b_y_1  K1b   y  1   0           0.0045(4)
+ K1b_z_1  K1b   z  1  -0.0078(3)  -0.00167(13)
+ Na1b_x_1 Na1b  x  1   0           0.0070(4)
+ Na1b_y_1 Na1b  y  1   0           0.0045(4)
+ Na1b_z_1 Na1b  z  1  -0.0078(3)  -0.00167(13)
+# - - - - data truncated for brevity - - - -
+
+loop_
+ _atom_site_occ_Fourier.id
+ _atom_site_occ_Fourier.atom_site_label
+ _atom_site_occ_Fourier.wave_vector_seq_id
+ _atom_site_occ_Fourier_param.cos
+ _atom_site_occ_Fourier_param.sin
+ K1a_o_1   K1a   1   0         -0.033(3)
+ Na1a_o_1  Na1a  1   0         -0.033(3)
+ K1b_o_1   K1b   1   0         -0.019(3)
+ Na1b_o_1  Na1b  1   0         -0.019(3)
+ O1a_o_1   O1a   1  -0.150(4)  -0.101(6)
+ O1b_o_1   O1b   1  -0.042(5)   0.176(4)
+ O2a1_o_1  O2a1  1   0.056(3)  -0.1980(16)
+# - - - - data truncated for brevity - - - -
+
+loop_
+ _geom_bond.atom_site_label_1
+ _geom_bond.atom_site_label_2
+ _geom_bond.publ_flag
+ _geom_bond.distance_max
+ _geom_bond.distance_min
+ _geom_bond.distance_av
+ _geom_bond.site_ssg_symmetry_1
+ _geom_bond.site_ssg_symmetry_2
+ K1a  K1a   no   0.146(10)  0.004(4)   0.070(6)  .  2_5555
+ K1a  K1a   no   0.146(8)   0.004(5)   0.070(4)  .  3_5555
+ K1a  Na1a  no   0          0          0         .  .
+ K1a  Na1a  no   0.146(10)  0.004(4)   0.070(6)  .  2_5555
+ K1a  Na1a  no   0.146(8)   0.004(5)   0.070(4)  .  3_5555
+ K1a  O2a1  yes  3.233(9)   2.964(9)   3.098(7)  .  .
+ K1a  O2a1  yes  3.123(16)  3.001(16)  3.062(12) .  2_5555
+# - - - - data truncated for brevity - - - -
+
+loop_
+ _geom_angle.atom_site_label_1
+ _geom_angle.atom_site_label_2
+ _geom_angle.atom_site_label_3
+ _geom_angle.publ_flag
+ _geom_angle.max
+ _geom_angle.min
+ _geom_angle.av
+ _geom_angle.site_ssg_symmetry_1
+ _geom_angle.site_ssg_symmetry_2
+ _geom_angle.site_ssg_symmetry_3
+ O2a1  K1a  O2a1  yes  120.5(3)    118.3(3)    119.4(2)   . .  2_5555
+ O2a1  K1a  O2a1  yes  120.3(4)    119.1(4)    119.7(3)   . .  3_5555
+ O2a1  K1a  O2a2  yes  122.3(4)    117.8(3)    120.0(3)   . .  2_5555
+ O2a1  K1a  O2a2  yes  119.3(5)    118.6(5)    119.0(4)   . .  3_5555
+ O2a1  K1a  O5a   yes   58.05(19)   53.11(18)   55.56(15) . .  .
+ O2a1  K1a  O5a   yes  145.36(15)  142.23(15)  143.80(14) . .  2_5555
+ O2a1  K1a  O5a   yes   75.37(14)   74.79(16)   75.08(18) . .  3_5555
+ # - - - - data truncated for brevity - - - -
+
+
+#=======================================================================
+
+#Example based on the article:
+#Karen Friese, Andrzej Grzechnik, V\'aclav Pet\<r\'i\<cek, Andreas Sch\�onleber, Sander van Smaalen and  Wolfgang Morgenroth (2011)
+#Acta Cryst. B67, 18-29. doi:10.1107/S0108768110050822

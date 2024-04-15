@@ -1,0 +1,631 @@
+##############################################################################
+#                                                                            #
+#         CIF Twinning Definitions                                           #
+#                                                                            #
+# This dictionary contains names and definitions of twinning data items      #
+# recognized by the International Union of Crystallography for the exchange  #
+# of data between laboratories and submissions to journals and databases.    #
+#                                                                            #
+# The STAR/DDL dictionary to which this dictionary conforms                  #
+# is available as the file "ddl_core.dic"                                    #
+# located at URL ftp://ftp.iucr.org/pub/cifdics/ddl_core_1.4.1.dic           #
+#                                                                            #
+##############################################################################
+
+data_on_this_dictionary
+    _dictionary_name            cif_twinning.dic
+    _dictionary_version         1.0
+    _dictionary_update          2014-02-14
+    _dictionary_history
+;
+    2012-07-25 Created from Victor Young's draft text. JRH
+    2012-08-20 Added category definitions and corrected _list for 
+               _twin_lattice_type. JRH
+    2012-08-21 cosmetic changes such as arranging the items 
+               alphabetically and added queries for VY. I.D.Brown
+    2012-08-28 Inserted changes from V. Young as per I.D. Brown's
+               comments; removed _example_detail for twin category; corrected
+               _list_reference for _refln_ category; added explanation for
+               _refln_F_squared_ . JRH
+    2012-08-31 Added _twin_special_details with example from VY. JRH
+    2013-01-17 Corrected equation defining F_calc. JRH
+    2013-01-18 Moved _refln_ items into separate _twin_refln category and
+               rewrote definitions for clarity.
+    2013-03-13 Added missing _twin_refln_index_ . JRH
+    2013-03-25 IDB: Added enumeration range to 
+               _twin_individual__mass_fraction_refined and rewrote 
+               the definition 
+               Rewrote the definition of _twin_individual_twin_matrix
+               Raised queries about what the _twin_refln category 
+               is actually recording.
+    2013-05-09 JRH: corrected _twin_refln_F_calc equation; added
+               _list_reference to _twin_refln_h, *_k, *_l definition;
+               fiddled with _twin_individual_twin_id definition text
+    2013-06-26 JRH,VY: added further example to TWIN category
+    2013-06-26 some syntax and formatting errors corrected (BM)
+    2013-06-27 IDB Changed  _twin_refln_observed_status to  
+               _twin_refln_include_status
+               Added the twin_contibution category
+               Reworked the twin_refln category to change the list reference
+                to _twin_refln_datum_id (name changed from _*_datum_index
+               Made some improvements to the definitions.
+               Converted space group symbols to CIF conventions
+               Arranged items in alphabetic order to conform 
+                to other dictonaries.
+    2013-07-11 JRH edited examples to reflect proposed changes from IDB
+    2013-07-29 VGY modified examples to comply with IDB's suggested changes 
+               (see below). These are within comments, but not yet integrated
+               into the text of the document. Added nmt for non-merohedral
+               twin into data_twin_lattice_type. Somehow this was removed.
+    2013-08-16 VGY made corrections as directed by JH in examples 2 and 3. 
+               Removed work for these examples from commented text and 
+               integrated into document. Updated example 1 to include explicit 
+               _twin_contribution items for individual 2.
+    2013-09-02 JRH edited in latest examples from VGY after email discussion
+    2013-09-03 JRH: move lattice_twin_type into twin_individual category; add
+               'ref' lattice twin type. Changed _twin_contribution_twin_id to
+               _twin_contribution_individual_id
+    2013-09-03 VGY: improve example to include single-contributor reflections 
+               coming from different individuals.
+    2013-09-13 IDB: Changed _refln_twin to _twin_refln, 
+               improved wording of some definitions, corrected syntax errors, 
+               added _twin_refln_include_status, 
+               removed '_mandatory yes' from _twin_refln_index_
+               Rearranged the order of items in some examples to put the 
+               list reference first.
+    2013-11-13 IDB: Following comments from Tony Linden and George Sheldrick 
+               an alternative version of twin_refln is proposed.  
+               If this is adopted _twin_contribution would be dropped.
+    2013-12-04 IDB: The alternative twin_refln is adopted and 
+               twin_contribution is deleted.
+    2012-12-04 Minor spelling corrections,removal of old twin_contribution
+               material and example clarification added. VGY
+    2012-12-05 IDB: Made changes in the description of the example 
+               under the twin category to reflect the deletion 
+               of the twin_contribution category.
+               Removed '_twin_contribution_individual_id' from
+               _link_list_child in the definition of _twin_individual_id.
+               Modified the description of the twin_refln category 
+               to reflect the merging of twin_contribution with twin_refln.
+               Added r to enumeration list of _twin_refln_include_status.
+   2014-02-14  BMcM and NJA: minor editing for clean release version
+;
+
+###############
+## TWIN      ##
+###############
+
+data_twin_[]
+    _name                 '_twin_[]'
+    _category             category_overview
+    _type                 null
+    _definition
+
+;    Data items in the TWIN category record general details about
+     the nature of the twinning in the sample.
+     Terminology for twin dataname definitions was taken directly from:
+     "International Union of Crystallography Commission on Mathematical 
+     and Theoretical Crystallography Research themes: Crystal twinning"
+     by Massimo Nespolo, February 3, 2009.
+     http://www.crystallography.fr/mathcryst/twins.htm . 
+;
+
+    _example
+# -----------------------------------------------------------------------------
+
+;
+    _twin_formation_mechanism         gt
+    _twin_dimensionality              triperiodic
+    _twin_morphology                  polysynthetic
+    _twin_special_details
+    ;        This is an example of a twin in space group P 32
+             by the 2 x,x,0 twin operation.
+    ;
+
+    loop_
+       _twin_individual_id
+       _twin_individual_mass_fraction_refined
+       _twin_individual_twin_lattice_type
+       _twin_individual_twin_matrix_11 
+       _twin_individual_twin_matrix_12
+       _twin_individual_twin_matrix_13
+       _twin_individual_twin_matrix_21
+       _twin_individual_twin_matrix_22
+       _twin_individual_twin_matrix_23
+       _twin_individual_twin_matrix_31
+       _twin_individual_twin_matrix_32
+       _twin_individual_twin_matrix_33
+          1 0.545(2) ref   1  0  0  0  1  0  0  0  1
+          2 0.455(2) mt_II 0  1  0  1  0  0  0  0 -1
+
+    loop_ 
+       _twin_refln_datum_id
+       _twin_refln_individual_id
+       _twin_refln_index_h 
+       _twin_refln_index_k 
+       _twin_refln_index_l 
+       _twin_refln_F_squared_calc 
+       _twin_refln_F_squared_meas 
+       _twin_refln_F_squared_sigma 
+       _twin_refln_include_status 
+          1    1  -1   1 -32     40.17     55.86      7.39 o        
+          1    2   1  -1  32     40.17     55.86      7.39 o        
+          2    1   0   1 -32    125.83    145.63      9.36 o        
+          2    2   1   0  32    125.83    145.63      9.36 o        
+          3    1   1   1 -32     10.33     30.89      7.39 o        
+          3    2   1   1  32     10.33     30.89      7.39 o        
+          4    1  -3   2 -32     28.26     26.84      9.47 o        
+          4    2   2  -3  32     28.26     26.84      9.47 o        
+          5    1  -2   2 -32      4.31     13.21      9.78 o        
+          5    2   2  -2  32      4.31     13.21      9.78 o       
+          6    1  -1   2 -32     10.71     17.48      9.88 o        
+          6    2   2  -1  32     10.71     17.48      9.88 o     
+          7    1   0   2 -32     13.94     37.66     10.51 o         
+          7    2   2   0  32     13.94     37.66     10.51 o    
+          8    1   1   2 -32     58.60     75.41      9.88 o        
+          8    2   2   1  32     58.60     75.41      9.88 o   
+          9    1  -2   3 -32     27.75     41.40      8.01 o        
+          9    2   3  -2  32     27.75     41.40      8.01 o  
+         10    1  -1   3 -32     59.22     65.53      8.11 o       
+         10    2   3  -1  32     59.22     65.53      8.11 o 
+
+;
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    _example_detail
+;
+ The twinning example presented here shows twinning by merohedry for
+ a trigonal crystal system. The simulated space group is P 32 2 1, but
+ the true space group is P 32. The twin operation chosen is 2: x, x, 0 in
+ P 32 2 1 corresponding to operation (by rows) 0, 1, 0 / 1, 0, 0 / 0, 0, -1
+ [see Table 11.2.2.1 of International Tables for Crystallography
+ (2005), Vol. A].
+
+ The TWIN_REFLN loop gives the properties of each diffraction peak
+ (identified by _twin_refln_datum_id) which is indexed 
+ to both the twin individuals.
+ 
+ In each of the loops shown in this example the first items on a line 
+ are the list reference.  While the list reference must be present 
+ in every loop, it is not necessary that it should be declared as the
+first item in the loop.
+;
+
+
+data_twin_dimensionality
+    _name                  '_twin_dimensionality'
+    _category              twin
+    _type                  char
+    _list                  no
+    loop_ _enumeration
+    	  _enumeration_detail
+              triperiodic   'common lattice in three dimensions'
+              diperiodic    'common lattice in two dimensions'
+              monoperiodic  'common lattice in one dimension'
+    _definition
+;
+   The degree of overlap between the twin lattices.  
+   Most twin lattice symmetry (TLS) and twin lattice quasi-symmetry (TLQS) 
+   twins as defined by Donnay and Donnay will be triperiodic.  
+
+   Reference: Donnay, G. & Donnay, J. D. H. (1974). Can. Mineral. 12, 422-425. 
+;
+
+data_twin_formation_mechanism
+    _name         '_twin_formation_mechanism'
+    _category     twin
+    _type         char
+    _list         no
+    loop_ 
+       _enumeration
+    	  _enumeration_detail
+        gt    'growth twin formed during crystal growth'
+        tt    'transformation twin formed during phase transition'
+        mt    'mechanical twin formed as a result of mechanical action'
+    _definition
+;
+     A description of the method of twin formation.
+;
+
+data_twin_morphology
+    _name       '_twin_morphology'
+    _category   twin
+    _type       char
+    _list       no
+    loop_ 
+       _enumeration
+       _enumeration_detail
+        contact        'separated by a surface'
+        penetration    'sharing a volume'
+        simple         'individuals are not repeated'
+        polysynthetic  'individuals repeat in approximately linear arrangement'
+        cyclic         'individuals repeat in closed edifice'
+
+    _definition
+;
+ The physical relationship of the different twins to one another.
+;
+
+data_twin_special_details
+    _name            '_twin_special_details'
+    _category         twin
+    _type             char
+    _list             no
+    _example
+;   Individuals 3 and 4 arise from form (I) following an
+    enantiotropic phase transition by sudden cooling in
+    a cryostat to 173K. 
+;
+    _definition
+;
+    Information about twinning in the sample not contained in other data items.
+;
+
+
+##########################
+## TWIN_INDIVIDUAL      ##
+##########################
+
+data_twin_individual_[]
+    _name            '_twin_individual_[]'
+    _category        category_overview
+    _type            null
+    _definition
+;        Data items in the TWIN_INDIVIDUAL category describe properties 
+         of each twinned individual, and the symmetry relationships 
+         between the individuals.
+;
+ 
+data_twin_individual_id
+     _name                '_twin_individual_id'
+     _category            twin_individual
+     _type                char
+     _list                yes
+     _list_mandatory      yes
+     _list_link_child	  
+              '_twin_refln_individual_id'
+     _definition
+;
+      The unique identifier for this twin individual. 
+      The twin for which _twin_individual_twin_matrix_
+      is the identity matrix is called the reference twin.  
+      It is recommended that the reference twin be labelled '1'. 
+;
+
+data_twin_individual_mass_fraction_refined
+     _name             '_twin_individual_mass_fraction_refined'
+     _category		  twin_individual
+     _type             numb
+     _type_conditions	  esd
+     _list             yes
+     _list_reference	  '_twin_individual_id'
+     _enumeration_range 0:1.0
+     _definition
+;
+      The refined mass fraction of this twin individual; the sum
+      of all mass fractions must equal unity within the limits of 
+      experimental uncertainty.
+;
+
+data_twin_individual_twin_lattice_type
+    _name                     '_twin_individual_twin_lattice_type'
+    _category                 twin
+    _type                     char
+    _list                     yes 
+    loop_ _enumeration
+    	  _enumeration_detail
+               ref        'reference twin'
+               mt_I       'merohedral class I (simple inversion)'
+               mt_II      'merohedral class II (mirror or twofold)'
+               mt_I+II    'class I and II simultaneously present'
+               rmt        'reticular merohedral'
+               pmt        'pseudo-merohedral'
+               rpmt       'reticular pseudo-merohedral'
+               nmt        'non-merohedral'
+    _definition
+;
+       Identification of the symmetry relationships between the 
+       twin lattices as described in International Tables 
+       for Crystallography (2004), Vol. C, Chapter 1.3.  
+       The twin with the identity matrix should be denoted as 'ref'.
+;
+
+
+data_twin_individual_twin_matrix_
+     loop_ _name          '_twin_individual_twin_matrix_11'
+                          '_twin_individual_twin_matrix_12'
+                          '_twin_individual_twin_matrix_13'
+                          '_twin_individual_twin_matrix_21'
+                          '_twin_individual_twin_matrix_22'
+                          '_twin_individual_twin_matrix_23'
+                          '_twin_individual_twin_matrix_31'
+                          '_twin_individual_twin_matrix_32'
+                          '_twin_individual_twin_matrix_33'
+     _category            'twin_individual'
+     _type		          numb
+     _list		          yes
+     _list_reference	     '_twin_individual_id'
+     _definition
+;
+     Elements of the matrix U that multiplies the Miller indices h,k,l 
+     of the reference twin to give the Miller indices h',k',l', 
+     of the twin specified by _twin_individual_id 
+
+                         (h' k' l') = U (h k l )
+
+     It follows that the reference twin must have U = I, the identity matrix. 
+;     
+
+
+################
+## twin_refln ##
+################
+
+data_twin_refln_[]
+    _name                      '_twin_refln_[]'
+    _category                    category_overview
+    _type                        null
+    _definition
+;
+    Items in the TWIN_REFLN category tabulate the calculated values of F^2^ 
+    for each peak observed in the diffraction pattern, 
+    together with the measured value of F^2^.
+    The calculated F^2^ for an observed peak is a weighted sum 
+    of the contribution of all the twin components.
+    The calculated structure factor for each twin contribution can also
+    be given.
+; 
+    loop_ _example
+          _example_detail
+# - Example 1  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;  
+  loop_
+     _twin_refln_datum_id
+     _twin_refln_individual_id
+     _twin_refln_index_h 
+     _twin_refln_index_k 
+     _twin_refln_index_l 
+     _twin_refln_F_squared_meas 
+     _twin_refln_F_squared_sigma 
+     _twin_refln_include_status 
+
+   1  1   1   0   0             1.03      0.18 o  
+   1  3   1   0   0             1.03      0.18 o         
+   2  1   2   0   0          1290.01     55.59 o  
+   2  3   2   0   0          1290.01     55.59 o  
+   3  1   3   0   0             2.59      0.42 o  
+   3  3   3   0   0             2.59      0.42 o  
+   4  1   4   0   0            30.98      1.47 o  
+   4  3   4   0   0            30.98      1.47 o  
+   5  1   5   0   0             1.97      0.96 o  
+   5  3   5   0   0             1.97      0.96 o  
+   6  1   6   0   0             1.55      1.14 o  
+   6  2   6   1   2             1.55      1.14 o  
+   6  3   6   0   0             1.55      1.14 o  
+   6  4   6   1   2             1.55      1.14 o  
+   7  1  -6   1   0             0.47      1.06 o  
+   7  2   6   2   2             0.47      1.06 o  
+;
+#---------------------------------------------------------------------
+
+# Description of Example 1
+;
+   This partial listing describes seven observed diffraction peaks 
+   in a four-individual twin by non-merohedry. The reference individual
+   is 1. Reflections from the other three individuals 2, 3 and 4 are 
+   present only if these cannot be experimentally separated from the 
+   reference individual. 
+;    
+
+# ---- Example 2 ------------------------------------------------------
+;
+  loop_
+     _twin_refln_datum_id
+     _twin_refln_individual_id
+     _twin_refln_index_h       
+     _twin_refln_index_k 
+     _twin_refln_index_l 
+     _twin_refln_F_squared_calc 
+     _twin_refln_F_squared_meas 
+     _twin_refln_F_squared_sigma 
+     _twin_refln_include_status 
+
+   620   1   1  -6  -3      200.22      207.88      3.35 o  
+   621   1  -1   6   3      225.34      224.15      3.62 o   
+   622   2  -1   6   3      184.64      196.34      3.95 o    
+   623   1  -1  -6  -3      173.28      181.13      3.06 o   
+   624   2  -1  -6  -3      143.40      152.05      2.78 o   
+   625   1   1   6   3      204.45      204.38      4.48 o   
+   625   2   3  -6   1      204.45      204.38      4.48 o   
+   626   1   3  -6  -3      240.97      241.19      3.75 o   
+   626   2  -3   6   3      240.97      241.19      3.75 o  
+   627   1   3   6   3      288.54      281.53      4.31 o   
+   627   2  -3  -6  -3      288.54      281.53      4.31 o  
+   628   1  -5  -6  -3      179.56      176.35      5.36 o   
+   628   2  -3   6   5      179.56      176.35      5.36 o  
+   629   1   5   6   3      235.04      238.84      4.06 o   
+   629   2  -5  -6  -3      235.04      238.84      4.06 o  
+;
+# --------------------------------------------------------------------
+;
+ This example is taken from Colombo Young & Gladfelter
+ [Inorg. Chem. (2000), 39, 4621-4624]. 
+ Two structures of nitronium tetranitratogallate
+ are reported as a result of an enantiotropic phase transition. 
+ The higher-temperature phase is in the tetragonal space group I-4, 
+ while the lower-temperature phase is a twin by non-merohedry 
+ in space group I2. 
+ The individuals are enantiomorphic as a result of the phase transition. 
+ In the listing it is clear that datums 620-624 do not contain 
+ overlapping reflections, whereas datums 625-629 contain contributions 
+ from both twins.
+;
+
+data_twin_refln_datum_id
+     _name            '_twin_refln_datum_id'
+     _category         twin_refln
+     _type             char
+     _list             yes
+     _list_mandatory   yes
+     _definition
+;
+     This item serves to identify an observed diffraction peak. 
+     It may include contributions from one or more twin components
+     and so may appear more than once in the list.  
+     The values of _twin_refln_F_squared_calc and 
+     _twin_refln_F_squared_meas indexed by
+     _twin_refln_datum_id include the contributions from all the twins.  
+     The diffraction peak is indexed by 
+     _twin_refln_index_h, *_k and *_l referred to the cell of 
+     the twin component identified by _twin_refln_individual_id.  
+     
+     The list reference includes both _twin_refln_datum_id and 
+     _twin_refln_individual_id.  The combination of these two items 
+     may only appear once in a list. 
+;	       
+
+data_twin_refln_F_squared_calc
+    _name                        '_twin_refln_F_squared_calc'
+    _category                    twin_refln
+    _type                        numb
+    _list                        yes
+loop_
+    _list_reference        '_twin_refln_datum_id' '_twin_refln_individual_id'
+    _definition 
+; 
+
+        Calculated value for the overall squared structure factors (in
+        electrons squared for X-ray diffraction) arising from all 
+        the twin contributions to the peak defined by _twin_refln_datum_id.  
+        The total contribution from all twins to a single observed
+        reflection is modelled according to the method of Pratt, Coyle
+        and Ibers as follows:
+
+        _twin_refln_F_squared_calc = osf * Sum (mf * _refln_F_squared_calc)
+
+        where osf is the overall scale factor,
+        mf is the mass fraction,
+        and the sum is taken over all the twin components that contribute
+        to this diffraction peak.
+
+        Reference: Pratt, C. S., Coyle, B. A. & Ibers, J. A. (1971).
+        J. Chem. Soc. A, pp. 2146-2151.
+;
+
+
+data_twin_refln_F_squared_calc_individual
+    _name                        '_twin_refln_F_squared_calc_individual'
+    _category                    twin_refln
+    _type                        numb
+    _list                        yes
+loop_
+    _list_reference        '_twin_refln_datum_id' '_twin_refln_individual_id'
+    _definition 
+; 
+
+        Contribution of the twin identified by _twin_refln_individual_id 
+        to _twin_refln_F_squared_calc. 
+
+        _twin_refln_F_squared_calc_individual = osf * mf * _refln_F_squared_calc
+
+        where osf is the overall scale factor, mf is the mass factor.
+        For X-ray diffraction the units are electrons squared.
+
+;
+
+data_twin_refln_F_squared_meas
+    _name                        '_twin_refln_F_squared_meas'
+    _category                    twin_refln
+    _type                        numb
+    _list                        yes
+loop_
+    _list_reference        '_twin_refln_datum_id' '_twin_refln_individual_id'
+
+    _definition 
+;
+         The observed value F^2^ of the peak referenced by 
+         _twin_refln_datum_id. This is typically the observed peak
+         intensity after Lorentz and polarization corrections.
+;
+
+data_twin_refln_F_squared_sigma
+    _name                        '_twin_refln_F_squared_sigma'
+    _category                    twin_refln
+    _type                        numb
+    _list                        yes
+loop_
+    _list_reference        '_twin_refln_datum_id' '_twin_refln_individual_id'
+
+    _definition 
+;
+            Standard uncertainty of _twin_refln_F_squared_meas
+;
+
+data_twin_refln_include_status
+     _name               '_twin_refln_include_status'
+     _category           twin_refln
+     _type               char
+     _list               yes
+loop_
+    _list_reference        '_twin_refln_datum_id' '_twin_refln_individual_id'
+    loop_ _enumeration
+          _enumeration_detail    
+     o
+;            (lower-case letter o for 'observed')
+             satisfies _refine_ls_d_res_high
+             satisfies _refine_ls_d_res_low
+             exceeds _reflns_threshold_expression
+;
+     <
+;            satisfies _refine_ls_d_res_high
+             satisfies _refine_ls_d_res_low
+             does not exceed _reflns_threshold_expression
+;
+     -       'systematically absent reflection'
+     x       'unreliable measurement -- not used'
+     r       'removed from the refinement for other reasons'
+     h       'does not satisfy _refine_ls_d_res_high'
+     l       'does not satisfy _refine_ls_d_res_low'
+          _enumeration_default         o
+
+     _definition
+;
+    A symbol indicating how the reflection is treated during refinement.
+;
+
+data_twin_refln_index_
+    loop_ _name              '_twin_refln_index_h'
+                             '_twin_refln_index_k'
+                             '_twin_refln_index_l'
+    _category                 twin_refln
+    _type                     numb
+    _list                     yes
+loop_
+    _list_reference        '_twin_refln_datum_id' '_twin_refln_individual_id'
+    _definition
+;
+     Miller indices of a reflection from the twin component 
+     labelled by _twin_refln_individual_id. 
+     The values of the Miller indices must correspond 
+     to the cell defined for this twin component.  
+;
+
+data_twin_refln_individual_id
+     _name               '_twin_refln_individual_id'
+     _category           twin_refln
+     _type               char
+     _list               yes
+     _list_mandatory     yes
+     _list_link_parent   '_twin_individual_id' 
+loop_
+    _list_reference        '_twin_refln_datum_id' '_twin_refln_individual_id'
+     _definition
+;
+      The unique identifier of the twin individual 
+      whose Miller indices are given in _twin_refln_index_.  
+      The ID must match a _twin_individual_id in the 
+      TWIN_INDIVIDUAL category.  
+
+     The list reference includes both _twin_refln_datum_id and 
+     _twin_refln_individual_id.  The combination of these two items 
+     may only appear once in a list. 
+;

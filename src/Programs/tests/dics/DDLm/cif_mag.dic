@@ -1,0 +1,4122 @@
+#\#CIF_2.0
+######################################################################
+#                                                                    #
+#    MAGNETIC CIF DICTIONARY                                         #
+#                                                                    #
+######################################################################
+
+data_MAGNETIC_CIF
+
+_dictionary.title                       MAGNETIC_CIF
+_dictionary.class                       Instance
+_dictionary.version                     0.9.8
+_dictionary.date                        2020-07-28
+_dictionary.ddl_conformance             3.13.1
+_description.text
+;
+      The magnetic CIF dictionary is an extension to the core CIF dictionary.
+      It defines datanames for describing magnetic structures.
+;
+
+save_MAGNETIC
+
+_definition.id                          MAGNETIC
+_definition.scope                       Category
+_definition.class                       Head
+_name.object_id                         MAGNETIC
+_description.text
+;
+   This category is the parent of all categories in the dictionary.
+   Head categories from other dictionaries are reparented to this category.
+;
+_import.get  [{"file":"cif_core.dic" "save":"CIF_CORE" "mode":"Full"}
+              {"file":"cif_ms_20240412.dic"   "save":"MS_GROUP"   "mode":"Full"}
+              {"file":"cif_twin.dic" "save":"TWIN_GROUP" "mode":"Full"}]
+              #{"file":"jana-mod.dic" "save":"JANA_GROUP" "mode":"Full"}]
+              #{"file":"cif_ms.dic"   "save":"CIF_MS"   "mode":"Full"}]
+save_
+
+
+###################################
+## ATOM_SITE_FOURIER_WAVE_VECTOR ##
+###################################
+
+save_atom_site_Fourier_wave_vector
+
+_definition.id                          atom_site_Fourier_wave_vector
+_name.object_id                         atom_site_Fourier_wave_vector
+_name.category_id                       MS_GROUP
+_definition.update                      2016-05-24
+_description.text
+;
+               Data items in the ATOM_SITE_FOURIER_WAVE_VECTOR category record
+               details about the wave vectors of the Fourier terms used in the
+               structural model. This category is fully defined in the modulated
+               structures dictionary.
+;
+_definition.scope                       Category
+_definition.class                       Loop
+loop_
+  _description_example.case
+  _description_example.detail
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;
+    loop_
+        _cell_wave_vector_seq_id
+        _cell_wave_vector_x
+        _cell_wave_vector_y
+        _cell_wave_vector_z
+              1   0.30000   0.30000   0.00000
+              2  -0.60000   0.30000   0.00000
+    loop_
+        _atom_site_Fourier_wave_vector_seq_id
+        _atom_site_Fourier_wave_vector_x
+        _atom_site_Fourier_wave_vector_y
+        _atom_site_Fourier_wave_vector_z
+        _atom_site_Fourier_wave_vector_q_coeff
+            1   -0.30000   0.60000   0.00000  [1   1]
+            2   -0.60000   0.30000   0.00000  [0   1]
+            3   -0.30000  -0.30000   0.00000  [-1  0]
+;
+;
+    Example 1 - Hypothetical example showing the modulation wave vector components
+    expressed using the array data item _atom_site_Fourier_wave_vector_q_coeff.
+;
+;
+loop_
+_cell_wave_vector_seq_id
+_cell_wave_vector_x
+_cell_wave_vector_y
+_cell_wave_vector_z
+  1   0.30000   0.30000   0.00000
+  2  -0.60000   0.30000   0.00000
+loop_
+_atom_site_Fourier_wave_vector_seq_id
+_atom_site_Fourier_wave_vector_x
+_atom_site_Fourier_wave_vector_y
+_atom_site_Fourier_wave_vector_z
+_atom_site_Fourier_wave_vector_q1_coeff
+_atom_site_Fourier_wave_vector_q2_coeff
+1   -0.30000   0.60000   0.00000  1  1
+2   -0.60000   0.30000   0.00000  0  1
+3   -0.30000  -0.30000   0.00000 -1  0
+;
+;
+    Example 2 - As example 1, but using separate data items for each
+    individual component of the modulation wave vector.
+;
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+save_
+
+save__atom_site_Fourier_wave_vector.q_coeff
+
+_definition.id                          '_atom_site_Fourier_wave_vector.q_coeff'
+_name.category_id                       atom_site_Fourier_wave_vector
+_name.object_id                         q_coeff
+loop_
+  _alias.definition_id                  '_atom_site_Fourier_wave_vector_q_coeff'
+_definition.update                      2016-06-21
+_description.text
+;
+    For a given incommensurate modulation that contributes to the
+    structure, the wave vector of the modulation can be expressed as an
+    integer linear combination of the d independent wave vectors that
+    define the (3+d)-dimensional superspace.  This tag holds each of
+    the integer coefficients as an array. At the
+    time of this writing, no examples with more than three independent
+    wave vectors are known, though there is no theoretical limit to the
+    number that could occur.  These tags are not explicitly magnetic; they
+    are equally applicable to any incommensurate modulation.
+;
+_type.contents                          Integer
+_type.container                         Array
+_type.dimension                         []
+save_
+
+save__atom_site_Fourier_wave_vector.q1_coeff
+_definition.id                         '_atom_site_Fourier_wave_vector.q1_coeff'
+_name.category_id                       atom_site_Fourier_wave_vector
+_name.object_id                         q1_coeff
+loop_
+  _alias.definition_id                 '_atom_site_Fourier_wave_vector_q1_coeff'
+_definition.update                      2016-06-21
+_description.text
+;
+    For a given incommensurate modulation that contributes to the
+    structure, the wave vector of the modulation can be expressed as an
+    integer linear combination of the d independent wave vectors that
+    define the (3+d)-dimensional superspace.  The q1_coeff tag holds the
+    integer coefficient of the contribution of the first independent wave
+    vector, the q2_coeff tag holds the integer coefficient of the
+    contribution of the second independent wave vector, and so on.  At the
+    time of this writing, no examples with more than three independent
+    wave vectors are known, though there is no theoretical limit to the
+    number that could occur.  These tags are not explicitly magnetic; they
+    are equally applicable to any incommensurate modulation.
+;
+_type.contents                          Integer
+_type.container                         Single
+loop_
+  _method.purpose
+  _method.expression
+  Evaluation
+;
+    with a as atom_site_Fourier_wave_vector
+    a.q1_coeff = a.q_coeff[0]
+;
+save_
+
+save__atom_site_Fourier_wave_vector.q2_coeff
+_definition.id                         '_atom_site_Fourier_wave_vector.q2_coeff'
+_name.category_id                       atom_site_Fourier_wave_vector
+_name.object_id                         q2_coeff
+loop_
+  _alias.definition_id                 '_atom_site_Fourier_wave_vector_q2_coeff'
+_definition.update                      2016-06-21
+_description.text
+;
+    For a given incommensurate modulation that contributes to the
+    structure, the wave vector of the modulation can be expressed as an
+    integer linear combination of the d independent wave vectors that
+    define the (3+d)-dimensional superspace.  The q1_coeff tag holds the
+    integer coefficient of the contribution of the first independent wave
+    vector, the q2_coeff tag holds the integer coefficient of the
+    contribution of the second independent wave vector, and so on.  At the
+    time of this writing, no examples with more than three independent
+    wave vectors are known, though there is no theoretical limit to the
+    number that could occur.  These tags are not explicitly magnetic; they
+    are equally applicable to any incommensurate modulation.
+;
+_type.contents                          Integer
+_type.container                         Single
+loop_
+  _method.purpose
+  _method.expression
+  Evaluation
+;
+    with a as atom_site_Fourier_wave_vector
+    a.q2_coeff = a.q_coeff[1]
+;
+
+save_
+
+save__atom_site_Fourier_wave_vector.q3_coeff
+_definition.id                         '_atom_site_Fourier_wave_vector.q3_coeff'
+_name.category_id                       atom_site_Fourier_wave_vector
+_name.object_id                         q3_coeff
+loop_
+  _alias.definition_id                 '_atom_site_Fourier_wave_vector_q3_coeff'
+_definition.update                      2016-06-21
+_description.text
+;
+    For a given incommensurate modulation that contributes to the
+    structure, the wave vector of the modulation can be expressed as an
+    integer linear combination of the d independent wave vectors that
+    define the (3+d)-dimensional superspace.  The q1_coeff tag holds the
+    integer coefficient of the contribution of the first independent wave
+    vector, the q2_coeff tag holds the integer coefficient of the
+    contribution of the second independent wave vector, and so on.  At the
+    time of this writing, no examples with more than three independent
+    wave vectors are known, though there is no theoretical limit to the
+    number that could occur.  These tags are not explicitly magnetic; they
+    are equally applicable to any incommensurate modulation.
+;
+_type.contents                          Integer
+_type.container                         Single
+save_
+
+
+
+######################
+## ATOM_SITE_MOMENT ##
+######################
+
+save_atom_site_moment
+
+_definition.id                          atom_site_moment
+_name.category_id                       atom_site
+_name.object_id                         atom_site_moment
+_definition.update                      2016-05-24
+_description.text
+;
+     This category provides a loop for presenting the magnetic moments
+     of atoms in one of several coordinate systems.  This is a child
+     category of the ATOM_SITE category, so that the magnetic moments
+     can either be listed alongside the non-magnetic atom properties
+     in the main ATOM_SITE loop, or be listed in a separate loop.
+;
+_definition.scope                       Category
+_definition.class                       Loop
+loop_
+    _category_key.name                  '_atom_site_moment.label'
+
+save_
+
+
+save__atom_site_moment.Cartn
+
+_definition.id                          '_atom_site_moment.Cartn'
+_name.category_id                       atom_site_moment
+_name.object_id                         Cartn
+loop_
+  _alias.definition_id
+  '_atom_site_moment_Cartn'
+
+_definition.update                      2016-05-24
+_description.text
+;
+     The atom-site magnetic moment vector specified according to a set
+     of orthogonal Cartesian axes where x||a and z||c* with y
+     completing a right-hand set.
+;
+_type.contents                          Real
+_type.dimension                         [3]
+_type.container                         Matrix
+_type.purpose                           Measurand
+_units.code                             Bohr_magnetons
+loop_
+  _method.purpose
+  _method.expression
+         Evaluation
+;
+    with a as atom_site_moment
+    a.Cartn = [a.Cartn_x,a.Cartn_y,a.Cartn_z]
+
+;
+
+save_
+
+
+save__atom_site_moment.Cartn_x
+
+_definition.id                          '_atom_site_moment.Cartn_x'
+_name.category_id                       atom_site_moment
+_name.object_id                         Cartn_x
+loop_
+  _alias.definition_id                  '_atom_site_moment_Cartn_x'
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+_description.text
+;
+     The x component of the atom-site magnetic moment vector
+     (see _atom_site_moment.Cartn).
+;
+_units.code                             Bohr_magnetons
+
+save_
+
+
+save__atom_site_moment.Cartn_y
+
+_definition.id                          '_atom_site_moment.Cartn_y'
+_name.category_id                       atom_site_moment
+_name.object_id                         Cartn_y
+loop_
+  _alias.definition_id                  '_atom_site_moment_Cartn_y'
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+_description.text
+;
+     The y component of the atom-site magnetic moment vector
+     (see _atom_site_moment.Cartn).
+
+;
+_units.code                             Bohr_magnetons
+
+save_
+
+
+save__atom_site_moment.Cartn_z
+
+_definition.id                          '_atom_site_moment.Cartn_z'
+_name.category_id                       atom_site_moment
+_name.object_id                         Cartn_z
+loop_
+  _alias.definition_id                  '_atom_site_moment_Cartn_z'
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+_description.text
+;
+     The z component of the atom-site magnetic moment vector
+     (see _atom_site_moment.Cartn).
+
+;
+_units.code                             Bohr_magnetons
+
+save_
+
+
+save__atom_site_moment.crystalaxis
+
+_definition.id                          '_atom_site_moment.crystalaxis'
+_name.category_id                       atom_site_moment
+_name.object_id                         crystalaxis
+loop_
+  _alias.definition_id                  '_atom_site_moment_crystalaxis'
+_definition.update                      2016-05-24
+_description.text
+;
+     The atom-site magnetic moment vector specified using components
+     parallel to each of the unit cell axes.  This is the recommended
+     coordinate system for  most magnetic structures.
+;
+_type.contents                          Real
+_type.container                         Matrix
+_type.dimension                         [3]
+_type.purpose                           Measurand
+_units.code                             Bohr_magnetons
+loop_
+  _method.purpose
+  _method.expression
+         Evaluation
+;
+    with a as atom_site_moment
+    a.crystalaxis = [a.crystalaxis_x,a.crystalaxis_y,a.crystalaxis_z]
+
+;
+
+save_
+
+
+save__atom_site_moment.crystalaxis_x
+
+_definition.id                          '_atom_site_moment.crystalaxis_x'
+_name.category_id                       atom_site_moment
+_name.object_id                         crystalaxis_x
+loop_
+  _alias.definition_id                  '_atom_site_moment_crystalaxis_x'
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+_description.text
+;
+     The component of the atom-site magnetic-moment vector parallel to the first
+     unit-cell axis.  See _atom_site_moment.crystalaxis.
+;
+_units.code                             Bohr_magnetons
+
+save_
+
+
+save__atom_site_moment.crystalaxis_y
+
+_definition.id                          '_atom_site_moment.crystalaxis_y'
+_name.category_id                       atom_site_moment
+_name.object_id                         crystalaxis_y
+loop_
+  _alias.definition_id                  '_atom_site_moment_crystalaxis_y'
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+_description.text
+;
+     The component of the atom-site magnetic-moment vector parallel to the second
+     unit-cell axis.  See _atom_site_moment.crystalaxis.
+;
+_units.code                             Bohr_magnetons
+
+save_
+
+
+save__atom_site_moment.crystalaxis_z
+
+_definition.id                          '_atom_site_moment.crystalaxis_z'
+_name.category_id                       atom_site_moment
+_name.object_id                         crystalaxis_z
+loop_
+  _alias.definition_id                  '_atom_site_moment_crystalaxis_z'
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+_description.text
+;
+     The component of the atom-site magnetic-moment vector parallel to the third
+     unit-cell axis.  See _atom_site_moment.crystalaxis.
+;
+_units.code                             Bohr_magnetons
+
+save_
+
+
+save__atom_site_moment.label
+
+_definition.id                          '_atom_site_moment.label'
+_name.category_id                       atom_site_moment
+_name.object_id                         label
+loop_
+  _alias.definition_id                  '_atom_site_moment_label'
+#_import.get [{"save":atom_site_id "file":templ_attr.cif}]
+_definition.update                      2016-05-24
+
+save_
+
+
+save__atom_site_moment.magnitude
+
+_definition.id                          '_atom_site_moment.magnitude'
+_name.category_id                       atom_site_moment
+_name.object_id                         magnitude
+loop_
+  _alias.definition_id                  '_atom_site_moment_magnitude'
+_definition.update                      2018-07-18
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+_description.text
+;
+     The magnitude of a magnetic moment vector.
+;
+_units.code                             Bohr_magnetons
+save_
+
+save__atom_site_moment.modulation_flag
+
+_definition.id                          '_atom_site_moment.modulation_flag'
+_name.category_id                       atom_site_moment
+_name.object_id                         modulation_flag
+loop_
+  _alias.definition_id                  '_atom_site_moment_modulation_flag'
+_definition.update                      2016-05-24
+_description.text
+;
+     A code that signals whether the structural model includes the
+     modulation of the magnetic moment of a given atom site.
+;
+_type.contents                          Code
+_type.container                         Single
+loop_
+  _enumeration_set.state
+  _enumeration_set.detail
+   'yes'            'magnetic modulation'
+   'y'              'abbreviation for "yes"'
+   'no'             'no magnetic modulation'
+   'n'              'abbreviation for "no"'
+
+save_
+
+
+save__atom_site_moment.refinement_flags_magnetic
+
+_definition.id                     '_atom_site_moment.refinement_flags_magnetic'
+_name.category_id                       atom_site_moment
+_name.object_id                         refinement_flags_magnetic
+loop_
+  _alias.definition_id             '_atom_site_moment_refinement_flags_magnetic'
+_definition.update                      2016-05-24
+_type.container                         Single
+_type.purpose                           State
+_description.text
+;
+    The constraints/restraints placed on the magnetic moment during
+    model refinement.
+;
+_type.contents                          Code
+loop_
+  _enumeration_set.state
+  _enumeration_set.detail
+         .         'no constraint on magnetic moment'
+         S         'special position constraint on magnetic moment'
+         M         'modulus restraint on magnetic moment'
+         A         'direction restraints on magnetic moment'
+         SM        'superposition of S and M constraints/restraints'
+         SA        'superposition of S and A constraints/restraints'
+         MA        'superposition of M and A constraints/restraints'
+         SMA       'superposition of S, M and A constraints/restraints'
+
+save_
+
+
+save__atom_site_moment.spherical_azimuthal
+
+_definition.id                          '_atom_site_moment.spherical_azimuthal'
+_name.category_id                       atom_site_moment
+_name.object_id                         spherical_azimuthal
+loop_
+  _alias.definition_id                  '_atom_site_moment_spherical_azimuthal'
+_definition.update                      2016-05-24
+_enumeration.range                      0.0:6.2831854
+_units.code                             radians
+_description.text
+;
+     The azimuthal angle of the atom-site magnetic moment vector
+     specified in spherical coordinates relative to a set of
+     orthogonal Cartesian axes where x||a and z||c* with y completing
+     a right-hand set.  The azimuthal angle is a right-handed rotation
+     around the +z axis starting from the +x side of the x-z plane.
+;
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+
+save_
+
+
+save__atom_site_moment.spherical_modulus
+
+_definition.id                          '_atom_site_moment.spherical_modulus'
+_name.category_id                       atom_site_moment
+_name.object_id                         spherical_modulus
+loop_
+  _alias.definition_id                  '_atom_site_moment_spherical_modulus'
+_definition.update                      2016-05-24
+_units.code                             Bohr_magnetons
+_description.text
+;
+     The modulus of the atom-site magnetic moment vector specified in
+     spherical coordinates relative to a set of orthogonal Cartesian
+     axes where x||a and z||c* with y completing a right-hand set.
+;
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+save_
+
+
+save__atom_site_moment.spherical_polar
+
+_definition.id                          '_atom_site_moment.spherical_polar'
+_name.category_id                       atom_site_moment
+_name.object_id                         spherical_polar
+loop_
+  _alias.definition_id                  '_atom_site_moment_spherical_polar'
+_definition.update                      2016-05-24
+_enumeration.range                      0.0:3.1415927
+_units.code                             radians
+_description.text
+;
+     The polar angle of the atom-site magnetic moment vector specified
+     in spherical coordinates relative to a set of orthogonal
+     Cartesian axes where x||a and z||c* with y completing a
+     right-hand set. The polar angle is measured relative to the +z axis.
+;
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+
+save_
+
+
+save__atom_site_moment.symmform
+
+_definition.id                          '_atom_site_moment.symmform'
+_name.category_id                       atom_site_moment
+_name.object_id                         symmform
+loop_
+  _alias.definition_id                  '_atom_site_moment_symmform'
+_definition.update                      2016-05-24
+_description.text
+;
+     A symbolic expression that indicates the symmetry-restricted form
+     of the components of  the magnetic moment vector of the atom.
+     Unlike the positional coordinates of an atom, its magnetic moment
+     has no translational component to be represented.
+;
+_type.contents                          Text
+_type.container                         Single
+loop_
+  _description_example.case
+  _description_example.detail
+         'mx,my,mz'          'no symmetry restrictions'
+         'mx,-mx,0'
+;                             y component equal and opposite to x component
+                              with z component zero
+;
+         'mx,0,mz'           'y component zero'
+
+save_
+
+
+save_atom_site_rotation
+
+_definition.id                          atom_site_rotation
+_name.category_id                       atom_site
+_name.object_id                         atom_site_rotation
+_definition.update                      2018-07-18
+_description.text
+;
+     This category provides a loop for presenting atom-site axial-vector
+     rotations in several coordinate systems. Such axial vectors can
+     be applied to describe the rotations of molecular or polyhedral
+     rigid bodies about their pivot atoms or sites, though the use of this
+     category to describe patterns of rotations does not require
+     that rigid bodies be explicitly defined. Because magnetic moments
+     and rotations are both axial rather than polar vectors, their
+     descriptive requirements are highly analogous, except that static
+     rotations are insensitive to time-reversal, so that normal
+     (non-magnetic) symmetry groups are appropriate. This is a child category
+     of the ATOM_SITE category, though pivot-site rotations will typically
+     be listed in a separate loop; the category items mirror those of defined
+     for the ATOM_SITE_MOMENT category.
+;
+_definition.scope                       Category
+_definition.class                       Loop
+loop_
+    _category_key.name                  '_atom_site_rotation.label'
+
+save_
+
+
+save__atom_site_rotation.Cartn
+
+_definition.id                          '_atom_site_rotation.Cartn'
+_name.category_id                       atom_site_rotation
+_name.object_id                         Cartn
+loop_
+  _alias.definition_id
+  '_atom_site_rotation_Cartn'
+
+_definition.update                      2018-07-18
+_description.text
+;
+     The atom-site rotation vector specified according to a set
+     of orthogonal Cartesian axes where x||a and z||c* with y
+     completing a right-hand set.
+;
+_type.contents                          Real
+_type.dimension                         [3]
+_type.container                         Matrix
+_type.purpose                           Measurand
+_units.code                             radians
+loop_
+  _method.purpose
+  _method.expression
+         Evaluation
+;
+    with a as atom_site_rotation
+    a.Cartn = [a.Cartn_x,a.Cartn_y,a.Cartn_z]
+
+;
+
+save_
+
+
+save__atom_site_rotation.Cartn_x
+
+_definition.id                          '_atom_site_rotation.Cartn_x'
+_name.category_id                       atom_site_rotation
+_name.object_id                         Cartn_x
+loop_
+  _alias.definition_id                  '_atom_site_rotation_Cartn_x'
+_definition.update                      2018-07-18
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+_description.text
+;
+     The x component of the atom-site rotation vector
+     (see _atom_site_rotation.Cartn).
+;
+_units.code                             radians
+
+save_
+
+
+save__atom_site_rotation.Cartn_y
+
+_definition.id                          '_atom_site_rotation.Cartn_y'
+_name.category_id                       atom_site_rotation
+_name.object_id                         Cartn_y
+loop_
+  _alias.definition_id                  '_atom_site_rotation_Cartn_y'
+_definition.update                      2018-07-18
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+_description.text
+;
+     The y component of the atom-site rotation vector
+     (see _atom_site_rotation.Cartn).
+
+;
+_units.code                             radians
+
+save_
+
+
+save__atom_site_rotation.Cartn_z
+
+_definition.id                          '_atom_site_rotation.Cartn_z'
+_name.category_id                       atom_site_rotation
+_name.object_id                         Cartn_z
+loop_
+  _alias.definition_id                  '_atom_site_rotation_Cartn_z'
+_definition.update                      2018-07-18
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+_description.text
+;
+     The z component of the atom-site rotation vector
+     (see _atom_site_rotation.Cartn).
+
+;
+_units.code                             radians
+
+save_
+
+
+save__atom_site_rotation.crystalaxis
+
+_definition.id                          '_atom_site_rotation.crystalaxis'
+_name.category_id                       atom_site_rotation
+_name.object_id                         crystalaxis
+loop_
+  _alias.definition_id                  '_atom_site_rotation_crystalaxis'
+_definition.update                      2018-07-18
+_description.text
+;
+     The atom-site rotation vector specified using the components parallel
+     to each of the unit-cell axes.  This is the recommended coordinate
+     system for presenting axial rotation vectors.
+;
+_type.contents                          Real
+_type.container                         Matrix
+_type.dimension                         [3]
+_type.purpose                           Measurand
+_units.code                             radians
+loop_
+  _method.purpose
+  _method.expression
+         Evaluation
+;
+    with a as atom_site_rotation
+    a.crystalaxis = [a.crystalaxis_x,a.crystalaxis_y,a.crystalaxis_z]
+
+;
+
+save_
+
+
+save__atom_site_rotation.crystalaxis_x
+
+_definition.id                          '_atom_site_rotation.crystalaxis_x'
+_name.category_id                       atom_site_rotation
+_name.object_id                         crystalaxis_x
+loop_
+  _alias.definition_id                  '_atom_site_rotation_crystalaxis_x'
+_definition.update                      2018-07-18
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+_description.text
+;
+     The component of the atom-site rotation vector parallel to the first unit-cell axis.  See _atom_site_rotation.crystalaxis.
+;
+_units.code                             radians
+
+save_
+
+
+save__atom_site_rotation.crystalaxis_y
+
+_definition.id                          '_atom_site_rotation.crystalaxis_y'
+_name.category_id                       atom_site_rotation
+_name.object_id                         crystalaxis_y
+loop_
+  _alias.definition_id                  '_atom_site_rotation_crystalaxis_y'
+_definition.update                      2018-07-18
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+_description.text
+;
+     The component of the atom-site rotation vector parallel to the second
+unit-cell axis.  See _atom_site_rotation.crystalaxis.
+;
+_units.code                             radians
+
+save_
+
+
+save__atom_site_rotation.crystalaxis_z
+
+_definition.id                          '_atom_site_rotation.crystalaxis_z'
+_name.category_id                       atom_site_rotation
+_name.object_id                         crystalaxis_z
+loop_
+  _alias.definition_id                  '_atom_site_rotation_crystalaxis_z'
+_definition.update                      2018-07-18
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           radians
+_description.text
+;
+     The component of the atom-site rotation vector parallel to the third unit-cell axis.  See _atom_site_rotation.crystalaxis.
+;
+_units.code                             radians
+
+save_
+
+
+save__atom_site_rotation.label
+
+_definition.id                          '_atom_site_rotation.label'
+_name.category_id                       atom_site_rotation
+_name.object_id                         label
+loop_
+  _alias.definition_id                  '_atom_site_rotation_label'
+#_import.get [{"save":atom_site_id "file":templ_attr.cif}]
+_definition.update                      2018-07-18
+
+save_
+
+
+save__atom_site_rotation.modulation_flag
+
+_definition.id                          '_atom_site_rotation.modulation_flag'
+_name.category_id                       atom_site_rotation
+_name.object_id                         modulation_flag
+loop_
+  _alias.definition_id                  '_atom_site_rotation_modulation_flag'
+_definition.update                      2018-07-18
+_description.text
+;
+     A code that signals whether the structural model includes the
+     modulation of the rotation of a given atom site.
+;
+_type.contents                          Code
+_type.container                         Single
+loop_
+  _enumeration_set.state
+  _enumeration_set.detail
+   'yes'            'rotational modulation'
+   'y'              'abbreviation for "yes"'
+   'no'             'no rotational modulation'
+   'n'              'abbreviation for "no"'
+
+save_
+
+
+save__atom_site_rotation.refinement_flags_rotational
+
+_definition.id                     '_atom_site_rotation.refinement_flags_rotational'
+_name.category_id                       atom_site_rotation
+_name.object_id                         refinement_flags_rotational
+loop_
+  _alias.definition_id        '_atom_site_rotation_refinement_flags_rotational'
+_definition.update                      2018-07-18
+_type.container                         Single
+_type.purpose                           State
+_description.text
+;
+    The constraints/restraints placed on the rotation vector during
+    model refinement.
+;
+_type.contents                          Code
+loop_
+  _enumeration_set.state
+  _enumeration_set.detail
+         .         'no constraint on rotation'
+         S         'special position constraint on rotation'
+         M         'modulus restraint on rotation'
+         A         'direction restraints on rotation'
+         SM        'superposition of S and M constraints/restraints'
+         SA        'superposition of S and A constraints/restraints'
+         MA        'superposition of M and A constraints/restraints'
+         SMA       'superposition of S, M and A constraints/restraints'
+
+save_
+
+
+save__atom_site_rotation.spherical_azimuthal
+
+_definition.id                          '_atom_site_rotation.spherical_azimuthal'
+_name.category_id                       atom_site_rotation
+_name.object_id                         spherical_azimuthal
+loop_
+  _alias.definition_id                  '_atom_site_rotation_spherical_azimuthal'
+_definition.update                      2018-07-18
+_enumeration.range                      0.0:6.2831854
+_units.code                             radians
+_description.text
+;
+     The azimuthal angle of the atom-site rotation vector
+     specified in spherical coordinates relative to a set of
+     orthogonal Cartesian axes where x||a and z||c* with y completing
+     a right-hand set.  The azimuthal angle is a right-handed rotation
+     around the +z axis starting from the +x side of the x-z plane.
+;
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+
+save_
+
+
+save__atom_site_rotation.spherical_modulus
+
+_definition.id                          '_atom_site_rotation.spherical_modulus'
+_name.category_id                       atom_site_rotation
+_name.object_id                         spherical_modulus
+loop_
+  _alias.definition_id                  '_atom_site_rotation_spherical_modulus'
+_definition.update                      2018-07-18
+_units.code                             radians
+_description.text
+;
+     The modulus of the atom-site rotation vector specified in
+     spherical coordinates relative to a set of orthogonal Cartesian
+     axes where x||a and z||c* with y completing a right-hand set.
+;
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+save_
+
+
+save__atom_site_rotation.spherical_polar
+
+_definition.id                          '_atom_site_rotation.spherical_polar'
+_name.category_id                       atom_site_rotation
+_name.object_id                         spherical_polar
+loop_
+  _alias.definition_id                  '_atom_site_rotation_spherical_polar'
+_definition.update                      2018-07-18
+_enumeration.range                      0.0:3.1415927
+_units.code                             radians
+_description.text
+;
+     The polar angle of the atom-site rotation vector specified
+     in spherical coordinates relative to a set of orthogonal
+     Cartesian axes where x||a and z||c* with y completing a
+     right-hand set. The polar angle is measured relative to the +z axis.
+;
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+
+save_
+
+
+save__atom_site_rotation.symmform
+
+_definition.id                          '_atom_site_rotation.symmform'
+_name.category_id                       atom_site_rotation
+_name.object_id                         symmform
+loop_
+  _alias.definition_id                  '_atom_site_rotation_symmform'
+_definition.update                      2018-07-18
+_description.text
+;
+     A symbolic expression that indicates the symmetry-restricted form
+     of the components of the rotation vector of the atom.
+     Unlike the positional coordinates of an atom, its rotation
+     has no translational component to be represented.
+;
+_type.contents                          Text
+_type.container                         Single
+loop_
+  _description_example.case
+  _description_example.detail
+         'rx,ry,rz'          'no symmetry restrictions'
+         'rx,-rx,0'
+;                             y component equal and opposite to x component
+                              with z component zero
+;
+         'rx,0,rz'           'y component zero'
+
+save_
+
+
+save__atom_site_rotation.magnitude
+
+_definition.id                          '_atom_site_rotation.magnitude'
+_name.category_id                       atom_site_rotation
+_name.object_id                         magnitude
+loop_
+  _alias.definition_id                  '_atom_site_rotation_magnitude'
+_definition.update                      2018-07-18
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+_description.text
+;
+     The magnitude of a rotation vector.
+;
+_units.code                             radians
+save_
+
+
+save_atom_site_moment_Fourier
+
+_definition.id                          atom_site_moment_Fourier
+_name.category_id                       MAGNETIC
+_name.object_id                         atom_site_moment_Fourier
+_definition.update                      2016-05-24
+_description.text
+;
+     Data items in the ATOM_SITE_MOMENT_FOURIER category record
+     details about the Fourier components of the magnetic modulation
+     of an atom site in a modulated structure. The (in general
+     complex) coefficients of each Fourier component belong to the
+     child category ATOM_SITE_MOMENT_FOURIER_PARAM, which may be
+     listed separately.
+;
+_definition.scope                       Category
+_definition.class                       Loop
+_category.key_id                        '_atom_site_moment_Fourier.id'
+loop_
+    _category_key.name
+        '_atom_site_moment_Fourier.id'
+save_
+
+
+save__atom_site_moment_Fourier.atom_site_label
+
+_definition.id                       '_atom_site_moment_Fourier.atom_site_label'
+_name.category_id                       atom_site_moment_Fourier
+_name.object_id                         atom_site_label
+_definition.update                      2016-05-24
+
+_description.text
+;
+     This string uniquely identifies the atom for which the Fourier
+     modulation  components are to be specified.  The Fourier
+     modulation components are always presented in a separate loop
+     (not in the ATOM_SITE loop).  This string must match an
+     _atom_site.label from the ATOM_SITE loop, and otherwise conform
+     to the rules for _atom_site_label.
+;
+_type.contents                          Code
+_type.container                         Single
+_type.purpose                           Encode
+_type.source                            Assigned
+_name.linked_item_id                    '_atom_site_moment.label'
+
+save_
+
+
+save__atom_site_moment_Fourier.axis
+
+_definition.id                          '_atom_site_moment_Fourier.axis'
+_name.category_id                       atom_site_moment_Fourier
+_name.object_id                         axis
+_definition.update                      2016-05-24
+_description.text
+;
+     Specifies the coordinate system in which the Fourier modulation
+     components are to be presented and an axis in that coordinate
+     system.
+
+     Analogous tags: msCIF:_atom_site_displace_Fourier.axis,
+     msCIF:_atom_site_rot_Fourier.axis,
+     msCIF:_atom_site_U_Fourier.tens_elem
+;
+_type.contents                          Code
+_type.container                         Single
+_type.source                            Assigned
+_type.purpose                           State
+loop_
+  _enumeration_set.state
+  _enumeration_set.detail
+         Cx        'Cartesian x coordinate'
+         Cy        'Cartesian y coordinate'
+         Cz        'Cartesian z coordinate'
+         x         'crystal a-axis coordinate'
+         y         'crystal b-axis coordinate'
+         z         'crystal c-axis coordinate'
+         mod       'length part of spherical coordinate'
+         pol       'polar angle in spherical coordinates'
+         azi       'azimuthal angle in spherical coordinates'
+         a1        'user-defined coordinate 1'
+         a2        'user-defined coordinate 2'
+         a3        'user-defined coordinate 3'
+
+save_
+
+
+save__atom_site_moment_Fourier.id
+
+_definition.id                          '_atom_site_moment_Fourier.id'
+_name.category_id                       atom_site_moment_Fourier
+_name.object_id                         id
+_definition.update                      2016-05-24
+
+_description.text
+;
+     An arbitrary code that uniquely identifies each of the components
+     of each of the magnetic Fourier modulations of each of the atoms
+     in the structure.  It will typically include an atom name, a
+     wave-vector id, and a coordinate axis. A sequence of positive
+     integers could also be used.
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Key
+loop_
+  _description_example.case
+         K2_1_z
+         Se1_2_x
+
+save_
+
+
+save__atom_site_moment_Fourier.wave_vector_seq_id
+
+_definition.id                    '_atom_site_moment_Fourier.wave_vector_seq_id'
+_name.category_id                       atom_site_moment_Fourier
+_name.object_id                         wave_vector_seq_id
+_definition.update                      2016-05-24
+
+_description.text
+;
+     An arbitrary code that uniquely identifies the wave vector for
+     which magnetic Fourier modulation components are to be described
+     within the ATOM_SITE_MOMENT_FOURIER loop.  It must match one of
+     the _atom_site_Fourier_wave_vector.seq_id values in the
+     ATOM_SITE_FOURIER_WAVE_VECTOR loop.
+
+     Analogous tags:
+     msCIF:_atom_site_displace_Fourier_wave_vector.seq_id,
+     msCIF:_atom_site_rot_Fourier_wave_vector.seq_id,
+     msCIF:_atom_site_occ_Fourier_wave_vector.seq_id,
+     msCIF:_atom_site_U_Fourier_wave_vector.seq_id
+;
+_type.contents                          Text
+_type.container                         Single
+
+save_
+
+
+####################################
+## ATOM_SITE_MOMENT_FOURIER_PARAM ##
+####################################
+
+save_atom_site_moment_Fourier_param
+
+_definition.id                          atom_site_moment_Fourier_param
+_name.category_id                       atom_site_moment_Fourier
+_name.object_id                         atom_site_moment_Fourier_param
+_definition.update                      2016-05-24
+_description.text
+;
+     Data items in this category record details about the
+     coefficients of the Fourier series used to describe the  magnetic
+     modulation of an atom. This is a child category of  the
+     ATOM_SITE_MOMENT_FOURIER category; so that magnetic Fourier
+     components can either be listed within the
+     ATOM_SITE_MOMENT_FOURIER loop, or else listed in a separate
+     loop.
+
+     Analogous tags: _atom_site_displace_Fourier_param.*,
+     _atom_site_rot_Fourier_param.*,
+     _atom_site_occ_Fourier_param.*,
+     _atom_site_U_Fourier_param.*
+;
+_definition.scope                       Category
+_definition.class                       Loop
+_category.key_id                        '_atom_site_moment_Fourier_param.id'
+loop_
+    _category_key.name
+       '_atom_site_moment_Fourier_param.id'
+loop_
+  _description_example.case
+  _description_example.detail
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;
+    loop_
+        _cell_wave_vector_seq_id
+        _cell_wave_vector_x
+        _cell_wave_vector_y
+        _cell_wave_vector_z
+              1   0.30000   0.30000   0.00000
+              2  -0.60000   0.30000   0.00000
+    loop_
+        _atom_site_Fourier_wave_vector_seq_id
+        _atom_site_Fourier_wave_vector_x
+        _atom_site_Fourier_wave_vector_y
+        _atom_site_Fourier_wave_vector_z
+        _atom_site_Fourier_wave_vector_q1_coeff
+        _atom_site_Fourier_wave_vector_q2_coeff
+            1   -0.30000   0.60000   0.00000  1  1
+            2   -0.60000   0.30000   0.00000  0  1
+            3   -0.30000  -0.30000   0.00000 -1  0
+    loop_
+        _atom_site_moment_Fourier.id
+        _atom_site_moment_Fourier.atom_site_label
+        _atom_site_moment_Fourier.wave_vector_seq_id
+        _atom_site_moment_Fourier.axis
+        _atom_site_moment_Fourier_param.cos
+        _atom_site_moment_Fourier_param.sin
+        _atom_site_moment_Fourier_param.cos_symmform
+        _atom_site_moment_Fourier_param.sin_symmform
+            1  Fe_1 1 x  0.00000  0.84852  0            mxs
+            2  Fe_1 1 y  0.00000  0.42426  0     0.50000*mxs
+            3  Fe_1 1 z  0.00000  0.00000  0            0
+            4  Fe_1 2 x  0.00000 -0.42426  0    -0.50000*mxs
+            5  Fe_1 2 y  0.00000 -0.84852  0           -mxs
+            6  Fe_1 2 z  0.00000  0.00000  0            0
+            7  Fe_1 3 x -0.42426  0.00000 -0.50000*mxs  0
+            8  Fe_1 3 y  0.42426  0.00000  0.50000*mxs  0
+            9  Fe_1 3 z  0.00000  0.00000  0            0
+;
+;
+    Example 1 - Hypothetical example showing the symmetry-restricted form
+                of cosine and sine components of the modulation vector
+                for a specific Wyckoff site.
+;
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+save_
+
+
+save__atom_site_moment_Fourier_param.cos
+
+_definition.id                          '_atom_site_moment_Fourier_param.cos'
+_name.category_id                       atom_site_moment_Fourier_param
+_name.object_id                         cos
+loop_
+  _alias.definition_id                  '_atom_site_moment_Fourier_param_cos'
+_definition.update                      2016-05-24
+_units.code                             Bohr_magnetons
+_description.text
+;
+     The cosine component of the magnetic Fourier modulation of a
+     specific atom, wave vector and coordinate axis.  It is always
+     used together with the sine component, but not with the modulus
+     or phase components.
+
+     Analogous tags: msCIF:_atom_site_displace_Fourier_param.cos,
+     msCIF:_atom_site_rot_Fourier_param.cos,
+     msCIF:_atom_site_occ_Fourier_param.cos,
+     msCIF:_atom_site_U_Fourier_param.cos
+     Also see the technical descriptions of the analogous tags.
+;
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+
+save_
+
+
+save__atom_site_moment_Fourier_param.cos_symmform
+
+_definition.id                    '_atom_site_moment_Fourier_param.cos_symmform'
+_name.category_id                       atom_site_moment_Fourier_param
+_name.object_id                         cos_symmform
+loop_
+  _alias.definition_id            '_atom_site_moment_Fourier_param_cos_symmform'
+_definition.update                      2016-05-24
+_type.contents                          Text
+_type.container                         Single
+_description.text
+;
+     A symbolic expression that indicates the symmetry-restricted form of
+     this  modulation component for the affected Wyckoff site.  The
+     expression can include a zero, a symbol, or a symbol
+     multiplied ('*') by a numerical prefactor. An allowed symbol is a
+     string that contains the following parts.  (1) The 1st character
+     is "m" for magnetic. (2) The 2nd character is one of "x", "y", or
+     "z", to indicate the magnetic component to be modulated. (3) The
+     3rd character is one of "m" for modulus, "p" for phase, "c" for
+     cosine, or "s" for sine. (4) The 4th character is an integer that
+     indicates the modulation vector. To use the same symbol with modulation
+     components belonging to symmetry related axes and/or wave vectors,
+     is to point out symmetry relationships amongst them. Obviously,
+     modulation components belonging to symmetry-distinct atoms,
+     axes, or wave vectors cannot be related by symmetry.
+
+     Analogous tags: none, though analogous tags are needed for
+     displace, occ, U, and aniso waves.
+;
+
+save_
+
+
+save__atom_site_moment_Fourier_param.id
+
+_definition.id                          '_atom_site_moment_Fourier_param.id'
+_name.category_id                       atom_site_moment_Fourier_param
+_name.object_id                         id
+loop_
+  _alias.definition_id                  '_atom_site_moment_Fourier_param_id'
+_definition.update                      2016-05-24
+
+_description.text
+;
+     An arbitrary code that uniquely identifies each of the components
+     of each of the magnetic Fourier modulations of each of the atoms
+     in the structure.  It will typically include an atom name, a
+     wave-vector id, and a coordinate axis. A sequence of positive
+     integers could also be used.  This tag is only used when the
+     magnetic Fourier modulation components are split off into a
+     separate loop, which is less typical.  When used, its value must
+     match one of the  _atom_site_moment_Fourier.id values in the
+     ATOM_SITE_MOMENT_FOURIER loop.
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Link
+_name.linked_item_id                    '_atom_site_moment_Fourier.id'
+
+save_
+
+
+save__atom_site_moment_Fourier_param.modulus
+
+_definition.id                         '_atom_site_moment_Fourier_param.modulus'
+_name.category_id                       atom_site_moment_Fourier_param
+_name.object_id                         modulus
+loop_
+  _alias.definition_id                 '_atom_site_moment_Fourier_param_modulus'
+_definition.update                      2016-05-24
+_units.code                             Bohr_magnetons
+_description.text
+;
+     The modulus component of the magnetic Fourier modulation of a
+     specific atom, wave vector and coordinate axis.  It is always
+     used together with the phase component, but not with the cosine
+     or sine components.
+
+     Analogous tags: msCIF:_atom_site_displace_Fourier_param.modulus,
+     msCIF:_atom_site_rot_Fourier_param.modulus,
+     msCIF:_atom_site_occ_Fourier_param.modulus,
+     msCIF:_atom_site_U_Fourier_param.modulus
+     Also see the technical descriptions of the analogous tags.
+;
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+
+save_
+
+
+save__atom_site_moment_Fourier_param.modulus_symmform
+
+_definition.id                '_atom_site_moment_Fourier_param.modulus_symmform'
+_name.category_id                       atom_site_moment_Fourier_param
+_name.object_id                         modulus_symmform
+loop_
+  _alias.definition_id        '_atom_site_moment_Fourier_param_modulus_symmform'
+_definition.update                      2016-05-24
+_type.contents                          Text
+_type.container                         Single
+_description.text
+;
+     See the description and example given for the
+     _atom_site_moment_Fourier_param.cos_symmform item.
+;
+
+save_
+
+
+save__atom_site_moment_Fourier_param.phase
+
+_definition.id                          '_atom_site_moment_Fourier_param.phase'
+_name.category_id                       atom_site_moment_Fourier_param
+_name.object_id                         phase
+loop_
+  _alias.definition_id                  '_atom_site_moment_Fourier_param_phase'
+_definition.update                      2016-05-24
+_enumeration.range                      -1.0:1.0
+_units.code                             cycles
+_description.text
+;
+     The phase component of the magnetic Fourier modulation of a
+     specific atom, wave vector and coordinate axis.  It is always
+     used together with the modulus component, but not with the cosine
+     or sine components. This parameter will be unitless regardless of
+     the coordinate system used.
+
+     Analogous tags: msCIF:_atom_site_displacive_Fourier_param.phase,
+     msCIF:_atom_site_rot_Fourier_param.phase,
+     msCIF:_atom_site_occ_Fourier_param.phase,
+     msCIF:_atom_site_U_Fourier_param.phase
+     Also see the technical descriptions of the analogous tags.
+;
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+
+save_
+
+
+save__atom_site_moment_Fourier_param.phase_symmform
+
+_definition.id                  '_atom_site_moment_Fourier_param.phase_symmform'
+_name.category_id                       atom_site_moment_Fourier_param
+_name.object_id                         phase_symmform
+loop_
+  _alias.definition_id          '_atom_site_moment_Fourier_param_phase_symmform'
+_definition.update                      2016-05-24
+_type.contents                          Text
+_type.container                         Single
+_description.text
+;
+     See the description and example given for the
+     _atom_site_moment_Fourier_param.cos_symmform item.
+;
+
+save_
+
+
+save__atom_site_moment_Fourier_param.sin
+
+_definition.id                          '_atom_site_moment_Fourier_param.sin'
+_name.category_id                       atom_site_moment_Fourier_param
+_name.object_id                         sin
+loop_
+  _alias.definition_id                  '_atom_site_moment_Fourier_param_sin'
+_definition.update                      2016-05-24
+_units.code                             Bohr_magnetons
+_description.text
+;
+     The sine component of the magnetic Fourier modulation of a
+     specific atom, wave vector and coordinate axis.  It is always
+     used together with the cosine component, but not with the modulus
+     or phase components.
+
+     Analogous tags: msCIF:_atom_site_displace_Fourier_param.sin,
+     msCIF:_atom_site_rot_Fourier_param.sin,
+     msCIF:_atom_site_occ_Fourier_param.sin,
+     msCIF:_atom_site_U_Fourier_param.sin
+     Also see the technical descriptions of the analogous tags.
+;
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+
+save_
+
+
+save__atom_site_moment_Fourier_param.sin_symmform
+
+_definition.id                    '_atom_site_moment_Fourier_param.sin_symmform'
+_name.category_id                       atom_site_moment_Fourier_param
+_name.object_id                         sin_symmform
+loop_
+  _alias.definition_id            '_atom_site_moment_Fourier_param_sin_symmform'
+_definition.update                      2016-05-24
+_type.contents                          Text
+_type.container                         Single
+
+_description.text
+;
+     See the description and example given for the
+     _atom_site_moment_Fourier_param.cos_symmform item.
+;
+
+save_
+
+###################################
+## ATOM_SITE_MOMENT_SPECIAL_FUNC ##
+###################################
+
+save_atom_site_moment_special_func
+
+_definition.id                          atom_site_moment_special_func
+_name.category_id                       MAGNETIC
+_name.object_id                         atom_site_moment_special_func
+_definition.update                      2016-05-24
+_description.text
+;
+     Data items in the ATOM_SITE_MOMENT_SPECIAL_FUNC category record
+     details about the magnetic modulation of an atom site in a
+     modulated structure when it is not described by Fourier series.
+     Special functions are effective in some cases where the
+     modulations are highly anharmonic, since the number of parameters
+     is drastically reduced. However, they are in general
+     discontinuous or with discontinuous derivatives and therefore
+     these functions describe an ideal situation that never occurs in
+     a real modulated crystal. Up to now, only a few types of special
+     functions have been used and all of them come from the JANA suite
+     of programs. Although this approach is far from being general, it
+     has the advantage that the functions are tightly defined and
+     therefore the relevant parameters can be  calculated easily. In
+     this dictionary, only the special functions  available in
+     JANA2000 have been included. These are:  (1) Sawtooth functions
+     for atomic displacive modulation along x, y and z.  (2)
+     Crenel functions for the occupational modulation of atoms
+     and rigid groups. Both of these only apply to
+     one-dimensional modulated structures.
+
+     Analogous tags: _atom_site_displace_special_func.*,
+     _atom_site_occ_special_func.*
+;
+_definition.scope                       Category
+_definition.class                       Loop
+_category.key_id                '_atom_site_moment_special_func.atom_site_label'
+loop_
+    _category_key.name
+                                '_atom_site_moment_special_func.atom_site_label'
+
+save_
+
+
+save__atom_site_moment_special_func.atom_site_label
+
+_definition.id                  '_atom_site_moment_special_func.atom_site_label'
+_name.category_id                       atom_site_moment_special_func
+_name.object_id                         atom_site_label
+#_import.get [{'save':atom_site_id    'file':templ_attr.cif}]
+save_
+
+
+save__atom_site_moment_special_func.sawtooth_ax
+
+_definition.id                      '_atom_site_moment_special_func.sawtooth_ax'
+_name.category_id                       atom_site_moment_special_func
+_name.object_id                         sawtooth_ax
+loop_
+  _alias.definition_id              '_atom_site_moment_special_func_sawtooth_ax'
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+
+_description.text
+;
+     _atom_site_moment_special_func.sawtooth_ items are the
+     adjustable parameters of a magnetic sawtooth function.    A
+     magnetic sawtooth function is only used when working    in the
+     crystal-axis coordinate system.  It is defined    along the
+     internal space direction as follows:
+     mx=2*ax[(x4-c)/w]                      my=2*ay[(x4-c)/w]
+     mz=2*az[(x4-c)/w]
+        with x4 belonging to the interval [c-(w/2), c+(w/2)], where
+     ax,    ay and az are the amplitudes (maximum magnetic moments)
+     along each crystallographic axis, w is its width, x4 is the
+     internal coordinate and c is the centre of the function in
+     internal space.  The use of this function is restricted to
+     one-dimensional modulated structures. For more details,     see
+     the manual for JANA2000 (Petricek & Dusek, 2000).
+        Calculated parameters mx, my and mz must be in Bohr-magneton
+     units and can vary in the range (-infinity,infinity).
+
+     Ref: Petricek, V. & Dusek, M. (2000). JANA2000.
+     The crystallographic computing system. Institute of Physics, Prague,
+     Czech Republic.
+
+     Analogous tags: _atom_site_displace_special_func.sawtooth_*,
+     _atom_site_occ_special_func.cresnel_*
+;
+_units.code                             Bohr_magnetons
+
+save_
+
+
+save__atom_site_moment_special_func.sawtooth_ay
+
+_definition.id                      '_atom_site_moment_special_func.sawtooth_ay'
+_name.category_id                       atom_site_moment_special_func
+_name.object_id                         sawtooth_ay
+loop_
+  _alias.definition_id              '_atom_site_moment_special_func_sawtooth_ay'
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+
+_description.text
+;
+     _atom_site_moment_special_func.sawtooth_ items are the
+     adjustable parameters of a magnetic sawtooth function.    A
+     magnetic sawtooth function is only used when working    in the
+     crystal-axis coordinate system.  It is defined    along the
+     internal space direction as follows:
+     mx=2*ax[(x4-c)/w]                      my=2*ay[(x4-c)/w]
+     mz=2*az[(x4-c)/w]
+        with x4 belonging to the interval [c-(w/2), c+(w/2)], where
+     ax,    ay and az are the amplitudes (maximum magnetic moments)
+     along each crystallographic axis, w is its width, x4 is the
+     internal coordinate and c is the centre of the function in
+     internal space.  The use of this function is restricted to
+     one-dimensional modulated structures. For more details,     see
+     the manual for JANA2000 (Petricek & Dusek, 2000).
+        Calculated parameters mx, my and mz must be in Bohr-magneton
+     units and can vary in the range (-infinity,infinity).
+
+     Ref: Petricek, V. & Dusek, M. (2000). JANA2000.
+     The crystallographic computing system. Institute of Physics, Prague,
+     Czech Republic.
+
+     Analogous tags: _atom_site_displace_special_func.sawtooth_*,
+     _atom_site_occ_special_func.cresnel_*
+;
+_units.code                             Bohr_magnetons
+
+save_
+
+
+save__atom_site_moment_special_func.sawtooth_az
+
+_definition.id                      '_atom_site_moment_special_func.sawtooth_az'
+_name.category_id                       atom_site_moment_special_func
+_name.object_id                         sawtooth_az
+loop_
+  _alias.definition_id              '_atom_site_moment_special_func_sawtooth_az'
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+
+_description.text
+;
+     _atom_site_moment_special_func.sawtooth_ items are the
+     adjustable parameters of a magnetic sawtooth function.    A
+     magnetic sawtooth function is only used when working    in the
+     crystal-axis coordinate system.  It is defined    along the
+     internal space direction as follows:
+     mx=2*ax[(x4-c)/w]                      my=2*ay[(x4-c)/w]
+     mz=2*az[(x4-c)/w]
+        with x4 belonging to the interval [c-(w/2), c+(w/2)], where
+     ax,    ay and az are the amplitudes (maximum magnetic moments)
+     along each crystallographic axis, w is its width, x4 is the
+     internal coordinate and c is the centre of the function in
+     internal space.  The use of this function is restricted to
+     one-dimensional modulated structures. For more details,     see
+     the manual for JANA2000 (Petricek & Dusek, 2000).
+        Calculated parameters mx, my and mz must be in Bohr-magneton
+     units and can vary in the range (-infinity,infinity).
+
+     Ref: Petricek, V. & Dusek, M. (2000). JANA2000.
+     The crystallographic computing system. Institute of Physics, Prague,
+     Czech Republic.
+
+     Analogous tags: _atom_site_displace_special_func.sawtooth_*,
+     _atom_site_occ_special_func.cresnel_*
+;
+_units.code                             Bohr_magnetons
+
+save_
+
+
+save__atom_site_moment_special_func.sawtooth_c
+
+_definition.id                       '_atom_site_moment_special_func.sawtooth_c'
+_name.category_id                       atom_site_moment_special_func
+_name.object_id                         sawtooth_c
+loop_
+  _alias.definition_id               '_atom_site_moment_special_func_sawtooth_c'
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+
+_description.text
+;
+     _atom_site_moment_special_func.sawtooth_ items are the
+     adjustable parameters of a magnetic sawtooth function.    A
+     magnetic sawtooth function is only used when working    in the
+     crystal-axis coordinate system.  It is defined    along the
+     internal space direction as follows:
+     mx=2*ax[(x4-c)/w]                      my=2*ay[(x4-c)/w]
+     mz=2*az[(x4-c)/w]
+        with x4 belonging to the interval [c-(w/2), c+(w/2)], where
+     ax,    ay and az are the amplitudes (maximum magnetic moments)
+     along each crystallographic axis, w is its width, x4 is the
+     internal coordinate and c is the centre of the function in
+     internal space.  The use of this function is restricted to
+     one-dimensional modulated structures. For more details,     see
+     the manual for JANA2000 (Petricek & Dusek, 2000).
+        Calculated parameters mx, my and mz must be in Bohr-magneton
+     units and can vary in the range (-infinity,infinity).
+
+     Ref: Petricek, V. & Dusek, M. (2000). JANA2000.
+     The crystallographic computing system. Institute of Physics, Prague,
+     Czech Republic.
+
+     Analogous tags: _atom_site_displace_special_func.sawtooth_*,
+     _atom_site_occ_special_func.cresnel_*
+;
+_units.code                             Bohr_magnetons
+
+save_
+
+
+save__atom_site_moment_special_func.sawtooth_w
+
+_definition.id                       '_atom_site_moment_special_func.sawtooth_w'
+_name.category_id                       atom_site_moment_special_func
+_name.object_id                         sawtooth_w
+loop_
+  _alias.definition_id               '_atom_site_moment_special_func_sawtooth_w'
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_type.purpose                           Measurand
+
+_description.text
+;
+     _atom_site_moment_special_func.sawtooth_ items are the
+     adjustable parameters of a magnetic sawtooth function.    A
+     magnetic sawtooth function is only used when working    in the
+     crystal-axis coordinate system.  It is defined    along the
+     internal space direction as follows:
+     mx=2*ax[(x4-c)/w]                      my=2*ay[(x4-c)/w]
+     mz=2*az[(x4-c)/w]
+        with x4 belonging to the interval [c-(w/2), c+(w/2)], where
+     ax,    ay and az are the amplitudes (maximum magnetic moments)
+     along each crystallographic axis, w is its width, x4 is the
+     internal coordinate and c is the centre of the function in
+     internal space.  The use of this function is restricted to
+     one-dimensional modulated structures. For more details,     see
+     the manual for JANA2000 (Petricek & Dusek, 2000).
+        Calculated parameters mx, my and mz must be in Bohr-magneton
+     units and can vary in the range (-infinity,infinity).
+
+     Ref: Petricek, V. & Dusek, M. (2000). JANA2000.
+     The crystallographic computing system. Institute of Physics, Prague,
+     Czech Republic.
+
+     Analogous tags: _atom_site_displace_special_func.sawtooth_*,
+     _atom_site_occ_special_func.cresnel_*
+;
+_units.code                             Bohr_magnetons
+
+save_
+
+
+###############################
+## ATOM_SITES_MOMENT_FOURIER ##
+###############################
+
+save_atom_sites_moment_Fourier
+
+_definition.id                          atom_sites_moment_Fourier
+_name.category_id                       MAGNETIC
+_name.object_id                         atom_sites_moment_Fourier
+_definition.update                      2016-05-24
+_description.text
+;
+     Data items in the ATOM_SITES_MOMENT_FOURIER category record
+     details common to the magnetic modulations of atom sites in a
+     modulated structure.
+     Details for individual atom sites are described by data items in
+     the ATOM_SITE_MOMENT_FOURIER category.
+
+     Analogous tags: _atom_sites_displace_Fourier.*,
+     _atom_sites_rot_Fourier.*,     _atom_sites_occ_Fourier.*,
+     _atom_sites_U_Fourier.*
+;
+_definition.scope                       Category
+_definition.class                       Set
+save_
+
+
+save__atom_sites_moment_Fourier.axes_description
+
+_definition.id                     '_atom_sites_moment_Fourier.axes_description'
+_name.category_id                       atom_sites_moment_Fourier
+_name.object_id                         axes_description
+_definition.update                      2016-05-24
+
+_description.text
+;
+     Describes a user-defined coordinate system for which magnetic
+     Fourier  modulation components are to be presented.  Only used
+     when different from those described by
+     _atom_site_moment_Fourier.axis.
+
+     Analogous tags:
+     msCIF:_atom_sites_displace_Fourier.axes_description
+
+     It is not difficult to imagine an
+     _atom_sites_rot_Fourier.axes_description tag.
+;
+_type.contents                          Text
+_type.container                         Single
+
+loop_
+  _description_example.case
+
+;                                       a1 and a2 are respectively the long
+                                        molecular axis and the axis normal to
+                                        the mean molecular plane.
+                                        Extracted from Baudour & Sanquer
+                                        [Acta Cryst. (1983), B39, 75-84].
+;
+
+save_
+
+
+
+####################
+## ATOM_TYPE_SCAT ##
+####################
+
+save__atom_type_scat.neutron_magnetic_j0_A1
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j0_A1'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j0_A1
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+     First, the parameters are used directly to approximate spatial
+     averages of  spherical Bessel functions over the electronic wave
+     functions of unpaired  electrons of the given atom type as a
+     function of s = sin(theta)/lambda.
+     <jn(s)> = [A1*e^(-a2*s^2) + B1*e^(-b2*s^2) + C1*e^(-c2*s^2) +
+     D]*[1 if n=0, s^2 if n=2,4,6]
+     The <jn(s)> are then combined to determine the spin and orbital
+     contributions to the magnetic form factor of the atom.  The "e"
+     parameter is a measure of error in the approximation.
+
+     Analogous tags: coreCIF:_atom_site.scat_Cromer_Mann_*
+
+     Ref: International Tables for Crystallography (2006). Vol.
+     C, Sections 4.4.5 and 6.1.2.3 (and references therein).
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j0_a2
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j0_a2'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j0_a2
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+_units.code                             'angstrom_squared'
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j0_B1
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j0_B1'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j0_B1
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j0_b2
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j0_b2'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j0_b2
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+;
+_units.code                             'angstrom_squared'
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j0_C1
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j0_C1'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j0_C1
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j0_c2
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j0_c2'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j0_c2
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+_units.code                             'angstrom_squared'
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j0_D
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j0_D'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j0_D
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j0_e
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j0_e'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j0_e
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j2_A1
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j2_A1'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j2_A1
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j2_a2
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j2_a2'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j2_a2
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+_units.code                             'angstrom_squared'
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j2_B1
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j2_B1'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j2_B1
+_definition.update                      2016-05-24
+_type.container                         Single
+_type.contents                          Real
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j2_b2
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j2_b2'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j2_b2
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+_units.code                             'angstrom_squared'
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j2_C1
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j2_C1'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j2_C1
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j2_c2
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j2_c2'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j2_c2
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+_units.code                             'angstrom_squared'
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j2_D
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j2_D'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j2_D
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j2_e
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j2_e'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j2_e
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j4_A1
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j4_A1'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j4_A1
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j4_a2
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j4_a2'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j4_a2
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+_units.code                             'angstrom_squared'
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j4_B1
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j4_B1'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j4_B1
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j4_b2
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j4_b2'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j4_b2
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+_units.code                             'angstrom_squared'
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j4_C1
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j4_C1'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j4_C1
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+;
+
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j4_c2
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j4_c2'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j4_c2
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+;
+_units.code                             'angstrom_squared'
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j4_D
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j4_D'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j4_D
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j4_e
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j4_e'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j4_e
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j6_A1
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j6_A1'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j6_A1
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j6_a2
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j6_a2'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j6_a2
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+;
+_units.code                             'angstrom_squared'
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j6_B1
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j6_B1'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j6_B1
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j6_b2
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j6_b2'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j6_b2
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+_units.code                             'angstrom_squared'
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j6_C1
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j6_C1'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j6_C1
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j6_c2
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j6_c2'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j6_c2
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+;
+_units.code                             'angstrom_squared'
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j6_D
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j6_D'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j6_D
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_j6_e
+
+_definition.id                          '_atom_type_scat.neutron_magnetic_j6_e'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_j6_e
+_definition.update                      2016-05-24
+_type.contents                          Real
+_type.container                         Single
+_description.text
+;
+        See definition for _atom_type_scat.neutron_magnetic_j0_A1
+
+;
+
+save_
+
+
+save__atom_type_scat.neutron_magnetic_source
+
+_definition.id                         '_atom_type_scat.neutron_magnetic_source'
+_name.category_id                       atom_type_scat
+_name.object_id                         neutron_magnetic_source
+_definition.update                      2016-05-24
+
+_description.text
+;
+     Reference to the source of magnetic neutron scattering factors
+     for a given atom type.
+
+     Analogous tags: coreCIF:_atom_site.scat_source
+;
+_type.contents                          Text
+_type.container                         Single
+
+loop_
+  _description_example.case
+
+;
+International Tables for Crystallography (2006). Vol. C, Section 4.4.5.
+;
+
+save_
+
+
+###############################
+## PARENT_PROPAGATION_VECTOR ##
+###############################
+
+save_parent_propagation_vector
+
+_definition.id                          parent_propagation_vector
+_name.category_id                       MAGNETIC
+_name.object_id                         parent_propagation_vector
+_definition.update                      2016-06-09
+_description.text
+;
+     This looped category allows for the presentation of the
+     fundamental magnetic wave vectors in the setting of the parent
+     structure.  In general, there can be more than one fundamental
+     magnetic wave vector. See the PARENT_SPACE_GROUP category for
+     more information about parent space groups.
+;
+_definition.scope                       Category
+_definition.class                       Loop
+_category.key_id                        '_parent_propagation_vector.id'
+loop_
+  _category_key.name                    '_parent_propagation_vector.id'
+
+loop_
+  _description_example.case
+
+;
+    loop_
+      _parent_propagation_vector.id
+      _parent_propagation_vector.kxkykz
+        k1  [0 0 1]
+        k2  [0 1 0]
+        k3  [1 0 0]
+;
+save_
+
+
+save__parent_propagation_vector.id
+
+_definition.id                          '_parent_propagation_vector.id'
+_name.category_id                       parent_propagation_vector
+_name.object_id                         id
+_definition.update                      2016-06-09
+_description.text
+;
+    A code that uniquely identifies a fundamental magnetic propagation vector.
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Key
+
+save_
+
+
+save__parent_propagation_vector.kxkykz
+
+_definition.id                          '_parent_propagation_vector.kxkykz'
+_name.category_id                       parent_propagation_vector
+_name.object_id                         kxkykz
+_definition.update                      2016-06-09
+_description.text
+;
+     A fundamental magnetic propagation vector in unitless reciprocal-lattice
+     units of the parent space group setting.
+;
+_type.contents                          Real
+_type.container                         Matrix
+_type.dimension                        [3]
+
+save_
+
+########################
+## PARENT_SPACE_GROUP ##
+########################
+
+save_parent_space_group
+
+_definition.id                          parent_space_group
+_name.category_id                       MAGNETIC
+_name.object_id                         parent_space_group
+_definition.update                      2016-06-09
+_description.text
+;
+     This category provides information about the space group and
+     setting of  a non-magnetic parent structure which is related to
+     the present magnetic  structure by a group-subgroup relationship.
+     In general, the choice of a parent structure is not unique; it
+     could be the lowest-symmetry non-magnetic structure obtained by
+     simply setting all magnetic moments to zero, or a higher-symmetry
+     approximation to this structure which idealizes some of the
+     atomic coordinates.  The designation of a parent  structure is
+     common but optional for a magnetic-structure description. This
+     category could also be used to designate high-symmetry parent
+     structures  of low-symmetry non-magnetic structures. As an
+     alternative to this category, one can define a parent structure
+     in a separate data block, and then relate the parent and child
+     space-group settings by conveying an appropriate inter-data-block
+     basis transformation in each data block.
+
+     Analogous tags: none
+;
+_definition.scope                       Category
+_definition.class                       Set
+
+save_
+
+
+save__parent_space_group.child_transform_Pp_abc
+
+_definition.id                      '_parent_space_group.child_transform_Pp_abc'
+_name.category_id                       parent_space_group
+_name.object_id                         child_transform_Pp_abc
+_definition.update                      2016-06-09
+_description.text
+;
+     This item specifies the transformation (P,p) of the basis vectors
+     and origin of the present setting of the parent space group to
+     those of the present setting of the  child space group. The basis
+     vectors (a',b',c') of the child are described as linear
+     combinations  of the basis vectors (a,b,c) of the parent, and the
+     origin shift (ox,oy,oz)  is displayed in the lattice coordinates
+     of the parent. The Jones-Faithful notation and possible values
+     are identical to those of  symCIF:_space_group.transform_Pp_abc,
+     except that the point and translational components are separated
+     by a semicolon.  If the child structure is incommensurate, the
+     transformation applies to the present setting of the basic
+     space group of the incommensurate structure.
+
+     Analogous tags: symCIF:_space_group.transform_Pp_abc
+;
+_type.contents                          Real
+_type.dimension                        [4,4]
+_type.container                         Matrix
+_type.purpose                           Number
+_type.source                            Assigned
+
+save_
+
+
+save__parent_space_group.IT_number
+
+_definition.id                          '_parent_space_group.IT_number'
+_name.category_id                       parent_space_group
+_name.object_id                         IT_number
+_definition.update                      2016-06-09
+_description.text
+;
+     Analogous tags: Perfectly analogous to
+     symCIF:_space_group.IT_number except that it applies to the
+     parent structure.
+;
+_type.contents                          Text
+_type.container                         Single
+
+
+save_
+
+
+save__parent_space_group.name_H-M_alt
+
+_definition.id                          '_parent_space_group.name_H-M_alt'
+_name.category_id                       parent_space_group
+_name.object_id                         name_H-M_alt
+_definition.update                      2016-06-09
+_description.text
+;
+     Analogous tags: Perfectly analogous to
+     symCIF:_space_group.name_H-M_alt except that it applies
+     to the parent structure.
+;
+_type.contents                          Text
+_type.container                         Single
+
+
+save_
+
+
+save__parent_space_group.reference_setting
+
+_definition.id                          '_parent_space_group.reference_setting'
+_name.category_id                       parent_space_group
+_name.object_id                         reference_setting
+_definition.update                      2016-06-09
+_description.text
+;
+     Analogous tags: Perfectly analogous to
+     symCIF:_space_group.reference_setting except that it applies to
+     the parent structure.
+;
+_type.contents                          Text
+_type.container                         Single
+
+save_
+
+
+save__parent_space_group.transform_Pp_abc
+
+_definition.id                          '_parent_space_group.transform_Pp_abc'
+_name.category_id                       parent_space_group
+_name.object_id                         transform_Pp_abc
+_definition.update                      2016-06-09
+_description.text
+;
+     Analogous tags: Notation and usage is analogous to
+     symCIF:_space_group.transform_Pp_abc except that it applies to
+     the parent structure, and that the point and translational
+     components are separated by a semicolon.
+;
+_type.contents                          Real
+_type.container                         Matrix
+_type.dimension                        [4,4]
+_type.purpose                           Number
+_type.source                            Assigned
+
+save_
+
+
+######################
+## SPACE_GROUP_MAGN ##
+######################
+
+save_SPACE_GROUP_MAGN
+
+_definition.id                          space_group_magn
+_name.category_id                       MAGNETIC
+_name.object_id                         space_group_magn
+_definition.update                      2016-10-10
+_description.text
+;
+        The data items in this category provide identifying and/or
+        descriptive information about the relevant magnetic symmetry
+        group and setting.
+
+;
+_definition.scope                       Category
+_definition.class                       Set
+
+save_
+
+
+save__space_group_magn.name_BNS
+
+_definition.id                          '_space_group_magn.name_BNS'
+_name.category_id                       space_group_magn
+_name.object_id                         name_BNS
+_definition.update                      2016-05-24
+
+_description.text
+;
+     See _space_group_magn_number_OG for a description of magnetic
+     space groups (MSGs).
+     The Belov-Neronova-Smirnova (BNS) symbol for a MSG is based on
+     the short Hermann-Mauguin space-group symbol of non-magnetic
+     space group F for MSGs of types 1-3 or its subgroup D for MSGs of
+     type 4. For a type-1 MSG, the symbol for the MSG is identical
+     with the unprimed symbol of F.  For a type-2 MSG, its symbol is
+     the symbol of the space group F followed by 1'.  For a type-3
+     MSG, one starts with the symbol for F and then primes any
+     non-translational  generators whose corresponding MSG elements are
+     time reversed. For a type-4 MSG, the non-translational generators
+     are never primed. A subscript always appears on the first
+     (lattice) character of the symbol of a type-4 MSG, and
+     communicates that a pure time-reversal element is included in the
+     point group of the MSG. The value of this subscript indicates the
+     magnetic lattice of the MSG, and specifically indicates the
+     translational part of the generator whose point part is the pure
+     time reversal. Note that OG and BNS symbols are identical for
+     MSGs of types 1-3, but differ substantially  for MSGs of type 4.
+
+     Analogous tags: symCIF:_space_group.name_H-M_ref
+
+     Ref: 'Magnetic Group Tables' by D.B. Litvin at
+     http://www.iucr.org/publ/978-0-9553602-2-0. ISO-MAG tables of H.T.
+     Stokes and B.J. Campbell at http://iso.byu.edu.
+;
+_type.contents                          Text
+_type.container                         Single
+
+loop_
+  _description_example.case
+         "P 1"
+         "P 1 1'"
+         "P_S 1"
+         "P -1"
+         "P -1 1'"
+         "P -1'"
+         "P_2s -1"
+         "I a' -3 d'"
+
+save_
+
+
+save__space_group_magn.name_OG
+
+_definition.id                          '_space_group_magn.name_OG'
+_name.category_id                       space_group_magn
+_name.object_id                         name_OG
+_definition.update                      2016-05-24
+
+_description.text
+;
+     See _space_group_magn.number_OG for more information on magnetic
+     space groups (MSGs). The Opechowski-Guccione (OG) symbol for an
+     MSG is based on the short Hermann-Mauguin space-group symbol of
+     non-magnetic space group F.   For a type-1 MSG, the OG symbol for
+     the MSG is identical with the unprimed symbol of F.  For a type-2
+     MSG, the OG symbol is the symbol of the non-magnetic space group
+     F followed by 1'.  For a type-3 or type-4 MSG, the OG symbol is
+     constructed by starting with the symbol for F and then  priming
+     the symbols of any non-translational generators whose
+     corresponding MSG elements are  time reversed.  When a
+     non-translational generator symbol could potentially represent both
+     time-reversed and non-time-reversed symmetry elements, the prime
+     placement is as described  in the Magnetic Group Tables of
+     Litvin. A subscript always appears on the first (lattice)
+     character of the symbol of a type-4 MSG, and communicates that a
+     pure time-reversal element is included in the point group of the
+     MSG. The value of this subscript indicates the magnetic lattice
+     of the MSG. Note that OG and BNS symbols are identical for MSGs
+     of types 1-3, but differ substantially  for MSGs of type 4.
+
+     Analogous tags: symCIF:_space_group.name_H-M_ref
+
+     Ref: 'Magnetic Group Tables' by D.B. Litvin at
+     http://www.iucr.org/publ/978-0-9553602-2-0. ISO-MAG tables of H.T.
+     Stokes and B.J. Campbell at http://iso.byu.edu.
+;
+_type.contents                          Text
+_type.container                         Single
+
+loop_
+  _description_example.case
+         "P 1"
+         "P 1 1'"
+         "P_S 1"
+         "P -1"
+         "P -1 1'"
+         "P -1'"
+         "P_2s -1"
+         "I a' -3' d'"
+
+save_
+
+
+save__space_group_magn.number_BNS
+
+_definition.id                          '_space_group_magn.number_BNS'
+_name.category_id                       space_group_magn
+_name.object_id                         number_BNS
+_definition.update                      2016-10-10
+
+_description.text
+;
+     See _space_group_magn.number_OG for a description of magnetic
+     space groups (MSGs). The Belov-Neronova-Smirnova (BNS) number for
+     an MSG is composed of two positive integers separated by a
+     period. The first integer lies in the range [1-230] and indicates
+     the non-magnetic space group F for MSGs of types 1-3 or the
+     non-magnetic space group of the subgroup D for MSGs of type 4.  The
+     second integer is sequential over all MSGs associated  with the
+     same crystal family.
+     There are 1651 distinct equivalence classes of MSGs, each of
+     which has a unique BNS number. These equivalence classes are most
+     accurately referred to as magnetic space-group "types",
+     following the usage in the International Tables for Crystallography.
+     But the word "type"  is also commonly used to
+     indicate the four-fold classification of MSGs presented above.
+     To avoid confusion, the word "type" is only used in the latter
+     sense here.
+
+     Analogous tags: symCIF:_space_group.number_IT
+
+     Ref: 'Magnetic Group Tables' by D.B. Litvin at
+     http://www.iucr.org/publ/978-0-9553602-2-0. ISO-MAG tables of H.T.
+     Stokes and B.J. Campbell at http://iso.byu.edu.
+;
+_type.contents                          Text
+_type.container                         Single
+
+loop_
+  _description_example.case
+         1.1
+         1.2
+         1.3
+         2.4
+         2.5
+         2.6
+         2.7
+         230.149
+
+save_
+
+
+save__space_group_magn.OG_wavevector_kxkykz
+
+_definition.id                          '_space_group_magn.OG_wavevector_kxkykz'
+_name.category_id                       space_group_magn
+_name.object_id                         OG_wavevector_kxkykz
+_definition.update                      2016-05-24
+_description.text
+;
+    The magnetic propagation vector (k) of the OG(k)-supercell
+    description, which determines the time-reversal component of each
+    translation vector (x) of the OG lattice (including the centering
+    vectors if a centered setting is used) according to the expression
+    cos(2*pi*k.x) = +/-1, where x is defined in the unitless coordinates
+    of the direct-space OG lattice and k is defined in the unitless
+    coordinates of the corresponding reciprocal-space lattice.  If 2*k.x
+    has a non-integer value for any OG lattice (or centering) translation,
+    the definition of k is incorrect.  The value of OG wave vector is
+    essential to the OG(k) description of the magnetic space group
+    symmetry; it cannot be omitted from such a description without
+    ambiguity.
+;
+_type.container                         Matrix
+_type.contents                          Real
+_type.dimension                         [3]
+_type.purpose                           Number
+
+save_
+
+
+save__space_group_magn.point_group_name
+
+_definition.id                          '_space_group_magn.point_group_name'
+_name.category_id                       space_group_magn
+_name.object_id                         point_group_name
+_definition.update                      2016-05-24
+
+_description.text
+;
+     Any magnetic point group (MPG) can be constructed by starting
+     with a non-magnetic point group P, and then by adding a time-reversal
+     component to some or all or none of its elements. For a
+     type-1 MPG, M = P, there are no time-reversed elements. For a
+     type-2 MPG, M = P + P1', there is both a time-reversed and a
+     non-time-reversed  copy of each element in P. For a type-3 MPG,
+     M = Q + (P - Q)1', there is a subgroup Q of P of index 2 whose
+     elements are not time reversed, whereas the remaining elements
+     in P-Q are time reversed. For a type-1 MPG, the symbol is identical
+     with the symbol for the non-magnetic point group P. For a type-2 MPG,
+     the symbol is the symbol for P followed by the symbol 1'. For a
+     type-3 MPG, the symbol is that of P with a prime added to each
+     time-reversed generator.
+
+     Analogous tags: symCIF:_space_group.point_group_H-M
+
+     Ref: 'Magnetic Group Tables' by D.B. Litvin at
+     http://www.iucr.org/publ/978-0-9553602-2-0
+;
+_type.contents                          Text
+_type.container                         Single
+
+loop_
+  _description_example.case
+         1
+         "1 1'"
+         -1
+         "-1 1'"
+         "-1'"
+         "4 m m"
+         "4' m' m"
+         "4' m m'"
+
+save_
+
+
+save__space_group_magn.point_group_number
+
+_definition.id                          '_space_group_magn.point_group_number'
+_name.category_id                       space_group_magn
+_name.object_id                         point_group_number
+_definition.update                      2016-10-10
+_description.text
+;
+
+     Each of the 122 crystallographic magnetic point groups can be
+     associated with exactly one crystallographic non-magnetic space
+     group by removing the time-reversal component from each group
+     operator.  The identifying number for each such group is taken
+     from the "Survey of 3-dimensional magnetic point group types"
+     from the "Magnetic Group Tables" of D.B. Litvin.  This number is
+     composed of three integers: (1) an integer from 1 to 32 that
+     corresponds to the non-magnetic point group; (2) an integer that
+     runs sequentially over each of the magnetic point groups
+     associated with a given non-magnetic point group; and (3) a
+     redundant third integer that runs from 1 to 122.
+
+     Ref: 'Magnetic Group Tables' by D.B. Litvin at
+     http://www.iucr.org/publ/978-0-9553602-2-0
+;
+_type.contents                          Text
+_type.container                         Single
+loop_
+  _description_example.case
+    "1.1.1"
+    "32.5.122"
+
+save_
+
+
+save__space_group_magn.ssg_name
+
+_definition.id                          '_space_group_magn.ssg_name'
+_name.category_id                       space_group_magn
+_name.object_id                         ssg_name
+_definition.update                      2016-10-10
+
+_description.text
+;
+     The Belov-Neronova-Smirnova (BNS) symbol for a magnetic
+     superspace group (MSSG) is based on the symbol of the
+     non-magnetic superspace group (SSG) obtained by eliminating all
+     time-reversed operators from the group, as listed in the ISO(3+d)D
+     tables of Stokes and Campbell. If the magnetic basic space group
+     (MBSG) is of type-1 or type-3 (also known as type-3a), its BNS symbol
+     merely replaces that of the basic space-group (BSG).  If the MBSG
+     is of type-2 or type-4  (also known as type-3b), an additional
+     phase-shift symbol associated with the time-reversal generator is added
+     to each modulation vector.  If the MBSG is of type-4, the BNS
+     symbol of the MSSG is further modified to explicitly show the
+     time-reversal generator (1') at the end, and the anti-centering
+     subscript is moved from the lattice symbol to the 1' so as to
+     clearly indicate the fractional external-space translation of
+     this generator.
+     The examples are based on SSG 47.1.9.3 Pmmm(0,0,g)ss0 in (3+1)D.
+
+     Analogous tags: msCIF:_space_group.ssg_name
+
+     Ref: ISO-MAG tables of H.T. Stokes and B.J. Campbell at
+     http://iso.byu.edu. ISO(3+d)D tables of H.T. Stokes and B.J.
+     Campbell at http://iso.byu.edu.
+;
+_type.contents                          Text
+_type.container                         Single
+
+loop_
+  _description_example.case
+  _description_example.detail
+          "Pmmm(0,0,g)ss0"      "type-1 MBSG Pmmm"
+          "Pmmm1'(0,0,g)ss00"
+;                                type-2 MBSG Pmmm1', with no basic-cell or
+                                 modulated moments allowed
+;
+          "Pmmm1'(0,0,g)ss0s"
+;                                type-2 MBSG Pmmm1', with magnetic modulations
+                                 allowed, but not basic-cell moments
+;
+          "Pm'm'm(0,0,g)ss0"    "type-3 MBSG Pm'm'm"
+          "Pmmm1'_a(0,0,g)ss00"
+                        "type-4 MBSG P_ammm with purely external anti-centering"
+          "Pmmm1'_a(0,0,g)ss0s"
+                             "type-4 MBSG P_ammm with superspace anti-centering"
+save_
+
+
+save__space_group_magn.ssg_number
+
+_definition.id                          '_space_group_magn.ssg_number'
+_name.category_id                       space_group_magn
+_name.object_id                         ssg_number
+_definition.update                      2016-10-10
+
+_description.text
+;
+     The Belov-Neronova-Smirnova (BNS) number for a magnetic
+     superspace group. This tag is being held in reserve until a
+     future numbering scheme is approved.
+
+     Analogous tags: msCIF:_space_group.ssg_number
+;
+_type.contents                          Text
+_type.container                         Single
+
+
+save_
+
+
+save__space_group_magn.transform_BNS_Pp
+
+_definition.id                          '_space_group_magn.transform_BNS_Pp'
+_name.category_id                       space_group_magn
+_name.object_id                         transform_BNS_Pp
+_definition.update                      2016-10-10
+_description.text
+;
+     This item specifies the transformation matrix Pp of the
+     basis vectors and origin of the current setting to those
+     of the Belov-Neronova-Smirnova setting presented in the
+     ISO-MAG tables. The basis vectors (a',b',c') of the BNS
+     setting are obtained as
+
+     (a',b',c',1) = Pp (a,b,c,1)
+
+     where (a,b,c) are the current basis vectors.
+
+     Ref: ISO-MAG tables of H.T. Stokes and B.J. Campbell at
+     http://iso.byu.edu
+
+     Wondratschek, H., Aroyo, M. I., Souvignier, B. and Chapuis, G.
+     Transformation of coordinate systems. In International Tables for
+     Crystallography (2016). Volume A, Space-group symmetry, edited
+     by M. Aroyo, 6th ed. ch 1.5. Chichester: Wiley.
+;
+_type.contents                          Text
+_type.container                         Matrix
+_type.dimension                         [4,4]
+loop_
+   _description_example.case
+   _description_example.detail
+;   [[1 0 0 0.25]
+    [0 1 0 0   ]
+    [0 0 1 0   ]
+    [0 0 0 1   ]]
+;
+
+"Transformation from OG 5.6.24 C_P2' to BNS 4.12 P_C2_1"
+
+;   [[0  0 1 0   ]
+    [0 -1 0 0.25]
+    [1  0 0 0   ]
+    [0  0 0 1   ]]
+;
+"Transformation from OG 8.7.44 C_Pm' to BNS 7.31 P_Ac"
+
+save_
+
+
+save__space_group_magn.transform_BNS_Pp_abc
+
+_definition.id                          '_space_group_magn.transform_BNS_Pp_abc'
+_name.category_id                       space_group_magn
+_name.object_id                         transform_BNS_Pp_abc
+_definition.update                      2016-10-10
+_description.text
+;
+     This item specifies the transformation (P,p) of the basis
+     vectors and origin of the current setting to those of the
+     Belov-Neronova-Smirnova setting presented in the ISO-MAG
+     tables. The basis vectors (a',b',c') of the BNS setting
+     are described as linear combinations of the current basis
+     vectors (a,b,c), and the origin shift (ox,oy,oz) is displayed
+     in the lattice coordinates of the current setting. The
+     Jones-Faithful notation and possible values are identical
+     to those of symCIF:_space_group.transform_Pp_abc,
+     except that the point and translational components are separated
+     by a semicolon.
+
+     Analogous tags: symCIF:_space_group.transform_Pp_abc
+
+     Ref: ISO-MAG tables of H.T. Stokes and B.J. Campbell at
+     http://iso.byu.edu
+;
+_type.contents                          Text
+_type.container                         Single
+
+save_
+
+
+save__space_group_magn.transform_OG_Pp
+
+_definition.id                          '_space_group_magn.transform_OG_Pp'
+_name.category_id                       space_group_magn
+_name.object_id                         transform_OG_Pp
+_definition.update                      2016-10-10
+_description.text
+;
+     This item specifies the transformation (P,p) of the basis
+     vectors and origin of  the current setting to those of
+     the Opechowski-Guccione setting presented  in the
+     Magnetic Group Tables of D.B. Litvin. The basis vectors
+     (a',b',c') of the OG setting are obtained as
+
+     (a',b',c',1) = Pp (a,b,c,1)
+
+     where (a,b,c) are the current basis vectors.
+
+     Ref: 'Magnetic Group Tables' by D.B. Litvin at
+     http://www.iucr.org/publ/978-0-9553602-2-0
+
+     Wondratschek, H., Aroyo, M. I., Souvignier, B. and Chapuis, G.
+     Transformation of coordinate systems. In International Tables for
+     Crystallography (2016). Volume A, Space-group symmetry, edited
+     by M. Aroyo, 6th ed. ch 1.5. Chichester: Wiley.
+;
+_type.contents                          Text
+_type.container                         Matrix
+_type.dimension                         [4,4]
+
+save_
+
+
+save__space_group_magn.transform_OG_Pp_abc
+
+_definition.id                          '_space_group_magn.transform_OG_Pp_abc'
+_name.category_id                       space_group_magn
+_name.object_id                         transform_OG_Pp_abc
+_definition.update                      2016-10-10
+_description.text
+;
+     This item specifies the transformation (P,p) of the basis
+     vectors and origin of  the current setting to those of the
+     Opechowski-Guccione setting presented  in the
+     Magnetic Group Tables of D.B. Litvin. The basis vectors
+     (a',b',c') of the reference setting are
+     described as  linear combinations of the current basis vectors
+     (a,b,c), and the origin shift (ox,oy,oz) is displayed in the
+     lattice coordinates of the current setting. The Jones-Faithful
+     notation and possible values are identical to those of
+     symCIF:_space_group.transform_Pp_abc, except that the point and
+     translational components are separated by a semicolon.
+
+     Analogous tags: symCIF:_space_group.transform_Pp_abc
+
+     Ref: 'Magnetic Group Tables' by D.B. Litvin at
+     http://www.iucr.org/publ/978-0-9553602-2-0
+;
+_type.contents                          Text
+_type.container                         Single
+
+
+save_
+
+
+#####################################
+## SPACE_GROUP_MAGN_SSG_TRANSFORMS ##
+#####################################
+
+save_space_group_magn_ssg_transforms
+
+_definition.id                          space_group_magn_ssg_transforms
+_name.category_id                       MAGNETIC
+_name.object_id                         space_group_magn_ssg_transforms
+_definition.update                      2016-06-09
+_description.text
+;
+     This loop provides a list of matrix transformations to one or
+     more settings of the magnetic  superspace group, including
+     transformations to both standard and non-standard settings. A
+     transformation loop is particularly helpful for magnetic
+     superspace groups,  which often have several reference settings
+     of interest.
+
+     Analogous tags: transform loops have not yet been approved in
+     other dictionaries.
+;
+_definition.scope                       Category
+_definition.class                       Loop
+loop_
+  _category_key.name                    '_space_group_magn_ssg_transforms.id'
+save_
+
+
+save__space_group_magn_ssg_transforms.description
+
+_definition.id                    '_space_group_magn_ssg_transforms.description'
+_name.category_id                       space_group_magn_ssg_transforms
+_name.object_id                         description
+_definition.update                      2016-06-21
+_description.text
+;
+     A string that describes the source of a reference setting for the
+     magnetic superspace group. The item
+     _space_group_magn_ssg_transforms.source should be used if the
+     reference source is one of those provided in that
+     definition. Otherwise, arbitrary free text can be used to describe
+     reference settings of interest, such as might appear in a specific
+     publication, though care should be taken to  make the description
+     clear and unambiguous.
+;
+_type.contents                          Text
+_type.container                         Single
+
+save_
+
+
+save__space_group_magn_ssg_transforms.id
+
+_definition.id                          '_space_group_magn_ssg_transforms.id'
+_name.category_id                       space_group_magn_ssg_transforms
+_name.object_id                         id
+_definition.update                      2016-06-09
+_description.text
+;
+     An arbitrary identifier that uniquely labels each setting
+     transformation of interest in a looped list of superspace-group
+     transformations. Most commonly, a sequence of positive integers
+     is used for this identification.
+
+     Analogous tags: transform loops have not yet been approved in
+     other dictionaries.
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Key
+
+save_
+
+
+save__space_group_magn_ssg_transforms.Pp_superspace
+
+_definition.id                  '_space_group_magn_ssg_transforms.Pp_superspace'
+_name.category_id                       space_group_magn_ssg_transforms
+_name.object_id                         Pp_superspace
+_definition.update                      2016-06-09
+_description.text
+;
+     This item specifies the transformation (P,p) of the superspace
+     basis vectors  from the current setting (a1,...,a(3+d)) to a
+     reference setting (a1',...,a(3+d)') given by
+     _space_group_magn_ssg_transforms.description. The origin shift
+     is presented in the unitless lattice coordinates of the current
+     setting.
+     The notation and usage are analogous to those of
+     _space_group.transform_Pp_abc, except that P now represents a
+     superspace point operation, that p now represents a superspace
+     translation, and that the point and translational components
+     are now separated with a semicolon.
+
+     Analogous tags: symCIF:_space_group.transform_Pp_abc
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Encode
+
+loop_
+  _description_example.case
+  _description_example.detail
+         'a1,a2,a3,a4,a5;0,0,0,0,0'  "Identity transformation"
+         '-a2,a1,1/2a3,-a1+a5,-1/2a3+a4;1/4,-1/4,0,1/4,0'
+;
+                      Transforms from a supercentered setting to the
+                      ISO(3+d)D setting of
+                      65.2.43.64.m481.1  Cmmm(0,b1,1/2)000(1,0,g2)0s0.
+;
+
+save_
+
+
+save__space_group_magn_ssg_transforms.source
+
+_definition.id                         '_space_group_magn_ssg_transforms.source'
+_name.category_id                       space_group_magn_ssg_transforms
+_name.object_id                         source
+_definition.update                      2016-06-21
+_description.text
+;
+     A string that describes the source of a reference setting for the
+     magnetic superspace group.
+     If the reference source does not appear in the list below, use
+     _space_group_magn_ssg_transforms.description
+
+     Ref: 'Magnetic Group Tables' of D.B. Litvin at
+     http://www.iucr.org/publ/978-0-9553602-2-0. ISO-MAG tables of H.T.
+     Stokes and B.J. Campbell at http://iso.byu.edu.
+     ISO(3+d)D tables of H.T. Stokes and B.J. Campbell at http://iso.byu.edu.
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           State
+
+loop_
+  _enumeration_set.state
+  _enumeration_set.detail
+      'ISO(3+d)D-MAG'
+;
+	This superspace transformation simultaneously takes the setting
+        of the basic magnetic space group (BMSG) to the setting of the
+	corresponding entry in the ISO-MAG tables, and takes the
+        setting of the derived non-magnetic superspace group (DNMSG)
+        to within a purely external operation of the setting of the
+        corresponding entry in the ISO(3+d)D tables. The external
+        components of this superspace transformation are those
+        that take the setting of the BMSG to the setting of the
+        corresponding entry in the ISO-MAG tables, while the internal
+        components are those of the transformation that takes the
+        setting of the DNMSG to the setting of the corresponding
+        superspace group in the ISO(3+d)D tables. Such a transformation
+	is unique for any setting of a magnetic superspace group.
+;
+
+save_
+
+
+
+#################################
+## SPACE_GROUP_MAGN_TRANSFORMS ##
+#################################
+
+save_space_group_magn_transforms
+
+_definition.id                          space_group_magn_transforms
+_name.category_id                       MAGNETIC
+_name.object_id                         space_group_magn_transforms
+_definition.update                      2016-06-09
+_description.text
+;
+     This category provides a list of matrix transformations to multiple
+     settings of the magnetic space group, including transformations
+     to both standard and non-standard settings.  A transformation
+     loop is  particularly helpful for a magnetic space group, which
+     often have several reference settings of interest.
+;
+
+_definition.scope                       Category
+_definition.class                       Loop
+_category.key_id                        '_space_group_magn_transforms.id'
+loop_
+  _category_key.name                    '_space_group_magn_transforms.id'
+loop_
+  _description_example.case
+
+;
+loop_
+    _space_group_magn_transforms.id
+    _space_group_magn_transforms.Pp_abc
+    _space_group_magn_transforms.description
+    _space_group_magn_transforms.source
+        1  'a,b,c;0,0,0'    .                "data_block_CURRENT"
+        2  'a/2,b,c;0,0,0'  "data_block_205763"  .
+        3  'a,b,c;0,0,0'    .                    "BNS"
+        4  'a/2,b,c;0,0,0'  .                    "OG"
+        5  'a/4,b,c;0,0,0'
+           "literature citation to a nuclear parent structure"  .
+;
+save_
+
+
+save__space_group_magn_transforms.description
+
+_definition.id                        '_space_group_magn_transforms.description'
+_name.category_id                       space_group_magn_transforms
+_name.object_id                         description
+_definition.update                      2016-06-09
+_description.text
+;
+     A string that describes the source of the magnetic-space-group
+     reference setting indicated by the
+     _space_group_magn_transforms.Pp_abc tag.
+     _space_group_magn_transforms.source
+     should be used if the reference source is one of those provided in
+     that definition.
+     The value string "data_block_<blockname>" refers to the setting
+     used in a separate data block named "blockname" within the same
+     file. Otherwise,
+     arbitrary free text can be used to describe other reference
+     settings of interest, such as might appear  in a specific
+     publication, though care should be taken to make the description
+     clear and unambiguous.
+;
+_type.contents                          Text
+_type.container                         Single
+
+save_
+
+
+save__space_group_magn_transforms.id
+
+_definition.id                          '_space_group_magn_transforms.id'
+_name.category_id                       space_group_magn_transforms
+_name.object_id                         id
+_definition.update                      2016-06-09
+_description.text
+;
+     An arbitrary identifier that uniquely labels each setting
+     transformation of interest in a looped list of space-group
+     transformations.
+
+     Analogous tags: transform loops have not been approved in other
+     dictionaries.
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Key
+
+save_
+
+
+save__space_group_magn_transforms.Pp
+
+_definition.id                          '_space_group_magn_transforms.Pp'
+_name.category_id                       space_group_magn_transforms
+_name.object_id                         Pp
+_definition.update                      2016-06-23
+_description.text
+;
+     This item specifies the transformation (P,p) of the basis
+     vectors and origin in the current setting of the CIF file
+     to the reference setting described by the
+     _space_group_magn_transforms.description or
+     _space_group_magn_transforms.source tags, and should not
+     be used without this description.  The basis vectors
+     (a',b',c') of the reference setting are obtained as
+
+     (a',b',c',1) = Pp (a,b,c,1)
+
+     where (a,b,c) are the current basis vectors.
+
+     Ref: Wondratschek, H., Maroto, M. I., Souvignier, B. and Chapuis, G.
+     Transformation of coordinate systems. In International Tables for
+     Crystallography (2016). Volume A, Space-group symmetry, edited
+     by M. Aroyo, 6th ed. ch 1.5. Chichester: Wiley.
+;
+_type.contents                          Text
+_type.container                         Matrix
+_type.dimension                         [4,4]
+
+save_
+
+
+save__space_group_magn_transforms.Pp_abc
+
+_definition.id                          '_space_group_magn_transforms.Pp_abc'
+_name.category_id                       space_group_magn_transforms
+_name.object_id                         Pp_abc
+_definition.update                      2016-06-09
+_description.text
+;
+     This item specifies the transformation (P,p) of the basis
+     vectors and origin in the current setting of the CIF file
+     to the reference setting described by the
+     _space_group_magn_transforms.description or
+     _space_group_magn_transforms.source tags, and should not
+     be used without this description.  The basis vectors
+     (a',b',c') of the reference setting are described as  linear
+     combinations of the current basis vectors (a,b,c), and the origin
+     shift (ox,oy,oz)  is displayed in the lattice coordinates of the
+     current setting. The Jones-Faithful notation and possible values
+     are identical to those of symCIF:_space_group_transform_Pp_abc,
+     except that the point and translational components are separated
+     by a semicolon.
+
+     Analogous tags: symCIF:_space_group.transform_Pp_abc
+;
+_type.contents                          Text
+_type.container                         Single
+
+
+save_
+
+
+save__space_group_magn_transforms.source
+
+_definition.id                          '_space_group_magn_transforms.source'
+_name.category_id                       space_group_magn_transforms
+_name.object_id                         source
+_definition.update                      2016-06-22
+_description.text
+;
+     A string that describes the source of the magnetic space group
+     reference indicated by the _space_group_magnetic_transforms.Pp_abc
+     tag. If the reference source does not appear in the list below, use
+     _space_group_magn_transforms.description
+
+     Ref: 'Magnetic Group Tables' of D.B. Litvin at
+     http://www.iucr.org/publ/978-0-9553602-2-0. ISO-MAG tables of H.T.
+     Stokes and B.J. Campbell at http://iso.byu.edu. ISO(3+d)D tables
+     of H.T. Stokes and B.J. Campbell at http://iso.byu.edu.
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           State
+
+loop_
+  _enumeration_set.state
+  _enumeration_set.detail
+      "data_block_CURRENT"
+;
+     The setting used in the current data block. Obviously, the basis
+     transformation to this setting is the identity. The ability to
+     reference the current setting can be useful when communicating
+     the same magnetic propagation vector in multiple settings.
+;
+      'BNS'
+;
+     The Belov-Neronova-Smirnova group setting presented in the ISO-MAG tables.
+;
+      'OG'
+;
+     The Opechowski-Guccione group setting presented in the
+     Magnetic Group Tables of D.B. Litvin.
+;
+
+save_
+
+######################################
+## SPACE_GROUP_SYMOP_MAGN_CENTERING ##
+######################################
+
+save_space_group_symop_magn_centering
+
+_definition.id                          space_group_symop_magn_centering
+_name.category_id                       MAGNETIC
+_name.object_id                         space_group_symop_magn_centering
+_definition.update                      2016-05-24
+_description.text
+;
+     This loop provides a list of centering or anti-centering
+     translation in a BNS-supercell description of a magnetic space
+     group.
+     Keeping the centering and anti-centering translations in a
+     separate loop leaves only representative point operations in the
+     main SPACE_GROUP_SYMOP_MAGN_OPERATION loop. The direct sum of
+     the two loops produces the full set of representative operations
+     of the magnetic space group.  This centering loop is optional, so
+     that it is always possible to include all of the symmetry
+     operations in the main loop.
+     When this centering loop is employed, the representative point
+     operations in the main SPACE_GROUP_SYMOP_MAGN_OPERATION loop may
+     not form a closed subgroup, but instead  generate some of the
+     fractional translations of the centering loop.  Despite this
+     annoyance, a separate centering loop is important because
+     magnetic structures tend to have a relatively large number of
+     centering and anti-centering translations, which can make the
+     resulting list of operators very long and unintuitive, especially
+     when working  in non-standard settings.
+     One could argue that anti-centering operations belong in the main
+     representative- point-operation loop since they are not actually
+     translations of the magnetic lattice.   In fact, a pure time
+     reversal is a generator of the magnetic point group of a  type-4
+     magnetic space group.  Nevertheless, this centering loop is
+     defined to  include the anti-centerings due to the common
+     practice of referring to a "black and white" lattice of
+     centerings and anti-centerings.
+;
+_definition.scope                       Category
+_definition.class                       Loop
+loop_
+    _category_key.name
+         '_space_group_symop_magn_centering.id'
+loop_
+    _description_example.case
+;
+    loop_
+       _space_group_symop_magn_centering.id
+       _space_group_symop_magn_centering.xyz
+       _space_group_symop_magn_centering.description
+           1    'x+1/2,y+1/2,z,+1'
+            'a non-time-reversed (1/2,1/2,0) translation'
+           2    'x+1/2,y+1/2,z,-1'
+                'a time-reversed (1/2,1/2,0) translation'
+;
+save_
+
+
+save__space_group_symop_magn_centering.description
+
+_definition.id                   '_space_group_symop_magn_centering.description'
+_name.category_id                       space_group_symop_magn_centering
+_name.object_id                         description
+_definition.update                      2016-05-24
+
+_description.text
+;
+     An optional free text description of a particular centering or
+     anti-centering translation in the BNS-supercell description of a
+     magnetic space group.
+;
+_type.contents                          Text
+_type.container                         Single
+
+loop_
+  _description_example.case
+
+;                                       "(1|1/2,1/2,0)'", "(1'|1/2,1/2,0)" or
+                                        "(1/2,1/2,0) anti-centering translation"
+                                        would adequately describe
+                                        "x+1/2,y+1/2,z,-1"
+;
+
+save_
+
+
+save__space_group_symop_magn_centering.id
+
+_definition.id                          '_space_group_symop_magn_centering.id'
+_name.category_id                       space_group_symop_magn_centering
+_name.object_id                         id
+_definition.update                      2016-05-24
+_description.text
+;
+     An arbitrary identifier that uniquely labels each centering or
+     anti-centering translation in a BNS-supercell description of a
+     magnetic space group. Most commonly, a sequence of positive
+     integers is used for this identification.
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Key
+
+save_
+
+
+save__space_group_symop_magn_centering.xyz
+
+_definition.id                          '_space_group_symop_magn_centering.xyz'
+_name.category_id                       space_group_symop_magn_centering
+_name.object_id                         xyz
+_definition.update                      2016-05-24
+_description.text
+;
+     A parsable string giving one of the centering or anti-centering
+     translations in the BNS-supercell description of a magnetic space
+     group in algebraic form. The form of such a string is identical
+     to that expected for _space_group_symop_magn_operation.xyz,
+     except that the rotational part of a translation must always be
+     the identity element.
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Encode
+save_
+
+
+#########################################
+## SPACE_GROUP_SYMOP_MAGN_OG_CENTERING ##
+#########################################
+
+save_space_group_symop_magn_OG_centering
+
+_definition.id                          space_group_symop_magn_OG_centering
+_name.category_id                       MAGNETIC
+_name.object_id                         space_group_symop_magn_OG_centering
+_definition.update                      2016-05-24
+_description.text
+;
+     This loop provides a list of centering translations in an
+     OG(k)-supercell description of a magnetic space group.
+     For an OG(k)-supercell description, this loop is mandatory and
+     entirely distinct  from the optional
+     SPACE_GROUP_SYMOP_MAGN_CENTERING loop used to simplify the
+     presentation of a BNS-supercell description.
+     An integer translation in an OG setting of a type-4 magnetic
+     space group may have  a time-reversal component of -1, in which
+     case it is actually an anti-translation vector rather than a lattice
+     vector.   This loop should include all centering and anti-centering
+     translations, but does not include the time-reversal components,
+     which are instead determined
+     using the value of the _space_group_magn.OG_wavevector_kxkykz tag.
+     Because the centering translations are listed in a separate loop
+     in the OG(k) description,
+     only representative point operations remain in the main
+     SPACE_GROUP_SYMOP_MAGN_OPERATION loop.
+;
+_definition.scope                       Category
+_definition.class                       Loop
+loop_
+    _category_key.name
+        '_space_group_symop_magn_OG_centering.id'
+save_
+
+
+save__space_group_symop_magn_OG_centering.description
+
+_definition.id                '_space_group_symop_magn_OG_centering.description'
+_name.category_id                       space_group_symop_magn_OG_centering
+_name.object_id                         description
+_definition.update                      2016-05-24
+_description.text
+;
+     An optional free-text description of a particular centering
+     operation from the OG(k)-supercell description of a magnetic
+     space group, without the time-reversal component.
+
+     Analogous tags: centering loops have not been approved for other
+     dictionaries.
+;
+_type.contents                          Text
+_type.container                         Single
+
+loop_
+  _description_example.case
+  _description_example.detail
+         "(1/2,1/2,0)"    'Adequately describes x+1/2,y+1/2,z'
+
+save_
+
+
+save__space_group_symop_magn_OG_centering.id
+
+_definition.id                         '_space_group_symop_magn_OG_centering.id'
+_name.category_id                       space_group_symop_magn_OG_centering
+_name.object_id                         id
+_definition.update                      2016-05-24
+_description.text
+;
+     An arbitrary loop identifier that uniquely labels each centering
+     translation in an OG(k)-supercell description of a magnetic space
+     group. Most commonly, a sequence of positive integers is used for
+     this identification.
+
+     Analogous tags: centering loops have not been approved for other
+     dictionaries.
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Key
+
+save_
+
+
+save__space_group_symop_magn_OG_centering.xyz
+
+_definition.id                        '_space_group_symop_magn_OG_centering.xyz'
+_name.category_id                       space_group_symop_magn_OG_centering
+_name.object_id                         xyz
+_definition.update                      2016-05-24
+_description.text
+;
+     A parsable string giving one of the centering operations of the
+     OG(k)-supercell  description of a magnetic space group in
+     algebraic form.  The form of such a string  is identical to that
+     expected for _space_group_symop_operation.xyz, except that the
+     rotational part of a translation must always be the identity
+     element. The magnetic component of the centering vector is not
+     given in the value of this tag, but should instead be separately
+     established using the value of the
+     _space_group_magn.OG_wavevector_kxkykz tag.
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Encode
+loop_
+  _description_example.case
+  _description_example.detail
+         "x+1/2,y+1/2,z" "a centering translation of (1/2,1/2,0)"
+
+save_
+
+#########################################
+## SPACE_GROUP_SYMOP_MAGN_OG_CENTERING ##
+#########################################
+
+save_space_group_symop_magn_operation
+
+_definition.id                          space_group_symop_magn_operation
+_name.category_id                       MAGNETIC
+_name.object_id                         space_group_symop_magn_operation
+_definition.update                      2016-05-24
+_description.text
+;
+     A list of magnetic space-group symmetry operations.
+;
+_definition.scope                       Category
+_definition.class                       Loop
+loop_
+    _category_key.name
+         '_space_group_symop_magn_operation.id'
+
+save_
+
+
+save__space_group_symop_magn_operation.description
+
+_definition.id                   '_space_group_symop_magn_operation.description'
+_name.category_id                       space_group_symop_magn_operation
+_name.object_id                         description
+_definition.update                      2016-05-24
+_description.text
+;
+     The description of a particular symmetry operation of
+     the magnetic space group, which can be presented in
+     either the geometric notation presented in the
+     International Tables for Crystallography (2006),
+     Volume A, section 11.1.2, or the Seitz notation as
+     presented in  Acta Cryst. (2014), A70, 300-302.
+     This tag is intended for use with the BNS-supercell
+     description of a magnetic structure.
+
+     Analogous tags: symCIF:_space_group_symop.operation_description
+
+     Ref: 'Magnetic Group Tables' by D.B. Litvin at
+     http://www.iucr.org/publ/978-0-9553602-2-0. ISO-MAG tables of H.T.
+     Stokes and B.J. Campbell at http://iso.byu.edu.
+;
+_type.contents                          Text
+_type.container                         Single
+
+save_
+
+
+save__space_group_symop_magn_operation.id
+
+_definition.id                          '_space_group_symop_magn_operation.id'
+_name.category_id                       space_group_symop_magn_operation
+_name.object_id                         id
+_definition.update                      2016-05-24
+loop_
+  _alias.definition_id
+  _alias.deprecation_date
+    '_space_group_symop_magn.id'        2016-05-24
+
+_description.text
+;
+     An arbitrary identifier that uniquely labels each symmetry
+     operation in a looped list of magnetic space-group symmetry
+     operations. Most commonly, a sequence of positive  integers is
+     used for this identification.
+     The _space_group_symop_magn.id alias provides backwards
+     compatibility with the established magCIF prototype.
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Key
+
+save_
+
+
+save__space_group_symop_magn_operation.xyz
+
+_definition.id                          '_space_group_symop_magn_operation.xyz'
+_name.category_id                       space_group_symop_magn_operation
+_name.object_id                         xyz
+_definition.update                      2016-05-24
+_description.text
+;
+     A parsable string giving one of the symmetry operations of the
+     magnetic space group in algebraic form.  The analogy between
+     parsable labels for magnetic and non-magnetic symmetry operations
+     is perfect except for the fact that a magnetic symop label ends
+     with an additional piece of information ("-1" or "+1") indicating
+     that the operation is or is not time-reversed, respectively.
+     This tag is intended for use with the BNS-supercell description
+     of a magnetic structure.
+
+     Analogous tags: symCIF:_space_group_symop.operation_xyz
+
+     Ref: 'Magnetic Group Tables' by D.B. Litvin at
+     http://www.iucr.org/publ/978-0-9553602-2-0. ISO-MAG tables of H.T.
+     Stokes and B.J. Campbell at http://iso.byu.edu.
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Encode
+loop_
+  _description_example.case
+  _description_example.detail
+         "x+1/2,y+1/2,z,-1"
+;                             a time-reversed (1/2,1/2,0) translation,
+                              i.e. anti-centering vector
+;
+         "-y,x,z+1/2,-1"     "a time-reversed 4_2 screw along (00z)."
+         "-y,x,z+1/2,+1"     "a non-time-reversed 4_2 screw along (00z)."
+
+save_
+
+##########################################
+## SPACE_GROUP_SYMOP_MAGN_SSG_CENTERING ##
+##########################################
+
+save_space_group_symop_magn_ssg_centering
+
+_definition.id                          space_group_symop_magn_ssg_centering
+_name.category_id                       MAGNETIC
+_name.object_id                         space_group_symop_magn_ssg_centering
+_definition.update                      2016-05-24
+_description.text
+;
+     This loop provides a list of the centering and anti-centering
+     translations of a magnetic superspace-group.
+;
+_definition.scope                       Category
+_definition.class                       Loop
+loop_
+    _category_key.name
+        '_space_group_symop_magn_ssg_centering.id'
+
+save_
+
+
+save__space_group_symop_magn_ssg_centering.algebraic
+
+_definition.id                 '_space_group_symop_magn_ssg_centering.algebraic'
+_name.category_id                       space_group_symop_magn_ssg_centering
+_name.object_id                         algebraic
+_definition.update                      2016-05-24
+_description.text
+;
+     A parsable string giving one of the centering or anti-centering
+     operations of the magnetic superspace group in algebraic form.
+     The form of such a string is identical to that expected for
+     _space_group_symop_magn_ssg_operation.algebraic, except that the
+     rotational part of a translation must always be the identity
+     element.  See the description of
+     _space_group_symop_magn_centering.id for more information about
+     centering loops. This tag is intended for use with the BNS
+     description of the magnetic basic cell.
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Encode
+loop_
+  _description_example.case
+  _description_example.detail
+         'x1,x2,x3,x4,x5,+1'           'the identity element in (3+2)D'
+
+         'x1,x2,x3,x4+1/2,-1'
+;                                       a time-reversed superspace translation
+                                        in (3+1)D based on a simple 180-degree
+                                        phase shift of a single modulation
+                                        vector'
+;
+         'x1+1/2,x2+1/2,x3+1/2,x4,+1'
+;                                       a non-time-reversed external
+                                        body-center translation in (3+1)D
+;
+
+         'x1+1/2,x2,x3,x4,x5,x6+3/2,-1'
+;                                       a time-reversed superspace translation
+                                        in (3+3)D that combines internal and
+                                        external shifts
+;
+save_
+
+
+save__space_group_symop_magn_ssg_centering.id
+
+_definition.id                        '_space_group_symop_magn_ssg_centering.id'
+_name.category_id                       space_group_symop_magn_ssg_centering
+_name.object_id                         id
+_definition.update                      2016-05-24
+_description.text
+;
+     An arbitrary identifier that uniquely labels each centering or
+     anti-centering translations in a looped list of magnetic
+     superspace-group symmetry operations. Most commonly, a sequence
+     of positive integers is used for this identification.   This tag
+     is intended for use with the BNS description of the magnetic
+     basic cell.
+     Analogous to the case of magnetic space groups, the magCIF
+     dictionary allows the subgroup of time-reversed and
+     non-time-reversed fractional translations of a magnetic superspace group
+     to be split off into a separate loop.  See the description of
+     _space_group_symop_magn_centering.id for more information about
+     centering loops.
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Key
+
+save_
+
+##########################################
+## SPACE_GROUP_SYMOP_MAGN_SSG_OPERATION ##
+##########################################
+
+save_space_group_symop_magn_ssg_operation
+
+_definition.id                          space_group_symop_magn_ssg_operation
+_name.category_id                       MAGNETIC
+_name.object_id                         space_group_symop_magn_ssg_operation
+_definition.update                      2016-05-24
+_description.text
+;
+     A looped list of magnetic superspace-group symmetry operations.
+
+     Analogous tags: msCIF:_space_group_symop.ssg_*
+;
+_definition.scope                       Category
+_definition.class                       Loop
+loop_
+    _category_key.name
+        '_space_group_symop_magn_ssg_operation.id'
+save_
+
+
+save__space_group_symop_magn_ssg_operation.algebraic
+
+_definition.id                 '_space_group_symop_magn_ssg_operation.algebraic'
+_name.category_id                       space_group_symop_magn_ssg_operation
+_name.object_id                         algebraic
+_definition.update                      2016-05-24
+_description.text
+;
+     A parsable string giving one of the symmetry operations of the
+     magnetic  superspace group in algebraic form.  The analogy
+     between parsable labels for magnetic and non-magnetic symmetry
+     operations is perfect except for the fact that a magnetic symop
+     label ends with an additional piece of information ("-1" or "+1")
+     indicating that the operation is or is not time-reversed,
+     respectively. This tag is intended for use with the BNS
+     description of the magnetic basic cell.
+
+     Analogous tags: msCIF:_space_group_symop.ssg_operation_algebraic
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Describe
+loop_
+  _description_example.case
+  _description_example.detail
+         "x1,x2,x3,x4,x5,x6,+1"    "the identity element in (3+3)D."
+         'x1,x2,x3,x4+1/2,-1'
+;                                   a superspace anti-centering translation
+                                    based on a simple 180-degree phase shift
+                                    of a single modulation vector
+;
+         'x1+1/2,x2+1/2,-x3,-x4,-1'
+;                                   a time-reversed n-glide perpendicular to
+                                    a z-axis modulation
+;
+         'x1-x2,x1,x3+1/3,x4-1/6,x5,+1'
+;                                   a non-time-reversed 6_2 screw axis with
+                                    phase shift along a pair of z-axis
+                                    modulations
+;
+save_
+
+
+save__space_group_symop_magn_ssg_operation.id
+
+_definition.id                        '_space_group_symop_magn_ssg_operation.id'
+_name.category_id                       space_group_symop_magn_ssg_operation
+_name.object_id                         id
+_definition.update                      2016-05-24
+loop_
+  _alias.definition_id
+  _alias.deprecation_date
+    '_space_group_symop_magn_ssg.id'      2016-05-24
+
+_description.text
+;
+     An arbitrary identifier that uniquely labels each symmetry
+     operation in a looped list of magnetic superspace-group symmetry
+     operations. Most commonly, a sequence of positive  integers is
+     used for this identification.
+     The _space_group_symop_magn_ssg.id alias provides backwards
+     compatibility with the established magCIF prototype.
+
+     Analogous tags: msCIF:_space_group_symop_ssg_id
+;
+_type.contents                          Text
+_type.container                         Single
+_type.purpose                           Key
+
+save_
+
+
+#=============================================================================
+#  The dictionary's audit trail and creation history.
+#============================================================================
+
+loop_
+   _dictionary_audit.version
+   _dictionary_audit.date
+   _dictionary_audit.revision
+    0.1      2016-05-24
+;
+      Initial automatic conversion from draft magCIF format (James Hester)
+;
+    0.9      2016-05-27
+;
+      Manual editing of examples and definition text to remove
+        conversion artefacts.
+      Reparenting of categories that are children of cif_core categories.
+;
+    0.9.1    2016-05-30
+;
+      Added import of cif_core dictionary. Added category keys and linked items.
+;
+    0.9.2    2016-06-10
+;
+      Added missing transformation and parent space group items. Enhanced type
+      information
+;
+    0.9.3    2016-06-23
+;
+      Finalised outstanding issues from conversion.
+;
+    0.9.4    2016-06-28
+;
+      Added underscore aliases for datanames already in common use
+;
+    0.9.5    2016-07-05
+;
+      Added _space_group.magn_point_group_number;
+        changed _space_group.magn_point_group
+        to _space_group.magn_point_group_name
+;
+    0.9.6    2016-10-10
+;
+      Moved _space_group.magn_ items to new category _space_group_magn
+;
+    0.9.7    2016-12-16
+;
+      Editorial/consistency changes (B. McMahon)
+;
+    0.9.8    2020-07-28
+;
+      Added _atom_site_moment.magnitude, improved descriptions of
+      _atom_site_moment.cartesion* items, corrected and improved
+      *_symmform descriptions. Created the atom_site_rotation
+      category. (B. Campbell) 2018-08-24
+      Editorial/consistency changes (B. McMahon)
+;

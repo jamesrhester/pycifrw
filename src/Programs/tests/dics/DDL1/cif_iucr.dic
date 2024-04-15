@@ -1,0 +1,1255 @@
+##############################################################################
+#                                                                            #
+#                       CIF PRIVATE IUCR DEFINITIONS                         #
+#                       ----------------------------                         #
+#                                                                            #
+# This dictionary contains the names and definitions of "private" data items #
+# recognised by the International Union of Crystallography for internal      #
+# processing of CIFs submitted for publication in IUCr journals.             #
+#                                                                            #
+# Items prefixed with the registered string _publcif_ are intended to be     #
+# created and maintained automatically by the application publCIF            #
+#                                                                            #
+# Copyright 2014 International Union of Crystallography                      #
+##############################################################################
+
+
+data_on_this_dictionary
+    _dictionary_name            cif_iucr.dic
+    _dictionary_version         1.2
+    _dictionary_update          2014-07-09
+    _dictionary_history
+;
+   2014-07-09  Added new publCIF items to cater for new journal
+               article formats (SPW/BMcM):
+                       _publcif_datablock.id
+                       _publcif_datablock_[]
+                       _publcif_info_cif.paper_type
+                       _publcif_info_cif_[]
+                       _publcif_info_exptl_table_use_headnotes
+                       _publcif_info_tables.block_id
+                       _publcif_info_tables.reference_item
+                       _publcif_info_tables_[]
+   2011-07-04  Added _iucr_refine_instructions_details_constraints
+                     _iucr_refine_instructions_details_restraints  BMcM
+   2011-07-04  Added _iucr_refine_instruction_details to accommodate
+               erroneous instructions in published Notes for Authors  BMcM
+   2011-06-24  Additional local items (including some reserved for use
+               by publcif) that have been introduced to accommodate
+               specific aspects of journal production in the IUCr
+               office: _iucr_refine_instructions_details
+                       _iucr_geom_hbonds_details
+                       _publcif_info_datablock.*
+                       _publcif_info_exptl_table_extra_item
+                       _publcif_info_exptl_table_header_item
+                       _publcif_info_exptl_table_max_cols
+                       _publcif_jmolscript.*
+                       _iucr_publ_object.*
+               Note that some new data names include a dot character,
+               borrowing from the practice of DDL2-compliant dictionaries.
+               This dictionary, however, remains DDL1 compliant.
+               BMcM
+   2003-11-17  First version formalises data items used internally for
+               Acta C and Acta E since CIF publication began. This is really
+               an object lesson in how *not* to build private data names,
+               but most of the datanames go back to the very early days of
+               CIF when even things like same-category looped lists were not
+               set in stone.  BMcM
+   2022-11-04  Unofficially added u_iucr_refine_reflections_details. GM
+;
+
+###########
+## AUDIT ##
+###########
+
+data_iucr_compatibility_tag
+    _name                      '_iucr_compatibility_tag'
+    _category                    audit
+    _type                        char
+    loop_ _enumeration
+          _enumeration_detail  ACTA95 'Modify typesetting of R factors etc'
+    _definition
+;              A code used by IUCr typesetting software to select different
+               printing formats.
+;
+
+##########
+## GEOM ##
+##########
+
+data_iucr_geom_hbonds_details
+    _name                      '_iucr_geom_hbonds_details'
+    _category                    geom
+    _type                        char
+    _definition
+;              Free-text description of any extra details about
+               hydrogen bonds, e.g. explanation of site label when
+               the site does not represent a single element. Will be
+               included as a headnote in a table of hydrogen-bond geometry.
+;
+
+######################
+## GEOM_EXTRA_TABLE ##
+######################
+
+data_geom_extra_table_[]
+    _name                      '_geom_extra_table_[]'
+    _category                    category_overview
+    _type                        null
+    loop_ _example
+          _example_detail
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;
+    _geom_extra_table_head_B
+    ;
+    Geometric parameters (\%A, \%) for C---H..\p interactions in (I) and (II)
+    ;
+
+    loop_
+    _geom_extra_tableB_col_1
+    _geom_extra_tableB_col_2
+    _geom_extra_tableB_col_3
+    _geom_extra_tableB_col_4
+    _geom_extra_tableB_col_5
+    _geom_extra_tableB_col_6
+    _geom_extra_tableB_col_7
+       ?                 Cpd  C---H   H..Cg   H~perp~^a^   X-H..Cg   X..Cg
+       C10-H10..Cg1^i^    I    0.95    3.32    2.97          140     4.096
+       ?                 II    0.95    3.41    2.91          137     4.149
+       C12-H12..Cg2^ii^   I    0.95    3.17    2.79          171     4.115
+       ?                 II    0.95    3.24    2.79          166     4.121
+
+    _geom_table_footnote_B
+    ;
+    Note: (a) H~perp~ is the perpendicular distance of the H atom from the
+    plane of the benzene ring.
+      Symmetry codes (i) 1-x, 1/2+y, 1-z; (ii) 1-x, y-1/2, -z.
+    ;
+;
+;
+    Example 1 - based on data set I of Bomfim, Filgueiras, Howie, Skakle &
+                Wardell,  [(2003). Acta Cryst. C59, m526-m529].
+;
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    _definition
+;              GEOM_EXTRA_TABLE and GEOM_EXTRA_TABLES are private
+               categories of the IUCr used to store arbitrary geometric
+               parameters in a regular format suitable for the automatic
+               generation of printed tables, but without defining
+               specifically the quantities thus tabulated. They are therefore
+               not suitable for the standard interchange of specific
+               machine-interpretable data, and should only be used if there
+               are no suitable formal definitions in the CIF dictionary.
+;
+
+data_geom_extra_tableA_col_
+    loop_ _name                '_geom_extra_tableA_col_1'
+                               '_geom_extra_tableA_col_2'
+                               '_geom_extra_tableA_col_3'
+                               '_geom_extra_tableA_col_4'
+                               '_geom_extra_tableA_col_5'
+                               '_geom_extra_tableA_col_6'
+                               '_geom_extra_tableA_col_7'
+                               '_geom_extra_tableA_col_8'
+                               '_geom_extra_tableA_col_9'
+                               '_geom_extra_tableA_col_10'
+                               '_geom_extra_tableA_col_11'
+                               '_geom_extra_tableA_col_12'
+                               '_geom_extra_tableA_col_13'
+                               '_geom_extra_tableA_col_14'
+    _category                    geom_extra_table
+    _type                        char
+    _definition
+;              Arbitrary geometric data tabulated for print publication.
+               These should not be used in the tabulation of standard 
+               geometric properties (use instead the categories GEOM_ANGLE,
+               GEOM_BOND, GEOM_CONTACT, GEOM_HBOND, GEOM_TORSION), but may
+               be useful for creating and annotating printed tables. Because
+               of the arbitrariness of the description, these values are
+               not recoverable by general parsers. The table may be 
+               implicitly associated with heading, head note and footnote
+               by using the data items in the GEOM_EXTRA_TABLES category
+               labelled with the code A.
+;
+
+data_geom_extra_tableB_col_
+    loop_ _name                '_geom_extra_tableB_col_1'
+                               '_geom_extra_tableB_col_2'
+                               '_geom_extra_tableB_col_3'
+                               '_geom_extra_tableB_col_4'
+                               '_geom_extra_tableB_col_5'
+                               '_geom_extra_tableB_col_6'
+                               '_geom_extra_tableB_col_7'
+                               '_geom_extra_tableB_col_8'
+                               '_geom_extra_tableB_col_9'
+                               '_geom_extra_tableB_col_10'
+                               '_geom_extra_tableB_col_11'
+                               '_geom_extra_tableB_col_12'
+                               '_geom_extra_tableB_col_13'
+                               '_geom_extra_tableB_col_14'
+    _category                    geom_extra_table
+    _type                        char
+    _definition
+;              Arbitrary geometric data tabulated for print publication.
+               These should not be used in the tabulation of standard 
+               geometric properties (use instead the categories GEOM_ANGLE,
+               GEOM_BOND, GEOM_CONTACT, GEOM_HBOND, GEOM_TORSION), but may
+               be useful for creating and annotating printed tables. Because
+               of the arbitrariness of the description, these values are
+               not recoverable by general parsers. The table may be 
+               implicitly associated with heading, head note and footnote
+               by using the data items in the GEOM_EXTRA_TABLES category
+               labelled with the code A.
+;
+
+data_geom_extra_tableC_col_
+    loop_ _name                '_geom_extra_tableC_col_1'
+                               '_geom_extra_tableC_col_2'
+                               '_geom_extra_tableC_col_3'
+                               '_geom_extra_tableC_col_4'
+                               '_geom_extra_tableC_col_5'
+                               '_geom_extra_tableC_col_6'
+                               '_geom_extra_tableC_col_7'
+                               '_geom_extra_tableC_col_8'
+                               '_geom_extra_tableC_col_9'
+                               '_geom_extra_tableC_col_10'
+                               '_geom_extra_tableC_col_11'
+                               '_geom_extra_tableC_col_12'
+                               '_geom_extra_tableC_col_13'
+                               '_geom_extra_tableC_col_14'
+    _category                    geom_extra_table
+    _type                        char
+    _definition
+;              Arbitrary geometric data tabulated for print publication.
+               These should not be used in the tabulation of standard 
+               geometric properties (use instead the categories GEOM_ANGLE,
+               GEOM_BOND, GEOM_CONTACT, GEOM_HBOND, GEOM_TORSION), but may
+               be useful for creating and annotating printed tables. Because
+               of the arbitrariness of the description, these values are
+               not recoverable by general parsers. The table may be 
+               implicitly associated with heading, head note and footnote
+               by using the data items in the GEOM_EXTRA_TABLES category
+               labelled with the code C.
+;
+
+#######################
+## GEOM_EXTRA_TABLES ##
+#######################
+
+data_geom_extra_tables_[]
+    _name                      '_geom_extra_tables_[]'
+    _category                    category_overview
+    _type                        null
+    loop_ _example
+          _example_detail
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;
+    _geom_extra_table_head_B
+    ;
+    Geometric parameters (\%A, \%) for C---H..\p interactions in (I) and (II)
+    ;
+
+    loop_
+    _geom_extra_tableB_col_1
+    _geom_extra_tableB_col_2
+    _geom_extra_tableB_col_3
+    _geom_extra_tableB_col_4
+    _geom_extra_tableB_col_5
+    _geom_extra_tableB_col_6
+    _geom_extra_tableB_col_7
+       ?                 Cpd  C---H   H..Cg   H~perp~^a^   X-H..Cg   X..Cg
+       C10-H10..Cg1^i^    I    0.95    3.32    2.97          140     4.096
+       ?                 II    0.95    3.41    2.91          137     4.149
+       C12-H12..Cg2^ii^   I    0.95    3.17    2.79          171     4.115
+       ?                 II    0.95    3.24    2.79          166     4.121
+
+    _geom_table_footnote_B
+    ;
+    Note: (a) H~perp~ is the perpendicular distance of the H atom from the
+    plane of the benzene ring.
+      Symmetry codes (i) 1-x, 1/2+y, 1-z; (ii) 1-x, y-1/2, -z.
+    ;
+;
+;
+    Example 1 - based on data set I of Bomfim, Filgueiras, Howie, Skakle &
+                Wardell,  [(2003). Acta Cryst. C59, m526-m529].
+;
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    _definition
+;              GEOM_EXTRA_TABLE and GEOM_EXTRA_TABLES are private
+               categories of the IUCr used to store arbitrary geometric
+               parameters in a regular format suitable for the automatic
+               generation of printed tables, but without defining
+               specifically the quantities thus tabulated. They are therefore
+               not suitable for the standard interchange of specific
+               machine-interpretable data, and should only be used if there
+               are no suitable formal definitions in the CIF dictionary.
+;
+
+data_geom_table_footnote_
+    loop_ _name                '_geom_table_footnote_A'
+                               '_geom_table_footnote_B'
+                               '_geom_table_footnote_C'
+    _category                    geom_extra_tables
+    _type                        char
+    _definition
+;              Footnote for a printed table of arbitrary geometric quantities.
+               This should not be used in the tabulation of standard 
+               geometric properties (use instead the categories GEOM_ANGLE,
+               GEOM_BOND, GEOM_CONTACT, GEOM_HBOND, GEOM_TORSION), but is
+               a useful device for creating and annotating printed tables.
+               The label A, B or C is implicitly associated with a list
+               of geometric values in the GEOM_EXTRA_TABLE category labelled
+               with a matching value of A, B or C.
+;
+
+data_geom_extra_table_head_
+    loop_ _name                '_geom_extra_table_head_A'
+                               '_geom_extra_table_head_B'
+                               '_geom_extra_table_head_C'
+    _category                    geom_extra_tables
+    _type                        char
+    _definition
+;              Heading for a printed table of arbitrary geometric quantities.
+               This should not be used in the tabulation of standard 
+               geometric properties (use instead the categories GEOM_ANGLE,
+               GEOM_BOND, GEOM_CONTACT, GEOM_HBOND, GEOM_TORSION), but is
+               a useful device for creating and annotating printed tables.
+               The label A, B or C is implicitly associated with a list
+               of geometric values in the GEOM_EXTRA_TABLE category labelled
+               with a matching value of A, B or C.
+;
+
+data_geom_table_headnote_
+    loop_ _name                '_geom_table_headnote_A'
+                               '_geom_table_headnote_B'
+                               '_geom_table_headnote_C'
+    _category                    geom_extra_tables
+    _type                        char
+    _definition
+;              Head note for a printed table of arbitrary geometric quantities.
+               This should not be used in the tabulation of standard 
+               geometric properties (use instead the categories GEOM_ANGLE,
+               GEOM_BOND, GEOM_CONTACT, GEOM_HBOND, GEOM_TORSION), but is
+               a useful device for creating and annotating printed tables.
+               The label A, B or C is implicitly associated with a list
+               of geometric values in the GEOM_EXTRA_TABLE category labelled
+               with a matching value of A, B or C.
+;
+
+################
+## GEOM_HBOND ##
+################
+
+
+data_geom_angle_DHA
+    _name                      '_geom_angle_DHA'
+    _category                    geom_hbond
+    _type                        numb
+    _type_conditions             esd
+    _related_item              '_geom_hbond_angle_DHA'
+    _related_function            replace
+    _units                       deg
+    _units_detail              'degrees'
+    _definition
+;              Unofficial data name for the angle in degrees defined by the
+               three sites _geom_bond_atom_site_label_D, *_H and *_A. Site
+               at *_D (the hydrogen atom participating in the interaction)
+               is at the apex of the angle. Found in CIFs submitted for
+               publication before version 2 of the core CIF dictionary.
+;
+
+data_geom_bond_atom_site_label_A
+    _name                      '_geom_bond_atom_site_label_A'
+    _category                    geom_hbond
+    _type                        char
+    _related_item              '_geom_hbond_atom_site_label_A'
+    _related_function            replace
+    _list                        yes
+    _list_mandatory              yes
+    _list_link_parent          '_atom_site_label'
+    _definition
+;              Unofficial data name for the atom site label of the acceptor
+               atom participating in a hydrogen bond, found in CIFs
+               submitted for publication before version 2 of the core CIF
+               dictionary.
+;
+data_geom_bond_atom_site_label_D
+    _name                      '_geom_bond_atom_site_label_D'
+    _category                    geom_hbond
+    _type                        char
+    _related_item              '_geom_hbond_atom_site_label_D'
+    _related_function            replace
+    _list                        yes
+    _list_mandatory              yes
+    _list_link_parent          '_atom_site_label'
+    _definition
+;              Unofficial data name for the atom site label of the donor
+               atom participating in a hydrogen bond, found in CIFs
+               submitted for publication before version 2 of the core CIF
+               dictionary.
+;
+
+data_geom_bond_atom_site_label_H
+    _name                      '_geom_bond_atom_site_label_H'
+    _category                    geom_hbond
+    _type                        char
+    _related_item              '_geom_hbond_atom_site_label_H'
+    _related_function            replace
+    _list                        yes
+    _list_mandatory              yes
+    _list_link_parent          '_atom_site_label'
+    _definition
+;              Unofficial data name for the atom site label of the hydrogen
+               atom participating in a hydrogen bond, found in CIFs
+               submitted for publication before version 2 of the core CIF
+               dictionary.
+;
+
+data_geom_bond_distance_DH
+    _name                      '_geom_bond_distance_DH'
+    _category                    geom_hbond
+    _type                        numb
+    _type_conditions             esd
+    _related_item              '_geom_hbond_distance_DH'
+    _related_function            replace
+    _enumeration_range           0.0:
+    _units                       A
+    _units_detail              'angstroms'
+    _definition
+;              Unofficial data name for the distance in angstroms between
+               the donor and hydrogen sites in a hydrogen bond, found in CIFs
+               submitted for publication before version 2 of the core CIF
+               dictionary.
+;
+
+data_geom_contact_distance_DA
+    _name                      '_geom_contact_distance_DA'
+    _category                    geom_hbond
+    _type                        numb
+    _type_conditions             esd
+    _related_item              '_geom_hbond_distance_DA'
+    _related_function            replace
+    _enumeration_range           0.0:
+    _units                       A
+    _units_detail              'angstroms'
+    _definition
+;              Unofficial data name for the distance in angstroms between
+               the donor and acceptor sites in a hydrogen bond, found in CIFs
+               submitted for publication before version 2 of the core CIF
+               dictionary.
+;
+
+data_geom_contact_distance_HA
+    _name                      '_geom_contact_distance_HA'
+    _category                    geom_hbond
+    _type                        numb
+    _type_conditions             esd
+    _related_item              '_geom_hbond_distance_HA'
+    _related_function            replace
+    _enumeration_range           0.0:
+    _units                       A
+    _units_detail              'angstroms'
+    _definition
+;              Unofficial data name for the distance in angstroms between
+               the hydrogen and acceptor sites in a hydrogen bond, found in
+               CIFs submitted for publication before version 2 of the core
+               CIF dictionary.
+;
+
+data_geom_contact_site_symmetry_A
+    _name                      '_geom_contact_site_symmetry_A'
+    _category                    geom_hbond
+    _type                        char
+    _related_item              '_geom_hbond_site_symmetry_A'
+    _related_function            replace
+    loop_ _example
+          _example_detail        .     'no symmetry or translation to site'
+                                 4     '4th symmetry operation applied'
+                                 7_645 '7th symm. posn.; +a on x; -b on y'
+    _definition
+;              Unofficial data name for the symmetry code of an atom site
+               participating in a hydrogen bond, found in CIFs submitted
+               for publication before version 2 of the core CIF dictionary.
+;
+
+data_geom_contact_site_symmetry_D
+    _name                      '_geom_contact_site_symmetry_D'
+    _category                    geom_hbond
+    _type                        char
+    _related_item              '_geom_hbond_site_symmetry_D'
+    _related_function            replace
+    loop_ _example
+          _example_detail        .     'no symmetry or translation to site'
+                                 4     '4th symmetry operation applied'
+                                 7_645 '7th symm. posn.; +a on x; -b on y'
+    _definition
+;              Unofficial data name for the symmetry code of an atom site
+               participating in a hydrogen bond, found in CIFs submitted
+               for publication before version 2 of the core CIF dictionary.
+;
+
+data_geom_contact_site_symmetry_H
+    _name                      '_geom_contact_site_symmetry_H'
+    _category                    geom_hbond
+    _type                        char
+    _related_item              '_geom_hbond_site_symmetry_H'
+    _related_function            replace
+    loop_ _example
+          _example_detail        .     'no symmetry or translation to site'
+                                 4     '4th symmetry operation applied'
+                                 7_645 '7th symm. posn.; +a on x; -b on y'
+    _definition
+;              Unofficial data name for the symmetry code of an atom site
+               participating in a hydrogen bond, found in CIFs submitted
+               for publication before version 2 of the core CIF dictionary.
+;
+
+
+##########
+## PUBL ##
+##########
+
+# This would really have been better in the journal category
+
+data_publ_vrn_code
+    _name                      '_publ_vrn_code'
+    _category                    publ
+    _type                        char
+    _definition
+;              The Validation Report Number, an identifier added to CIFs
+               that have been handled by an IUCr journals Validation Editor.
+;
+
+
+#################
+## PUBL_OBJECT ##
+#################
+
+
+data_publ_object_[]
+    _name                      '_publ_object_[]'
+    _category                    category_overview
+    _type                        null
+    loop_ _example
+          _example_detail
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;
+    loop_
+    _iucr_publ_object.id
+    _iucr_publ_object.type
+    _iucr_publ_object.content
+        1 cif 
+    ; sin \q/\l
+    ;
+        2 tex 
+    ; \sin {\theta \over \lambda}
+    ;
+
+;
+;
+    Example 1 - hypothetical example demonstrating alternative markup
+                for a mathematical expression using the CIF markup
+                convention, and TeX, respectively.
+;
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    _definition
+;              'Reserved' items for IUCr in-house development of 'objects'
+               that cannot otherwise be included in text fields to be
+               stored in the CIF and referenced from within text fields. 
+
+               As of this version, these are highly experimental and
+               should not be considered as a model for other applications.
+;
+
+data_iucr_publ_object.content
+    _name                      '_iucr_publ_object.content'
+    _category                    publ_object
+    _type                        char
+    _list                        yes
+    _list_reference            '_iucr_publ_object.id'
+    _definition
+;              The content of the object.
+;
+
+data_iucr_publ_object.id
+    _name                      '_iucr_publ_object.id'
+    _category                    publ_object
+    _type                        char
+    _list                        yes
+    _list_mandatory              yes
+    _definition
+;              Code identifying an object.
+;
+
+data_iucr_publ_object.type
+    _name                      '_iucr_publ_object.type'
+    _category                    publ_object
+    _type                        char
+    _list                        yes
+    _list_reference            '_iucr_publ_object.id'
+    _definition
+;              The data type of the object. It is expected that any future
+               elaborated definition will specify enumerated type codes.
+;
+
+#######################
+## PUBLCIF_DATABLOCK ##
+#######################
+
+data_publcif_datablock_[]
+    _name                      '_publcif_datablock_[]'
+    _category                    category_overview
+    _type                        null
+    loop_ _example
+          _example_detail
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;
+    data_I
+    _publcif_datablock.id '{657f18b0-826a-425f-99c7}'
+
+;
+;
+    Example 1 - hypothetical example where data block 'I' is given
+		a unique identifier '{657f18b0-826a-425f-99c7}'
+		to provide a reference to be used by items in the
+		PUBLCIF_INFO_DATABLOCK and PUBLCIF_INFO_TABLES categories.
+;
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    _definition
+;             'Private'  data items used by the IUCr publCIF software
+               for housekeeping purposes. Data items in this category
+               are used to store information about the parent data block.
+;
+
+
+data_publcif_datablock.id
+    _name                      '_publcif_datablock.id'
+    _category                    publcif_datablock
+    _type                        char
+    _definition
+;              
+                A data block identifier maintained by publCIF to allow
+                relationships between data blocks to be managed
+                elsewhere (e.g. by data items in the
+                PUBLCIF_INFO_DATABLOCK and PUBLCIF_INFO_TABLES 
+		categories). The use of this private identifier
+                guards against normalization of the
+                original data block codes (e.g. to establish
+                uniqueness in a collection of separate CIFs, or to aid
+                publication workflow).
+;
+
+######################
+## PUBLCIF_INFO_CIF ##
+######################
+
+data_publcif_info_cif_[]
+    _name                      '_publcif_info_cif_[]'
+    _category                    category_overview
+    _type                        null
+    loop_ _example
+          _example_detail
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;
+    _publcif_info_cif.paper_type   'EE'
+;
+;
+    Example 1 - the article derived from this CIF is to be typeset in
+                the style of Acta Cryst. Section E "Research
+                Communications" (the actual codes used are maintained
+                internally to publCIF and not tabulated in this
+                dictionary).
+;
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    _definition
+;               For use by publCIF - to store information about the type
+                of document to be generated from the parent data block
+                (i.e. that containing 'global' data items).
+;
+
+
+data_publcif_info_cif.paper_type
+    _name                      '_publcif_info_cif.paper_type'
+    _category                    publcif_info_cif
+    _type                        char
+    _definition
+;              
+                For use by publCIF - application-specific codes
+                relating to different article styles (in terms of
+                content and formatting).
+;
+
+############################
+## PUBLCIF_INFO_DATABLOCK ##
+############################
+
+data_publcif_info_datablock_[]
+    _name                      '_publcif_info_datablock_[]'
+    _category                    category_overview
+    _type                        null
+    loop_ _example
+          _example_detail
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;
+    loop_
+        _publcif_info_datablock.id
+        _publcif_info_datablock.publ_exptl
+        _publcif_info_datablock.publ_geom
+        _publcif_info_datablock.structure
+            "{657f18b0-826a-425f-99c7}"  ? ? n
+            "{f682b772-6196-4139-93e8}"  y y y
+            "{2d76c7aa-a8e1-427b-8571}"  n n y
+
+;
+;
+    Example 1 - hypothetical example for a CIF containing three data blocks,
+		of which two contain structural data and of these
+                the experimental and geometry data in only one block
+                (referenced by {f682b772-6196-4139-93e8}) are to appear 
+		in the final publication.
+;
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    _definition
+;              'Private'  data items used by the IUCr publCIF software
+               for housekeeping purposes. As of this version they are
+               specific to aspects of style and presentation in IUCr
+               journals, and are best ignored or discarded by anyone
+               else. They are treated as 'global' items spanning all
+               blocks within the CIF.
+;
+
+data_publcif_info_datablock.id
+    _name                      '_publcif_info_datablock.id'
+    _category                    publcif_info_datablock
+    _type                        char
+    _list                        yes
+    _list_mandatory              yes
+    _definition
+;              Code identifying the data block to which the formatting
+               directives in the  PUBLCIF_INFO_DATABLOCK category apply.
+
+               The ordering of block codes defines the order in which the
+               data are presented in the published article.
+
+;
+
+data_publcif_info_datablock.publ_exptl
+    _name                      '_publcif_info_datablock.publ_exptl'
+    _category                    publcif_info_datablock
+    _type                        char
+    _list                        yes
+    _list_mandatory              no
+    _list_reference            '_publcif_info_datablock.id'
+    loop_ _enumeration
+          _enumeration_detail    no  'do not publish experimental data'
+                                 n   'abbreviation for "no"'
+                                 yes 'do publish experimental data'
+                                 y   'abbreviation for "yes"'
+    _enumeration_default         y
+    _definition
+;              This code signals whether the experimental data
+               should be published for the structure described in the
+               referenced data block.
+;
+
+data_publcif_info_datablock.publ_geom
+    _name                      '_publcif_info_datablock.publ_geom'
+    _category                    publcif_info_datablock
+    _type                        char
+    _list                        yes
+    _list_mandatory              no
+    _list_reference            '_publcif_info_datablock.id'
+    loop_ _enumeration
+          _enumeration_detail    no  'do not publish geometry data'
+                                 n   'abbreviation for "no"'
+                                 yes 'do publish geometry data'
+                                 y   'abbreviation for "yes"'
+    _enumeration_default         y
+    _definition
+;              This code signals whether the molecular geometry data
+               should be published for the structure described in the
+               referenced data block.
+;
+
+data_publcif_info_datablock.structure
+    _name                      '_publcif_info_datablock.structure'
+    _category                    publcif_info_datablock
+    _type                        char
+    _list                        yes
+    _list_mandatory              no
+    _list_reference            '_publcif_info_datablock.id'
+    loop_ _enumeration
+          _enumeration_detail    no  'does not contain structural data'
+                                 n   'abbreviation for "no"'
+                                 yes 'does contain structural data'
+                                 y   'abbreviation for "yes"'
+    _enumeration_default         y
+    _definition
+;              This code signals whether the referenced
+		data block contains structural data.
+;
+
+
+##############################
+## PUBLCIF_INFO_EXPTL_TABLE ##
+##############################
+
+data_publcif_info_exptl_table_[]
+    _name                      '_publcif_info_exptl_table_max_cols_[]'
+    _category                    category_overview
+    _type                        null
+    loop_ _example
+          _example_detail
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;
+    _publcif_info_exptl_table_max_cols        4
+    _publcif_info_exptl_table_use_headnotes   n
+;
+;
+    Example 1 - directives to a typesetting routine to layout an
+                experimental table with a maximum of 4 columns of
+		structural data per table group and no printed head notes.
+;
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    _definition
+;              For use by publCIF - to store information about the layout
+               of the table of experimental details to be included in
+               a document derived from the parent CIF (i.e. 'global'
+               data items).
+;
+
+data_publcif_info_exptl_table_max_cols
+    _name                      '_publcif_info_exptl_table_max_cols'
+    _category                    publcif_info_exptl_table
+    _type                        numb
+    _enumeration_range           0:
+    _enumeration_default         0
+    _definition
+;              Defines how a multistructure table will be split into
+               table groups. Its usual implementation specifies the
+               number of columns, each summarising the experimental
+               details from one structure, that may span a page width
+               in the published article. The default value of '0' is
+               special and is understood as 'impose no grouping' -
+               i.e. include all structures in a single multi-column table.
+;
+
+data_publcif_info_exptl_table_use_headnotes
+    _name                      '_publcif_info_exptl_table_use_headnotes'
+    _category                    publcif_info_exptl_table
+    _type                        char
+    _definition
+;              
+               For use by publCIF - flags the printing of headnotes
+               associated with an experimental table in an
+               autogenerated article.
+;
+
+
+####################################
+## PUBLCIF_INFO_EXPTL_TABLE_EXTRA ##
+####################################
+
+data_publcif_info_exptl_table_extra_[]
+    _name                      '_publcif_info_exptl_table_extra_[]'
+    _category                    category_overview
+    _type                        null
+    _definition
+;              'Private'  data items used by the IUCr publcif software
+               for housekeeping purposes. As of this version they are
+               specific to aspects of style and presentation in IUCr
+               journals, and are best ignored or discarded by anyone else. 
+;
+
+data_publcif_info_exptl_table_extra_item
+    _name                      '_publcif_info_exptl_table_extra_item'
+    _category                    publcif_info_exptl_table_extra
+    _type                        char
+    _list                        yes
+    _definition
+;              Specifies additional experimental data items to be
+               published (in cases where they are not usually requested).
+;
+
+
+#####################################
+## PUBLCIF_INFO_EXPTL_TABLE_HEADER ##
+#####################################
+
+data_publcif_info_exptl_table_header_[]
+    _name                      '_publcif_info_exptl_table_header_[]'
+    _category                    category_overview
+    _type                        null
+    _definition
+;              'Private'  data items used by the IUCr publcif software
+               for housekeeping purposes. As of this version they are
+               specific to aspects of style and presentation in IUCr
+               journals, and are best ignored or discarded by anyone else. 
+;
+
+data_publcif_info_exptl_table_header_item
+    _name                      '_publcif_info_exptl_table_header_item'
+    _category                    publcif_info_exptl_table_header
+    _type                        char
+    _list                        yes
+    _definition
+;              Specifies which items to use for column headings in the
+               published table of experimental data.
+;
+
+
+#########################
+## PUBLCIF_INFO_TABLES ##
+#########################
+
+data_publcif_info_tables_[]
+    _name                      '_publcif_info_tables_[]'
+    _category                    category_overview
+    _type                        null
+    loop_ _example
+          _example_detail
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;
+    loop_
+        _publcif_info_tables.block_id
+        _publcif_info_tables.reference_item
+            "{657f18b0-826a-425f-99c7}"   "_publcif_info_datablock.publ_exptl"
+            "{f682b772-6196-4139-93e8}"   "_geom_bond_atom_site_label_1"
+            "{2d76c7aa-a8e1-427b-8571}"   "_geom_bond_atom_site_label_1"
+            "{f682b772-6196-4139-93e8}"   "_geom_hbond_atom_site_label_D"
+            "{2d76c7aa-a8e1-427b-8571}"   "_geom_hbond_atom_site_label_D"
+;
+;
+    Example 1 - hypothetical example where 
+                bond length and hydrogen-bond distance tables from two
+                structures are to be included in the article generated
+                from the CIF. There is also a pointer to a data
+                structure used internally to locate experimental
+                tables that are to be published (e.g. in a certain
+                category of article).
+;
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    _definition
+;              
+                For use by publCIF - to store information about the
+                tables to be included in a document derived from the
+                parent CIF (i.e. 'global' data items).
+;
+
+data_publcif_info_tables.block_id
+    _name                      '_publcif_info_tables.block_id'
+    _category                    publcif_info_tables
+    _type                        char
+    _list                        yes
+    _list_mandatory              yes
+    _definition
+;              For use by publCIF to locate data blocks containing
+               tabular material to be printed, e.g. in certain article
+               categories.
+;
+
+
+data_publcif_info_tables.reference_item
+    _name                      '_publcif_info_tables.reference_item'
+    _category                    publcif_info_tables
+    _type                        char
+    _list                        yes
+    _list_mandatory              no
+    _list_reference            '_publcif_info_tables.block_id'
+    _definition
+;              For use by publCIF to identify the geometry and
+               other tables to be printed, e.g. in certain article
+               categories.
+;
+
+
+########################
+## PUBLCIF_JMOLSCRIPT ##
+########################
+
+data_publcif_jmolscript_[]
+    _name                      '_publcif_jmolscript_[]'
+    _category                    category_overview
+    _type                        null
+    loop_ _example
+          _example_detail
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;
+    loop_
+        _publcif_jmolscript.group
+        _publcif_jmolscript.id
+        _publcif_jmolscript.model
+        _publcif_jmolscript.model_type
+        _publcif_jmolscript.type
+        _publcif_jmolscript.type_group
+        _publcif_jmolscript.caption
+        _publcif_jmolscript.script
+             fig1 . 1 o jmolApplet .
+            'Asymmetric unit of silver bis(1H-imidazolium) trinitrate.'
+    ;
+        # Jmol state version 11.5.37 2008-04-29 08:46;
+        # fullName = "jmolApplet0__339102683804489__";
+        # ...
+
+        function _setWindowState();
+        # height 494;
+        # width 494;
+        stateVersion = 1105037;
+        ...
+        end function;
+
+        function _setFileState();
+        ...
+    ;
+
+;
+;
+    Example 1 - Structure of an enhanced figure stored in publcif as
+                'fig1'.
+;
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    _definition
+;              'Private'  data items used by the IUCr publcif software
+               to store jmolscript commands allowing interactive
+               visualization of the molecular structure reported in
+               the CIF by the application Jmol: an open-source Java
+               viewer for chemical structures in 3D. http://www.jmol.org/ 
+;
+
+data_publcif_jmolscript.caption
+    _name                      '_publcif_jmolscript.caption'
+    _category                    publcif_jmolscript
+    _type                        char
+    _list                        yes
+    _list_reference            '_publcif_jmolscript.id'
+    _definition
+;              Descriptive caption accompanying a Jmol enhanced figure.
+;
+
+data_publcif_jmolscript.group
+    _name                      '_publcif_jmolscript.group'
+    _category                    publcif_jmolscript
+    _type                        char
+    _list                        yes
+    _list_reference            '_publcif_jmolscript.id'
+    _example                    'fig1'
+    _definition
+;              Code grouping together related visualization scripts.
+;
+
+data_publcif_jmolscript.id
+    _name                      '_publcif_jmolscript.id'
+    _category                    publcif_jmolscript
+    _type                        char
+    _list                        yes
+    _list_mandatory              yes
+    _definition
+;              Code identifying a Jmol enhanced figure.
+;
+
+data_publcif_jmolscript.model
+    _name                      '_publcif_jmolscript.model'
+    _category                    publcif_jmolscript
+    _type                        numb
+    _list                        yes
+    _list_reference            '_publcif_jmolscript.id'
+    _enumeration_range           1:
+    _enumeration_default         1
+    _definition
+;              The numeric identifier of the structural model in the
+               CIF to which the Jmol visualization will apply.
+;
+
+data_publcif_jmolscript.model_type
+    _name                      '_publcif_jmolscript.model_type'
+    _category                    publcif_jmolscript
+    _type                        char
+    _list                        yes
+    _list_reference            '_publcif_jmolscript.id'
+    loop_ _enumeration
+          _enumeration_detail    i   inorganic
+                                 m   macromolecular
+                                 o   organic
+    _definition
+;              Type of structural model - inorganic, organic or
+               biological macromolecular. 
+;
+
+data_publcif_jmolscript.script
+    _name                      '_publcif_jmolscript.script'
+    _category                    publcif_jmolscript
+    _type                        numb
+    _list                        yes
+    _list_reference            '_publcif_jmolscript.id'
+    _definition
+;              The actual script commands to be evaluated by Jmol.
+;
+
+data_publcif_jmolscript.type
+    _name                      '_publcif_jmolscript.type'
+    _category                    publcif_jmolscript
+    _type                        numb
+    _list                        yes
+    _list_reference            '_publcif_jmolscript.id'
+    _definition
+;              Type of Jmol script.
+;
+
+data_publcif_jmolscript.type_group
+    _name                      '_publcif_jmolscript.type_group'
+    _category                    publcif_jmolscript
+    _type                        numb
+    _list                        yes
+    _list_reference            '_publcif_jmolscript.id'
+    _definition
+;              Code grouping together related Jmol scripts.
+;
+
+
+############
+## REFINE ##
+############
+
+data_iucr_refine_instruction_details
+    _name                      '_iucr_refine_instruction_details'
+    _category                    refine
+    _type                        char
+    _related_item              '_iucr_refine_instructions_details'
+    _related_function            replace
+    _definition
+;              Used to store refinement-software instructions listings.
+               
+               This data name was advertised in journal Notes for Authors
+               in error for _iucr_refine_instructions_details; it is
+               formally deprecated and appears here only for
+               validation of legacy files. It should NOT be written
+               by future CIF generators/editors.
+;
+
+data_iucr_refine_instructions_details
+    _name                      '_iucr_refine_instructions_details'
+    _category                    refine
+    _type                        char
+    _related_item              '_iucr_refine_instruction_details'
+    _related_function            alternate
+    _definition
+;              Used to store refinement-software instructions listings.
+               Requested specifically by journal editors to record the
+               instructions executed by specific programs in the last
+               least-squares refinement cycle, allowing validation of
+               the reported structure model.
+
+               Typically a verbatim input file (e.g. in SHELXL .ins format);
+               The value is therefore treated as a raw string (i.e. no
+               CIF markup).
+
+               Use of this feature in IUCr journals is seen as an interim
+               measure; the preferred long-term approach is the development
+               of software able to handle data items in the CIF restraints
+               dictionary.
+;
+
+data_iucr_refine_instructions_details_constraints
+    _name                      '_iucr_refine_instructions_details_constraints'
+    _category                    refine
+    _type                        char
+    _definition
+;              Used to store refinement-software instructions listings.
+
+               Some software packages find it useful to process listings
+               of refinement constraints and restraints separately. This
+               item and its companion *_restraints are provided for
+               the benefit of such packages. The general data item
+               _iucr_refine_instructions_details may also be used.
+
+               Use of this feature in IUCr journals is seen as an interim
+               measure; the preferred long-term approach is the development
+               of software able to handle data items in the CIF restraints
+               dictionary.
+;
+
+data_iucr_refine_instructions_details_restraints
+    _name                      '_iucr_refine_instructions_details_restraints'
+    _category                    refine
+    _type                        char
+    _definition
+;              Used to store refinement-software instructions listings.
+
+               Some software packages find it useful to process listings
+               of refinement constraints and restraints separately. This
+               item and its companion *_constraints are provided for
+               the benefit of such packages. The general data item
+               _iucr_refine_instructions_details may also be used.
+
+               Use of this feature in IUCr journals is seen as an interim
+               measure; the preferred long-term approach is the development
+               of software able to handle data items in the CIF restraints
+               dictionary.
+;
+
+data_iucr_refine_reflections_details
+    _name                      '_iucr_refine_reflections_details'
+    _category                    refine
+    _type                        char
+    _definition
+;              Used to store the list of reflections used for the refinement.
+               Requested specifically by journal editors to record the
+               reflections used by specific programs in the last
+               least-squares refinement cycle, allowing validation of
+               the reported structure model.
+
+               Typically a verbatim input file. The value is therefore 
+               treated as a raw string (i.e. no CIF markup).
+
+               Use of this feature in IUCr journals is seen as an interim
+               measure; the preferred long-term approach is the development
+               of software able to handle data items in the appropriate CIF 
+               dictionary.
+;
+
+#########
+## VRF ##
+#########
+
+data_vrf_[]
+    _name                       '_vrf_[]'
+    _category                     category_overview
+    _type                         null
+    loop_ _example
+          _example_detail
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;
+    _vrf_REFLT_03_I
+    ;
+      PROBLEM: Alert B: < 90% complete (theta max?)
+      RESPONSE: Data provided according to standard protocols of service
+                crystallography laboratory: 91.4% complete at theta = 25.0\%
+    ;
+;
+;
+    Example 1 - Autogenerated alert created by checkCIF and responded to
+                by author.
+;
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    _definition
+;              Data items in the validation report form (VRF) category
+               record information relevant to the handling of validation
+               alerts during the journal review procedure. For ease of
+               handling, arbitrary datanames of the type _vrf_*_" are
+               permitted for an author to insert a response to a validation
+               alert, where * = test name; " = data-block identifier. It
+               is not possible to tabulate all possible datanames of this
+               type. The prefix "vrf" has been registered with the IUCr as
+               a reserved dataname prefix.
+;
+
+data_vrf_VALIDATOR_comments
+    _name                      '_vrf_VALIDATOR_comments'
+    _category                    vrf
+    _type                        char
+    _example                    'No apparent missed symmetry.'
+    _definition
+;              Textual commentary by journal Validation Editor on author
+               response to validation alerts.
+;

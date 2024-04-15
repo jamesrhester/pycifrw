@@ -1,0 +1,871 @@
+#\#CIF_2.0
+##############################################################################
+#                                                                            #
+#                    CIF Twinning Dictionary                                 #
+#                                                                            #
+# This dictionary contains names and definitions of twinning data items      #
+# recognized by the International Union of Crystallography for the exchange  #
+# of data between laboratories and submissions to journals and databases.    #
+#                                                                            #
+##############################################################################
+
+
+data_CIF_TWIN
+
+    _dictionary.title            CIF_TWIN
+    _dictionary.class            Instance
+    _dictionary.version          3.1
+    _dictionary.date             2016-11-15
+    _dictionary.uri              www.iucr.org/cif/dic/cif_twin.dic
+    _dictionary.ddl_conformance  3.11.09
+    _dictionary.namespace        TwinCrys
+    _description.text                   
+;
+    The DICTIONARY group defines the data items used to specify the
+    the twinning aspects of crystals in a crystallographic study.
+
+;
+
+save_TWIN_GROUP
+
+    _definition.id               TWIN_GROUP
+    _definition.scope            Category
+    _definition.class            Head
+    _definition.update           2014-06-20
+    _description.text                   
+;
+
+     The TWIN_GROUP data items describe atomic information
+     used in crystallographic structure studies.
+;
+    _name.category_id            CIF_TWIN
+    _name.object_id              TWIN_GROUP
+    _import.get                  [{"file":"cif_core.dic" "save":"CIF_CORE" "mode":"Full"}]
+save_
+
+
+save_TWIN
+
+    _definition.id               TWIN
+    _definition.scope            Category
+    _definition.class            Set
+    _definition.update           2014-06-20
+    _description.text                   
+;
+
+     Data items in the TWIN category record general details about
+     the nature of the twinning in the sample.
+     Terminology for twin dataname definitions was taken directly from:
+     "International Union of Crystallography Commission on Mathematical
+     and Theoretical Crystallography Research themes: Crystal twinning"
+     by Massimo Nespolo, February 3, 2009.
+     http://www.crystallography.fr/mathcryst/twins.htm .
+;
+    _name.category_id            TWIN_GROUP
+    _name.object_id              TWIN
+
+save_
+
+
+save_twin.dimensionality
+
+    _definition.id               '_twin.dimensionality'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_dimensionality'       
+    _description.text                   
+;
+
+     The degree of overlap between the twin lattices.
+     Most twin lattice symmetry (TLS) and twin lattice quasi-symmetry (TLQS)
+     twins as defined by Donnay and Donnay will be triperiodic.
+   
+     Reference: Donnay, G. & Donnay, J. D. H. (1974). Can. Mineral. 12, 422-425.
+;
+    _name.category_id            twin
+    _name.object_id              dimensionality
+    _type.purpose                State
+    _type.source                 Assigned
+    _type.container              Single
+    _type.contents               Code
+    loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+              triperiodic   'common lattice in three dimensions'     
+              diperiodic    'common lattice in two dimensions'       
+              monoperiodic  'common lattice in one dimension' 
+
+save_
+
+
+save_twin.formation_mechanism
+
+    _definition.id               '_twin.formation_mechanism'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_formation_mechanism'  
+    _description.text                   
+;
+
+     A description of the method of twin formation.
+;
+    _name.category_id            twin
+    _name.object_id              formation_mechanism
+    _type.purpose                State
+    _type.source                 Assigned
+    _type.container              Single
+    _type.contents               Code
+    loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+              gt            'growth twin formed during crystal growth'         
+              tt            'transformation twin formed during phase transition'        
+              mt            'mechanical twin formed as a result of mechanical action'
+
+save_
+
+
+save_twin.morphology
+
+    _definition.id               '_twin.morphology'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_morphology'           
+    _description.text                   
+;
+
+     The physical relationship of the different twins to one another.
+;
+    _name.category_id            twin
+    _name.object_id              morphology
+    _type.purpose                State
+    _type.source                 Assigned
+    _type.container              Single
+    _type.contents               Code
+    loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+              contact       'separated by a surface'       
+              penetration   'sharing a volume'   
+              simple        'individuals are not repeated'           
+              polysynthetic  'individuals repeat in approximately linear arrangement'   
+              cyclic        'individuals repeat in closed edifice' 
+
+save_
+
+
+save_twin.special_details
+
+    _definition.id               '_twin.special_details'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_special_details'      
+    _description.text                   
+;
+
+     Information about twinning in the sample not contained in other data items.
+;
+    _name.category_id            twin
+    _name.object_id              special_details
+    _type.purpose                Describe
+    _type.source                 Recorded
+    _type.container              Single
+    _type.contents               Text
+    loop_
+    _description_example.case
+            
+;
+        Individuals 3 and 4 arise from form (I) following an
+        enantiotropic phase transition by sudden cooling in
+        a cryostat to 173K.
+; 
+
+save_
+
+
+save_TWIN_INDIVIDUAL
+
+    _definition.id               TWIN_INDIVIDUAL
+    _definition.scope            Category
+    _definition.class            Loop
+    _definition.update           2014-06-20
+    _description.text                   
+;
+
+     Data items in the TWIN_INDIVIDUAL category describe properties
+     of each twinned individual, and the symmetry relationships
+     between the individuals.
+;
+    _name.category_id            TWIN
+    _name.object_id              TWIN_INDIVIDUAL
+    loop_
+       _category_key.name        '_twin_individual.id'
+
+save_
+
+
+save_twin_individual.id
+
+    _definition.id               '_twin_individual.id'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_individual_id'        
+    _description.text                   
+;
+
+     The unique identifier for this twin individual.
+     The twin for which _twin_individual.twin_matrix
+     is the identity matrix is called the reference twin.
+     It is recommended that the reference twin be labelled '1'.
+;
+    _name.category_id            twin_individual
+    _name.object_id              id
+    _type.purpose                Encode
+    _type.source                 Assigned
+    _type.container              Single
+    _type.contents               Code
+
+save_
+
+
+save_twin_individual.mass_fraction_refined
+
+    _definition.id               '_twin_individual.mass_fraction_refined'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_individual_mass_fraction_refined'         
+    _description.text                   
+;
+
+     The refined mass fraction of this twin individual; the sum
+     of all mass fractions must equal unity within the limits of
+     experimental uncertainty.
+;
+    _name.category_id            twin_individual
+    _name.object_id              mass_fraction_refined
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+    _enumeration.range           0:1.0
+
+save_
+
+
+save_twin_individual.twin_lattice_type
+
+    _definition.id               '_twin_individual.twin_lattice_type'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_individual_twin_lattice_type'   
+    _description.text                   
+;
+
+     Identification of the symmetry relationships between the
+     twin lattices as described in International Tables
+     for Crystallography (2004), Vol. C, Chapter 1.3.
+     The twin with the identity matrix should be denoted as 'ref'.
+;
+    _name.category_id            twin_individual
+    _name.object_id              twin_lattice_type
+    _type.purpose                State
+    _type.source                 Assigned
+    _type.container              Single
+    _type.contents               Code
+    loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+              ref           'reference twin'     
+              mt_I          'merohedral class I (simple inversion)'  
+              mt_II         'merohedral class II (mirror or twofold)'          
+              mt_I+II       'class I and II simultaneously present'  
+              rmt           'reticular merohedral'         
+              pmt           'pseudo-merohedral'  
+              rpmt          'reticular pseudo-merohedral'  
+              nmt           'non-merohedral' 
+
+save_
+
+
+save_twin_individual.twin_matrix
+
+    _definition.id               '_twin_individual.twin_matrix'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_individual_twin_matrix'         
+    _description.text                   
+;
+
+     The matrix U that multiplies the Miller indices h,k,l
+     of the reference twin to give the Miller indices h',k',l',
+     of the twin specified by _twin_individual_id
+
+                         (h' k' l') = U (h k l )
+
+     The reference twin must have U = I, the identity matrix.
+;
+    _name.category_id            twin_individual
+    _name.object_id              twin_matrix
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Matrix
+    _type.contents               Real
+    loop_
+    _method.purpose
+    _method.expression
+     Evaluation    
+;
+     with t  as  twin_individual
+
+     _twin_individual.twin_matrix =
+              [[ t.twin_matrix_11, t.twin_matrix_12, t.twin_matrix_13 ],
+               [ t.twin_matrix_21, t.twin_matrix_22, t.twin_matrix_23 ],
+               [ t.twin_matrix_31, t.twin_matrix_32, t.twin_matrix_33 ]]
+; 
+
+save_
+
+
+save_twin_individual.twin_matrix_11
+
+    _definition.id               '_twin_individual.twin_matrix_11'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_individual_twin_matrix_11'      
+    _description.text                   
+;
+
+     The [1,1] element of the matrix U in _twin_individual.twin_matrix.
+;
+    _name.category_id            twin_individual
+    _name.object_id              twin_matrix_11
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+
+save_
+
+
+save_twin_individual.twin_matrix_12
+
+    _definition.id               '_twin_individual.twin_matrix_12'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_individual_twin_matrix_12'      
+    _description.text                   
+;
+
+     The [1,2] element of the matrix U in _twin_individual.twin_matrix.
+;
+    _name.category_id            twin_individual
+    _name.object_id              twin_matrix_12
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+
+save_
+
+
+save_twin_individual.twin_matrix_13
+
+    _definition.id               '_twin_individual.twin_matrix_13'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_individual_twin_matrix_13'      
+    _description.text                   
+;
+
+     The [1,3] element of the matrix U in _twin_individual.twin_matrix.
+;
+    _name.category_id            twin_individual
+    _name.object_id              twin_matrix_13
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+
+save_
+
+
+save_twin_individual.twin_matrix_21
+
+    _definition.id               '_twin_individual.twin_matrix_21'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_individual_twin_matrix_21'      
+    _description.text                   
+;
+
+     The [2,1] element of the matrix U in _twin_individual.twin_matrix.
+;
+    _name.category_id            twin_individual
+    _name.object_id              twin_matrix_21
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+
+save_
+
+
+save_twin_individual.twin_matrix_22
+
+    _definition.id               '_twin_individual.twin_matrix_22'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_individual_twin_matrix_22'      
+    _description.text                   
+;
+
+     The [2,2] element of the matrix U in _twin_individual.twin_matrix.
+;
+    _name.category_id            twin_individual
+    _name.object_id              twin_matrix_22
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+
+save_
+
+
+save_twin_individual.twin_matrix_23
+
+    _definition.id               '_twin_individual.twin_matrix_23'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_individual_twin_matrix_23'      
+    _description.text                   
+;
+
+     The [3,2] element of the matrix U in _twin_individual.twin_matrix.
+;
+    _name.category_id            twin_individual
+    _name.object_id              twin_matrix_23
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+
+save_
+
+
+save_twin_individual.twin_matrix_31
+
+    _definition.id               '_twin_individual.twin_matrix_31'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_individual_twin_matrix_31'      
+    _description.text                   
+;
+
+     The [1,3] element of the matrix U in _twin_individual.twin_matrix.
+;
+    _name.category_id            twin_individual
+    _name.object_id              twin_matrix_31
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+
+save_
+
+
+save_twin_individual.twin_matrix_32
+
+    _definition.id               '_twin_individual.twin_matrix_32'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_individual_twin_matrix_32'      
+    _description.text                   
+;
+
+     The [2,3] element of the matrix U in _twin_individual.twin_matrix.
+;
+    _name.category_id            twin_individual
+    _name.object_id              twin_matrix_32
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+
+save_
+
+
+save_twin_individual.twin_matrix_33
+
+    _definition.id               '_twin_individual.twin_matrix_33'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_individual_twin_matrix_33'      
+    _description.text                   
+;
+
+     The [3,3] element of the matrix U in _twin_individual.twin_matrix.
+;
+    _name.category_id            twin_individual
+    _name.object_id              twin_matrix_33
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+
+save_
+
+
+save_TWIN_REFLN
+
+    _definition.id               TWIN_REFLN
+    _definition.scope            Category
+    _definition.class            Loop
+    _definition.update           2014-06-20
+    _description.text                   
+;
+
+     Items in the TWIN_REFLN category tabulate the calculated values of F^2^
+     for each peak observed in the diffraction pattern, together with the 
+     measured value of F^2^.  The calculated F^2^ for an observed peak is 
+     a weighted sum of the contribution of all the twin components.  The 
+     calculated structure factor for each twin contribution can also be given.
+;
+    _name.category_id            TWIN
+    _name.object_id              TWIN_REFLN
+    loop_
+       _category_key.name
+           '_twin_refln.datum_id'  '_twin_refln.individual_id'
+
+save_
+
+
+save_twin_refln.datum_id
+
+    _definition.id               '_twin_refln.datum_id'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_refln_datum_id'       
+    _description.text                   
+;
+
+     This item serves to identify an observed diffraction peak.
+     It may include contributions from one or more twin components
+     and so may appear more than once in the list.
+     The values of _twin_refln.F_squared_calc and
+     _twin_refln.F_squared_meas indexed by _twin_refln.datum_id 
+     include the contributions from all the twins.
+     The diffraction peak is indexed by _twin_refln.index_hkl 
+     referred to the cell of the twin component identified by 
+     _twin_refln.individual_id.
+;
+    _name.category_id            twin_refln
+    _name.object_id              datum_id
+    _type.purpose                Key
+    _type.source                 Assigned
+    _type.container              Single
+    _type.contents               Code
+
+save_
+
+
+save_twin_refln.F_squared_calc
+
+    _definition.id               '_twin_refln.F_squared_calc'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_refln_F_squared_calc'           
+    _description.text                   
+;
+
+     Calculated value for the overall squared structure factors (in
+     electrons squared for X-ray diffraction) arising from all
+     the twin contributions to the peak defined by _twin_refln_datum_id.
+     The total contribution from all twins to a single observed
+     reflection is modelled according to the method of Pratt, Coyle
+     and Ibers as follows:
+
+     _twin_refln.F_squared_calc = osf * Sum (mf * _reflnr._F_squared_calc)
+
+     where osf is the overall scale factor,
+     mf is the mass fraction,
+     and the sum is taken over all the twin components that contribute
+     to this diffraction peak.
+
+     Reference: Pratt, C. S., Coyle, B. A. & Ibers, J. A. (1971).
+     J. Chem. Soc. A, pp. 2146-2151.
+;
+    _name.category_id            twin_refln
+    _name.object_id              F_squared_calc
+    _type.purpose                Measurand
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+
+save_
+
+
+save_twin_refln.F_squared_calc_individual
+
+    _definition.id               '_twin_refln.F_squared_calc_individual'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_refln_F_squared_calc_individual'          
+    _description.text                   
+;
+
+     Contribution of the twin identified by _twin_refln.individual_id
+     to _twin_refln.F_squared_calc.
+
+     _twin_refln.F_squared_calc_individual = osf * mf * _refln.F_squared_calc
+
+     where osf is the overall scale factor, mf is the mass factor.
+     For X-ray diffraction the units are electrons squared.
+;
+    _name.category_id            twin_refln
+    _name.object_id              F_squared_calc_individual
+    _type.purpose                Measurand
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+
+save_
+
+
+save_twin_refln.F_squared_meas
+
+    _definition.id               '_twin_refln.F_squared_meas'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_refln_F_squared_meas'           
+    _description.text                   
+;
+
+     The observed value F^2^ of the peak referenced by
+     _twin_refln.datum_id. This is typically the observed peak
+     intensity after Lorentz and polarization corrections.
+;
+    _name.category_id            twin_refln
+    _name.object_id              F_squared_meas
+    _type.purpose                Measurand
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Real
+
+save_
+
+
+save_twin_refln.F_squared_meas_sigma
+
+    _definition.id               '_twin_refln.F_squared_meas_sigma'
+    _definition.update           2014-07-30
+    loop_
+      _alias.definition_id
+          '_twin_refln_F_squared_meas_sigma'     
+          '_twin_refln_F_squared_sigma'          
+          '_twin_refln.F_squared_sigma'          
+          '_twin_refln.F_squared_meas_su' 
+    _description.text                   
+;
+
+     Standard uncertainty of _twin_refln_F_squared_meas
+;
+    _name.category_id            twin_refln
+    _name.object_id              F_squared_meas_su
+    _name.linked_item_id         '_twin_refln.F_squared_meas'
+    _type.purpose                SU
+    _type.source                 Related
+    _type.container              Single
+    _type.contents               Real
+
+save_
+
+
+save_twin_refln.include_status
+
+    _definition.id               '_twin_refln.include_status'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_refln_include_status'           
+    _description.text                   
+;
+
+     A symbol indicating how the reflection is treated during refinement.
+;
+    _name.category_id            twin_refln
+    _name.object_id              include_status
+    _type.purpose                State
+    _type.source                 Assigned
+    _type.container              Single
+    _type.contents               Code
+    loop_
+    _enumeration_set.state
+    _enumeration_set.detail
+              o             
+;            (lower-case letter o for 'observed') satisfies _refine_ls.d_res_high
+             satisfies _refine_ls.d_res_low exceeds _reflns.threshold_expression
+;        
+              <             
+;               satisfies _refine_ls.d_res_high satisfies _refine_ls.d_res_low
+                does not exceed _reflns.threshold_expression
+;        
+              -             'systematically absent reflection'       
+              x             'unreliable measurement -- not used'     
+              r             'removed from the refinement for other reasons'    
+              h             'does not satisfy _refine_ls_d_res_high'           
+              l             'does not satisfy _refine_ls_d_res_low' 
+    _enumeration.default         o
+
+save_
+
+
+save_twin_refln.index_h
+
+    _definition.id               '_twin_refln.index_h'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_refln_index_h'        
+    _description.text                   
+;
+
+     Miller index h in the vector _twin_refln.index_hkl.
+;
+    _name.category_id            twin_refln
+    _name.object_id              index_h
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Integer
+
+save_
+
+
+save_twin_refln.index_hkl
+
+    _definition.id               '_twin_refln.index_hkl'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_refln_index_hkl'      
+    _description.text                   
+;
+
+     Miller index vector of a reflection for the twin component
+     labelled by _twin_refln.individual_id.
+     The values of the Miller indices must correspond
+     to the cell defined for this twin component.
+;
+    _name.category_id            twin_refln
+    _name.object_id              index_hkl
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Matrix
+    _type.contents               Integer
+    _type.dimension              '[3]'
+    loop_
+    _method.purpose
+    _method.expression
+     Evaluation    
+;
+     With t as twin_refln
+
+       _twin_refln.index_hkl =  [t.index_h, t.index_k, t.index_l]
+; 
+
+save_
+
+
+save_twin_refln.index_k
+
+    _definition.id               '_twin_refln.index_k'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_refln_index_k'        
+    _description.text                   
+;
+
+     Miller index k in the vector _twin_refln.index_hkl. 
+;
+    _name.category_id            twin_refln
+    _name.object_id              index_k
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Integer
+
+save_
+
+
+save_twin_refln.index_l
+
+    _definition.id               '_twin_refln.index_l'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_refln_index_l'        
+    _description.text                   
+;
+
+     Miller index l in the vector _twin_refln.index_hkl. 
+;
+    _name.category_id            twin_refln
+    _name.object_id              index_l
+    _type.purpose                Number
+    _type.source                 Derived
+    _type.container              Single
+    _type.contents               Integer
+
+save_
+
+
+save_twin_refln.individual_id
+
+    _definition.id               '_twin_refln.individual_id'
+    _definition.update           2014-06-20
+    loop_
+      _alias.definition_id
+          '_twin_refln_individual_id'  
+    _description.text                   
+;
+
+     The unique identifier of the twin individual
+     whose Miller indices are given in _twin_refln_index_hkl.
+     The ID must match a _twin.individual_id in the
+     TWIN_INDIVIDUAL category.
+
+     The list reference includes both _twin_refln.datum_id and
+     _twin_refln.individual_id.  The combination of these two items
+     may only appear once in a list.
+;
+    _name.category_id            twin_refln
+    _name.object_id              individual_id
+    _name.linked_item_id         '_twin.individual_id'
+    _type.purpose                Encode
+    _type.source                 Assigned
+    _type.container              Single
+    _type.contents               Code
+
+save_

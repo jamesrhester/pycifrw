@@ -1,0 +1,912 @@
+
+
+##############################################################################
+#                                                                            #
+#                             JANA DEFINITIONS                               #
+#                             --------------------                           #                   
+# This dictionary contains the parameters used to describe B-IncStrDB        # 
+#        database structures obtained with JANA program                      #                                             
+#                                                                            #
+##############################################################################
+
+
+data_on_this_dictionary
+    _dictionary_name            jana.dic 
+    _dictionary_version         1.0.1
+    _dictionary_update          2023-09-03
+    _dictionary_history
+;
+   2023-01-26  Added JANA_FILE category
+   2023-01-26  Added _atom_site_Fourier_wave_vector_q*_coeff data names
+   2023-09-03  Added '_type_conditions esd' to _jana_atom_site_occ_fourier_absolute
+   2023-09-03  Changed the type of _jana_atom_site_displace_crenel_ortho_id from numb to char
+;
+
+
+####################
+## JANA_ATOM_SITE ##
+####################
+
+data_jana_atom_site_[]
+    _name                      '_jana_atom_site_[]'
+    _category                    category_overview
+    _type                        null
+
+data_jana_atom_site_ADP_C_label
+    _name                      '_jana_atom_site_ADP_C_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+
+data_jana_atom_site_ADP_C_type_symbol
+    _name                      '_jana_atom_site_ADP_C_type_symbol'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_C_label'
+
+data_jana_atom_site_ADP_C_
+    loop_ _name                   '_jana_atom_site_ADP_C_111'
+                                  '_jana_atom_site_ADP_C_112'
+                                  '_jana_atom_site_ADP_C_113'
+                                  '_jana_atom_site_ADP_C_122'
+                                  '_jana_atom_site_ADP_C_123'
+                                  '_jana_atom_site_ADP_C_133'
+                                  '_jana_atom_site_ADP_C_222'
+                                  '_jana_atom_site_ADP_C_223'
+                                  '_jana_atom_site_ADP_C_233'
+                                  '_jana_atom_site_ADP_C_333'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_C_label'
+
+##############################################
+
+data_jana_atom_site_ADP_D_label
+    _name                      '_jana_atom_site_ADP_D_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+
+data_jana_atom_site_ADP_D_type_symbol
+    _name                      '_jana_atom_site_ADP_D_type_symbol'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_D_label'
+
+data_jana_atom_site_ADP_D_
+    loop_ _name                   '_jana_atom_site_ADP_D_1111'
+                                  '_jana_atom_site_ADP_D_1112'
+                                  '_jana_atom_site_ADP_D_1113'
+                                  '_jana_atom_site_ADP_D_1122'
+                                  '_jana_atom_site_ADP_D_1123'
+                                  '_jana_atom_site_ADP_D_1133'
+                                  '_jana_atom_site_ADP_D_1222'
+                                  '_jana_atom_site_ADP_D_1223'
+                                  '_jana_atom_site_ADP_D_1233'
+                                  '_jana_atom_site_ADP_D_1333'
+                                  '_jana_atom_site_ADP_D_2222'
+                                  '_jana_atom_site_ADP_D_2223'
+                                  '_jana_atom_site_ADP_D_2233'
+                                  '_jana_atom_site_ADP_D_2333'
+                                  '_jana_atom_site_ADP_D_3333'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_D_label'
+
+##############################################
+
+data_jana_atom_site_ADP_E_label
+    _name                      '_jana_atom_site_ADP_E_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+
+data_jana_atom_site_ADP_E_type_symbol
+    _name                      '_jana_atom_site_ADP_E_type_symbol'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_E_label'
+
+data_jana_atom_site_ADP_E_
+    loop_ _name                   '_jana_atom_site_ADP_E_11111'
+                                  '_jana_atom_site_ADP_E_11112'
+                                  '_jana_atom_site_ADP_E_11113'
+                                  '_jana_atom_site_ADP_E_11122'
+                                  '_jana_atom_site_ADP_E_11123'
+                                  '_jana_atom_site_ADP_E_11133'
+                                  '_jana_atom_site_ADP_E_11222'
+                                  '_jana_atom_site_ADP_E_11223'
+                                  '_jana_atom_site_ADP_E_11233'
+                                  '_jana_atom_site_ADP_E_11333'
+                                  '_jana_atom_site_ADP_E_12222'
+                                  '_jana_atom_site_ADP_E_12223'
+                                  '_jana_atom_site_ADP_E_12233'
+                                  '_jana_atom_site_ADP_E_12333'
+                                  '_jana_atom_site_ADP_E_13333'
+                                  '_jana_atom_site_ADP_E_22222'
+                                  '_jana_atom_site_ADP_E_22223'
+                                  '_jana_atom_site_ADP_E_22233'
+                                  '_jana_atom_site_ADP_E_22333'
+                                  '_jana_atom_site_ADP_E_23333'
+                                  '_jana_atom_site_ADP_E_33333'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_E_label'
+
+
+##############################################
+
+
+data_jana_atom_site_ADP_F_label
+    _name                      '_jana_atom_site_ADP_F_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+data_jana_atom_site_ADP_F_type_symbol
+    _name                      '_jana_atom_site_ADP_F_type_symbol'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_F_label'
+data_jana_atom_site_ADP_F_
+    loop_ _name                  '_jana_atom_site_ADP_F_111111'
+                                 '_jana_atom_site_ADP_F_111112'
+                                 '_jana_atom_site_ADP_F_111113'
+                                 '_jana_atom_site_ADP_F_111122'
+                                 '_jana_atom_site_ADP_F_111123'
+                                 '_jana_atom_site_ADP_F_111133'
+                                 '_jana_atom_site_ADP_F_111222'
+                                 '_jana_atom_site_ADP_F_111223'
+                                 '_jana_atom_site_ADP_F_111233'
+                                 '_jana_atom_site_ADP_F_111333'
+                                 '_jana_atom_site_ADP_F_112222'
+                                 '_jana_atom_site_ADP_F_112223'
+                                 '_jana_atom_site_ADP_F_112233'
+                                 '_jana_atom_site_ADP_F_112333'
+                                 '_jana_atom_site_ADP_F_113333'
+                                 '_jana_atom_site_ADP_F_122222'
+                                 '_jana_atom_site_ADP_F_122223'
+                                 '_jana_atom_site_ADP_F_122233'
+                                 '_jana_atom_site_ADP_F_122333'
+                                 '_jana_atom_site_ADP_F_123333'
+                                 '_jana_atom_site_ADP_F_133333'
+                                 '_jana_atom_site_ADP_F_222222'
+                                 '_jana_atom_site_ADP_F_222223'
+                                 '_jana_atom_site_ADP_F_222233'
+                                 '_jana_atom_site_ADP_F_222333'
+                                 '_jana_atom_site_ADP_F_223333'
+                                 '_jana_atom_site_ADP_F_233333'
+                                 '_jana_atom_site_ADP_F_333333' 
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_F_label'
+
+
+
+########################################################
+data_jana_atom_site_crenel_ortho_func_id
+    _name                      '_jana_atom_site_crenel_ortho_func_id'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+data_jana_atom_site_crenel_ortho_func_c
+    _name                      '_jana_atom_site_crenel_ortho_func_c'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_crenel_ortho_func_id'
+data_jana_atom_site_crenel_ortho_func_w
+    _name                      '_jana_atom_site_crenel_ortho_func_w'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_crenel_ortho_func_id'
+data_jana_atom_site_crenel_ortho_func_eps
+    _name                      '_jana_atom_site_crenel_ortho_func_eps'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_crenel_ortho_func_id'
+
+
+#######################################################################
+
+
+data_jana_atom_site_occ_Fourier_absolute_site_label
+    _name                      '_jana_atom_site_occ_Fourier_absolute_site_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+data_jana_atom_site_occ_Fourier_absolute
+    _name                      '_jana_atom_site_occ_Fourier_absolute'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_occ_Fourier_absolute_site_label'
+##################################################################################
+
+
+
+
+data_jana_atom_site_occ_Legendre_atom_site_label
+    _name                      '_jana_atom_site_occ_Legendre_atom_site_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+data_jana_atom_site_occ_Legendre_param_order
+    _name                      '_jana_atom_site_occ_Legendre_param_order'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_occ_Legendre_atom_site_label'
+data_jana_atom_site_occ_Legendre_param_coeff
+    _name                      '_jana_atom_site_occ_Legendre_param_coeff'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_occ_Legendre_atom_site_label'
+###################################################################
+
+
+data_jana_atom_site_occ_XHarm_atom_site_label
+    _name                      '_jana_atom_site_occ_XHarm_atom_site_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+data_jana_atom_site_occ_XHarm_param_order
+    _name                      '_jana_atom_site_occ_XHarm_param_order'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_occ_XHarm_atom_site_label'
+data_jana_atom_site_occ_XHarm_param_coeff
+    _name                      '_jana_atom_site_occ_XHarm_param_coeff'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_occ_XHarm_atom_site_label'
+###################################################################
+
+data_jana_atom_site_occ_crenel_ortho_atom_site_label
+    _name                      '_jana_atom_site_occ_crenel_ortho_atom_site_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+data_jana_atom_site_occ_crenel_ortho_id
+    _name                      '_jana_atom_site_occ_crenel_ortho_id'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_occ_crenel_ortho_atom_site_label'
+data_jana_atom_site_occ_crenel_ortho_param_order
+    _name                      '_jana_atom_site_occ_crenel_ortho_param_order'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_occ_crenel_ortho_atom_site_label'
+data_jana_atom_site_occ_crenel_ortho_param_coeff
+    _name                      '_jana_atom_site_occ_crenel_ortho_param_coeff'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_occ_crenel_ortho_atom_site_label'
+###################################################################################
+
+
+data_jana_atom_site_displace_Legendre_atom_site_label
+    _name                      '_jana_atom_site_displace_Legendre_atom_site_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+data_jana_atom_site_displace_Legendre_axis
+    _name                      '_jana_atom_site_displace_Legendre_axis'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+    _list_reference            '_jana_atom_site_displace_Legendre_atom_site_label'
+data_jana_atom_site_displace_Legendre_param_order
+    _name                      '_jana_atom_site_displace_Legendre_param_order'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_displace_Legendre_atom_site_label'
+data_jana_atom_site_displace_Legendre_param_coeff
+    _name                      '_jana_atom_site_displace_Legendre_param_coeff'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_displace_Legendre_atom_site_label'
+
+##########################################################################
+
+
+
+data_jana_atom_site_displace_XHarm_site_label
+    _name                      '_jana_atom_site_displace_XHarm_site_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+data_jana_atom_site_displace_XHarm_axis
+    _name                      '_jana_atom_site_displace_XHarm_axis'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+    _list_reference            '_jana_atom_site_displace_XHarm_site_label'
+data_jana_atom_site_displace_XHarm_param_order
+    _name                      '_jana_atom_site_displace_XHarm_param_order'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_displace_XHarm_site_label'
+data_jana_atom_site_displace_XHarm_param_coeff
+    _name                      '_jana_atom_site_displace_XHarm_param_coeff'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_displace_XHarm_site_label'
+
+##########################################################################
+data_jana_atom_site_displace_crenel_ortho_atom_site_label
+    _name                     '_jana_atom_site_displace_crenel_ortho_atom_site_label'
+    _category                  jana_atom_site
+    _type                      char
+    _list                       yes
+data_jana_atom_site_displace_crenel_ortho_axis
+    _name                      '_jana_atom_site_displace_crenel_ortho_axis'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+    _list_reference            '_jana_atom_site_displace_crenel_ortho_atom_site_label'
+data_jana_atom_site_displace_crenel_ortho_id
+    _name                      '_jana_atom_site_displace_crenel_ortho_id'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+    _list_reference            '_jana_atom_site_displace_crenel_ortho_atom_site_label'
+data_jana_atom_site_displace_crenel_ortho_param_order
+    _name                      '_jana_atom_site_displace_crenel_ortho_param_order'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_displace_crenel_ortho_atom_site_label'
+data_jana_atom_site_displace_crenel_ortho_param_coeff
+    _name                      '_jana_atom_site_displace_crenel_ortho_param_coeff'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_displace_crenel_ortho_atom_site_label'
+
+##############################################################################
+
+                                        
+data_jana_atom_site_U_Legendre_atom_site_label
+    _name                      '_jana_atom_site_U_Legendre_atom_site_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+data_jana_atom_site_U_Legendre_tens_elem
+    _name                      '_jana_atom_site_U_Legendre_tens_elem'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+    _list_reference            '_jana_atom_site_U_Legendre_atom_site_label'
+data_jana_atom_site_U_Legendre_param_order
+    _name                      '_jana_atom_site_U_Legendre_param_order'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_U_Legendre_atom_site_label'
+data_jana_atom_site_U_Legendre_param_coeff
+    _name                      '_jana_atom_site_U_Legendre_param_coeff'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_U_Legendre_atom_site_label'
+
+######################################################
+
+data_jana_atom_site_U_XHarm_atom_site_label
+    _name                      '_jana_atom_site_U_XHarm_atom_site_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+data_jana_atom_site_U_XHarm_tens_elem
+    _name                      '_jana_atom_site_U_XHarm_tens_elem'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+    _list_reference            '_jana_atom_site_U_XHarm_atom_site_label'
+data_jana_atom_site_U_XHarm_param_order
+    _name                      '_jana_atom_site_U_XHarm_param_order'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_U_XHarm_atom_site_label'
+data_jana_atom_site_U_XHarm_param_coeff
+    _name                      '_jana_atom_site_U_XHarm_param_coeff'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_U_XHarm_atom_site_label'
+
+######################################################
+
+data_jana_atom_site_U_crenel_ortho_atom_site_label
+    _name                      '_jana_atom_site_U_crenel_ortho_atom_site_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+data_jana_atom_site_U_crenel_ortho_tens_elem
+    _name                      '_jana_atom_site_U_crenel_ortho_tens_elem'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+    _list_reference            '_jana_atom_site_U_crenel_ortho_atom_site_label'
+data_jana_atom_site_U_crenel_ortho_id
+    _name                      '_jana_atom_site_U_crenel_ortho_id'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_U_crenel_ortho_atom_site_label'
+data_jana_atom_site_U_crenel_ortho_param_order
+    _name                      '_jana_atom_site_U_crenel_ortho_param_order'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_U_crenel_ortho_atom_site_label'
+data_jana_atom_site_U_crenel_ortho_param_coeff
+    _name                      '_jana_atom_site_U_crenel_ortho_param_coeff'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions                 esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_U_crenel_ortho_atom_site_label'
+
+######################################################
+
+                 
+data_jana_atom_site_ADP_C_Fourier_atom_site_label
+    _name                      '_jana_atom_site_ADP_C_Fourier_atom_site_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+data_jana_atom_site_ADP_C_Fourier_tens_elem
+    _name                      '_jana_atom_site_ADP_C_Fourier_tens_elem'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_C_Fourier_atom_site_label'
+data_jana_atom_site_ADP_C_Fourier_wave_vector_seq_id
+    _name                      '_jana_atom_site_ADP_C_Fourier_wave_vector_seq_id'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_C_Fourier_atom_site_label'
+data_jana_atom_site_ADP_C_Fourier_param_cos
+    _name                      '_jana_atom_site_ADP_C_Fourier_param_cos'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_C_Fourier_atom_site_label'
+data_jana_atom_site_ADP_C_Fourier_param_sin
+    _name                      '_jana_atom_site_ADP_C_Fourier_param_sin'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_C_Fourier_atom_site_label'
+
+
+######################################################
+
+ 
+data_jana_atom_site_ADP_D_Fourier_atom_site_label
+    _name                      '_jana_atom_site_ADP_D_Fourier_atom_site_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+data_jana_atom_site_ADP_D_Fourier_tens_elem
+    _name                      '_jana_atom_site_ADP_D_Fourier_tens_elem'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_D_Fourier_atom_site_label'
+data_jana_atom_site_ADP_D_Fourier_wave_vector_seq_id
+    _name                      '_jana_atom_site_ADP_D_Fourier_wave_vector_seq_id'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_D_Fourier_atom_site_label'
+data_jana_atom_site_ADP_D_Fourier_param_cos
+    _name                      '_jana_atom_site_ADP_D_Fourier_param_cos'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_D_Fourier_atom_site_label'
+data_jana_atom_site_ADP_D_Fourier_param_sin
+    _name                      '_jana_atom_site_ADP_D_Fourier_param_sin'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_D_Fourier_atom_site_label'
+
+######################################################
+
+
+ 
+data_jana_atom_site_ADP_E_Fourier_atom_site_label
+    _name                      '_jana_atom_site_ADP_E_Fourier_atom_site_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+data_jana_atom_site_ADP_E_Fourier_tens_elem
+    _name                      '_jana_atom_site_ADP_E_Fourier_tens_elem'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_E_Fourier_atom_site_label'
+data_jana_atom_site_ADP_E_Fourier_wave_vector_seq_id
+    _name                      '_jana_atom_site_ADP_E_Fourier_wave_vector_seq_id'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_E_Fourier_atom_site_label'
+data_jana_atom_site_ADP_E_Fourier_param_cos
+    _name                      '_jana_atom_site_ADP_E_Fourier_param_cos'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_E_Fourier_atom_site_label'
+data_jana_atom_site_ADP_E_Fourier_param_sin
+    _name                      '_jana_atom_site_ADP_E_Fourier_param_sin'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_E_Fourier_atom_site_label'
+
+######################################################
+
+
+ 
+data_jana_atom_site_ADP_F_Fourier_atom_site_label
+    _name                      '_jana_atom_site_ADP_F_Fourier_atom_site_label'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+data_jana_atom_site_ADP_F_Fourier_tens_elem
+    _name                      '_jana_atom_site_ADP_F_Fourier_tens_elem'
+    _category                    jana_atom_site
+    _type                        char
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_F_Fourier_atom_site_label'
+data_jana_atom_site_ADP_F_Fourier_wave_vector_seq_id
+    _name                      '_jana_atom_site_ADP_F_Fourier_wave_vector_seq_id'
+    _category                    jana_atom_site
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_F_Fourier_atom_site_label'
+data_jana_atom_site_ADP_F_Fourier_param_cos
+    _name                      '_jana_atom_site_ADP_F_Fourier_param_cos'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_F_Fourier_atom_site_label'
+data_jana_atom_site_ADP_F_Fourier_param_sin
+    _name                      '_jana_atom_site_ADP_F_Fourier_param_sin'
+    _category                    jana_atom_site
+    _type                        numb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_atom_site_ADP_F_Fourier_atom_site_label'
+
+######################################################
+
+
+
+data_jana_atom_site_Fourier_wave_vector_q1_coeff
+    _name                       '_jana_atom_site_Fourier_wave_vector_q1_coeff'
+    _category                     atom_site_Fourier_wave_vector
+    _type                         numb
+    _list                         yes
+    _list_reference            '_atom_site_Fourier_wave_vector_seq_id'
+data_jana_atom_site_Fourier_wave_vector_q2_coeff
+    _name                       '_jana_atom_site_Fourier_wave_vector_q2_coeff'
+    _category                     atom_site_Fourier_wave_vector
+    _type                         numb
+    _list                         yes
+    _list_reference            '_atom_site_Fourier_wave_vector_seq_id'
+data_jana_atom_site_Fourier_wave_vector_q3_coeff
+    _name                      '_jana_atom_site_Fourier_wave_vector_q3_coeff'
+    _category                    atom_site_Fourier_wave_vector
+    _type                        numb
+    _list                        yes
+    _list_reference            '_atom_site_Fourier_wave_vector_seq_id'
+data_atom_site_Fourier_wave_vector_q1_coeff
+    _name                       '_atom_site_Fourier_wave_vector_q1_coeff'
+    _category                     atom_site_Fourier_wave_vector
+    _type                         numb
+    _list                         yes
+    _list_reference            '_atom_site_Fourier_wave_vector_seq_id'
+data_atom_site_Fourier_wave_vector_q2_coeff
+    _name                       '_atom_site_Fourier_wave_vector_q2_coeff'
+    _category                     atom_site_Fourier_wave_vector
+    _type                         numb
+    _list                         yes
+    _list_reference            '_atom_site_Fourier_wave_vector_seq_id'
+data_atom_site_Fourier_wave_vector_q3_coeff
+    _name                      '_atom_site_Fourier_wave_vector_q3_coeff'
+    _category                    atom_site_Fourier_wave_vector
+    _type                        numb
+    _list                        yes
+    _list_reference            '_atom_site_Fourier_wave_vector_seq_id'
+
+######################################################
+
+ 
+####################
+## JANA_CELL     ##
+###################
+
+data_jana_cell_[]
+    _name                      '_jana_cell_[]'
+    _category                    category_overview
+    _type                        null
+
+data_jana_cell_twin_matrix_id
+    _name                      '_jana_cell_twin_matrix_id'
+    _category                    jana_cell
+    _type                        numb
+    _list                        yes
+
+data_jana_cell_twin_volume_fraction
+    _name                      '_jana_cell_twin_volume_fraction'
+    _category                     jana_cell
+    _type                        umb
+    _type_conditions             esd
+    _list                        yes
+    _list_reference            '_jana_cell_twin_matrix_id'
+
+#data_jana_cell_twin_matrix_1_1
+#   _name                      '_jana_cell_twin_matrix_1_1'
+#   _category                    jana_cell
+#   _type                        numb
+#   _list                        yes
+#   _list_reference            '_jana_cell_twin_matrix_id'
+#data_jana_cell_twin_matrix_1_2
+#    _name                      '_jana_cell_twin_matrix_1_2'
+#    _category                    jana_cell
+#    _type                        numb
+#    _list                        yes
+#    _list_reference            '_jana_cell_twin_matrix_id'
+#data_jana_cell_twin_matrix_1_3
+#    _name                     '_jana_cell_twin_matrix_1_3'
+#    _category                  jana_cell
+#    _type                      numb
+#    _list                      yes
+#    _list_reference            '_jana_cell_twin_matrix_id'
+#data_jana_cell_twin_matrix_2_1
+#    _name                      '_jana_cell_twin_matrix_2_1'
+#    _category                    jana_cell
+#    _type                        numb
+#    _list                        yes
+#    _list_reference            '_jana_cell_twin_matrix_id'
+#data_jana_cell_twin_matrix_2_2
+#    _name                      '_jana_cell_twin_matrix_2_2'
+#    _category                    jana_cell
+#    _type                        numb
+#    _list                        yes
+#    _list_reference            '_jana_cell_twin_matrix_id'
+#data_jana_cell_twin_matrix_2_3
+#    _name                      '_jana_cell_twin_matrix_2_3'
+#    _category                    jana_cell
+#    _type                        numb
+#    _list                        yes
+#    _list_reference            '_jana_cell_twin_matrix_id'
+#data_jana_cell_twin_matrix_3_1
+#    _name                     '_jana_cell_twin_matrix_3_1'
+#    _category                  jana_cell
+#    _type                      char
+#    _list                        yes
+#    _list_reference            '_jana_cell_twin_matrix_id'
+#data_jana_cell_twin_matrix_3_2
+#    _name                      '_jana_cell_twin_matrix_3_2'
+#    _category                    jana_cell
+#    _type                        numb
+#    _list                        yes
+#    _list_reference            '_jana_cell_twin_matrix_id'
+#data_jana_cell_twin_matrix_3_3
+#    _name                      '_jana_cell_twin_matrix_3_3'
+#    _category                    jana_cell
+#    _type                        numb
+#    _list                        yes
+#    _list_reference            '_jana_cell_twin_matrix_id'
+
+data_cell_twin_matrix_
+    loop_ _name                  '_jana_cell_twin_matrix_1_1'
+                                 '_jana_cell_twin_matrix_1_2'
+                                 '_jana_cell_twin_matrix_1_3'
+                                 '_jana_cell_twin_matrix_2_1'
+                                 '_jana_cell_twin_matrix_2_2'
+                                 '_jana_cell_twin_matrix_2_3'
+                                 '_jana_cell_twin_matrix_3_1'
+                                 '_jana_cell_twin_matrix_3_2'
+                                 '_jana_cell_twin_matrix_3_3'
+    _category                    jana_cell
+    _type                        numb
+    _list                        yes
+    _list_reference            '_jana_cell_twin_matrix_id'
+
+##################################
+
+
+#data_jana_cell_commen_supercell_matrix_1_1 
+#    _name                      '_jana_cell_commen_supercell_matrix_1_1'
+#    _category                    jana_cell
+#    _type                            numb
+#data_jana_cell_commen_supercell_matrix_1_2
+#    _name                      '_jana_cell_commen_supercell_matrix_1_2'
+#    _category                    jana_cell
+#    _type                            numb
+#data_jana_cell_commen_supercell_matrix_1_3
+#    _name                      '_jana_cell_commen_supercell_matrix_1_3'
+#    _category                    jana_cell
+#    _type                            numb
+#data_jana_cell_commen_supercell_matrix_2_1 
+#    _name                      '_jana_cell_commen_supercell_matrix_2_1'
+#    _category                    jana_cell
+#    _type                            numb
+#data_jana_cell_commen_supercell_matrix_2_2  
+#    _name                      '_jana_cell_commen_supercell_matrix_2_2'
+#    _category                    jana_cell
+#    _type                            numb
+#data_jana_cell_commen_supercell_matrix_2_3
+#    _name                      '_jana_cell_commen_supercell_matrix_2_3'
+#    _category                    jana_cell
+#    _type                            numb
+#data_jana_cell_commen_supercell_matrix_3_1 
+#    _name                      '_jana_cell_commen_supercell_matrix_3_1'
+#    _category                    jana_cell
+#    _type                            numb
+#data_jana_cell_commen_supercell_matrix_3_2 
+#    _name                      '_jana_cell_commen_supercell_matrix_3_2'
+#    _category                    jana_cell
+#    _type                            numb
+#data_jana_cell_commen_supercell_matrix_3_3 
+#    _name                      '_jana_cell_commen_supercell_matrix_3_3'
+#    _category                    jana_cell
+#    _type                            numb
+
+data_jana_cell_commen_supercell_matrix_ 
+loop_ _name                      '_jana_cell_commen_supercell_matrix_1_1'
+                                 '_jana_cell_commen_supercell_matrix_1_2'
+                                 '_jana_cell_commen_supercell_matrix_1_3'
+                                 '_jana_cell_commen_supercell_matrix_2_1'
+                                 '_jana_cell_commen_supercell_matrix_2_2'
+                                 '_jana_cell_commen_supercell_matrix_2_3'
+                                 '_jana_cell_commen_supercell_matrix_3_1'
+                                 '_jana_cell_commen_supercell_matrix_3_2'
+                                 '_jana_cell_commen_supercell_matrix_3_3'
+    _category                    jana_cell
+    _type                        numb
+
+#data_jana_cell_commen_t_section_1  
+#    _name                      '_jana_cell_commen_t_section_1'
+#    _category                    jana_cell
+#    _type                        numb
+#data_jana_cell_commen_t_section_2  
+#    _name                      '_jana_cell_commen_t_section_2'
+#    _category                    jana_cell
+#    _type                        numb
+#data_jana_cell_commen_t_section_2 
+#    _name                      '_jana_cell_commen_t_section_2'
+#    _category                    jana_cell
+#    _type                        numb
+
+data_jana_cell_commen_t_section_  
+loop_ _name                     '_jana_cell_commen_t_section_1'
+                                '_jana_cell_commen_t_section_2'
+                                '_jana_cell_commen_t_section_3'
+    _category                    jana_cell
+    _type                        numb
+data_jana_cell_commen_t_section_2  
+
+ 
+#################################################################################
+
+###############
+## JANA_FILE ##
+###############
+
+data_jana_file_[]
+    _name                      '_jana_file_[]'
+    _category                    category_overview
+    _type                        null
+
+data_Jana_m40_file 
+    _name                      '_Jana_m40_file'
+    _category                    jana_file
+    _type                        char
+
+data_Jana_m50_file 
+    _name                      '_Jana_m50_file'
+    _category                    jana_file
+    _type                        char
+    
+data_Jana_m90_file 
+    _name                      '_Jana_m90_file'
+    _category                    jana_file
+    _type                        char
+    
+data_Jana_m95_file 
+    _name                      '_Jana_m95_file'
+    _category                    jana_file
+    _type                        char
+ 
+#################################################################################
+
+####################
+## JANA_REFLN     ##
+###################
+
+data_jana_refln_[]
+    _name                      '_jana_refln_[]'
+    _category                    category_overview
+    _type                        null
+ 
+
+
+data_jana_refln_twin_domain
+    _name                      '_jana_refln_twin_domain'
+    _category                    jana_refln
+     _type                       numb
+    _list                        yes
+    _list_reference            '_refln_index_'
+data_twin_refln_index_m_
+    loop_ _name                '_twin_refln_index_m_1'
+                               '_twin_refln_index_m_2'
+                               '_twin_refln_index_m_3'
+    _category                    twin_refln
+    _type                        numb
+    _list                     yes
+loop_
+    _list_reference        '_twin_refln_datum_id' '_twin_refln_individual_id'
+
+
+
+
+
+
+
+
+
+
+
+  
+
+

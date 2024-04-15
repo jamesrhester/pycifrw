@@ -1,0 +1,315 @@
+#\#CIF_2.0
+##############################################################################
+#                                                                            #
+# This CIF contains the data in a paper accepted for publication in Acta     #
+# Crystallographica Section B. It has been peer reviewed under the auspices  #
+# of the IUCr Commission on Journals.                                        #
+#                                                                            #
+# Full details of the Crystallographic Information File format               #
+# are given in the paper "The Crystallographic Information File (CIF):       #
+# a New Standard Archive File for Crystallography" by S. R. Hall, F. H.      #
+# Allen and I. D. Brown [Acta Cryst. (1991), A47, 655-685].                  #
+#                                                                            #
+# The current version of the core CIF dictionary may be obtained from        #
+# ftp://ftp.iucr.org/pub/cif_core.dic. The current version number is 2.1.    #
+#                                                                            #
+# Software is freely available for graphical display of the structure(s) in  #
+# this CIF.  For information consult the CIF home page http://www.iucr.org/  #
+# cif/home.html                                                              #
+#                                                                            #
+#           Copyright International Union of Crystallography                 #
+#                                                                            #
+##############################################################################
+
+data_global
+_audit.creation_method     'Jana2006 Version : 07/03/2005'
+_journal_date.recd_electronic     2006-04-10
+_journal_date.accepted     2006-07-03
+_journal.name_full     'Acta Crystallographica, Section B'
+_journal.year     2006
+_journal.volume     62
+_journal.issue      5
+_journal.page_first     775
+_journal.page_last     789
+_journal.paper_category     FA
+_journal.coeditor_code     CK5020
+
+data_I
+_chemical_formula.sum                    'Cu0.299 Pb0.951 S3.357 Sb0.406 Sn0.851'
+_chemical_formula.weight                 474.1
+_symmetry.cell_setting                   triclinic
+_space_group.ssg_name                    'C -1'
+loop_
+ #_space_group_symop.ssg_id
+ _space_group_symop.id
+ _space_group_symop.ssg_operation_algebraic
+ 1   x1,x2,x3,x4,x5
+ 2   -x1,-x2,-x3,-x4,-x5
+ 3   1/2+x1,1/2+x2,x3,x4,x5
+ 4   1/2-x1,1/2-x2,-x3,-x4,-x5
+_cell.length_a                           3.6661(3)
+_cell.length_b                           6.3138(5)
+_cell.length_c                           11.9028(5)
+_cell.angle_alpha                        92.490(7)
+_cell.angle_beta                         90.590(8)
+_cell.angle_gamma                        89.986(8)
+_cell.volume                             275.25(8)
+_cell.formula_units_Z                    2
+
+_cell.modulation_dimension               2
+loop_
+ _cell_wave_vector.seq_id
+ _cell_wave_vector.xyz
+     1  [0.00338(6),0.15278(14),-0.0138(3)]
+     2  [0.63105(7),1.07460(17),-0.4438(3)]
+
+_cell_subsystems.number                  2
+
+loop_
+ _cell_subsystem.code
+ _cell_subsystem.description
+ _cell_subsystem.matrix_W
+  H '1-st subsystem: SnCu'
+  [[1,0,0,0,0,0,0,0,0,0,0],
+   [0,1,0,0,0,0,0,0,0,0,0],
+   [0,0,1,0,0,0,0,0,0,0,0],
+   [0,0,0,1,0,0,0,0,0,0,0],
+   [0,0,0,0,1,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0],
+   [0,0,0,0,0,0,0,0,0,0,0]]
+  Q '2-nd subsystem: PbSb'
+  [[0,-1,0,-0.5,1,0,0,0,0,0,0]
+   [0, 1,0, 0.5,0,0,0,0,0,0,0],
+   [0, 0,1, 0,  0,0,0,0,0,0,0],
+   [0, 0,0, 1,  0,0,0,0,0,0,0],
+   [1, 1,0, 0,  0,0,0,0,0,0,0],
+   [0, 0,0, 0,  0,0,0,0,0,0,0],
+   [0, 0,0, 0,  0,0,0,0,0,0,0],
+   [0, 0,0, 0,  0,0,0,0,0,0,0],
+   [0, 0,0, 0,  0,0,0,0,0,0,0],
+   [0, 0,0, 0,  0,0,0,0,0,0,0],
+   [0, 0,0, 0,  0,0,0,0,0,0,0]]
+
+_exptl_crystal.description               platelet
+_exptl_crystal.colour                    black
+_exptl_crystal.size_max                  0.3
+_exptl_crystal.size_mid                  0.2
+_exptl_crystal.size_min                  0.0024
+_exptl_crystal.density_diffrn            5.7089
+_exptl_crystal.F_000                     407
+
+_exptl_crystal.type_of_structure         comp
+
+_exptl_absorpt.coefficient_mu            37.04
+_exptl_absorpt.correction_type           gaussian
+_exptl_absorpt.process_details
+                                 '(Jana2006; Petricek, Dusek & Palatinus, 2006)'
+_exptl_absorpt.correction_T_min          0.039
+_exptl_absorpt.correction_T_max          0.912
+_diffrn.ambient_temperature              293
+_diffrn_radiation.type                   'Mo K\a'
+
+loop_
+ _diffrn_radiation_waveLength.id
+ _diffrn_radiation_wavelength.value
+ 1 0.71069
+
+_diffrn_reflns.number                    99197
+_diffrn_reflns.av_R_equivalents          0.1004
+_diffrn_reflns.av_sigmaI_over_netI       0.0693
+_diffrn_reflns.theta_min                 6.37
+_diffrn_reflns.theta_max                 35.02
+_diffrn_reflns.limit_h_min               -5
+_diffrn_reflns.limit_h_max               5
+_diffrn_reflns.limit_k_min               -12
+_diffrn_reflns.limit_k_max               12
+_diffrn_reflns.limit_l_min               -17
+_diffrn_reflns.limit_l_max               19
+_diffrn_reflns.limit_index_m_min_list    [-11,-9]
+_diffrn_reflns.limit_index_m_max_list    [11,9]
+_reflns.number_total                     29574
+_reflns.threshold_expression             'I>2.5\s(I)'
+
+loop_
+ _reflns_class.code
+ _reflns_class.description
+ _reflns_class.number_gt
+ 'Main'    'Main reflections'                           1597
+ 'S1'      '1-st order satellites'                      3257
+ 'S2'      '2-nd order satellites'                      2850
+ 'S3'      '3-rd order satellites'                      2094
+ 'S4'      '4-th order satellites'                      1410
+ 'S5'      '5-th order satellites'                       818
+ 'Hr'      'Main reflections of the 1-st subsystem'      690
+ 'Qr'      'Main reflections of the 2-nd subsystem'      894
+ 'Common'  'Common mains reflections to both subsystems'  13
+
+_refine_ls.structure_factor_coef         F
+_refine_ls.R_factor_gt                   0.0741
+_refine_ls.wR_factor_gt                  0.0895
+
+loop_
+ _refine_ls_class.code
+ _refine_ls_class.R_factor_gt
+ _refine_ls_class.R_factor_all
+ 'Main'    0.0477  0.0698
+ 'S1'      0.0594  0.0769
+ 'S2'      0.0732  0.0909
+ 'S3'      0.0895  0.0983
+ 'S4'      0.1200  0.1230
+ 'S5'      0.1870  0.1760
+ 'Hr'      0.0407  0.0601
+ 'Qr'      0.0532  0.0769
+ 'Common'  0.0829  0.1040
+
+_refine_ls.goodness_of_fit_ref           2.65
+_refine_ls.number_reflns                 12026
+_refine_ls.number_parameters             186
+_refine_ls.weighting_scheme              sigma
+_refine_ls.weighting_details             'w=1/(\s^2^(F)+0.0004F^2^)'
+_refine_ls.shift_over_su_max             0.0005
+_refine_ls.shift_over_su_mean            0.0001
+_refine_diff.density_max                 3.34
+_refine_diff.density_min                 -3.21
+_refine_ls.extinction_method             'none'
+
+loop_
+ _atom_type.symbol
+ _atom_type.scat_dispersion_real
+ _atom_type.scat_dispersion_imag
+ _atom_type.scat_source
+ Pb -3.394  10.111  'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+ Sb -0.587  1.546   'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+ S   0.125  0.123   'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+ Sn -0.654  1.425   'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+ Cu  0.320  1.265   'International Tables Vol C Tables  4.2.6.8 and 6.1.1.1'
+
+loop_
+ _atom_site.type_symbol
+ _atom_site.label
+ _atom_site.subsystem_code
+ _atom_site.fract_x
+ _atom_site.fract_y
+ _atom_site.fract_z
+ _atom_site.U_iso_or_equiv
+ _atom_site.adp_type
+ _atom_site.calc_flag
+ _atom_site.refinement_flags
+ _atom_site.occupancy
+ _atom_site.disorder_assembly
+ _atom_site.disorder_group
+  Sn Sn  H  0          0            0           0.01480(12)  Uani d . 0.851(2)  . .
+  Cu Cu  H  0.0029(9)  0.0057(5)    0.1147(3)   0.0229(11)   Uani d . 0.149(2)  . .
+  S  S1  H  0.5033(2)  0.84278(12)  0.12342(7)  0.0177(3)    Uani d . 1         . .
+  Pb Pb  Q  0.05541(5) 0.24113(4)   0.36783(2)  0.03573(12)  Uani d . 0.701(10) . .
+  Sb Sb  Q  0.055408   0.241132     0.367832    0.03573(12)  Uani d . 0.299(10) . .
+  S  S2  Q -0.0402(3)  0.2583(2)    0.59639(13) 0.0310(4)    Uani d . 1         . .
+
+loop_
+ _atom_site_aniso.label
+ _atom_site_aniso.U_11
+ _atom_site_aniso.U_22
+ _atom_site_aniso.U_33
+ _atom_site_aniso.U_12
+ _atom_site_aniso.U_13
+ _atom_site_aniso.U_23
+ _atom_site_aniso.type_symbol
+  Sn  0.0137(2)   0.00983(16)  0.0208(3)  -0.00043(12) -0.00029(14) 0.00055(12) Sn
+  Cu  0.0180(16)  0.0138(13)   0.037(2)   -0.0009(10)  -0.0004(12)  0.0021(11)  Cu
+  S1  0.0193(4)   0.0133(3)    0.0205(5)  -0.0005(3)   -0.0005(3)   0.0008(3)   S
+  Pb  0.0382(2)   0.03020(16)  0.0390(2)  -0.00096(11) -0.00807(14) 0.00192(11) Pb
+  Sb  0.0382(2)   0.03020(16)  0.0390(2)  -0.00096(11) -0.00807(14) 0.00192(11) Sb
+  S2  0.0395(8)   0.0295(6)    0.0237(7)  -0.0002(5)   -0.0052(6)   0.0019(5)   S
+
+loop_
+ _atom_site_Fourier_wave_vector.seq_id
+ _atom_site_Fourier_wave_vector.xyz
+ _atom_site_Fourier_wave_vector.q_coeff_seq_id
+ _atom_site_Fourier_wave_vector.q_coeff
+    1  [0.00338,0.15278,-0.0138]  [1]   [1]
+    2  [0.63105,1.07460,-0.4438]  [2]   [1]
+    3  [0.00676,0.30556,-0.0276]  [1]   [2]
+    4  [0.01014,0.45834,-0.0414]  [1]   [2]
+    5  [0.01352,0.61112,-0.0552]  [1]   [2]
+    6  [0.63443,1.22738,-0.4576]  [1,2] [1,1]
+
+loop_
+ _atom_site_displace_Fourier.id
+ _atom_site_displace_Fourier.atom_site_label
+ _atom_site_displace_Fourier.axis
+ _atom_site_displace_Fourier.wave_vector_seq_id
+ _atom_site_displace_Fourier_param.cos
+ _atom_site_displace_Fourier_param.sin
+ Sn_x_1  Sn  x  1   0            -0.00159(16)
+ Sn_y_1  Sn  y  1   0            -0.00481(8)
+ Sn_z_1  Sn  z  1   0            -0.06455(5)
+ Sn_x_3  Sn  x  3   0             0.00004(18)
+ Sn_y_3  Sn  y  3   0            -0.00395(8)
+ Sn_z_3  Sn  z  3   0            -0.00108(5)
+ Sn_x_4  Sn  x  4   0             0.0003(2)
+ Sn_y_4  Sn  y  4   0            -0.00075(10)
+ Sn_z_4  Sn  z  4   0             0.00042(6)
+ Cu_x_1  Cu  x  1   0.0018(11)   -0.0012(13)
+ Cu_y_1  Cu  y  1   0.0184(6)    -0.0092(6)
+ Cu_z_1  Cu  z  1  -0.0013(4)    -0.0611(4)
+ Sb_x_5  Sb  x  5  -0.00129(15)  -0.00043(15)
+ Sb_y_5  Sb  y  5  -0.00002(10)   0.00106(10)
+ Sb_z_5  Sb  z  5   0.00023(6)    0.00015(6)
+ Sb_x_6  Sb  x  6  -0.0053(3)     0.0022(3)
+ Sb_y_6  Sb  y  6   0.00496(16)  -0.00435(17)
+ Sb_z_6  Sb  z  6   0.00287(9)    0.00189(9)
+# - - - - data truncated for brevity - - - -
+
+
+loop_
+ _atom_site_occ_Fourier.id
+ _atom_site_occ_Fourier.atom_site_label
+ _atom_site_occ_Fourier.wave_vector_seq_id
+ _atom_site_occ_Fourier_param.cos
+ _atom_site_occ_Fourier_param.sin
+ Pb_o_1  Pb  1  -0.002(6)   0.170(4)
+ Pb_o_2  Pb  2   0          0
+ Pb_o_3  Pb  3   0.026(5)   0.002(4)
+ Pb_o_4  Pb  4   0.017(6)  -0.042(5)
+ Sb_o_1  Sb  1   0.002(6)  -0.170(4)
+ Sb_o_2  Sb  2   0          0
+ Sb_o_3  Sb  3  -0.026(5)  -0.002(4)
+ Sb_o_4  Sb  4  -0.017(6)   0.042(5)
+
+loop_
+ _atom_site_U_Fourier.id
+ _atom_site_U_Fourier.atom_site_label
+ _atom_site_U_Fourier.tens_elem
+ _atom_site_U_Fourier.wave_vector_seq_id
+ _atom_site_U_Fourier_param.cos
+ _atom_site_U_Fourier_param.sin
+ Sn_U11_1  Sn  U11  1   0.0002(2)     0
+ Sn_U22_1  Sn  U22  1  -0.00056(18)   0
+ Sn_U33_1  Sn  U33  1   0.0007(3)     0
+ Sn_U12_1  Sn  U12  1  -0.00012(17)   0
+ Sn_U13_1  Sn  U13  1   0.0002(2)     0
+ Sn_U23_1  Sn  U23  1  -0.00053(17)   0
+ Pb_U11_1  Pb  U11  1   0.0002(3)    -0.0025(3)
+ Pb_U22_1  Pb  U22  1   0.0007(2)     0.0036(2)
+ Pb_U33_1  Pb  U33  1   0.0019(3)    -0.0110(3)
+ Pb_U12_1  Pb  U12  1  -0.00164(15)   0.00023(15)
+ Pb_U13_1  Pb  U13  1  -0.00019(18)   0.00244(19)
+ Pb_U23_1  Pb  U23  1   0.00668(15)  -0.00125(16)
+ Pb_U11_3  Pb  U11  3  -0.0007(3)     0.0006(3)
+ Pb_U22_3  Pb  U22  3  -0.0002(2)     0.0008(2)
+ Pb_U33_3  Pb  U33  3  -0.0007(3)     0.0009(3)
+ Pb_U12_3  Pb  U12  3  -0.00006(16)   0.00069(16)
+ Pb_U13_3  Pb  U13  3  -0.00023(18)  -0.0004(2)
+ Pb_U23_3  Pb  U23  3   0.00004(15)  -0.00305(16)
+ # - - - - data truncated for brevity - - - -
+
+#=======================================================================
+
+#Example based on the article:
+#Michel Evain, V\'aclav Pet\<r\'i\<cek, Yves Mo\�elo and Colette Maurel (2006)
+#Acta Cryst. B62, 775-789. doi:10.1107/S010876810602547X
+#First (3 + 2)-dimensional superspace approach to the structure of levyclaudite-(Sb), a member of the cylindrite-type minerals
