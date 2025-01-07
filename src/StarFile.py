@@ -1681,7 +1681,10 @@ class StarBlock(object):
        alldata = [self[a] for a in self.loops[loop_no]]
        loopnames = self.loops[loop_no]
        #print 'Alldata: %s' % `alldata`
-       packet_data = list(zip(*alldata))
+       if all(isinstance(elem, str) for elem in alldata):
+            packet_data = list(zip(alldata))
+       else:
+            packet_data = list(zip(*alldata))
        #print 'Packet data: %s' % `packet_data`
        #create a dictionary for quick lookup of formatting requirements
        format_hints = dict([(i['dataname'],i) for i in self.formatting_hints if i['dataname'] in loopnames])
