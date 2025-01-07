@@ -3,12 +3,12 @@
 # Customizable variables:
 #
 # Instance of Python to be used for the yapps2.py script.
-PYTHON = python2
+PYTHON = python3
 
 package: CifFile_module.py StarFile.py Parsers documentation
 #
 %.py : %.nw
-	notangle $< > $@
+	nountangle -awk $< > $@
 #
 documentation: CifFile_module.nw YappsStarParser.nw StarFile.nw
 	noweave -html -index -filter l2h CifFile_module.nw > CifFile.html
@@ -31,21 +31,21 @@ clean:
 YAPPS2CMD = PYTHONPATH=. $(PYTHON) ./yapps3/yapps2.py
 
 YappsStarParser_1_0.py: YappsStarParser.nw
-	notangle -R1.0_syntax YappsStarParser.nw > YappsStarParser_1_0.g
+	nountangle -awk -R1.0_syntax YappsStarParser.nw > YappsStarParser_1_0.g
 	$(YAPPS2CMD) YappsStarParser_1_0.g
 #
 YappsStarParser_1_1.py: YappsStarParser.nw
-	notangle -R1.1_syntax YappsStarParser.nw > YappsStarParser_1_1.g
+	nountangle -awk -R1.1_syntax YappsStarParser.nw > YappsStarParser_1_1.g
 	$(YAPPS2CMD) YappsStarParser_1_1.g
 #
 YappsStarParser_2_0.py: YappsStarParser.nw
-	notangle -RCIF2_syntax YappsStarParser.nw > YappsStarParser_2_0.g
+	nountangle -awk -RCIF2_syntax YappsStarParser.nw > YappsStarParser_2_0.g
 	$(YAPPS2CMD) YappsStarParser_2_0.g
 #
 YappsStarParser_STAR2.py: YappsStarParser.nw
-	notangle -RSTAR2_syntax YappsStarParser.nw > YappsStarParser_STAR2.g
+	nountangle -awk -RSTAR2_syntax YappsStarParser.nw > YappsStarParser_STAR2.g
 	$(YAPPS2CMD) YappsStarParser_STAR2.g
 #
 TypeContentsParser.py: TypeContentsParser.nw
-	notangle -RTypeContents_syntax TypeContentsParser.nw > TypeContentsParser.g
+	nountangle -awk -RTypeContents_syntax TypeContentsParser.nw > TypeContentsParser.g
 	$(YAPPS2CMD) TypeContentsParser.g
