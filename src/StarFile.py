@@ -976,7 +976,7 @@ class StarBlock(object):
 
     def check_name_length(self,dataname,maxlength):
         if len(dataname)>maxlength:
-            raise StarError( 'Dataname {} exceeds maximum length {}'.format((dataname,maxlength)))
+            raise StarError( 'Dataname {} exceeds maximum length {}'.format(dataname,maxlength))
         return
 
     # <Check data item for STAR conformance>=                                 
