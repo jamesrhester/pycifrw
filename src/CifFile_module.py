@@ -341,6 +341,38 @@ class CifFile(StarFile.StarFile):
     def get_parsing_result(self):
         return self.parsing_result
 
+    # DDLm tags have a '.' in their name, whereas the original DDL1
+    # tags do not.
+    #
+    def convert_to_canonical(self, dictionary):
+        """DDLm tags have a '.' in their name, whereas DDL1 tags do
+        not. This routine consults the provided dictionary to find
+        the canonical names for all data names in the data file,
+        and changes them, returning a list of data names that were
+        not found in the dictionary.
+        """
+
+        tags_without_alias = []
+        for block_name, block_contents in self.items():
+
+            for tag, value in block_contents.items():
+                # The tag does not have any point
+                # The tag is DDL1
+                tag_definition = dictionary.get(tag, None)
+
+                if tag_definition is None:
+                    tags_without_alias.append(tag)
+                    continue
+
+                tag_name_ddlm = tag_definition.get("_definition.id").lower()
+
+                # The tag of the definition and the one that appears in the cif
+                # file are different. Therefore the tag in the cif is an alias.
+                if tag_name_ddlm != tag:
+                    # Add a new block with the proper tag
+                    self[block_name].ChangeTagName(tag, tag_name_ddlm)
+
+        return tags_without_alias
 
 # Defining an error class: we simply derive a 'nothing' class from the root
 # Python class                                                            
