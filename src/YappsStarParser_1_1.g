@@ -97,7 +97,6 @@ def makeloop(target_block,loopdata):
         target_block.CreateLoop(loop_seq)  #will raise ValueError on problem
     except ValueError:
         error_string =  'Incorrect number of loop values for loop containing %s' % repr(loop_seq)
-        print(error_string, file=sys.stderr)
         raise ValueError(error_string)
 
 # return an object with the appropriate amount of nesting
