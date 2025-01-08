@@ -21,6 +21,8 @@ from optparse import OptionParser
 import CifFile
 import os
 import urllib
+import traceback
+
 #
 # return a CifFile object from an FTP location
 def cif_by_ftp(ftp_ptr,store=True,directory="."):
@@ -32,7 +34,7 @@ def cif_by_ftp(ftp_ptr,store=True,directory="."):
             response = urlopen(ftp_ptr)
             contents = response.read()
             open(target,"wb").write(contents)
-            print("Stored %s as %s" % (ftp_ptr,target))
+            print("Stored {} as {}".format(ftp_ptr,target))
         print('Reading ' + target)
         ret_cif = CifFile.CifFile(target)
     else:
@@ -49,13 +51,12 @@ def locate_dic(dicname,dicversion,regloc="cifdic.register",store_dir = "."):
     matches = [a for a in dataloop if getattr(a,"_cifdic_dictionary.name")==dicname and \
                getattr(a,"_cifdic_dictionary.version")==dicversion]
     if len(matches)==0:
-        print( "Unable to find any matches for %s version %s" % (dicname,dicversion))
+        print( "Unable to find any matches for {} version {}".format(dicname,dicversion))
         return ""
     elif len(matches)>1:
         print( "Warning: found more than one candidate, choosing first.")
         print( map(str,matches))
     return getattr(matches[0],"_cifdic_dictionary.URL")    # the location
-
 
 def parse_options():
     # define our options
@@ -78,40 +79,82 @@ def parse_options():
     op.add_option("-m","--markup", dest = "use_html",action="store_true",
                   help = "Output result in HTML",default=False)
     op.add_option("-t","--is_dict", dest = "dict_flag", action="store_true",default=False,
-                  help = "CIF file should be validated as a CIF dictionary")
+                  help = "CI    y")
     op.add_option("-r","--registry-loc", dest = "registry",
                   default = "file:cifdic.register",
                   help = "Location of global dictionary registry (see also -c option)")
+    op.add_option("-v", "--verbose_validation", action="store_true", default=False,
+                    help="Log information in the validation process.")
+    op.add_option("-w", "--verbose_import", action="store_true", default=False,
+                    help="Log information in the dictionary importing process.")
     (options,args) = op.parse_args()
     # our logic: if we are given a dictionary file using -f, the dictionaries
     # are all located locally; otherwise, they are all located externally, and
     # we use the IUCr register to locate them.
     # create the dictionary file names
+
     import sys
     if len(sys.argv) <= 1:
         print( "No arguments given: use option --help to get a help message\n")
         exit
+
     return options,args
 
+
 def execute_with_options(options,args):
+    print(args)
+    print()
+    print(options)
+
+    verbose_import = options.verbose_import
+    verbose_validation = options.verbose_validation
+
     if options.dictnames:
         diclist = list(map(lambda a:os.path.join(options.dirname,a),options.dictnames))
         print( "Using following local dictionaries to validate:")
-        for dic in diclist: print( "%s" % dic)
-        fulldic = CifFile.CifFile_module.merge_dic(diclist,mergemode='overlay')
+        for dic in diclist: print( "{}".format(dic))
+        #fulldic = CifFile.CifFile_module.merge_dic(diclist,mergemode='overlay')
+        fulldic = CifFile.CifFile_module.merge_dic(diclist, verbose_import=verbose_import, verbose_validation=verbose_validation)
     else:
         # print( "Locating dictionaries using registry at %s" % options.registry)
         dics = zip(options.iucr_names,options.versions)
         dicurls = map(lambda a:locate_dic(a[0],a[1],regloc=options.registry,store_dir=options.dirname),dics)
         diccifs = map(lambda a:cif_by_ftp(a,options.store_flag,options.dirname),dicurls)
-        fulldic = CifFile.CifFile_module.merge_dic(diccifs)
+        fulldic = CifFile.CifFile_module.merge_dic(diccifs, verbose_import=verbose_import, verbose_validation=verbose_validation)
         diclist = dicurls  # for use in reporting later
+
+    f = CifFile.CifFile(fulldic)
+
+    cif_file_name = args[0]
     # open the cif file
-    cf = CifFile.CifFile(args[0],grammar="auto")
+    with open(cif_file_name, "r") as f:
+        cif_text = f.read()
+
+    cf = CifFile.CifFile(cif_text,grammar="auto", from_str=True)
+
+    cf_json = cf.to_json()
+    print(cf_json)
+
+    result = cf.get_parsing_result()
+
+    # Some kind of parsing error occurred
+    # Parsing errors are identified with negative codes
+    if result[0] < 0:
+        error_str = CifFile.print_cif_syntax_error(result, cif_file_name)
+        cc = (False, None)
+
+        return cc, error_str
+
+
     output_header(options.use_html,args[0],diclist)
+
     cc = CifFile.Validate(cf,dic= fulldic,isdic=options.dict_flag)
-    print( CifFile.validate_report(cc,use_html=options.use_html))
+    report_str, dict_summary =  CifFile.validate_report(cc,use_html=options.use_html)
+
+    print(report_str)
     output_footer(options.use_html)
+
+    return cc, report_str
 
 #
 #  Headers and footers for HTML/ASCII output
@@ -127,18 +170,19 @@ def output_header(use_html,filename,dictionaries):
         print( " table{background: #f0f0f8;}")
         print( " h4 {background: #f0f8f0;}")
         print( "</style><body>")
-        print( "<h1>Validation results for %s</h1>" % filename)
-        print( "<p>Validation performed by %s</p>" % prog_info)
+        print( "<h1>Validation results for {}</h1>".format(filename))
+        print( "<p>Validation performed by {}</p>".format(prog_info))
         print( "<p>Dictionaries used:<ul>")
         for one_dic in dictionaries:
-            print( "<li>%s" % one_dic)
+            print( "<li>{}".format(one_dic))
         print( "</ul>")
     else:
-        print( "Validation results for %s\n" % filename)
-        print( "Validation performed by %s" % prog_info)
+        print( "Validation results for {}\n".format(filename))
+        print( "Validation performed by {}".format(prog_info))
         print( "File validated against following dictionaries:")
+
         for one_dic in dictionaries:
-            print( "    %s" % one_dic)
+            print( "    {}".format(one_dic))
 
 def output_footer(use_html):
     if use_html:

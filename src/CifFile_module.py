@@ -4287,6 +4287,48 @@ def find_parent(ddl2_def):
         raise CifError("Unable to find single unique parent data item")
     return result[0]
 
+# Utility routine for use by callers who have captured parsing results instead
+# of raising an error immediately.
+
+import CifFile.yapps3_compiled_rt as yappsrt
+
+def print_cif_syntax_error(parsing_result, cif_file_name):
+    """ For use when parsing results have been captured instead of raising an error
+    immediately. See ReadStarWithError."""
+    
+    error = parsing_result[1]
+
+    # parsing_result[0] == -1
+    if isinstance(error, yappsrt.YappsSyntaxError):
+        parser = parsing_result[2]
+        Y = parsing_result[3]
+
+        scanner = parser._scanner
+        input = parser._scanner.input
+        pos = error.charpos
+
+        line_number = scanner.get_line_number_with_pos(pos)
+
+        out_str = "\n"
+        out_str += "======================================================================\n"
+        out_str += "\n"
+        out_str += "SYNTAX ERROR AT LINE " + str(line_number) + " WHEN PARSING INPUT FILE:" + str(cif_file_name) + ":\n"
+        out_str += str(error.msg) + "\n"
+        out_str += "\n"
+        out_str += "ERROR NEAR THE FOLLOWING INPUT TEXT:\n"
+
+        text_error = Y.yappsrt.print_line_with_pointer(input, pos)
+
+        out_str += text_error
+        print(out_str)
+
+        return out_str
+
+    # parsing_result[0] == -2
+    if isinstance(error, CifFile.StarError):
+        print(error.value)
+
+        return error.value
 
 # Reading in a file.  We use the STAR grammar parser.  Note that the blocks returned
 # will be locked for changing ([[overwrite=False]]) and can be unlocked by setting
