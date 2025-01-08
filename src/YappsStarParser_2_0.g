@@ -87,8 +87,10 @@ def striptriple(value):
 # Note that there may be an empty list at the very end of our itemlists,
 # so we remove that if necessary.
 #
+# charpos and context are provided so that we can emit a sensible
+# error message.
 
-def makeloop(target_block,loopdata):
+def makeloop(target_block, loopdata, context):
     loop_seq,itemlists = loopdata
     if itemlists[-1] == []: itemlists.pop(-1)
     # print('Making loop with %s' % repr(itemlists))
@@ -99,8 +101,9 @@ def makeloop(target_block,loopdata):
     try:
         target_block.CreateLoop(loop_seq)  #will raise ValueError on problem
     except ValueError:
+        charpos = context.scanner.get_prev_char_pos()
         error_string =  'Incorrect number of loop values for loop containing %s' % repr(loop_seq)
-        raise ValueError(error_string)
+        raise YappsSyntaxError(charpos=charpos, context=context, msg = error_string)
 
 # return an object with the appropriate amount of nesting
 def make_empty(nestlevel):
@@ -222,7 +225,7 @@ parser StarParser:
                            data<<starblock>>
                            )*
 
-         rule data<<currentblock>>:        top_loop      {{makeloop(currentblock,top_loop)}}
+         rule data<<currentblock>>:        top_loop      {{makeloop(currentblock,top_loop,_context)}}
                                             |
                                             datakvpair    {{currentblock.AddItem(datakvpair[0],datakvpair[1],precheck=True)}} #kv pair
 
