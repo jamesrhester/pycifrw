@@ -4291,16 +4291,35 @@ def find_parent(ddl2_def):
 # Reading in a file.  We use the STAR grammar parser.  Note that the blocks returned
 # will be locked for changing ([[overwrite=False]]) and can be unlocked by setting
 # block.overwrite to True.                                                
-#                                                                         
+#
+# Provide access to rich error information with alternate function that makes use
+# of the ReadStarWithError function.
 #                                                                         
 # <Read in a CIF file>=                                                   
-def ReadCif(filename,grammar='auto',scantype='standard',scoping='instance',standard='CIF',
+def ReadCifWithErrors(filename,grammar='auto',scantype='standard',scoping='instance',standard='CIF',
             permissive=False):
-    """ Read in a CIF file, returning a `CifFile` object.
+    """ Read in a CIF file, returning a (`CifFile`, error_result) tuple. `error_result`
+    is a list [error_val, Exception, Parser, ParserModule] which can be used for
+    detailed error reporting. If `error_val` is less than 0, an error has occurred
+    and the contents of `CifFile` will be incomplete and/or incorrect.
 
     * `filename` may be a URL, a file
     path on the local system, or any object with a `read` method.
 
+    Keyword meanings are as for `ReadCif`"""
+
+    finalcif = CifFile(scoping=scoping,standard=standard)
+    return StarFile.ReadStarWithErrors(filename,prepared=finalcif,grammar=grammar,scantype=scantype,
+                             permissive=permissive)
+
+def ReadCif(filename, grammar='auto', scantype='standard', scoping='instance', standard='CIF',
+            permissive = False):
+    """ Read in a CIF file, returning a `CifFile` object and raising an exception
+    on failure.
+
+    * `filename` may be a URL, a file
+    path on the local system, or any object with a `read` method.
+    
     * `grammar` chooses the CIF grammar variant. `1.0` is the original 1992 grammar and `1.1`
     is identical except for the exclusion of square brackets as the first characters in
     undelimited datanames. `2.0` will read files in the CIF2.0 standard, and `STAR2` will
@@ -4321,13 +4340,13 @@ def ReadCif(filename,grammar='auto',scantype='standard',scoping='instance',stand
     hierarchies. `dictionary` scoping makes all save frames within a data block visible to each
     other, thereby restricting all save frames to have unique names.
     Currently the only recognised value for `standard` is `CIF`, which when set enforces a
-    maximum length of 75 characters for datanames and has no other effect. """
+    maximum length of 75 characters for datanames and has no other effect.
+    """
 
     finalcif = CifFile(scoping=scoping,standard=standard)
-    return StarFile.ReadStar(filename,prepared=finalcif,grammar=grammar,scantype=scantype,
-                             permissive=permissive)
-    #return StarFile.StarFile(filename,maxlength,scantype=scantype,grammar=grammar,**kwargs)
-
+    return StarFile.ReadStar(filename, prepared=finalcif, grammar=grammar, scantype=scantype,
+                  permissive = permissive)
+    
 # \section{Cif Loop block class}                                          
 #                                                                         
 # With the removal (by PyCIFRW) of nested loops, this class is now unnecessary. It is now

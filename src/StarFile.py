@@ -2939,7 +2939,7 @@ class StarFile(BlockCollection):
         self.scoping = scoping
         self.parsing_result = []
         if isinstance(datasource,(unicode,str)) or hasattr(datasource,"read"):
-            proto_star, result = ReadStar(datasource,prepared=self,grammar=grammar,scantype=scantype,
+            proto_star, result = ReadStarWithError(datasource,prepared=self,grammar=grammar,scantype=scantype,
                      maxlength = maxinlength,permissive=permissive, from_str=from_str)
             self.parsing_result = result
 
@@ -3117,10 +3117,14 @@ class StarDerivationFailure(AttributeError):
 #                                                                         
 # We save our URL for possible later use in finding files relative to     
 # the location of this file e.g. with DDLm dictionary imports.            
-#                                                                         
+#
+# This function never raises an Exception, instead returning exception
+# information in the second argument. The ReadStar function replicates
+# older behaviour by examining the return of this function and raising
+# an exception if available.
 #                                                                         
 # <Read in a STAR file>=                                                  
-def ReadStar(filename,prepared = None, maxlength=-1,
+def ReadStarWithError(filename,prepared = None, maxlength=-1,
              scantype='standard',grammar='STAR2',CBF=False, permissive=False, from_str=False):
 
     """ Read in a STAR file, returning the contents in the `prepared` object.
@@ -3223,7 +3227,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
                         raise StarError("Bad input encoding (must be utf8 or ascii)")
             my_uri = ""
     if not text:      # empty file, return empty block
-        return prepared.set_uri(my_uri)
+        return prepared.set_uri(my_uri), [0, None, None, None]
     # filter out non-ASCII characters in CBF files if required.  We assume
     # that the binary is enclosed in a fixed string that occurs
     # nowhere else.
@@ -3249,7 +3253,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
             raise StarError('File {} missing CIF2.0 header'.format(filename))
 
     # Only search for grammar 2.0 if CIF2.0
-    if text[:10] == "#\#CIF_2.0" and ('2.0',Y20) in try_list:
+    if text[:10] == r"#\#CIF_2.0" and ('2.0',Y20) in try_list:
         try_list = [('2.0',Y20)]
 
     result = [0, None, None, None]
@@ -3270,11 +3274,7 @@ def ReadStar(filename,prepared = None, maxlength=-1,
        # Syntax error
        except Exception as error:
            # List that stores information about the syntax error
-           if isinstance(error, yappsrt.YappsSyntaxError):
-                result = [-1, error, parser, Y]
-
-           if isinstance(error, StarError):
-                result = [-2, error, None, None]
+           result = [-1, error, parser, Y]
 
        if proto_star is not None:
            proto_star.set_grammar(grammar_name)   #remember for output
@@ -3287,6 +3287,17 @@ def ReadStar(filename,prepared = None, maxlength=-1,
     proto_star.set_uri(my_uri)
     proto_star.scoping = save_scoping
     return proto_star, result
+
+# Directly raise an error on parsing failure. This was the original
+# behaviour of ReadStar
+#
+# TODO: incorporate a pretty error printer here
+#
+def ReadStar(*args, **kwargs):
+    proto_star, result = ReadStarWithError(*args, **kwargs)
+    if result[0] < 0:
+        raise StarError(str(result[1]))   #to match legacy behaviour
+    return proto_star
 
 # Dimension of data.  This would ordinarily be the number of nested levels,
 # and if we have a naked string, we have to return zero.                  
