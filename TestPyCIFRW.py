@@ -1005,6 +1005,7 @@ class GrammarTestCase(unittest.TestCase):
        """Read in 1.0 conformant file; should not fail"""
        f = CifFile.ReadCif("tests/test_1.0",grammar="1.0")
        self.assertEqual(f["test"]["_item_3"],'[can_have_bracket_here_if_1.0]')
+       self.assertEqual(f.grammar, "1.0")
 
    def testNew(self):
        """Read in a 1.0 conformant file with 1.1 grammar; should fail"""
@@ -1017,18 +1018,22 @@ class GrammarTestCase(unittest.TestCase):
        """Read in a 2.0 conformant file"""
        f = CifFile.ReadCif("tests/test_2.0",grammar="2.0")
        self.assertEqual(f["test"]["_item_3"]['b'],'3')
+       self.assertEqual(f.grammar, "2.0")
 
    def testSTAR2(self):
        """Read in a STAR2 conformant file"""
        f = CifFile.ReadCif("tests/test_star",grammar="STAR2")
        self.assertEqual(f["test"]["_item_3"]['b'],'3')
+       self.assertEqual(f.grammar, "STAR2")
 
    def testAuto(self):
        """Test that grammar is auto-detected"""
        f = CifFile.CifFile("tests/test_1.0",grammar="auto")
        self.assertEqual(f["test"]["_item_3"],'[can_have_bracket_here_if_1.0]')
+       self.assertEqual(f.grammar, "1.0")
        h = CifFile.CifFile("tests/test_2.0",grammar="auto")
        self.assertEqual(h["test"]["_item_1"],StarList(['a','b','c','d']))
+       self.assertEqual(h.grammar, "2.0")
 
    def testFlexCIF2(self):
        """Test that CIF2 grammar is detected with flex tokenizer"""

@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import sys
-from CifFile import ReadCif,CifError
+from CifFile import ReadCif,CifError, CifSyntaxError, CifFile
 from CifFile.StarFile import StarError
 
 def runtests(scantype):
@@ -13,15 +13,15 @@ def runtests(scantype):
     ["ciftest3", "OK"],
     ["ciftest4", "OK"],
     ["ciftest5", "OK"],
-    ["ciftest6", [CifError,StarError]],
-    ["ciftest7", [CifError,StarError]],
-    ["ciftest8", [CifError,StarError]],
-    ["ciftest9", [CifError,StarError]],
-    ["ciftest10", [CifError,StarError]],
+    ["ciftest6", [CifError,StarError,CifSyntaxError]],
+    ["ciftest7", [CifError,StarError,CifSyntaxError]],
+    ["ciftest8", [CifError,StarError,CifSyntaxError]],
+    ["ciftest9", [CifError,StarError,CifSyntaxError]],
+    ["ciftest10", [CifError,StarError,CifSyntaxError]],
     ["ciftest11", "OK"],
     ["ciftest12", "OK"],
     ["ciftest13", "OK"],
-    ["ciftest14", [CifError,StarError]],
+    ["ciftest14", [CifError,StarError,CifSyntaxError]],
     ["ciftest15", [CifError,StarError]],
     ["ciftest16", [CifError,StarError]],
     ["ciftest17", [CifError,StarError]],
@@ -38,14 +38,32 @@ def runtests(scantype):
                 print("%s\n%s" % (repr(stype),svalue))
             else:
                 if stype in testresult:
-                    print("%s passes" % filename)
+                    print("ReadCif %s passes" % filename)
                 else:
-                    print("Unexpected exception %s for %s" % (repr(stype),filename))
+                    print("Unexpected exception %s for ReadCif %s" % (repr(stype),filename))
         else:     #no exception
             if testresult == 'OK':
-                print( "%s passes" % filename)
+                print( "ReadCif %s passes" % filename)
             else:
-                print( "%s: Expected %s, got nothing" % (filename,repr(testresult)))
+                print( "ReadCif %s: Expected %s, got nothing" % (filename,repr(testresult)))
+        # Now try with CifFile instead of ReadCif
+        try:
+            CifFile(filename,scantype=scantype)
+        except:
+            stype,svalue,ss = sys.exc_info()
+            if testresult == 'OK':
+                print("CifFile %s causes error where none expected" % filename)
+                print("%s\n%s" % (repr(stype),svalue))
+            else:
+                if stype in testresult:
+                    print("CifFile %s passes" % filename)
+                else:
+                    print("Unexpected exception %s for CifFile %s" % (repr(stype),filename))
+        else:     #no exception
+            if testresult == 'OK':
+                print( "CifFile %s passes" % filename)
+            else:
+                print( "CifFile %s: Expected %s, got nothing" % (filename,repr(testresult)))
 if __name__ == "__main__":
     print("Testing interpreted tokenizer")
     runtests("standard")

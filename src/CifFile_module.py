@@ -109,6 +109,7 @@ to be bound by the terms and conditions of this License Agreement.
 import re,sys
 from . import StarFile
 from .StarFile import StarList  #put in global scope for exec statement
+from . import CifSyntaxError
 try:
     import numpy                   #put in global scope for exec statement
     from .drel import drel_runtime  #put in global scope for exec statement
@@ -313,7 +314,10 @@ class CifBlock(StarFile.StarBlock):
 #                                                                         
 # Note that this applies to the input only.  For changing output length,  
 # you can provide an optional parameter in the [[WriteOut]] method.       
-#                                                                         
+#
+# allow_partial reads permissively, so that a parsing error will simply
+# return the CIF file so far, together with the error information. It
+# is False by default for backwards compatibility.
 #                                                                         
 # <CifFile class>=                                                        
 class CifFile(StarFile.StarFile):
@@ -325,7 +329,8 @@ class CifFile(StarFile.StarFile):
 #                                                                         
 #                                                                         
 # <Initialise data structures>=                                           
-    def __init__(self,datasource=None,strict=1,standard='CIF',from_str=False,**kwargs):
+    def __init__(self,datasource=None,strict=1,standard='CIF',from_str=False,
+                 allow_partial = False, **kwargs):
         super(CifFile,self).__init__(datasource=datasource,standard=standard, from_str=from_str, **kwargs)
         self.strict = strict
         self.header_comment = \
@@ -342,6 +347,10 @@ class CifFile(StarFile.StarFile):
 #  http://www.iucr.org
 ##########################################################################
 """
+        pr = self.get_parsing_result()
+        if not allow_partial and len(pr) > 0 and pr[0] < 0: #Fail aggressively
+            print_cif_syntax_error(pr, self.my_uri)
+            raise pr[1]
 
     def get_parsing_result(self):
         return self.parsing_result
@@ -4983,7 +4992,7 @@ def print_cif_syntax_error(parsing_result, cif_file_name):
         return out_str
 
     # parsing_result[0] == -2
-    if isinstance(error, CifFile.StarError):
+    if isinstance(error, CifSyntaxError):
         print(error.value)
 
         return error.value

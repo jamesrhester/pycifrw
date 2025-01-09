@@ -11,6 +11,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 from .StarFile import StarBlock,StarFile,StarList,StarDict
+from . import CifSyntaxError
 from io import StringIO
 #   Helper functions.                                                     
 #                                                                         

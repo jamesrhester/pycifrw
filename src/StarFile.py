@@ -2929,7 +2929,7 @@ class StarFile(BlockCollection):
 # <Initialise data structures>=                                           
     def __init__(self,datasource=None,maxinlength=-1,maxoutlength=0,
                 scoping='instance',grammar=None,from_str=False,scantype='standard',
-                 permissive=False,**kwargs):
+                 permissive=False, **kwargs):
         super(StarFile,self).__init__(datasource=datasource,**kwargs)
         self.my_uri = getattr(datasource,'my_uri','')
         if maxoutlength == 0:
@@ -3256,13 +3256,15 @@ def ReadStarWithError(filename,prepared = None, maxlength=-1,
     if text[:10] == r"#\#CIF_2.0" and ('2.0',Y20) in try_list:
         try_list = [('2.0',Y20)]
 
-    result = [0, None, None, None]
     for grammar_name,Y in try_list:
+
+       result = [0, None, None, None]
+
        if scantype == 'standard' or grammar_name in ['2.0','STAR2']:
-            parser = Y.StarParser(Y.StarParserScanner(text))
+           parser = Y.StarParser(Y.StarParserScanner(text))
        else:
-            parser = Y.StarParser(Y.yappsrt.Scanner(None,[],text,scantype='flex'))
-       # handle encoding switch
+           parser = Y.StarParser(Y.yappsrt.Scanner(None,[],text,scantype='flex'))
+           # handle encoding switch
        if grammar_name in ['2.0','STAR2']:
            prepared.set_characterset('unicode')
        else:
@@ -3270,11 +3272,10 @@ def ReadStarWithError(filename,prepared = None, maxlength=-1,
        proto_star = None
        try:
            proto_star = getattr(parser,"input")(prepared)
-
-       # Syntax error
-       except Exception as error:
+           # Syntax error
+       except:
            # List that stores information about the syntax error
-           result = [-1, error, parser, Y]
+           result = [-1, sys.exception(), parser, Y]
 
        if proto_star is not None:
            proto_star.set_grammar(grammar_name)   #remember for output

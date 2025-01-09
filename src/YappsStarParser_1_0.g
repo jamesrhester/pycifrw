@@ -31,6 +31,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 from .StarFile import StarBlock,StarFile,StarList,StarDict
+from . import CifSyntaxError
 from io import StringIO
 #   Helper functions.                                                     
 #                                                                         
@@ -118,7 +119,7 @@ def makeloop(target_block,loopdata, context):
     except ValueError:
         charpos = context.scanner.get_prev_char_pos()
         error_string =  'Incorrect number of loop values for loop containing %s' % repr(loop_seq)
-        raise YappsSyntaxError(charpos=charpos, context=context, msg = error_string)
+        raise CifSyntaxError(charpos=charpos, context=context, msg = error_string)
 
 # return an object with the appropriate amount of nesting
 def make_empty(nestlevel):
