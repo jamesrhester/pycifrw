@@ -171,7 +171,7 @@ def execute_with_options(options,args):
     with open(cif_file_name, "r") as f:
         cif_text = f.read()
 
-    cf = CifFile.CifFile(cif_text,grammar="auto", from_str=True)
+    cf = CifFile.CifFile(cif_text,grammar="auto", from_str=True, allow_partial = True)
 
     result = cf.get_parsing_result()
 

@@ -86,7 +86,7 @@ Na Slovance 2
 18221 Praha 8
 Czech Republic
 ;
-5   'Vaclav Pet\<r\'i\<cek'
+5   "Vaclav Pet\<r\'i\<cek"
 ;
 Institute of Physics
 Academy of Sciences of the Czech Republic
