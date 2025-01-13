@@ -162,16 +162,6 @@ class BlockRWTestCase(unittest.TestCase):
         self.cf['_test_tuple'] = (11,13.5,-5.6)
         self.assertTrue([float(a) for a in self.cf['_test_tuple']]== [11,13.5,-5.6])
 
-    def testTupleComplexSet(self):
-        """DEPRECATED: Test setting multiple names in loop"""
-        names = (('_item_name_1','_item_name#2','_item_%$#3'),)
-        values = (((1,2,3,4),('hello','good_bye','a space','# 4'),
-              (15.462, -99.34,10804,0.0001)),)
-        self.cf.AddCifItem((names,values))
-        self.assertTrue(tuple(map(float, self.cf[names[0][0]])) == values[0][0])
-        self.assertTrue(tuple(self.cf[names[0][1]]) == values[0][1])
-        self.assertTrue(tuple(map(float, self.cf[names[0][2]])) == values[0][2])
-
     def testStringSet(self):
         """test string setting"""
         self.cf['_test_string_'] = 'A short string'
@@ -227,10 +217,13 @@ class BlockRWTestCase(unittest.TestCase):
 class BlockChangeTestCase(unittest.TestCase):
    def setUp(self):
         self.cf = CifFile.CifBlock()
-        self.names = (('_item_name_1','_item_name#2','_item_%$#3'),)
-        self.values = (((1,2,3,4),('hello','good_bye','a space','# 4'),
-                (15.462, -99.34,10804,0.0001)),)
-        self.cf.AddCifItem((self.names,self.values))
+        self.names = ('_item_name_1','_item_name#2','_item_%$#3')
+        self.values = ((1,2,3,4),('hello','good_bye','a space','# 4'),
+                (15.462, -99.34,10804,0.0001))
+        for n,v in zip(self.names, self.values):
+            self.cf.AddItem(n, v)
+        self.cf.CreateLoop(self.names)
+
         self.cf['_non_loop_item'] = 'Non loop string item'
         self.cf['_number_item'] = 15.65
         self.cf['_planet'] = 'Saturn'
@@ -245,7 +238,7 @@ class BlockChangeTestCase(unittest.TestCase):
         df = CifFile.CifFile()
         df.NewBlock('testname',self.cf)
         self.assertEqual(df['testname']['_planet'],'Saturn')
-        self.assertEqual(df['testname']['_item_name#2'],list(self.values[0][1]))
+        self.assertEqual(df['testname']['_item_name#2'],list(self.values[1]))
 
    def testSimpleRemove(self):
        """Check item deletion outside loop"""
@@ -259,45 +252,18 @@ class BlockChangeTestCase(unittest.TestCase):
        """Check item deletion inside loop"""
        print("Before:\n")
        print(self.cf.printsection())
-       self.cf.RemoveCifItem(self.names[0][1])
+       self.cf.RemoveCifItem(self.names[1])
        print("After:\n")
        print(self.cf.printsection())
        try:
-           a = self.cf[self.names[0][1]]
+           a = self.cf[self.names[1]]
        except KeyError: pass
        else: self.fail()
 
    def testFullLoopRemove(self):
        """Check removal of all loop items"""
-       for name in self.names[0]: self.cf.RemoveCifItem(name)
+       for name in self.names: self.cf.RemoveCifItem(name)
        self.assertTrue(len(self.cf.loops)==0, repr(self.cf.loops))
-
-# test adding data to a loop.  We test straight addition, then make sure the errors
-# happen at the right time
-#
-   def testAddToLoop(self):
-       """Test adding to a loop"""
-       adddict = {'_address':['1 high street','2 high street','3 high street','4 high st'],
-                  '_address2':['Ecuador','Bolivia','Colombia','Mehico']}
-       self.cf.AddToLoop('_item_name#2',adddict)
-       print(self.cf)
-       newkeys = self.cf.GetLoopNames('_item_name#2')
-       self.assertTrue(list(adddict.keys())[0] in newkeys)
-       self.assertEqual(len(self.cf['_item_name#2']),len(self.values[0][0]))
-
-   def testBadAddToLoop(self):
-       """Test incorrect loop addition"""
-       adddict = {'_address':['1 high street','2 high street','3 high street'],
-                  '_address2':['Ecuador','Bolivia','Colombia']}
-       try:
-           self.cf.AddToLoop('_no_item',adddict)
-       except KeyError: pass
-       else: self.fail()
-       try:
-           self.cf.AddToLoop('_item_name#2',adddict)
-       except StarLengthError:
-           pass
-       else: self.fail()
 
    def testChangeLoop(self):
        """Test changing pre-existing item in loop"""
@@ -347,10 +313,13 @@ class LoopBlockTestCase(unittest.TestCase):
    """Check operations on loop blocks"""
    def setUp(self):
         self.cf = CifFile.CifBlock()
-        self.names = (('_Item_Name_1','_item_name#2','_item_%$#3'),)
-        self.values = (((1,2,3,4),('hello','good_bye','a space','# 4'),
-            (15.462, -99.34,10804,0.0001)),)
-        self.cf.AddCifItem((self.names,self.values))
+        self.names = ('_Item_Name_1','_item_name#2','_item_%$#3')
+        self.values = ((1,2,3,4),('hello','good_bye','a space','# 4'),
+            (15.462, -99.34,10804,0.0001))
+        for n,v in zip(self.names, self.values):
+            self.cf.AddItem(n, v)
+        self.cf.CreateLoop(self.names)
+        
         self.cf['_non_loop_item'] = 'Non loop string item'
         self.cf['_number_item'] = 15.65
         self.cf['_planet'] = 'Saturn'
@@ -367,11 +336,11 @@ class LoopBlockTestCase(unittest.TestCase):
 
    def testLoop(self):
         """Check GetLoop returns values and names in matching order"""
-        results = self.cf.GetLoop(self.names[0][2])
-        lowernames = [a.lower() for a in self.names[0]]
+        results = self.cf.GetLoop(self.names[2])
+        lowernames = [a.lower() for a in self.names]
         for key in results.keys():
             self.assertTrue(key.lower() in lowernames)
-            self.assertTrue(tuple(results[key]) == self.values[0][lowernames.index(key.lower())])
+            self.assertTrue(tuple(results[key]) == self.values[lowernames.index(key.lower())])
 
    def testLoopCharCase(self):
        """Test that upper/lower case names in loops works correctly"""
@@ -400,8 +369,6 @@ class LoopBlockTestCase(unittest.TestCase):
    def testLoopifyCif(self):
        """Test changing unlooped data to looped data does
           not touch already looped data for a CIF file"""
-#      from IPython.Debugger import Tracer; debug_here = Tracer()
-#      debug_here()
        self.cf.CreateLoop(["_planet","_satellite","_rings"])
        newloop = self.cf.GetLoop("_rings")
        self.assertTrue(newloop.has_key('_planet'))
@@ -414,8 +381,8 @@ class LoopBlockTestCase(unittest.TestCase):
        testloop = self.cf.GetLoop("_item_name_1")
        i = 0
        for test_pack in testloop:
-           self.assertEqual(test_pack._item_name_1,self.values[0][0][i])
-           self.assertEqual(getattr(test_pack,"_item_name#2"),self.values[0][1][i])
+           self.assertEqual(test_pack._item_name_1,self.values[0][i])
+           self.assertEqual(getattr(test_pack,"_item_name#2"),self.values[1][i])
            i += 1
 
    def testPacketContents(self):
@@ -1513,7 +1480,7 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
 
 ##############################################################
 #
-#  Validation testing
+#  Validation testing. Used to use ValidCifFile
 #
 ##############################################################
 
@@ -1522,98 +1489,6 @@ class DDL1TestCase(unittest.TestCase):
 
     def setUp(self):
         self.ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
-        #items = (("_atom_site_label","S1"),
-        #         ("_atom_site_fract_x","0.74799(9)"),
-        #         ("_atom_site_adp_type","Umpe"),
-        #         ("_this_is_not_in_dict","not here"))
-        bl = CifFile.CifBlock()
-        self.cf = CifFile.ValidCifFile(dic=self.ddl1dic)
-        self.cf["test_block"] = bl
-        self.cf["test_block"].AddCifItem(("_atom_site_label",
-              ["C1","Cr2","H3","U4"]))
-
-    def tearDown(self):
-        del self.cf
-
-    def testUnknownItem(self):
-        """Test that an unknown item returns a key error"""
-        try:
-            a = self.ddl1dic["_this_is_not_defined"]
-        except KeyError: pass
-        else:
-            self.fail()
-            
-    def testItemType(self):
-        """Test that types are correctly checked and reported"""
-        #numbers
-        self.cf["test_block"]["_diffrn_radiation_wavelength"] = "0.75"
-        try:
-            self.cf["test_block"]["_diffrn_radiation_wavelength"] = "moly"
-        except CifFile.ValidCifError: pass
-        else: self.fail()
-
-    def testItemEsd(self):
-        """Test that non-esd items are not allowed with esds"""
-        #numbers
-        try:
-            self.cf["test_block"]["_chemical_melting_point_gt"] = "1325(6)"
-        except CifFile.ValidCifError: pass
-        else: self.fail()
-
-    def testItemEnum(self):
-        """Test that enumerations are understood"""
-        self.cf["test_block"]["_diffrn_source_target"]="Cr"
-        try:
-            self.cf["test_block"]["_diffrn_source_target"]="2.5"
-        except CifFile.ValidCifError: pass
-        else: self.fail()
-
-    def testItemRange(self):
-        """Test that ranges are correctly handled"""
-        self.cf["test_block"]["_diffrn_source_power"] = "0.0"
-        self.cf["test_block"]["_diffrn_standards_decay_%"] = "98"
-
-    def testItemLooping(self):
-        """test that list yes/no/both works"""
-        pass
-
-    def testListReference(self):
-        """Test that _list_reference is handled correctly"""
-        #can be both looped and unlooped; if unlooped, no need for ref.
-        self.cf["test_block"]["_diffrn_radiation_wavelength"] = "0.75"
-        try:
-            self.cf["test_block"].AddCifItem(((
-                "_diffrn_radiation_wavelength",
-                "_diffrn_radiation_wavelength_wt"),(("0.75","0.71"),("0.5","0.1"))))
-        except CifFile.ValidCifError: pass
-        else: self.fail()
-
-    def testUniqueness(self):
-        """Test that non-unique values are found"""
-        # in cif_core.dic only one set is available
-        try:
-            self.cf["test_block"].AddCifItem(((
-                "_publ_body_label",
-                "_publ_body_element"),
-                  (
-                   ("1.1","1.2","1.3","1.2"),
-                   ("section","section","section","section")
-                     )))
-        except CifFile.ValidCifError: pass
-        else: self.fail()
-
-    def testParentChild(self):
-        """Test that non-matching values are reported"""
-        self.assertRaises(CifFile.ValidCifError,
-            self.cf["test_block"].AddCifItem,
-            (("_geom_bond_atom_site_label_1","_geom_bond_atom_site_label_2"),
-            [["C1","C2","H3","U4"],
-            ["C1","Cr2","H3","U4"]]))
-        # now we test that a missing parent is flagged
-        # self.assertRaises(CifFile.ValidCifError,
-        #     self.cf["test_block"].AddCifItem,
-        #     (("_atom_site_type_symbol","_atom_site_label"),
-        #       [["C","C","N"],["C1","C2","N1"]]))
 
     def testReport(self):
         CifFile.validate_report(CifFile.Validate("tests/C13H2203_with_errors.cif",dic=self.ddl1dic))
@@ -1777,15 +1652,6 @@ save_
         print(repr(result))
         self.assertTrue(dict(result['_enumeration_set.state'])['validate_loop_key_ddlm']['result']==True)
 
-class FakeDicTestCase(unittest.TestCase):
-# we test stuff that hasn't been used in official dictionaries to date.
-    def setUp(self):
-        self.testcif = CifFile.CifFile("dictionaries/novel_test.cif")
-
-    def testTypeConstruct(self):
-        self.assertRaises(CifFile.ValidCifError,CifFile.ValidCifFile,
-        diclist=["dictionaries/novel.dic"],datasource=self.testcif)
-
 class DicEvalTestCase(unittest.TestCase):
     def setUp(self):
         testdic = CifFile.CifDic("dictionaries/cif_core_ddlm.dic",grammar="auto")
@@ -1867,7 +1733,7 @@ class DicEvalTestCase(unittest.TestCase):
 class DicStructureTestCase(unittest.TestCase):
     """Tests use of dictionary semantic information for item lookup"""
     def setUp(self):
-        self.testdic = CifFile.CifDic("dictionaries/cif_core_ddlm.dic",grammar="auto")
+        self.testdic = CifFile.CifDic("src/drel/testing/cif_core.dic",grammar="auto")
         cc = CifFile.CifFile("tests/drel/nick.cif",grammar="STAR2")
         self.fb = cc["saly2"]
         self.fb.assign_dictionary(self.testdic)
@@ -1887,6 +1753,11 @@ class DicStructureTestCase(unittest.TestCase):
         target = self.testdic.get_name_by_cat_obj('cell','volume')
         self.assertEqual(target,'_cell.volume')
 
+    def testCatObj2(self):
+        """Test that cat.obj with obj in the parent is found"""
+        target = self.testdic.get_name_by_cat_obj('atom_site_aniso','ADP_type')
+        assert target == '_atom_site.ADP_type'
+        
     def testCatKey(self):
         """Test that we get a complete list of keys for child categories"""
         target = self.testdic.cat_key_table

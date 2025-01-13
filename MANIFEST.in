@@ -1,10 +1,9 @@
-recursive-include src *.nw
+recursive-include src
 include LICENSE
 include INSTALLATION
 include TESTING
 include BUILDING
 include CONTRIBUTORS
-include src/*.html
 include TestPyCIFRW.py
 include TestDrel.py
 include RELEASENOTES

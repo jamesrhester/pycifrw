@@ -63,7 +63,6 @@ def p_statements(p):
 
 def p_small_stmt(p):
     '''small_stmt :   expr_stmt
-                    | print_stmt
                     | break_stmt
                     | next_stmt'''
     p[0] = p[1]
@@ -76,23 +75,26 @@ def p_next_stmt(p):
     '''next_stmt : NEXT'''
     p[0] = ["NEXT"]
 
-def p_print_stmt(p):
-    '''print_stmt : PRINT expression '''
-    p[0] = ['PRINT', p[2]]
-
 # Note here that a simple testlist_star_expr is useless as in our
 # side-effect-free world it will be evaluated and discarded. We
 # could just drop it right now but we let it go through to the
 # AST processor for language-dependent processing
+
+# We test for an explicit nline as it is not ignored otherwise
+#
 def p_expr_stmt(p):
     ''' expr_stmt : testlist_star_expr
                   | testlist_star_expr AUGOP testlist_star_expr
                   | testlist_star_expr "=" testlist_star_expr
+                  | testlist_star_expr "=" maybe_nline testlist_star_expr
+                  | testlist_star_expr AUGOP maybe_nline testlist_star_expr
                   | fancy_drel_assignment_stmt '''
     if len(p) == 2 and p[1][0] != 'FANCY_ASSIGN':  # we have a list of expressions which we
         p[0] = ["EXPRLIST",p[1]]
     elif len(p) == 2 and p[1][0] == 'FANCY_ASSIGN':
         p[0] = p[1]
+    elif len(p) == 5:
+        p[0] = ["ASSIGN",p[1], p[2], p[4]]
     else:
         p[0] = ["ASSIGN",p[1],p[2],p[3]]
 
@@ -329,14 +331,13 @@ def p_subscription(p):
     p[0] = ["SUBSCRIPTION",p[1],p[3]]
 
 def p_slicing(p):
-    '''slicing :  primary "[" proper_slice "]"
-               |  primary "[" slice_list "]" '''
+    '''slicing : primary "[" slice_list "]" '''
     p[0] = ["SLICE", p[1], p[3] ]
 
 def p_proper_slice(p):
     '''proper_slice : short_slice
                     | long_slice '''
-    p[0] = [p[1]]
+    p[0] = p[1]
 
 # Our AST slice convention is that, if anything is mentioned,
 # the first element is always
@@ -353,7 +354,7 @@ def p_short_slice(p):
     if len(p) == 2: p[0] = []
     if len(p) == 4: p[0] = [p[1],p[3]]
     if len(p) == 3 and p[1] == ":":
-        p[0] = [0,p[2]]
+        p[0] = [[],p[2]]
     if len(p) == 3 and p[2] == ":":
         p[0] = [p[1]]
 
@@ -450,9 +451,9 @@ def p_compound_stmt(p):
 # There must only be one else statement at the end of the else if statements,
 # so we show this by creating a separate production
 def p_if_else_stmt(p):
-    '''if_else_stmt : if_stmt ELSE suite'''
+    '''if_else_stmt : if_stmt ELSE maybe_nline suite'''
     p[0] = p[1]
-    p[0].append(p[3])
+    p[0].append(p[4])
 
 # The AST node is [IF_EXPR,cond, suite,[[elseif cond1,suite],[elseifcond2,suite]...]]
 def p_if_stmt(p):
@@ -476,24 +477,45 @@ def p_if_stmt(p):
 # forced to be also a non-listed object.
 
 def p_suite(p):
-    '''suite : statement
-               | "{" maybe_nline statements "}" maybe_nline '''
+    '''suite : suite_long
+             | suite_short'''
+    p[0] = p[1]
+
+def p_suite_short(p):
+    '''suite_short : "{" simple_stmt "}"
+                   | "{" simple_stmt "}" maybe_nline '''
+    p[0] = p[2]
+
+def p_suite_long(p):
+    '''suite_long : statement
+               | "{" maybe_nline statements "}" maybe_nline
+               | "{" statements "}" maybe_nline'''
     if len(p) == 2:
         p[0] = p[1]
+    elif len(p) == 6:
+        p[0] = p[3]
     else:
-        p[0] = p[3]  #already have a statement block
+        p[0] = p[2]
 
 def p_for_stmt(p):
-    '''for_stmt : FOR id_list IN testlist_star_expr suite
-                | FOR "[" id_list "]" IN testlist_star_expr suite '''
-    if len(p)==6:
-        p[0] = ["FOR", p[2], p[4], p[5]]
+    '''for_stmt : for_head suite '''
+    p[0] = p[1] + [p[2]]
+
+def p_for_head(p):
+    '''for_head : FOR id_list IN testlist_star_expr
+                | FOR "[" id_list "]" IN testlist_star_expr '''
+    if len(p) == 5:
+        p[0] = ["FOR", p[2], p[4]]
     else:
-        p[0] = ["FOR", p[3], p[6], p[7]]
+        p[0] = ["FOR", p[3], p[6]]
 
 def p_loop_stmt(p):
-    '''loop_stmt : loop_head suite '''
-    p[0] = ["LOOP"] + p[1] + [p[2]]
+    '''loop_stmt : loop_head suite
+                 | loop_head maybe_nline suite'''
+    if len(p) == 3:
+        p[0] = ["LOOP"] + p[1] + [p[2]]
+    else:
+        p[0] = ["LOOP"] + p[1] + [p[3]]
 
 # We capture a list of all the actually present items in the current
 # datafile
@@ -511,8 +533,13 @@ def p_loop_head(p):
     else: p[0] = p[0] + ["",""]
 
 def p_do_stmt(p):
-    '''do_stmt : do_stmt_head suite '''
-    p[0] = p[1] + [p[2]]
+    '''do_stmt : do_stmt_head suite
+               | do_stmt_head maybe_nline suite
+               '''
+    if len(p) == 3:
+        p[0] = p[1] + [p[2]]
+    else:
+        p[0] = p[1] + [p[3]]
 
 # To translate the dREL do to a for statement, we need to make the
 # end of the range included in the range
@@ -553,7 +580,7 @@ def p_arglist(p):
 
 def p_maybe_nline(p):
     ''' maybe_nline : newlines
-                    | empty '''
+                    | empty'''
     pass
 
 # We need to allow multiple newlines here and not just in the lexer as
@@ -565,7 +592,7 @@ def p_newlines(p):
     pass
 
 def p_empty(p):
-    ''' empty       : '''
+    ''' empty : '''
     pass
 
 def p_error(p):

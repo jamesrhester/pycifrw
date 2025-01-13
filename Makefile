@@ -4,9 +4,7 @@
 all: package documentation
 #
 package: lib setup.py sources drel
-	python setup.py sdist
 	python3 setup.py sdist
-	python setup.py bdist_wheel
 	python3 setup.py bdist_wheel
 #
 documentation:

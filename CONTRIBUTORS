@@ -5,4 +5,5 @@ James Hester (initiator and maintainer)
 Pavol Juhas  (bug fixes, cleanups and Python3)
 CJ Wright    (conda integration)
 Boris Dusek  (bug fixes)
+Inigo Garibondo (many, especially dictionary validation)
 

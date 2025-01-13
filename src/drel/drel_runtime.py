@@ -1,9 +1,10 @@
-@ Runtime functions for dREL.
-
-dREL defines some original semantics for vector and matrix appending and removing.  We implement
-the necessary functions here.
-
-<<*>>=
+# Runtime functions for dREL.                                             
+#                                                                         
+# dREL defines some original semantics for vector and matrix appending and removing.  We implement
+# the necessary functions here.                                           
+#                                                                         
+#                                                                         
+# <*>=                                                                    
 import numpy
 from numpy.linalg import eig
 
@@ -11,18 +12,14 @@ from numpy.linalg import eig
 if isinstance(u"abc",str):   #Python 3
     unicode = str
 
-<<Augmented assignments>>
-<<Mathematical operators>>
-<<Extra mathematical functions>>
-<<List operations>>
-
-@ Augmented assignments.  aug_append returns a new object.  For numpy, if
-both arrays have the same dimensions, they are reshaped to a
-larger dimension and then concatenated along the
-new axis. If the first array has a larger dimension, the second array is
-reshaped to match.
-
-<<Augmented assignments>>=
+# Augmented assignments.  aug_append returns a new object.  For numpy, if 
+# both arrays have the same dimensions, they are reshaped to a            
+# larger dimension and then concatenated along the                        
+# new axis. If the first array has a larger dimension, the second array is
+# reshaped to match.                                                      
+#                                                                         
+#                                                                         
+# <Augmented assignments>=                                                
 def aug_append(current,extra):
     """Add the contents of extra to current"""
     have_list = isinstance(current,list)
@@ -83,34 +80,35 @@ def aug_remove(current,extra):
     else:
         raise ValueError("Cannot remove %s from %s" % (repr(extra),repr(current)))
 
-@ Multiplication requires some intelligence.  The rules of dREL are as follows:
-(1) mat * mat, vec*mat is ordinary matrix multiplication
-(2) vec * vec is a dot product (i.e. second vector is column)
-(3) mat * vec is matrix multiplication with vec as a column vector
-
-dREL has 'Array' and 'Matrix' containers.  An array container only allows
-element-wise operations, whereas matrix containers (implicitly 2-dimensional)
-have matrix multiplication defined for them.
-
-While the dREL specs are not explicit about this, matrix multiplication only
-makes sense for 2-dimensional objects, although the DDLm type known as 'matrix' 
-describes arbitrary tensors (ddl.dic).  We explicitly check that the objects
-that are passed to this routine satisfy the requirements, i.e. any dimension
-three or more object does not have multiplication defined except by a scalar.
-
-As numpy will always return a 2-dim matrix as a result, even if it is
-a scalar, we detect scalars and return them as such.  We also must
-detect vectors and return them as a 1D array, so that
-vector-based operations can work generically.  Otherwise we have the
-case where the second element is accessed (see function Symop for an
-example) and an error results, as for a vector in numpy
-2D representation this element does not exist.
-
-We also attempt to maintain type when converting to/from numpy, as some
-routines (e.g. Symop) wish to create strings out of integers using the
-backtick operator.
-
-<<Mathematical operators>>=
+# Multiplication requires some intelligence.  The rules of dREL are as follows:
+# (1) mat * mat, vec*mat is ordinary matrix multiplication                
+# (2) vec * vec is a dot product (i.e. second vector is column)           
+# (3) mat * vec is matrix multiplication with vec as a column vector      
+#                                                                         
+# dREL has 'Array' and 'Matrix' containers.  An array container only allows
+# element-wise operations, whereas matrix containers (implicitly 2-dimensional)
+# have matrix multiplication defined for them.                            
+#                                                                         
+# While the dREL specs are not explicit about this, matrix multiplication only
+# makes sense for 2-dimensional objects, although the DDLm type known as 'matrix' 
+# describes arbitrary tensors (ddl.dic).  We explicitly check that the objects
+# that are passed to this routine satisfy the requirements, i.e. any dimension
+# three or more object does not have multiplication defined except by a scalar.
+#                                                                         
+# As numpy will always return a 2-dim matrix as a result, even if it is   
+# a scalar, we detect scalars and return them as such.  We also must      
+# detect vectors and return them as a 1D array, so that                   
+# vector-based operations can work generically.  Otherwise we have the    
+# case where the second element is accessed (see function Symop for an    
+# example) and an error results, as for a vector in numpy                 
+# 2D representation this element does not exist.                          
+#                                                                         
+# We also attempt to maintain type when converting to/from numpy, as some 
+# routines (e.g. Symop) wish to create strings out of integers using the  
+# backtick operator.                                                      
+#                                                                         
+#                                                                         
+# <Mathematical operators>=                                               
 def drel_dot(first_arg,second_arg):
     """Perform a multiplication on two unknown types"""
     print("Multiply %s and %s" % (repr(first_arg),repr(second_arg)))
@@ -148,11 +146,12 @@ def drel_add(first_arg,second_arg):
         return result
 
 
-@  Other mathematical functions.  dREL defines some linear algebra type functions,
-which we have to wrap because e.g. the eigenvalues should be sorted.  Note that we
-are assuming the right eigenvalues, not the left eigenvalues.
-
-<<Extra mathematical functions>>=
+#  Other mathematical functions.  dREL defines some linear algebra type functions,
+# which we have to wrap because e.g. the eigenvalues should be sorted.  Note that we
+# are assuming the right eigenvalues, not the left eigenvalues.           
+#                                                                         
+#                                                                         
+# <Extra mathematical functions>=                                         
 def drel_eigen(in_matrix):
     """Return 3 lists of form [a,v1,v2,v3], corresponding to the 3 eigenvalues 
        and eigenvector components of a 3x3 matrix"""
@@ -171,11 +170,13 @@ def drel_int(in_val):
     except:
         return int(in_val)
 
-@ List operations.  We deduce that Strip actually returns the nth
-element of each list element (??) based on its use in the model_site
-category functions.
-
-<<List operations>>=
+# List operations.  We deduce that Strip actually returns the nth         
+# element of each list element (??) based on its use in the model_site    
+# category functions.                                                     
+#                                                                         
+#                                                                         
+# <List operations>=                                                      
 def drel_strip(in_list,element):
     """Return the nth element from the list"""
     return [a[element] for a in in_list]
+

@@ -48,7 +48,6 @@ tokens = (
     'CASE',
     'DEFAULT',
     'AUGOP',
-    'PRINT',
     'FUNCTION',
     'NEWLINE',
     'ESCAPE_NEWLINE',
@@ -192,8 +191,6 @@ reserved = {
     'case' : 'CASE',
     'Function' : 'FUNCTION',
     'function' : 'FUNCTION',
-    'Print' : 'PRINT',
-    'print' : 'PRINT',
     'Repeat': 'REPEAT',
     'repeat': 'REPEAT',
     'default' : 'DEFAULT'

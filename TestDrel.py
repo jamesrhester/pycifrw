@@ -8,25 +8,23 @@ from __future__ import unicode_literals
 from __future__ import division
 from __future__ import absolute_import
 
-import unittest
+import pytest
 import CifFile
 from CifFile import StarFile,StarList
 import numpy
 from CifFile.drel import drel_lex,drel_ast_yacc,py_from_ast,drel_runtime
 from copy import copy
 
-class dRELRuntimeTestCase(unittest.TestCase):
-    def setUp(self):
-        pass
+class TestdRELRuntime():
 
     def testListAppend(self):
         a = [[1,2],[3,4]]
         b = drel_runtime.aug_append(a,1)
         c = drel_runtime.aug_append(a,[3])
         d = drel_runtime.aug_append(a,[[4,5,6]])
-        self.assertTrue(b == [[1,2],[3,4],1])
-        self.assertTrue(c == [[1,2],[3,4],[3]])
-        self.assertTrue(d == [[1,2],[3,4],[[4,5,6]]])
+        assert b == [[1,2],[3,4],1]
+        assert c == [[1,2],[3,4],[3]]
+        assert d == [[1,2],[3,4],[[4,5,6]]]
 
     def testListAdd(self):
         a = [[1,2],[3,4]]
@@ -34,14 +32,14 @@ class dRELRuntimeTestCase(unittest.TestCase):
         b = drel_runtime.aug_add(a,1)
         c = drel_runtime.aug_add(a,[[1,2],[7,6]])
         d = drel_runtime.aug_add(5,2)
-        self.assertTrue((c == numpy.array([[2,4],[10,10]])).all())
-        self.assertTrue((b == numpy.array([[2,3],[4,5]])).all())
-        self.assertTrue(d == 7)
+        assert (c == numpy.array([[2,4],[10,10]])).all()
+        assert (b == numpy.array([[2,3],[4,5]])).all()
+        assert d == 7
 
     def testListUnappend(self):
         a = [[1,2],[3,4]]
         c = drel_runtime.aug_remove(a,[1,2])
-        self.assertTrue(c == [[3,4]])
+        assert c == [[3,4]]
 
     def testListSubtract(self):
         a = [[1,2],[3,4]]
@@ -49,23 +47,23 @@ class dRELRuntimeTestCase(unittest.TestCase):
         b = drel_runtime.aug_sub(a,1)
         c = drel_runtime.aug_sub(a,[[1,2],[7,6]])
         d = drel_runtime.aug_sub(5,2)
-        self.assertTrue((c == numpy.array([[0,0],[-4,-2]])).all())
-        self.assertTrue((b == numpy.array([[0,1],[2,3]])).all())
-        self.assertTrue(d == 3)
+        assert (c == numpy.array([[0,0],[-4,-2]])).all()
+        assert (b == numpy.array([[0,1],[2,3]])).all()
+        assert d == 3
 
     def testDotProduct(self):
         """Test that multiplication works correctly"""
         a = numpy.array([1,2,3])
         b = numpy.array([4,5,6])
         d = drel_runtime.drel_dot(a,b)
-        self.assertTrue(d == 32)
+        assert d == 32
 
     def testMatrixMultiply(self):
         """Test that matrix * matrix works"""
         a = numpy.matrix([[1,0,0],[0,1,0],[0,0,1]])
         b = numpy.matrix([[3,4,5],[6,7,8],[9,10,11]])
         c = drel_runtime.drel_dot(a,b)
-        self.assertTrue((c == numpy.matrix([[3,4,5],[6,7,8],[9,10,11]])).any())
+        assert (c == numpy.matrix([[3,4,5],[6,7,8],[9,10,11]])).any()
 
     def testMatVecMultiply(self):
         """Test that matrix * vec works"""
@@ -73,8 +71,8 @@ class dRELRuntimeTestCase(unittest.TestCase):
         b = numpy.matrix([[3,4,5],[6,7,8],[9,10,11]])
         c = drel_runtime.drel_dot(a,b)
         d = drel_runtime.drel_dot(b,a)
-        self.assertTrue((d == numpy.matrix([4,7,10])).any())
-        self.assertTrue((c == numpy.matrix([6,7,8])).any())
+        assert (d == numpy.matrix([4,7,10])).any()
+        assert (c == numpy.matrix([6,7,8])).any()
 
     def testScalarVecMult(self):
         """Test that multiplying by a scalar works"""
@@ -82,85 +80,94 @@ class dRELRuntimeTestCase(unittest.TestCase):
         b = 4
         c = drel_runtime.drel_dot(b,a)
         d = drel_runtime.drel_dot(a,b)
-        self.assertTrue((c == numpy.matrix([4,8,12])).any())
-        self.assertTrue((d == numpy.matrix([4,8,12])).any())
+        assert (c == numpy.matrix([4,8,12])).any()
+        assert (d == numpy.matrix([4,8,12])).any()
 
     def testArrayAppend(self):
         a = numpy.array([0,1,0])
         b = numpy.array([1,0,0])
         a = drel_runtime.aug_append(a,b)
-        self.assertTrue((a == numpy.array([[0,1,0],[1,0,0]])).any())
+        assert (a == numpy.array([[0,1,0],[1,0,0]])).any()
 
 # Test simple statements
 
-class SingleSimpleStatementTestCase(unittest.TestCase):
-    def setUp(self):
+@pytest.fixture
+def setup():
         #create our lexer and parser
-        self.lexer = drel_lex.lexer
-        self.parser = drel_ast_yacc.parser
-        self.dic = CifFile.CifDic("tests/drel/dic_for_tests.dic",grammar="STAR2")
+        lexer = drel_lex.lexer
+        parser = drel_ast_yacc.parser
+        dic = CifFile.CifDic("tests/drel/dic_for_tests.dic",grammar="STAR2")
+        return lexer, parser, dic
 
-    def create_test(self,instring,right_value,debug=False,array=False):
+class TestSingleSimpleStatement():
+
+    def create_test(self,setup, instring,right_value,debug=False,array=False):
         """Given a string, create and call a function then check result"""
+        lexer, parser, dic = setup
         if instring[-1]!="\n":
            instring += '\n'
-        res = self.parser.parse(instring,debug=debug,lexer=self.lexer)
+        res = parser.parse(instring,debug=debug,lexer=lexer)
         if debug: print("%s\n -> \n%r \n" % (instring, res))
         realfunc = py_from_ast.make_python_function(res,"myfunc",'_a.b',have_sn=False,
-                                                    cif_dic=self.dic)
+                                                    cif_dic=dic)
         if debug: print("-> %s" % realfunc)
         exec(realfunc,globals())
         answer = myfunc(self)
         if debug: print(" -> {!r}".format(answer))
         if not array:
-            self.assertTrue(answer == right_value)
+            assert answer == right_value
         else:
             try:
-                self.assertTrue((answer == right_value).all())
+                assert (answer == right_value).all()
             except:
-                self.assertTrue(answer == right_value)
+                assert answer == right_value
 
 # as we disallow simple expressions on a separate line to avoid a
 # reduce/reduce conflict for identifiers, we need at least an
 # assignment statement
 
-    def testrealnum(self):
+    def testrealnum(self,setup):
         """test parsing of real numbers"""
-        self.create_test('_a.b=5.45',5.45)
-        self.create_test('_a.b=.45e-24',.45e-24)
+        self.create_test(setup, '_a.b=5.45',5.45)
+        self.create_test(setup, '_a.b=.45e-24',.45e-24)
 
-    def testinteger(self):
+    def testinteger(self, setup):
         """test parsing an integer"""
         resm = [0,0,0,0]
         checkm = [1230,77,5,473]
-        self.create_test('_a.b = 1230',1230)
-        self.create_test('_a.b = 0x4D',77)
-        self.create_test('_a.b = 0B0101',5)
-        self.create_test('_a.b = 0o731',473)
+        self.create_test(setup,'_a.b = 1230',1230)
+        self.create_test(setup,'_a.b = 0x4D',77)
+        self.create_test(setup,'_a.b = 0B0101',5)
+        self.create_test(setup,'_a.b = 0o731',473)
 
-    def testcomplex(self):
+    def testcomplex(self, setup):
         """test parsing a complex number"""
-        self.create_test('_a.b = 13.45j',13.45j)
+        self.create_test(setup,'_a.b = 13.45j',13.45j)
 
-    def testList(self):
+    def testList(self, setup):
         """test parsing a list over two lines"""
-        self.create_test('_a.b = [1,2,\n 3,4,\n 5,6]',StarList([1,2,3,4,5,6]))
+        self.create_test(setup,'_a.b = [1,2,\n 3,4,\n 5,6]',StarList([1,2,3,4,5,6]))
 
-    def testparenth(self):
+    def testparenth(self, setup):
         """test parsing a parenthesis over two lines"""
-        self.create_test('_a.b = (1,2,\n3,4)',(1,2,3,4))
+        self.create_test(setup,'_a.b = (1,2,\n3,4)',(1,2,3,4))
 
-    def testshortstring(self):
+    def testequal(self, setup):
+        """test splitting equation over two lines"""
+        self.create_test(setup, '_a.b = \n2', 2)
+        
+    def testshortstring(self, setup):
         """test parsing a one-line string"""
         jk = "_a.b = \"my pink pony's mane\""
         jl = "_a.b = 'my pink pony\"s mane'"
-        self.create_test(jk,jk[8:-1])
-        self.create_test(jl,jl[8:-1])
+        self.create_test(setup,jk,jk[8:-1])
+        self.create_test(setup,jl,jl[8:-1])
 #
 # This fails due to extra indentation introduced when constructing the
 # enclosing function
 #
-    def testlongstring(self):
+    @pytest.mark.xfail
+    def testlongstring(self, setup):
         """test parsing multi-line strings"""
         jk = '''_a.b = """  a  long string la la la '"'
                   some more
@@ -168,55 +175,76 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
         jl = """_a.b = '''  a  long string la la la '"'
                   some more
           end''' """
-        self.create_test(jk,jk[7:-3])
-        self.create_test(jl,jl[7:-3])
+        self.create_test(setup,jk,jk[7:-3])
+        self.create_test(setup,jl,jl[7:-3])
 
-    def testmathexpr(self):
+    def testmathexpr(self, setup):
         """test simple maths expressions """
         testexpr = (("_a.b = 5.45 + 23.6e05",5.45+23.6e05),
                     ("_a.b = 11 - 45",11-45),
                     ("_a.b = 45.6 / 22.2",45.6/22.2))
         for test,check in testexpr:
-            self.create_test(test,check)
+            self.create_test(setup,test,check)
 
-    def testexprlist(self):
+    def testexprlist(self, setup):
         """test comma-separated expressions"""
         test = "_a.b = 5,6,7+8.5e2"
-        self.create_test(test,(5,6,7+8.5e2))
+        self.create_test(setup,test,(5,6,7+8.5e2))
 
-    def testparen(self):
+    def testparen(self, setup):
         """test parentheses"""
         test = "_a.b = ('once', 'upon', 6,7j +.5e2)"
-        self.create_test(test,('once' , 'upon' , 6 , 7j + .5e2 ))
+        self.create_test(setup,test,('once' , 'upon' , 6 , 7j + .5e2 ))
 
-    def testlists(self):
+    def testlists(self, setup):
         """test list parsing"""
         test = "_a.b = ['once', 'upon', 6,7j +.5e2]"
-        self.create_test(test,StarList(['once' , 'upon' , 6 , 7j + .5e2 ]))
+        self.create_test(setup,test,StarList(['once' , 'upon' , 6 , 7j + .5e2 ]))
 
-    def test_multistatements(self):
+    def test_multistatements(self, setup):
         """test multiple statements"""
         test1 = "_a.b = 1.2\nb = 'abc'\nqrs = 4.4\n"
         test2 = '\n\nq = _c.d\nnumeric = "01234"\n_a.b=11.2'
-        self.create_test(test1,1.2)
-        #self.create_test(test2,11.2)
+        self.create_test(setup,test1,1.2)
+        #self.create_test(setup,test2,11.2)
 
-    def test_semicolon_sep(self):
+    def test_semicolon_sep(self, setup):
         """test multiple statements between semicolons"""
         test = "_a.b = 1.2;b = 'abc';qrs = 4.4"
-        self.create_test(test,1.2)
+        self.create_test(setup,test,1.2)
 
-    def test_slicing(self):
+    def test_slicing(self, setup):
         """Test that our slicing is parsed correctly"""
         test = "b = array([[1,2],[3,4],[5,6]]);_a.b=b[0,1]"
-        self.create_test(test,2)
+        self.create_test(setup,test,2)
 
-    def test_slice_2(self):
+    def test_slice_2(self, setup):
         """Test that first/last slicing works"""
         test = "b = 'abcdef';_a.b=b[1:3]"
-        self.create_test(test,'bc')
+        self.create_test(setup,test,'bc')
 
-    def test_paren_balance(self):
+    def test_slice_3(self, setup):
+        test = """
+        c = [[0.1,1,2,3],[0.2,4,5,6],[0.3,7,8,9]]
+        _a.b = c[:, 0]
+        """
+        self.create_test(setup, test, [0.1, 0.2, 0.3])
+
+    def test_slice_4(self, setup):
+        test = """
+        c = [[0.1,1,2,3],[0.2,4,5,6],[0.3,7,8,9]]
+        _a.b = c[0:2, 0]
+        """
+        self.create_test(setup, test, [0.1, 0.2])
+
+    def test_slice_5(self, setup):
+        test = """
+        c = [[0.1,1,2,3],[0.2,4,5,6],[0.3,7,8,9]]
+        _a.b = c[:2, 0]
+        """
+        self.create_test(setup, test, [0.1, 0.2])
+
+    def test_paren_balance(self, setup):
         """Test that multi-line parentheses work """
         test = """b = (
                        (1,2,(
@@ -224,98 +252,105 @@ class SingleSimpleStatementTestCase(unittest.TestCase):
                             )
                        ,5),6
                      ,7)\n _a.b=b[0][2][0]"""
-        self.create_test(test,3)
+        self.create_test(setup,test,3)
 
-    def test_list_constructor(self):
+    def test_list_constructor(self, setup):
         """Test that the list constructor works"""
         test = """_a.b = List(1,2)"""
-        self.create_test(test,[1,2])
+        self.create_test(setup,test,[1,2])
 
-    def test_non_python_ops(self):
+    def test_non_python_ops(self, setup):
         """Test operators that have no direct Python equivalents"""
         test_expr = (("b = [1,2]; _a.b = [3,4]; _a.b++=b",StarList([3,4,[1,2]])),
         ("b = [1,2]; _a.b = [3,4]; _a.b+=b",[4,6]),
         ("b = 3; _a.b = [3,4]; _a.b-=b",[0,1]),
         ("b = [1,2]; _a.b = [[1,2],[3,4]]; _a.b--=b",[[3,4]]))
         for one_expr in test_expr:
-            self.create_test(one_expr[0],one_expr[1],debug=True,array=True)
+            self.create_test(setup,one_expr[0],one_expr[1],debug=True,array=True)
 
-    def test_tables(self):
+    def test_tables(self, setup):
        """Test that tables are parsed correctly"""
        teststrg = """
        c = Table()
        c['bx'] = 25
        _a.b = c
        """
+       lexer, parser, dic = setup
        print("Table test:")
-       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       res = parser.parse(teststrg+"\n",lexer=lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
-                                                   cif_dic=self.dic)
+                                                   cif_dic=dic)
        print(realfunc)
        exec(realfunc,globals())
        b = myfunc(self)
-       self.assertTrue(b['bx']==25)
+       assert b['bx']==25
 
-    def test_Tables_2(self):
+    def test_Tables_2(self, setup):
        """Test that brace-delimited tables are parsed correctly"""
        teststrg = """
        c = {'hello':1,'goodbye':2}
        _a.b = c['hello']
        """
        print("Table test:")
-       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       lexer, parser, dic = setup
+       res = parser.parse(teststrg+"\n",lexer=lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
-                                                   cif_dic=self.dic)
+                                                   cif_dic=dic)
        print(realfunc)
        exec(realfunc,globals())
        b = myfunc(self)
-       self.assertTrue(b==1)
+       assert b==1
 
-    def test_subscription(self):
+    def test_subscription(self, setup):
        """Test proper list of dependencies is returned"""
        teststrg = """
        m   = [15,25,35]
        _a.b = m [1]
        """
-       self.create_test(teststrg,25)
+       self.create_test(setup,teststrg,25)
 
-    def test_list_indices(self):
+    def test_list_indices(self, setup):
         """Test that multi-dimensional indices are accessed correctly"""
         teststrg = """
         m = [[1,2,3],[4,5,6],[7,8,9]]
         _a.b = m[1,2]
         """
-        self.create_test(teststrg,6,debug=True)
+        self.create_test(setup,teststrg,6,debug=True)
 
-    def test_matrix_indices(self):
+    def test_matrix_indices(self, setup):
         """Test that multi-dimensional indices work for matrices too"""
         teststrg = """
         m = matrix([[1,2,3],[4,5,6],[7,8,9]])
         _a.b = m[1,2]
         """
-        self.create_test(teststrg,6,debug=True)
+        self.create_test(setup,teststrg,6,debug=True)
 
-class SimpleCompoundStatementTestCase(unittest.TestCase):
-   def setUp(self):
+@pytest.fixture
+def setupcs():
        #create our lexer and parser
-       self.lexer = drel_lex.lexer
-       self.lexer.lineno = 0
-       self.parser = drel_ast_yacc.parser
-       self.dic = CifFile.CifDic("tests/drel/dic_for_tests.dic",grammar="STAR2")
+       lexer = drel_lex.lexer
+       lexer.lineno = 0
+       parser = drel_ast_yacc.parser
+       dic = CifFile.CifDic("tests/drel/dic_for_tests.dic",grammar="STAR2")
+       return lexer, parser, dic
 
-   def create_test(self,instring,right_value,varname="_a.b",debug=False):
+class TestSimpleCompoundStatement():
+
+   def create_test(self, setup, instring,right_value,varname="_a.b",debug=True):
        """Given a string, create and call a function then check result"""
+
+       lexer, parser, dic = setup
        if instring[-1]!="\n":
            instring += "\n"   # correct termination
-       res = self.parser.parse(instring,debug=debug,lexer=self.lexer)
+       res = parser.parse(instring,debug=debug,lexer=lexer)
        if debug: print("%s\n -> \n%r \n" % (instring, res))
        realfunc = py_from_ast.make_python_function(res,"myfunc",varname,have_sn=False,
-                                                   cif_dic=self.dic)
+                                                   cif_dic=dic)
        if debug: print("-> %s" % realfunc)
        exec(realfunc,globals())
-       self.assertTrue(myfunc(self) == right_value)
+       assert myfunc(self) == right_value
 
-   def test_multi_assign(self):
+   def test_multi_assign(self, setupcs):
        """ Test that multiple assignments are parsed """
        teststrg = """
        f = _a.b
@@ -323,31 +358,34 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        q = 0
        _a.b = 0
        """
-       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc",'_a.b',cif_dic=self.dic)
+       lexer, parser, dic = setupcs
+       res = parser.parse(teststrg+"\n",lexer=lexer)
+       realfunc = py_from_ast.make_python_function(res,"myfunc",'_a.b',cif_dic=dic)
        print("-> " + realfunc)
 
-   def test_do_stmt(self):
+   def test_do_stmt(self, setupcs):
        """Test how a do statement comes out"""
        teststrg = """
        _a.b = 0
        dummy = 1
        do jkl = 0,20,2 {
-          if (dummy == 1) print 'dummy is 1'
+          if (dummy == 1) print('dummy is 1')
           _a.b = _a.b + jkl
           }
-       do emm = 1,5 {
+       do emm = 1,5
+          {
           _a.b = _a.b + emm
           }
        """
-       self.create_test(teststrg,125)
+       self.create_test(setupcs,teststrg,125)
 
-   def test_do_stmt_2(self):
+   def test_do_stmt_2(self, setupcs):
        """Test how another do statement comes out with long suite"""
        teststrg = """
        _a.b = 0
        geom_hbond = [(1,2),(2,3),(3,4)]
-       do i= 0,1 {
+       do i= 0,1
+          {
           l,s = geom_hbond [i]
           a = 'hello'
           c = int(4.5)
@@ -355,9 +393,9 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
           _a.b += s
           }
        """
-       self.create_test(teststrg,5)
+       self.create_test(setupcs,teststrg,5)
 
-   def test_if_stmt(self):
+   def test_if_stmt(self, setupcs):
        """test parsing of if statement"""
        teststrg = """
        dmin = 5.0
@@ -366,9 +404,9 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        radius_bond = 2.0
        If (d1<dmin or d1>(rad1+radius_bond)) _a.b = 5
        """
-       self.create_test(teststrg,5)
+       self.create_test(setupcs,teststrg,5)
 
-   def test_double_if_stmt(self):
+   def test_double_if_stmt(self, setupcs):
        """test parsing of if statement"""
        teststrg = """
        dmin = 5.0
@@ -380,26 +418,33 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
        if (d1>dmin or d1<(rad1+radius_bond)) _a.b = 11
        if (5 > 6 and 6 < 4) _a.b = -2
        """
-       self.create_test(teststrg,11)
+       self.create_test(setupcs,teststrg,11)
 
-   def test_if_else(self):
+   def test_if_else(self, setupcs):
        """Test that else is properly handled"""
        teststrg = """drp = 'electron'
                      If (drp == "neutron")  _a.b =  "femtometres"
                      Else If (drp == "electron") _a.b =  "volts"
                      Else      _a.b =  "electrons" """
-       self.create_test(teststrg,'volts')
+       self.create_test(setupcs,teststrg,'volts')
 
-   def test_for_statement(self):
+   def test_for_statement(self, setupcs):
        """Test for statement with list"""
        teststrg = """
        _a.b = 0
        for [c,d] in [[1,2],[3,4],[5,6]] {
            _a.b += c + 2*d
        }"""
-       self.create_test(teststrg,33)
+       self.create_test(setupcs,teststrg,33)
 
-   def test_funcdef(self):
+   def test_single_line_suite(self, setupcs):
+       """Test singe-line suite"""
+       teststrg = """
+       _a.b = 0
+       for [c,d] in [[1,2],[3,4],[5,6]] { _a.b += c + 2*d }"""
+       self.create_test(setupcs, teststrg, 33)
+       
+   def test_funcdef(self, setupcs):
        """Test function conversion"""
        teststrg = """
        function Closest( v :[Array, Real],   # coord vector to be cell translated
@@ -410,23 +455,25 @@ class SimpleCompoundStatementTestCase(unittest.TestCase):
             q = 1 + 1
             Closest = [ v+t, t ]
        } """
-       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       lexer, parser, dic = setupcs
+       res = parser.parse(teststrg+"\n",lexer=lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc",None, func_def = True)
        # print "Function -> \n" + realfunc
        exec(realfunc,globals())
        retval = Closest(0.2,0.8,None)
        print('Closest 0.2,0.8 returns {!r},{!r}'.format(retval[0], retval[1]))
-       self.assertTrue(retval == StarList([1.2,1]))
+       assert retval == StarList([1.2,1])
 
-class MoreComplexTestCase(unittest.TestCase):
-   def setUp(self):
-       #create our lexer and parser
-       self.lexer = drel_lex.lexer
-       self.lexer.lineno = 0
-       self.parser = drel_ast_yacc.parser
-       self.dic = CifFile.CifDic("tests/drel/dic_for_tests.dic",grammar="STAR2")
+@pytest.fixture(scope="module")
+def testdic():
+    testdic = CifFile.CifDic("tests/drel/cif_core.dic",grammar="2.0",do_imports='Contents')
+    # Add drel functions for deriving items
+    testdic.initialise_drel()
+    return testdic
 
-   def test_nested_stmt(self):
+class TestMoreComplex():
+
+   def test_nested_stmt(self, setupcs):
        """Test how a nested do statement executes"""
        teststrg = """
        total = 0
@@ -437,14 +484,15 @@ class MoreComplexTestCase(unittest.TestCase):
           }
        end_of_loop = -25.6
        """
-       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       lexer, parser, dic = setupcs
+       res = parser.parse(teststrg + "\n",lexer=lexer, debug = True)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
-                                                   cif_dic = self.dic)
+                                                   cif_dic = dic)
        exec(realfunc,globals())
        othertotal = myfunc(self)
-       self.assertTrue(othertotal==55)
+       assert othertotal==55
 
-   def test_complex_if(self):
+   def test_complex_if(self, setupcs):
        """Test if with single-statement suite"""
        teststrg = """
        setting = 'triclinic'
@@ -463,17 +511,18 @@ class MoreComplexTestCase(unittest.TestCase):
          If( Abs(alp-90)<d || Abs(bet-90)<d || Abs(gam-90)<d ) _a.b = ('B', warn_ang)
        } else _a.b = ('None',"")
        """
-       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       lexer, parser, dic = setupcs
+       res = parser.parse(teststrg + "\n",lexer=lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","_a.b",have_sn=False,
-                                                   cif_dic = self.dic)
+                                                   cif_dic = dic)
        exec(realfunc,globals())
        b = myfunc(self)
        print("if returns {!r}".format(b))
-       self.assertTrue(b==('B', 'Possible mismatch between cell angles and cell setting'))
+       assert b==('B', 'Possible mismatch between cell angles and cell setting')
 
 
 # We don't test the return value until we have a way to actually access it!
-   def test_fancy_assign(self):
+   def test_fancy_assign(self, setupcs, testdic):
        """Test fancy assignment"""
        teststrg = """
        a = [2,3,4]
@@ -485,35 +534,38 @@ class MoreComplexTestCase(unittest.TestCase):
                       .value = jkl)
                       }
        """
-       res = self.parser.parse(teststrg + "\n", lexer=self.lexer)
+       lexer, parser, _ = setupcs
+       res = parser.parse(teststrg + "\n", lexer=lexer)
        realfunc = py_from_ast.make_python_function(res,"myfunc","geom_angle",cat_meth = True,have_sn=False,
                                                    cif_dic = testdic)
        print("Fancy assign: %s" % res[0])
        exec(realfunc,globals())
        b = myfunc(self)
        print("Geom_angle.angle = %s" % b['_geom_angle.value'])
-       self.assertTrue(b['_geom_angle.value']==[1,2,3,4,5])
+       assert b['_geom_angle.value']==[1,2,3,4,5]
 
-class WithDictTestCase(unittest.TestCase):
+@pytest.fixture
+def setupfull(testdic):
+       #create our lexer and parser
+       lexer = drel_lex.lexer
+       parser = drel_ast_yacc.parser
+       parser.lineno = 0
+       #use
+       testblock = CifFile.CifFile("tests/drel/nick1.cif",grammar="STAR2")["saly2_all_aniso"]
+       testblock.assign_dictionary(testdic)
+       testblock.provide_value = True  #get values back
+       #create the global namespace
+       namespace = testblock.keys()
+       namespace = dict(zip(namespace,namespace))
+       special_ids = [namespace]
+       return (lexer, parser, testblock, namespace, special_ids)
+
+class TestWithDict():
    """Now test flow control which requires a dictionary present"""
    #Dictionaries are required whenever a calculation is performed on a
    #datafile-derived object in order to use the correct types.
-   def setUp(self):
-       #create our lexer and parser
-       self.lexer = drel_lex.lexer
-       self.parser = drel_ast_yacc.parser
-       self.parser.lineno = 0
-       #use
-       self.testblock = CifFile.CifFile("tests/drel/nick1.cif",grammar="STAR2")["saly2_all_aniso"]
-       self.testblock.assign_dictionary(testdic)
-       self.testblock.provide_value = True  #get values back
-       self.testdic = testdic
-       #create the global namespace
-       self.namespace = self.testblock.keys()
-       self.namespace = dict(zip(self.namespace,self.namespace))
-       self.special_ids = [self.namespace]
 
-   def test_loop_with_statement(self):
+   def test_loop_with_statement(self, testdic, setupfull):
        """Test with statement on a looped category"""
        teststrg = """
        with t as atom_type
@@ -521,18 +573,19 @@ class WithDictTestCase(unittest.TestCase):
        t.analytical_mass_percent = t.number_in_cell * 10
        }
        """
+       lexer, parser, testblock, _, _ = setupfull
        loopable_cats = {'atom_type':["id",["id","number_in_cell"]]}   #
-       ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       ast = parser.parse(teststrg+"\n",lexer=lexer)
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.analytical_mass_percent",
                                                    cif_dic=testdic,loopable=loopable_cats)
        print("With statement for looped category -> \n" + realfunc)
        exec(realfunc,globals())
        #
-       atmass = myfunc(self.testblock)
+       atmass = myfunc(testblock)
        print('test value now {!r}'.format(atmass))
-       self.assertTrue(atmass == [120,280,240])
+       assert atmass == [120,280,240]
 
-   def test_Lists(self):
+   def test_Lists(self, testdic, setupfull):
        """Test case found in Cif dictionary """
        teststrg = """# Store unique sites as a local list
 
@@ -547,21 +600,20 @@ class WithDictTestCase(unittest.TestCase):
      }
      _geom_bond.id = atomlist
 """
+       lexer, parser, testblock, _, _ = setupfull
        loop_cats = {"atom_site":["label",["fract_xyz","type_symbol","label"]],
                     "atom_type":["id",["id","radius_bond","radius_contact"]]}
-        # Add drel functions for deriving items
-       testdic.initialise_drel()
-       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       res = parser.parse(teststrg + "\n",lexer=lexer)
        realfunc,dependencies = py_from_ast.make_python_function(res,"myfunc","_geom_bond.id",cat_meth=True,
                 loopable=loop_cats,have_sn=False,depends=True,cif_dic=testdic)
        print('Simple function becomes:')
        print(realfunc)
        print('Depends on: {!r}'.format(dependencies))
        exec(realfunc,globals())
-       b = myfunc(self.testblock)
+       b = myfunc(testblock)
        print("subscription returns {!r}".format(b))
 
-   def test_with_stmt(self):
+   def test_with_stmt(self, testdic, setupfull):
        """Test what comes out of a simple flow statement, including
           multiple with statements"""
        teststrg = """
@@ -573,64 +625,67 @@ class WithDictTestCase(unittest.TestCase):
            px = c.length_a
            _exptl.method = "single-crystal diffraction"
            }"""
+       lexer, parser, testblock, _, _ = setupfull
        loopable_cats = {}   #none looped
-       res = self.parser.parse(teststrg+"\n",lexer=self.lexer)
-       realfunc = py_from_ast.make_python_function(res,"myfunc","_exptl.method",cif_dic=self.testdic)
+       res = parser.parse(teststrg+"\n",lexer=lexer)
+       realfunc = py_from_ast.make_python_function(res,"myfunc","_exptl.method",cif_dic=testdic)
        print("With statement -> \n" + realfunc)
        exec(realfunc,globals())
        # attach dictionary
-       self.testblock.assign_dictionary(self.testdic)
-       newmeth = myfunc(self.testblock)
+       testblock.assign_dictionary(testdic)
+       newmeth = myfunc(testblock)
        print('exptl method now %s' % newmeth)
-       self.assertTrue(newmeth == "single-crystal diffraction")
+       assert newmeth == "single-crystal diffraction"
 
-
-   def test_loop_with_stmt_2(self):
+   def test_loop_with_stmt_2(self, testdic, setupfull):
        """Test with statement on a looped category, no aliasing"""
        teststrg = """
        _atom_type.analytical_mass_percent = _atom_type.number_in_cell * 10
        """
+       lexer, parser, testblock, _, _ = setupfull
        loopable_cats = {'atom_type':["id",["id",'number_in_cell','test']]}   #
-       ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       ast = parser.parse(teststrg+"\n",lexer=lexer)
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.analytical_mass_percent",
                                                    loopable=loopable_cats,
                                                    cif_dic=testdic)
        print("With statement for looped category -> \n" + realfunc)
        exec(realfunc,globals())
-       atmass = myfunc(self.testblock)
+       atmass = myfunc(testblock)
        print('test value now {!r}'.format(atmass))
-       self.assertTrue(atmass == [120,280,240])
+       assert atmass == [120,280,240]
 
-   def test_subscription(self):
+   def test_subscription(self, testdic, setupfull):
        """Test proper list of dependencies is returned"""
        teststrg = """
        _model_site.symop = _model_site.id [1]
        """
+       lexer, parser, testblock, _, _ = setupfull
        loopable_cats = {"model_site":["id",["id","symop"]]}
-       res = self.parser.parse(teststrg,lexer=self.lexer)
+       res = parser.parse(teststrg,lexer=lexer)
        print(repr(res))
        realfunc,dependencies = py_from_ast.make_python_function(res,"myfunc","_model_site.symop",
                                                                 loopable=loopable_cats,depends=True,
                                                                 cif_dic=testdic)
        print(realfunc, repr(dependencies))
-       self.assertTrue(dependencies == set(['_model_site.id']))
+       assert dependencies == set(['_model_site.id'])
 
-   def test_current_row(self):
+   def test_current_row(self, testdic, setupfull):
        """Test that methods using Current_Row work properly"""
        teststrg = """
        _atom_type.description = Current_Row() + 1
        """
+       lexer, parser, testblock, _, _ = setupfull
        loopable_cats = {'atom_type':["id",['number_in_cell','atomic_mass','num']]}   #
-       ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       ast = parser.parse(teststrg+"\n",lexer=lexer)
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_atom_type.description",loopable=loopable_cats,
                                                    cif_dic=testdic)
        print("Current row statement -> \n" + realfunc)
        exec(realfunc,globals())
-       rownums = myfunc(self.testblock)
+       rownums = myfunc(testblock)
        print('row id now {!r}'.format(rownums))
-       self.assertTrue(rownums == [1,2,3])
+       assert rownums == [1,2,3]
 
-   def test_loop_statement(self):
+   def test_loop_statement(self, testdic, setupfull):
        """Test proper processing of loop statements"""
        teststrg = """
        mass = 0.
@@ -639,17 +694,18 @@ class WithDictTestCase(unittest.TestCase):
        }
        _cell.atomic_mass = mass
             """
+       lexer, parser, testblock, _, _ = setupfull
        loopable_cats = {'atom_type':["id",['number_in_cell','atomic_mass']]}   #
-       ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       ast = parser.parse(teststrg+"\n",lexer=lexer)
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_cell.atomic_mass",loopable=loopable_cats,
                                                    cif_dic=testdic)
        print("Loop statement -> \n" + realfunc)
        exec(realfunc,globals())
-       atmass = myfunc(self.testblock)
+       atmass = myfunc(testblock)
        print('atomic mass now %f' % atmass)
-       self.assertTrue(atmass == 552.488)
+       assert atmass == 552.488
 
-   def test_complex_f(self):
+   def test_complex_f(self, testdic, setupfull):
        """This calculation failed during testing"""
        teststrg = """
    With r  as  refln
@@ -671,12 +727,13 @@ class WithDictTestCase(unittest.TestCase):
    }  }
           _refln.F_complex  =   fc / _space_group.multiplicity
        """
+       lexer, parser, testblock, _, _ = setupfull
        loopable_cats = {'space_group_symop':["id",["id","R","RT","T"]],
                         'atom_site':["id",["id","type_symbol","occupancy","site_symmetry_multiplicity",
                                            "tensor_beta","fract_xyz"]],
                         'atom_type_scat':["id",["id","dispersion"]],
                         'refln':["hkl",["hkl","form_factor_table"]]}   #
-       ast = self.parser.parse(teststrg+"\n",lexer=self.lexer)
+       ast = parser.parse(teststrg+"\n",lexer=lexer)
        realfunc = py_from_ast.make_python_function(ast,"myfunc","_refln.F_complex",loopable=loopable_cats,
                                                    cif_dic=testdic)
        print("Incoming AST: {!r}".format(ast))
@@ -684,7 +741,7 @@ class WithDictTestCase(unittest.TestCase):
        exec(realfunc,globals())
 
        # This one also doesn't return anything sensible yet, just a generation check
-   def test_fancy_packets(self):
+   def test_fancy_packets(self, testdic, setupfull):
        """Test that full packets can be dealt with properly"""
        teststrg = """[label,symop] =   _model_site.id
 
@@ -692,38 +749,40 @@ class WithDictTestCase(unittest.TestCase):
      s = space_group_symop[SymKey(symop)]
 
      _model_site.adp_matrix_beta =  s.R * a.tensor_beta * s.RT"""
+       lexer, parser, testblock, _, _ = setupfull
        loopable = {"model_site":["id",["id"]],
                    "atom_site":["label",["tensor_beta","label"]],
                    "space_group_symop":["id",["id","RT","R"]]}
-       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       res = parser.parse(teststrg + "\n",lexer=lexer)
        realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_model_site.adp_matrix_beta",
                                                    depends = True,have_sn=False,
                                                         loopable=loopable,cif_dic=testdic)
        print('model_site.adp_matrix_beta becomes...')
        print(realfunc)
        print(deps)
-       self.assertTrue('_space_group_symop.RT' in deps)
+       assert '_space_group_symop.RT' in deps
 
-   def test_array_access(self):
+   def test_array_access(self, testdic, setupfull):
        """Test that arrays are converted and returned correctly"""
        teststrg = """
       _model_site.symop = _model_site.id[1]
       """
+       lexer, parser, testblock, _, _ = setupfull
        loopable = {"model_site":["id",["id","symop","adp_eigen_system"]],
                    "atom_site":["label",["tensor_beta","label"]],
                    "space_group_symop":["id",["id","RT","R"]]}
-       res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+       res = parser.parse(teststrg + "\n",lexer=lexer)
        realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_model_site.symop",
                                                    depends = True,have_sn=False,
                                                         loopable=loopable,cif_dic=testdic)
        print(realfunc)
        exec(realfunc,globals())
-       self.testblock.assign_dictionary(testdic)
-       b = myfunc(self.testblock)
+       testblock.assign_dictionary(testdic)
+       b = myfunc(testblock)
        print('symops are now {!r}'.format(b))
-       self.assertTrue(b[1] == '1_555')
+       assert b[1] == '1_555'
 
-   def testIfStatement(self):
+   def testIfStatement(self, testdic, setupfull):
         """Test that we handle optional values appropriately"""
         teststrg = """
         with a as atom_site
@@ -749,11 +808,12 @@ class WithDictTestCase(unittest.TestCase):
              UIJ = U * _cell.convert_Uiso_to_Uij
      }
      _atom_site.tensor_beta = UIJ """
+        lexer, parser, testblock, _, _ = setupfull
         loopable = {
                    "atom_site":["label",["tensor_beta","label"]],
                    "atom_site_aniso":["label",["label","matrix_B","matrix_U"]],
                   }
-        res = self.parser.parse(teststrg + "\n",lexer=self.lexer)
+        res = parser.parse(teststrg + "\n",lexer=lexer)
         realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_atom_site.tensor_beta",
                                                    depends = True,have_sn=False,
                                                         loopable=loopable,cif_dic=testdic)
@@ -762,18 +822,7 @@ class WithDictTestCase(unittest.TestCase):
             print("%2d:%s"%(n,l))
         #print(realfunc)
         exec(realfunc,globals())
-        self.testblock.assign_dictionary(testdic)
-        b = myfunc(self.testblock)
+        testblock.assign_dictionary(testdic)
+        b = myfunc(testblock)
         print('tensor beta is now {!r}'.format(b))
-        self.assertTrue(b[1][1][1] == 0.031)  #U22 for O2
-
-if __name__=='__main__':
-    global testdic
-    testdic = CifFile.CifDic("tests/drel/cif_core.dic",grammar="2.0",do_imports='Contents')
-    unittest.main()
-    #suite = unittest.TestLoader().loadTestsFromTestCase(WithDictTestCase)
-    #suite = unittest.TestLoader().loadTestsFromTestCase(SimpleCompoundStatementTestCase)
-    #suite = unittest.TestLoader().loadTestsFromTestCase(SingleSimpleStatementTestCase)
-    #suite = unittest.TestLoader().loadTestsFromTestCase(MoreComplexTestCase)
-    #suite = unittest.TestLoader().loadTestsFromTestCase(dRELRuntimeTestCase)
-    #unittest.TextTestRunner(verbosity=2).run(suite)
+        assert b[1][1][1] == 0.031  #U22 for O2

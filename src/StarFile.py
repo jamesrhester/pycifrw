@@ -124,14 +124,23 @@ except:
 # a distinct StarList class to distinguish them from loop lists, and take the
 # opportunity to expand the getitem method to allow multiple arguments.   
 #                                                                         
-#                                                                         
+# We try and duplicate the behaviour of numpy slices for those times when dREL
+# doesn't create a numpy array before we slice.
+#
 # <Define a collection datatype>=                                         
 class StarList(list):
     def __getitem__(self,args):
-        if isinstance(args,(int,slice)):
+        if isinstance(args, tuple) and len(args) == 1:
+            args = args[0]
+        if isinstance(args, int):
+            return super(StarList, self).__getitem__(args)
+        if isinstance(args,tuple) and len(args)>1:   #extended comma notation
+            retval = StarList(map(lambda x: x.__getitem__(args[1:]), self))
+            return retval.__getitem__(args[0])
+        if len(self) > 0 and not hasattr(self[0], "__iter__"):
             return super(StarList,self).__getitem__(args)
-        elif isinstance(args,tuple) and len(args)>1:   #extended comma notation
-            return super(StarList,self).__getitem__(args[0]).__getitem__(args[1:])
+        elif isinstance(args, (int, slice)):
+            return StarList(map(lambda x: x.__getitem__(args), self))
         else:
             return super(StarList,self).__getitem__(args[0])
 
@@ -496,42 +505,6 @@ class LoopBlock(object):
             return self.loops[loop_no]
         else:
             raise KeyError('{} is not in any loop'.format(keyname))
-
-    # Adding to a loop.  We find the loop containing the dataname that        
-    # we have been passed, and then append all of the (key,values) pairs that we
-    # are passed in [[data]], which is a dictionary.  We expect that the data 
-    # have been sorted out for us, unlike when data are passed in [[AddLoopItem]],
-    # when there can be both unlooped and looped data in one set.  The dataname
-    # passed to this routine is simply a convenient way to refer to the       
-    # loop, and has no other significance.                                    
-    #                                                                         
-    #                                                                         
-    # <Add to looped data>=                                                   
-    def AddToLoop(self,dataname,loopdata):
-        thisloop = self.GetLoop(dataname)
-        for itemname,itemvalue in loopdata.items():
-            thisloop[itemname] = itemvalue
-
-    # Adding to a loop.  We find the loop containing the dataname that        
-    # we have been passed, and then append all of the (key,values) pairs that we
-    # are passed in [[data]], which is a dictionary.  We expect that the data 
-    # have been sorted out for us, unlike when data are passed in [[AddLoopItem]],
-    # when there can be both unlooped and looped data in one set.  The dataname
-    # passed to this routine is simply a convenient way to refer to the       
-    # loop, and has no other significance.                                    
-    #                                                                         
-    #                                                                         
-    # <Add to looped data>=                                                   
-    def AddToLoop(self,dataname,loopdata):
-        """*Deprecated*. Use `AddItem` followed by calls to `AddLoopName`.
-
-        Add multiple columns to the loop containing `dataname`. `loopdata` is a
-        collection of (key,value) pairs, where `key` is the new dataname and `value`
-        is a list of values for that dataname"""
-        self.update(loopdata)
-        for one_name in loopdata:
-            self.AddLoopName(dataname,one_name)
-
 
 # \section{Star Block class}                                              
 #                                                                         
@@ -1289,41 +1262,6 @@ class StarBlock(object):
             self.item_order.remove(lower_newname)
         except ValueError:
             pass
-
-    # Adding to a loop.  We find the loop containing the dataname that        
-    # we have been passed, and then append all of the (key,values) pairs that we
-    # are passed in [[data]], which is a dictionary.  We expect that the data 
-    # have been sorted out for us, unlike when data are passed in [[AddLoopItem]],
-    # when there can be both unlooped and looped data in one set.  The dataname
-    # passed to this routine is simply a convenient way to refer to the       
-    # loop, and has no other significance.                                    
-    #                                                                         
-    #                                                                         
-    # <Add to looped data>=                                                   
-    def AddToLoop(self,dataname,loopdata):
-        thisloop = self.GetLoop(dataname)
-        for itemname,itemvalue in loopdata.items():
-            thisloop[itemname] = itemvalue
-
-    # Adding to a loop.  We find the loop containing the dataname that        
-    # we have been passed, and then append all of the (key,values) pairs that we
-    # are passed in [[data]], which is a dictionary.  We expect that the data 
-    # have been sorted out for us, unlike when data are passed in [[AddLoopItem]],
-    # when there can be both unlooped and looped data in one set.  The dataname
-    # passed to this routine is simply a convenient way to refer to the       
-    # loop, and has no other significance.                                    
-    #                                                                         
-    #                                                                         
-    # <Add to looped data>=                                                   
-    def AddToLoop(self,dataname,loopdata):
-        """*Deprecated*. Use `AddItem` followed by calls to `AddLoopName`.
-
-        Add multiple columns to the loop containing `dataname`. `loopdata` is a
-        collection of (key,value) pairs, where `key` is the new dataname and `value`
-        is a list of values for that dataname"""
-        self.update(loopdata)
-        for one_name in loopdata:
-            self.AddLoopName(dataname,one_name)
 
     # We might also want to remove a packet by key.  We operate on the data   
     # in place, and need access to the low-level information as we have to    

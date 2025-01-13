@@ -241,51 +241,6 @@ class CifBlock(StarFile.StarBlock):
         newblock = super(CifBlock,self).copy()
         return self.copy.im_class(newblock)   #catch inheritance
 
-    # Adding a data item.  In the old, deprecated method we are passed a      
-    # tuple with the (set) of data names at the beginning, and a (set) of     
-    # values for them following.                                              
-    #                                                                         
-    # We implement this behaviour by looping over the input datanames, and adding them
-    # to the set of keys.  When we have finished, we create the loop.         
-    #                                                                         
-    # We check the length of the name, and give an error if the name is       
-    # greater than 75 characters, which is the CIF 1.1 maximum length.        
-    #                                                                         
-    # We also check for consistency, by making sure the new item is           
-    # not in the block already.  If it is, we replace it (consistent with     
-    # the meaning of square brackets).  If it is in a loop, we replace the    
-    # looped value and all other items in that loop block.  This means        
-    # that when adding loops, we must add them all at once if we call         
-    # this routine directly.                                                  
-    #                                                                         
-    # We typecheck the data items.  They can be tuples, strings               
-    # or lists.  If we have a list of values for a single item,               
-    # the item name should also occur in a single member tuple.               
-    #                                                                         
-    #                                                                         
-    # <Add a data item>=                                                      
-    def AddCifItem(self,data):
-        """ *DEPRECATED*. Use `AddItem` instead."""
-        # we accept only tuples, strings and lists!!
-        if not (isinstance(data[0],(unicode,tuple,list,str))):
-                  raise TypeError('Cif datanames are either a string, tuple or list')
-        # we catch single item loops as well...
-        if isinstance(data[0],(unicode,str)):
-            self.AddSingleCifItem(data[0],list(data[1]))
-            if isinstance(data[1],(tuple,list)) and not isinstance(data[1],StarFile.StarList):  # a single element loop
-                self.CreateLoop([data[0]])
-            return
-        # otherwise, we loop over the datanames
-        keyvals = zip(data[0][0],[list(a) for a in data[1][0]])
-        [self.AddSingleCifItem(a,b) for a,b in keyvals]
-        # and create the loop
-        self.CreateLoop(data[0][0])
-
-    def AddSingleCifItem(self,key,value):
-        """*Deprecated*. Use `AddItem` instead"""
-        """Add a single data item. If it is part of a loop, a separate call should be made"""
-        self.AddItem(key,value)
-
     # This function was added for the dictionary validation routines.  It     
     # will return a list where each member is itself a list of item names,    
     # corresponding to the names in each loop of the file.                    
@@ -1666,48 +1621,94 @@ class CifDic(StarFile.StarFile):
     # <Create category/object table>=                                         
     def create_cat_obj_table(self):
         """Populate a table indexed by (cat,obj) and returning the correct dataname"""
+
+        # Collect all explicit (cat,obj) pairs for data names
+        
         base_table = dict([((self[a].get('_name.category_id','').lower(),self[a].get('_name.object_id','').lower()),[self[a].get('_definition.id','')]) \
                            for a in self.keys() if self[a].get('_definition.scope','Item')=='Item'])
+
+        # Find all loop category parent-child relationships
+        
         loopable = self.get_loopable_cats()
         loopers = [self.ddlm_immediate_children(a) for a in loopable]
+
         if self.verbose_import:
             print('Loopable cats:' + repr(loopable))
+
         loop_children = [[b for b in a if b.lower() in loopable ] for a in loopers]
         expand_list = dict([(a,b) for a,b in zip(loopable,loop_children) if len(b)>0])
+
         if self.verbose_import:
             print("Expansion list:" + repr(expand_list))
+    
         extra_table = {}   #for debugging we keep it separate from base_table until the end
+
+        # Define a function that puts all child category objects into the parent category,
+        # returning the list of new names so it can be used recursively
+        
         def expand_base_table(parent_cat,child_cats):
+
             extra_names = []
+
+            parent_names = [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) \
+                            for n in self.names_in_cat(parent_cat) if self[n].get('_type.purpose','')!='Key']
+
             # first deal with all the child categories
+
             for child_cat in child_cats:
-              nn = []
-              if child_cat in expand_list:  # a nested category: grab its names
-                nn = expand_base_table(child_cat,expand_list[child_cat])
-                # store child names
-                extra_names += nn
-              # add all child names to the table
-              child_names = [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) \
+                nn = []
+              
+                if child_cat in expand_list:  # a nested category: grab its names
+                    nn = expand_base_table(child_cat,expand_list[child_cat])
+                    # store child names
+                    extra_names += nn
+
+                # get all child names for this category
+
+                child_names = [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) \
                              for n in self.names_in_cat(child_cat) if self[n].get('_type.purpose','') != 'Key']
-              child_names += extra_names
-              extra_table.update(dict([((parent_cat,obj),[name]) for obj,name in child_names if (parent_cat,name) not in extra_table]))
+                # update child category with parent names (it can also see the parent)
+
+                extra_table.update(dict([((child_cat,obj),[name]) for obj, name in parent_names if (child_cat, obj) not in extra_table]))
+
+                # and include those from child categories
+                
+                child_names += extra_names
+
+                # update our reference table for the parent category
+                
+                extra_table.update(dict([((parent_cat,obj),[name]) for obj,name in child_names if (parent_cat,obj) not in extra_table]))
+
+                
             # and the repeated ones get appended instead
+
             repeats = [a for a in child_names if a in extra_table]
+
             for obj,name in repeats:
                 extra_table[(parent_cat,obj)] += [name]
+
             # and finally, add our own names to the return list
+
             child_names += [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) \
                             for n in self.names_in_cat(parent_cat) if self[n].get('_type.purpose','')!='Key']
             return child_names
+
+        # Process all parent-child hierarchies that we've found.
+        
         [expand_base_table(parent,child) for parent,child in expand_list.items()]
+
         if self.verbose_import:
             print('Expansion cat/obj values: ' + repr(extra_table))
-        # append repeated ones
+
+        # pick over our expanded information: repeats append, new get added
+
         non_repeats = dict([a for a in extra_table.items() if a[0] not in base_table])
         repeats = [a for a in extra_table.keys() if a in base_table]
         base_table.update(non_repeats)
+
         for k in repeats:
             base_table[k] += extra_table[k]
+
         self.cat_obj_lookup_table = base_table
         self.loop_expand_list = expand_list
 
@@ -3818,295 +3819,6 @@ class CifDic(StarFile.StarFile):
         self.done_children = []
         self.done_parents = []
 
-
-
-# \section {Valid CIFS}                                                   
-#                                                                         
-# A whole new can of worms is opened up when we require that a CIF is     
-# not only syntactically correct, but valid according to the specified    
-# dictionary.                                                             
-#                                                                         
-# A valid CIF is essentially a collection of valid CIF blocks.  It        
-# may be the case in the future that inter-block relationships need       
-# to be checked, so we define a separate [[ValidCifFile]] class.          
-#                                                                         
-#                                                                         
-# <A valid CIF block>=                                                    
-class ValidCifBlock(CifBlock):
-    """A `CifBlock` that is valid with respect to a given CIF dictionary.  Methods
-    of `CifBlock` are overridden where necessary to disallow addition of invalid items to the
-    `CifBlock`.
-
-    ## Initialisation
-
-    * `dic` is a `CifDic` object to be used for validation.
-
-    """
-    # The [[dic]] argument contains a previously initialised dictionary.  We  
-    # can alternatively provide a list of filenames/CifFiles which are merged 
-    # according to mergemode.  Both cannot be provided.                       
-    #                                                                         
-    #                                                                         
-    # <Initialise with dictionary>=                                           
-    def __init__(self,dic = None, diclist=[], mergemode = "replace",*args,**kwords):
-        CifBlock.__init__(self,*args,**kwords)
-        if dic and diclist:
-            print("Warning: diclist argument ignored when initialising ValidCifBlock")
-        if isinstance(dic,CifDic):
-            self.fulldic = dic
-        else:
-            raise TypeError( "ValidCifBlock passed non-CifDic type in dic argument")
-        if len(diclist)==0 and not dic:
-            raise ValidCifError( "At least one dictionary must be specified")
-        if diclist and not dic:
-            self.fulldic = merge_dic(diclist,mergemode)
-        if not self.run_data_checks()[0]:
-            raise ValidCifError( self.report())
-
-    # Run all of these data checks.  The dictionary validation methods return a
-    # list of tuples (validation function name, result) for each item.        
-    # When checking a full data block, we can make use of the optimisation    
-    # facilities provided in the [[CifDic]] object.                           
-    #                                                                         
-    #                                                                         
-    # <Run data checks>=                                                      
-    def run_data_checks(self,verbose=False):
-        self.v_result = {}
-        self.fulldic.optimize_on()
-        for dataname in self.keys():
-            update_value(self.v_result,self.fulldic.run_item_validation(dataname,self[dataname]))
-            update_value(self.v_result,self.fulldic.run_global_validation(dataname,self[dataname],self))
-        for loop_names in self.loops.values():
-            update_value(self.v_result,self.fulldic.run_loop_validation(loop_names))
-        # now run block-level checks
-        update_value(self.v_result,self.fulldic.run_block_validation(self))
-        # return false and list of baddies if anything didn't match
-        self.fulldic.optimize_off()
-        all_keys = list(self.v_result.keys()) #dictionary will change
-        for test_key in all_keys:
-            #print("%s: %r" % (test_key, self.v_result[test_key]))
-            self.v_result[test_key] = [a for a in self.v_result[test_key] if a[1]["result"]==False]
-            if len(self.v_result[test_key]) == 0:
-                del self.v_result[test_key]
-        isvalid = len(self.v_result)==0
-        #if not isvalid:
-        #    print("Baddies: {!r}".format(self.v_result))
-        return isvalid,self.v_result
-
-    # It is not a mistake for a data name to be absent from any of the        
-    # specified dictionaries, so we have to check that we have a match        
-    # before running any data checks, rather than simply raising an error     
-    # immediately.                                                            
-    #                                                                         
-    #                                                                         
-    # <Check input data>=                                                     
-    def single_item_check(self,item_name,item_value):
-        #self.match_single_item(item_name)
-        if item_name not in self.fulldic:
-            result = {item_name:[]}
-        else:
-            result = self.fulldic.run_item_validation(item_name,item_value)
-        baddies = list([a for a in result[item_name] if a[1]["result"]==False])
-        # if even one false one is found, this should trigger
-        isvalid = (len(baddies) == 0)
-        # if not isvalid: print("Failures for {}: {!r}".format(item_name, baddies))
-        return isvalid,baddies
-
-    def loop_item_check(self,loop_names):
-        in_dic_names = list([a for a in loop_names if a in self.fulldic])
-        if len(in_dic_names)==0:
-            result = {loop_names[0]:[]}
-        else:
-            result = self.fulldic.run_loop_validation(in_dic_names)
-        baddies = list([a for a in result[in_dic_names[0]] if a[1]["result"]==False])
-        # if even one false one is found, this should trigger
-        isvalid = (len(baddies) == 0)
-        # if not isvalid: print("Failures for {}: {!r}".format(loop_names, baddies))
-        return isvalid,baddies
-
-    def global_item_check(self,item_name,item_value,provisional_items={}):
-        if item_name not in self.fulldic:
-            result = {item_name:[]}
-        else:
-            result = self.fulldic.run_global_validation(item_name,
-               item_value,self,provisional_items = provisional_items)
-        baddies = list([a for a in result[item_name] if a[1]["result"] is False])
-        # if even one false one is found, this should trigger
-        isvalid = (len(baddies) == 0)
-        # if not isvalid: print("Failures for {}: {!r}".format(item_name, baddies))
-        return isvalid,baddies
-
-    def remove_global_item_check(self,item_name):
-        if item_name not in self.fulldic:
-            result = {item_name:[]}
-        else:
-            result = self.fulldic.run_remove_global_validation(item_name,self,False)
-        baddies = list([a for a in result[item_name] if a[1]["result"]==False])
-        # if even one false one is found, this should trigger
-        isvalid = (len(baddies) == 0)
-        # if not isvalid: print("Failures for {}: {!r}".format(item_name, baddies))
-        return isvalid,baddies
-
-    # We need to override the base class methods here to prevent addition of an
-    # item that would render an object invalid.                               
-    #                                                                         
-    #                                                                         
-    # <Redefine item adding and removing>=                                    
-    # Adding to a loop.  We find the loop containing the dataname that        
-    # we have been passed, and then append all of the (key,values) pairs that we
-    # are passed in [[data]], which is a dictionary.  We expect that the data 
-    # have been sorted out for us, unlike when data are passed in [[AddCifItem]],
-    # when there can be both unlooped and looped data in one set.  The dataname
-    # passed to this routine is simply a convenient way to refer to the       
-    # loop, and has no other significance.                                    
-    #                                                                         
-    #                                                                         
-    # <Add to looped data with validity checks>=                              
-    def AddToLoop(self,dataname,loopdata):
-        # single item checks
-        paired_data = loopdata.items()
-        for name,value in paired_data:
-            valid,problems = self.single_item_check(name,value)
-            self.report_if_invalid(valid,problems)
-        # loop item checks; merge with current loop
-        found = 0
-        for aloop in self.block["loops"]:
-            if dataname in aloop:
-                loopnames = aloop.keys()
-                for new_name in loopdata.keys():
-                    if new_name not in loopnames: loopnames.append(new_name)
-                valid,problems = self.looped_item_check(loopnames)
-                self.report_if_invalid(valid,problems)
-        prov_dict = loopdata.copy()
-        for name,value in paired_data:
-            del prov_dict[name]   # remove temporarily
-            valid,problems = self.global_item_check(name,value,prov_dict)
-            prov_dict[name] = value  # add back in
-            self.report_if_invalid(valid,problems)
-        CifBlock.AddToLoop(self,dataname,loopdata)
-
-    # <Add straight data>=                                                    
-    def AddCifItem(self,data):
-        if isinstance(data[0],(unicode,str)):   # single item
-            valid,problems = self.single_item_check(data[0],data[1])
-            self.report_if_invalid(valid,problems,data[0])
-            valid,problems = self.global_item_check(data[0],data[1])
-            self.report_if_invalid(valid,problems,data[0])
-        elif isinstance(data[0],tuple) or isinstance(data[0],list):
-            paired_data = list(zip(data[0],data[1]))
-            for name,value in paired_data:
-                valid,problems = self.single_item_check(name,value)
-                self.report_if_invalid(valid,problems,name)
-            valid,problems = self.loop_item_check(data[0])
-            self.report_if_invalid(valid,problems,data[0])
-            prov_dict = {}            # for storing temporary items
-            for name,value in paired_data: prov_dict[name]=value
-            for name,value in paired_data:
-                del prov_dict[name]   # remove temporarily
-                valid,problems = self.global_item_check(name,value,prov_dict)
-                prov_dict[name] = value  # add back in
-                self.report_if_invalid(valid,problems,name)
-        else:
-            raise ValueError("Programming error: AddCifItem passed non-tuple,non-string item")
-        super(ValidCifBlock,self).AddCifItem(data)
-
-    def AddItem(self,key,value,**kwargs):
-        """Set value of dataname `key` to `value` after checking for conformance with CIF dictionary"""
-        valid,problems = self.single_item_check(key,value)
-        self.report_if_invalid(valid,problems,key)
-        valid,problems = self.global_item_check(key,value)
-        self.report_if_invalid(valid,problems,key)
-        super(ValidCifBlock,self).AddItem(key,value,**kwargs)
-
-    # utility function
-    def report_if_invalid(self,valid,bad_list,data_name):
-        if not valid:
-            bad_tests = [a[0] for a in bad_list]
-            error_string = ",".join(bad_tests)
-            error_string = repr(data_name) + " fails following validity checks: "  + error_string
-            raise ValidCifError( error_string)
-
-    def __delitem__(self,key):
-        # we don't need to run single item checks; we do need to run loop and
-        # global checks.
-        if key in self:
-            try:
-                loop_items = self.GetLoop(key)
-            except TypeError:
-                loop_items = []
-            if loop_items:             #need to check loop conformance
-                loop_names = [a[0] for a in loop_items if a[0] != key]
-                valid,problems = self.loop_item_check(loop_names)
-                self.report_if_invalid(valid,problems)
-            valid,problems = self.remove_global_item_check(key)
-            self.report_if_invalid(valid,problems)
-        self.RemoveCifItem(key)
-
-
-    # Report back.  We summarize the contents of v_result.  This routine      
-    # is probably broken.                                                     
-    #                                                                         
-    #                                                                         
-    # <Validation report>=                                                    
-    def report(self):
-       outstr = StringIO()
-       outstr.write( "Validation results\n")
-       outstr.write( "------------------\n")
-       print("{} invalid items found\n".format(len(self.v_result)))
-       for item_name,val_func_list in self.v_result.items():
-           outstr.write("{} fails following tests:\n".format(item_name))
-           for val_func in val_func_list:
-               outstr.write("\t{}\n".format(val_func))
-       return outstr.getvalue()
-
-
-#  Note that a dictionary must be specified in order to create a valid    
-# Cif file.  This dictionary is then passed to any blocks.  If they were  
-# already [[ValidCifBlocks]], they will be reinitialised.  Note that, as  
-# reading a dictionary takes time, we do it immediately to save doing     
-# it later.                                                               
-#                                                                         
-# As a convenience, we handle lists of filenames/CifFiles which are       
-# supposed to be dictionaries, and pass them directly to the [[ValidCifBlock]]
-# object which will merge as necessary.                                   
-#                                                                         
-# Note that we have to set bigdic before calling __init__.  The various calls
-# down through the inheritance hierarchy end up calling ValidCifBlock with
-# self.bigdic as one of the arguments.  Also, this __init__ procedure could
-# be called from within StarFile.__init__ if given a filename to read from,
-# so we allow that bigdic might already have been set - and check for its 
-# existence before setting it again!                                      
-#                                                                         
-#                                                                         
-# <A valid CIF file>=                                                     
-class ValidCifFile(CifFile):
-    """A CIF file for which all datablocks are valid.  Argument `dic` to
-    initialisation specifies a `CifDic` object to use for validation."""
-    # <Initialise valid CIF>=                                                 
-    def __init__(self,dic=None,diclist=[],mergemode="replace",*args,**kwargs):
-        print("WARNING: ValidCifFile will be removed in the next release.")
-        if not diclist and not dic and not hasattr(self,'bigdic'):
-            raise ValidCifError( "At least one dictionary is required to create a ValidCifFile object")
-        if not dic and diclist:     #merge here for speed
-            self.bigdic = merge_dic(diclist,mergemode)
-        elif dic and not diclist:
-            self.bigdic = dic
-        CifFile.__init__(self,*args,**kwargs)
-        for blockname in self.keys():
-            self.dictionary[blockname]=ValidCifBlock(data=self.dictionary[blockname],dic=self.bigdic)
-
-    # Whenever a new block is added, we have to additionally update our       
-    # match array and perform a validation run.  This definition shadows      
-    # the definition in the parent class.                                     
-    #                                                                         
-    #                                                                         
-    # <Redefine add new block>=                                               
-    def NewBlock(self,blockname,blockcontents,**kwargs):
-        CifFile.NewBlock(self,blockname,blockcontents,**kwargs)
-        # dictionary[blockname] is now a CifBlock object.  We
-        # turn it into a ValidCifBlock object
-        self.dictionary[blockname] = ValidCifBlock(dic=self.bigdic,
-                                         data=self.dictionary[blockname])
 
 
 # We provide some functions for straight validation.  These serve as an   

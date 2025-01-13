@@ -9,8 +9,9 @@ Information Format) files using Python.  It was developed at the
 Australian National Beamline Facility (ANBF), run by the Australian
 Synchrotron Research Program (ASRP), as part of a larger project to
 provide CIF input/output capabilities for data collection.  It is
-now (Nov 2022) maintained and developed within the Australian Nuclear Science and
-Technology Organisation (ANSTO).
+now (Jan 2025) maintained and developed within the Australian Nuclear Science and
+Technology Organisation (ANSTO). Outside contributions are very
+welcome.
 
 Conformance
 -----------
@@ -80,12 +81,12 @@ to set a value
 Example programs
 ----------------
 
-The file 'TestPyCIFRW.py' in the source distribution contains around 170 tests
+The file 'TestPyCIFRW.py' in the source distribution contains around 180 tests
 of PyCIFRW functionality and is a good source of examples for using both simple
 and advanced PyCIFRW interfaces.
 
 The "Programs" directory in the source distribution contains simple example programs.
-Of interest are `validate_cif.py` which validates a data files against data dictionaries
+Of interest are `validate_cif.py` which validates a data file against data dictionaries
 (execute this file at a terminal prompt without arguments for a help message)
 and `output_asciidoc.py` which will convert a DDLm dictionary into an
 asciidoc document that can then be converted to HTML or other presentation
