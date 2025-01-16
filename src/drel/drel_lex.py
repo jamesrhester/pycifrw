@@ -193,7 +193,6 @@ reserved = {
     'function' : 'FUNCTION',
     'Repeat': 'REPEAT',
     'repeat': 'REPEAT',
-    'default' : 'DEFAULT'
     }
 
 def t_ID(t):

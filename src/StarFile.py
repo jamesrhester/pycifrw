@@ -137,7 +137,7 @@ class StarList(list):
         if isinstance(args,tuple) and len(args)>1:   #extended comma notation
             retval = StarList(map(lambda x: x.__getitem__(args[1:]), self))
             return retval.__getitem__(args[0])
-        if len(self) > 0 and not hasattr(self[0], "__iter__"):
+        if len(self) > 0 and (isinstance(self[0],(str,dict)) or not hasattr(self[0], "__iter__")):
             return super(StarList,self).__getitem__(args)
         elif isinstance(args, (int, slice)):
             return StarList(map(lambda x: x.__getitem__(args), self))
@@ -723,9 +723,9 @@ class StarBlock(object):
         return False
 
     def get(self,key,default=None):
-        if key in self:
-            retval = self.__getitem__(key)
-        else:
+        try:
+            retval = self[key]
+        except KeyError:
             retval = default
         return retval
 
@@ -1745,9 +1745,10 @@ class StarBlock(object):
            stringsink.set_tab(0)
            stringsink.write('[',canbreak=True,newindent=True,mustbreak=compound,startcol=startcol)
            if len(itemvalue)>0:
+               print('Formatting {}'.format(repr(itemvalue)))
                self.format_value(itemvalue[0],stringsink)
                for listval in itemvalue[1:]:
-                  # print 'Formatting %s' % `listval`
+                  print('Formatting {}'.format(repr(listval)))
                   stringsink.write(self.list_delimiter,do_tab=False)
                   self.format_value(listval,stringsink,compound=True)
            stringsink.write(']',unindent=True)

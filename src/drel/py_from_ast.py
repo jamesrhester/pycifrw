@@ -129,7 +129,7 @@ def make_python_function(in_ast,func_name,targetname, special_ids=[{}],
                 if withtable[one_opt][2]:
                     end_body += "    try:\n"
                     end_body += "            %s%d = %s\n" % ("__option_w",n,func_table["optional_data_access"]%("'"+one_opt+"'"))
-                    end_body += "    except KeyError:\n"
+                    end_body += "    except:\n"
                     end_body += "            %s%d = None\n" % ("__option_w",n)
             end_body+=      "    if packet_no < 0:   #map\n"
             for one_opt in optional_names:
@@ -411,7 +411,7 @@ def start_traverse(in_node,api_table,target_id=None,loopable={},cat_meth=False,d
             if newid: break
         if newid:
             #catch our output name
-            true_name = cif_dic.get_name_by_cat_obj(newid[0].lower(),in_node[2].lower()).lower()
+            true_name = cif_dic.get_name_by_cat_obj(newid[0].lower(),in_node[2].lower(), give_default = True).lower()
             if true_name == special_info.get("target_id","").lower():
                     outstring = "__dreltarget"
                     special_info["have_drel_target"] = True
@@ -826,7 +826,7 @@ def get_function_name(in_name):
                 "magn":"abs",
                 "atoi":"int",
                 "float":"float",
-                "str":"str",
+                "repr":"repr",
                 "array":"numpy.array",
                 "norm":"numpy.linalg.norm",
                 "sqrt":"math.sqrt",

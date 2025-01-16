@@ -22,6 +22,7 @@ _cell.formula_units_Z                  4
 
 _exptl_crystal.density_diffrn          1.444
 _exptl_crystal.density_meas            1.234
+_exptl.crystals_number                 1
 _diffrn_radiation.type                'Cu K\a'
 _diffrn_radiation_wavelength.value     1.5418
 

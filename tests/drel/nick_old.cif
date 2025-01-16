@@ -24,6 +24,7 @@ _cell.formula_units_Z                  4
 _exptl_crystal.density_diffrn          1.444
 _exptl_crystal.density_meas            1.234
 _diffrn_radiation.type                'Cu K\a'
+_diffrn_radiation.probe               x-ray
 loop_
 _diffrn_radiation_wavelength.id
 _diffrn_radiation_wavelength.value  
@@ -94,6 +95,7 @@ loop_
  [ o1    1_555  ] ?
  [ o2    1_555  ] ?
 
+_reflns.apply_dispersion_to_fcalc    yes
 
 loop_                            
  _refln.index_h                   

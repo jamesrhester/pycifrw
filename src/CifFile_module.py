@@ -28,6 +28,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 import collections
+import ast   #for parsing dimension literals
 
 try:
     from cStringIO import StringIO
@@ -2243,6 +2244,7 @@ class CifDic(StarFile.StarFile):
         lexer = drel_ast_yacc.lexer
         my_namespace = self.keys()
         my_namespace = dict(zip(my_namespace,my_namespace))
+        default_attrs = ["_units.code", "_enumeration.default"]
         # we provide a table of loopable categories {cat_name:((key1,key2..),[item_name,...]),...})
         loopable_cats = self.get_loopable_cats()
         loop_keys = [listify(self[a]["_category_key.name"]) for a in loopable_cats if "_category_key.name" in self[a].keys()]
@@ -2253,7 +2255,6 @@ class CifDic(StarFile.StarFile):
         derivable_list = [a for a in self.keys() if "_method.expression" in self[a] \
                               and self[a].get("_name.category_id","")!= "function"]
         for derivable in derivable_list:
-            target_id = derivable
             # reset the list of visible names for parser
             special_ids = [dict(zip(self.keys(),self.keys()))]
             print("Target id: {}".format(derivable))
@@ -2264,8 +2265,8 @@ class CifDic(StarFile.StarFile):
                 drel_exprs = [drel_exprs]
                 drel_purposes = [drel_purposes]
             for drel_purpose,drel_expr in zip(drel_purposes,drel_exprs):
-                if drel_purpose != 'Evaluation':
-                    continue
+
+                target_id = derivable
                 drel_expr = "\n".join(drel_expr.splitlines())
                 # print("Transforming %s" % drel_expr)
                 # List categories are treated differently...
@@ -2283,10 +2284,21 @@ class CifDic(StarFile.StarFile):
                 cat_meth = False
                 if self[derivable].get('_definition.scope','Item') == 'Category':
                     cat_meth = True
+
+                # Default methods have a different target_id
+                if drel_purpose == "Definition":
+
+                    # Find the DDLm attribute that is being redefined
+                    target_id = [d for d in default_attrs if d in drel_expr]
+                    if len(target_id) != 1:
+                        continue
+                    target_id = target_id[0]
+                    print("Found default attribute {} for {}".format(target_id, derivable))
+                
                 pyth_meth = py_from_ast.make_python_function(meth_ast,"pyfunc",target_id,
                                                                            loopable=loop_info,
                                                              cif_dic = self,cat_meth=cat_meth)
-                all_methods.append(pyth_meth)
+                all_methods.append((target_id, pyth_meth))
             if len(all_methods)>0:
                 save_overwrite = self[derivable].overwrite
                 self[derivable].overwrite = True
@@ -2454,8 +2466,8 @@ class CifDic(StarFile.StarFile):
 
         # Recalculate in case it actually worked
         has_cat_names = [a for a in cat_names if cifdata.has_key_or_alias(a)]
-        the_funcs = self[key].get('_method.py_expression',"")
-        if the_funcs:   #attempt to calculate it
+        the_funcs = [f[1] for f in self[key].get('_method.py_expression',[]) if f[0] == key.lower()]
+        if len(the_funcs) > 0:   #attempt to calculate it
             # Executing a dREL method.  The execution defines a function, 'pyfunc' which is
             # then itself executed in global scope.  This has caused us some grief in order to
             # get the bindings right (e.g. having StarList in scope).   Essentially, anything
@@ -2509,6 +2521,7 @@ class CifDic(StarFile.StarFile):
             elif def_index_val:            #derive a default value
                 index_vals = self[key]["_enumeration_default.index"]
                 val_to_index = cifdata[def_index_val]     #what we are keying on
+                lcase_comp = False
                 if self[def_index_val]['_type.contents'] in ['Code','Name','Tag']:
                     lcase_comp = True
                     index_vals = [a.lower() for a in index_vals]
@@ -2526,6 +2539,27 @@ class CifDic(StarFile.StarFile):
                     default_result = True   #flag that it must be extended
                 result = self.change_type(key,result)
                 print("Indexed on {} to get {} for {}".format(def_index_val,repr(result),repr(val_to_index)))
+
+            # Or else find any default functions
+            else:
+                def_func = [f[1] for f in self[key].get("_method.py_expression",[]) if f[0] == "_enumeration.default"]
+                if len(def_func) == 1:
+                    print('Executing default function for {}:'.format(key))
+                    #print(one_func)
+                    exec(def_func[0], globals())  #will access dREL functions, puts "pyfunc" in scope
+                    # print('in following global environment: ' + repr(global_table))
+                    stored_setting = cifdata.provide_value
+                    cifdata.provide_value = True
+                    try:
+                        result = pyfunc(cifdata)
+                    except CifRecursionError as s:
+                        print(s)
+                        result = None
+                    except StarFile.StarDerivationError as s:
+                        print(s)
+                        result = None
+                    finally:
+                        cifdata.provide_value = stored_setting
 
         # read it in
         if result is None:   #can't do anything else
@@ -4446,7 +4480,8 @@ def convert_type(definition):
     """Convert value to have the type given by definition"""
     #extract the actual required type information
     container = definition['_type.container']
-    dimension = definition.get('_type.dimension',StarFile.StarList([]))
+    dimension = definition.get('_type.dimension','[]')
+    dimension = ast.literal_eval(dimension)
     structure = interpret_structure(definition['_type.contents'])
     if container == 'Single':   #a single value to convert
         return convert_single_value(structure)
@@ -4513,6 +4548,7 @@ def convert_list_values(structure, dimension):
     """Convert the values according to the element
        structure given in [[structure]]"""
     # simple repetition
+    print("Converting {} of dimensions {}".format(structure, dimension))
     if isinstance(structure, (unicode, str)):
         fcnv = convert_single_value(structure)
     # assume structure is a list of types

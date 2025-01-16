@@ -2313,7 +2313,7 @@ _type.purpose                           Number
 _type.source                            derived
 _type.container                         Matrix
 _type.contents                          Real
-_type.dimension [3]
+_type.dimension                         '[3]'
 _units.code                             millimetres
 loop_
   _method.purpose
@@ -2548,7 +2548,7 @@ _type.purpose                           Number
 _type.source                            Derived
 _type.container                         Matrix
 _type.contents                          Real
-_type.dimension [3]
+_type.dimension                         '[3]'
 _units.code                             none
 loop_
   _method.purpose
@@ -2764,7 +2764,7 @@ _type.purpose                           Number
 _type.source                            Assigned
 _type.container                         Matrix
 _type.contents                          Real
-_type.dimension                         3
+_type.dimension                         '[3]'
 
 save_
 
@@ -6801,7 +6801,7 @@ _type.purpose                           Number
 _type.source                            Assigned
 _type.container                         Matrix
 _type.contents                          Real
-_type.dimension                         3
+_type.dimension                         '[3]'
 
 save_
 
@@ -6832,7 +6832,7 @@ _type.purpose                           Number
 _type.source                            Recorded
 _type.container                         Matrix
 _type.contents                          Real
-_type.dimension                         3
+_type.dimension                         '[3]'
 
 save_
 

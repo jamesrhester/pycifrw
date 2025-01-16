@@ -748,10 +748,10 @@ class TestWithDict():
      a = atom_site[label]
      s = space_group_symop[SymKey(symop)]
 
-     _model_site.adp_matrix_beta =  s.R * a.tensor_beta * s.RT"""
+     _model_site.adp_matrix_beta =  s.R * a.matrix_beta * s.RT"""
        lexer, parser, testblock, _, _ = setupfull
        loopable = {"model_site":["id",["id"]],
-                   "atom_site":["label",["tensor_beta","label"]],
+                   "atom_site":["label",["matrix_beta","label"]],
                    "space_group_symop":["id",["id","RT","R"]]}
        res = parser.parse(teststrg + "\n",lexer=lexer)
        realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_model_site.adp_matrix_beta",
@@ -769,7 +769,7 @@ class TestWithDict():
       """
        lexer, parser, testblock, _, _ = setupfull
        loopable = {"model_site":["id",["id","symop","adp_eigen_system"]],
-                   "atom_site":["label",["tensor_beta","label"]],
+                   "atom_site":["label",["matrix_beta","label"]],
                    "space_group_symop":["id",["id","RT","R"]]}
        res = parser.parse(teststrg + "\n",lexer=lexer)
        realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_model_site.symop",
@@ -807,14 +807,14 @@ class TestWithDict():
 
              UIJ = U * _cell.convert_Uiso_to_Uij
      }
-     _atom_site.tensor_beta = UIJ """
+     _atom_site_aniso.matrix_beta = UIJ """
         lexer, parser, testblock, _, _ = setupfull
         loopable = {
-                   "atom_site":["label",["tensor_beta","label"]],
+                   "atom_site":["label",["matrix_beta","label"]],
                    "atom_site_aniso":["label",["label","matrix_B","matrix_U"]],
                   }
         res = parser.parse(teststrg + "\n",lexer=lexer)
-        realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_atom_site.tensor_beta",
+        realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_atom_site_aniso.matrix_beta",
                                                    depends = True,have_sn=False,
                                                         loopable=loopable,cif_dic=testdic)
         funclines = realfunc.splitlines()
@@ -824,5 +824,34 @@ class TestWithDict():
         exec(realfunc,globals())
         testblock.assign_dictionary(testdic)
         b = myfunc(testblock)
-        print('tensor beta is now {!r}'.format(b))
+        print('matrix beta is now {!r}'.format(b))
+        assert b[1][1][1] == 0.031  #U22 for O2
+
+   def testCaptures(self, testdic, setupfull):
+        """Test that we catch all dictionary names"""
+        teststrg = """
+        with a as atom_site_aniso
+        label = a.label
+        if (a.adp_type == "Uani") {
+            UIJ = a.matrix_U
+        }
+        _atom_site_aniso.matrix_beta = UIJ """
+        lexer, parser, testblock, _, _ = setupfull
+        loopable = {
+                   "atom_site":["label",["matrix_beta","label"]],
+                   "atom_site_aniso":["label",["label","matrix_B","matrix_U"]],
+                  }
+        res = parser.parse(teststrg + "\n",lexer=lexer)
+        realfunc,deps = py_from_ast.make_python_function(res,"myfunc","_atom_site_aniso.matrix_beta",
+                                                   depends = True,have_sn=False,
+                                                        loopable=loopable,cif_dic=testdic)
+        funclines = realfunc.splitlines()
+        for n,l in enumerate(funclines):
+            print("%2d:%s"%(n,l))
+        #print(realfunc)
+        print("Dependencies: {}".format(deps))
+        exec(realfunc,globals())
+        testblock.assign_dictionary(testdic)
+        b = myfunc(testblock)
+        print('matrix beta is now {!r}'.format(b))
         assert b[1][1][1] == 0.031  #U22 for O2

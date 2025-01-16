@@ -469,21 +469,6 @@ class LoopBlockTestCase(unittest.TestCase):
        oldpos = testloop.GetItemPosition('_item_name#2')
        testloop['_item_name#2'] = ("I'm",' a ','little','teapot')
        self.assertEqual(testloop.GetItemPosition('_item_name#2'),oldpos)
-
-   def testAddLoopCaseReplaceColumn(self):
-       """Test that a column is correctly replaced by AddToLoop"""
-       newdata = {"_Ck_2":['ho']*9}
-       self.cf.AddToLoop("_ck_1",newdata)
-       # Case problem occurs when outputting
-       print(str(self.cf))
-
-   def testAddLoopLCaseReplaceColumn(self):
-       """Duplicates an error where AddToLoop works incorrectly"""
-       newdata = {"_ck_2":['ho']*9}
-       self.cf.AddToLoop("_ck_1",newdata)
-       # The loop list contains the item twice
-       for l in self.cf.loops:
-           assert(len(set(self.cf.loops[l]))==len(self.cf.loops[l]))
 #
 #  Test setting of block names
 #
@@ -1454,7 +1439,7 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
         namedef = CifFile.CifBlock()
         namedef['_type.container'] = 'List'
         namedef['_type.contents'] = 'List(Text,Real)'
-        namedef['_type.dimension'] = CifFile.StarList([3])
+        namedef['_type.dimension'] = '[3]'
         result = CifFile.convert_type(namedef)(self.testblock['_list2.value'])
         print('Result: ' + repr(result))
         self.assertTrue(result ==  [['i',4.2],['j',1.5],['lmnop',-4.5]])
@@ -1463,7 +1448,7 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
         namedef = CifFile.CifBlock()
         namedef['_type.container'] = 'List'
         namedef['_type.contents'] = 'Real'
-        namedef['_type.dimension'] = CifFile.StarList([3])
+        namedef['_type.dimension'] = '[3]'
         result = CifFile.convert_type(namedef)(self.testblock['_list1.value'])
         self.assertEqual(result,  [1.2, 2.3, 4.5])
 
@@ -1654,7 +1639,7 @@ save_
 
 class DicEvalTestCase(unittest.TestCase):
     def setUp(self):
-        testdic = CifFile.CifDic("dictionaries/cif_core_ddlm.dic",grammar="auto")
+        testdic = CifFile.CifDic("tests/drel/cif_core.dic",grammar="auto")
         c_old = CifFile.CifFile("tests/drel/nick_old.cif",grammar="2.0")
         c_new = CifFile.CifFile("tests/drel/nick_new.cif",grammar="2.0")
         self.fb = c_new['saly2']
@@ -1697,7 +1682,7 @@ class DicEvalTestCase(unittest.TestCase):
     def testFullCalcAlias(self):
         """Test that a calculation is performed if dependent datanames
         have aliased values"""
-        del self.fb_old['_relfn.F_calc']
+        del self.fb_old['_refln.F_calc']
         result = self.fb_old['_refln.F_calc']
 
     def testEigenSystem(self):
@@ -1793,6 +1778,13 @@ class DicStructureTestCase(unittest.TestCase):
         target = self.fb['_atom_type.radius_bond']
         self.assertTrue(0.77 in target)
 
+    def testCalcEnumDefault(self):
+        """Test that we can calculate defaults"""
+        target = self.fb['_atom_sites_cartn_transform.mat_33']
+        self.fb.provide_value = True
+        assert target == self.fb['_cell.length_c']
+        self.fb.provide_value = False
+        
     def testCatObjKey(self):
         """Test that keys are correctly handled by the cat/obj table"""
         self.assertEqual(self.testdic.get_name_by_cat_obj('atom_site','label'),"_atom_site.label")

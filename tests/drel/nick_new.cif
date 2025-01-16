@@ -14,7 +14,7 @@ _space_group_symop.operation_xyz
  
 _cell.length_a                         11.520(12)
 _cell.length_b                         11.210(11)
-_cell.length_c                         4.920(5)
+_cell.length_c                         4.920
 _cell.angle_alpha                      90.00000
 _cell.angle_beta                       90.8331(5)
 _cell.angle_gamma                      90.00000
@@ -38,6 +38,8 @@ _atom_type.number_in_cell
   C    0   12.011  28
   H    0   1.008   24
 
+_geom.bond_distance_min                0.5 #for model calculation
+_geom.bond_distance_incr               0.5 #for model calculation
 
 loop_
 _atom_type_scat.symbol
@@ -124,7 +126,7 @@ _space_group_symop.operation_xyz
  
 _cell.length_a                         11.520(12)
 _cell.length_b                         11.210(11)
-_cell.length_c                         4.920(5)
+_cell.length_c                         4.920
 _cell.angle_alpha                      90.00000
 _cell.angle_beta                       90.8331(5)
 _cell.angle_gamma                      90.00000
