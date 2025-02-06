@@ -4,11 +4,13 @@
 name: CD
 
 on:
+    workflow_dispatch:
     push:
         branches:
-            - '**'
-#   release:
-#     types: [published]
+            - development
+    release:
+        types: 
+          - published
 
 jobs:
   build_package:
