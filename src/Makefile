@@ -8,7 +8,7 @@ PYTHON = python3
 #
 # Command to execute the yapps2.py script.  Note it sets the PYTHONPATH
 # environment variable as yapps requires our modified runtime to run.
-YAPPS2CMD = PYTHONPATH=. $(PYTHON) ./yapps3/yapps2.py
+YAPPS2CMD = PYTHONPATH=. $(PYTHON) -X utf8 ./yapps3/yapps2.py
 
 package: CifFile_module.py StarFile.py Parsers
 #
