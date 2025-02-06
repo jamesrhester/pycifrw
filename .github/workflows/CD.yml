@@ -39,28 +39,28 @@ jobs:
         run: python -m build --wheel
 
       - name: Upload wheels to artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wheels
           path: dist/*
 
-#   pypi-publish:
-#     name: Upload release to PyPI
-#     needs: build_package
-#     runs-on: ubuntu-latest
-#     environment:
-#       name: pypi
-#       url: https://pypi.org/p/pycifrw/
-#     permissions:
-#       id-token: write
-#     steps:
-#       - uses: actions/download-artifact@v3
-#         with:
-#           name: wheels
-#           path: dist
+   pypi-publish:
+     name: Upload release to PyPI
+     needs: build_package
+     runs-on: ubuntu-latest
+     environment:
+       name: pypi
+       url: https://pypi.org/p/pycifrw/
+     permissions:
+       id-token: write
+     steps:
+       - uses: actions/download-artifact@v4
+         with:
+           name: wheels
+           path: dist
 
-#       - name: check the dist folder
-#         run: ls dist
+       - name: check the dist folder
+         run: ls dist
 
 #       - name: Publish to PyPI
 #         uses: pypa/gh-action-pypi-publish@release/v1
