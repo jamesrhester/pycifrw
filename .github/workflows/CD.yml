@@ -10,7 +10,7 @@ on:
             - development
     release:
         types: 
-          - published
+            - published
 
 jobs:
   build_package:
