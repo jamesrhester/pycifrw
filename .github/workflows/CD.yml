@@ -44,7 +44,7 @@ jobs:
           name: wheels
           path: dist/*
 
-   pypi-publish:
+  pypi-publish:
      name: Upload release to PyPI
      needs: build_package
      runs-on: ubuntu-latest
