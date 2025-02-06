@@ -35,13 +35,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install setuptools wheel build
 
+      - name: Build internal items
+        run: cd src; make
+        
       - name: Build Package
         run: python -m build --wheel
 
       - name: Upload wheels to artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheel-${{ matrix.os }}-${{ matrix.python-version }}
           path: dist/*
 
   pypi-publish:
