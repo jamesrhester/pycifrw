@@ -61,6 +61,7 @@ jobs:
          with:
            pattern: wheel-*
            path: dist
+           merge-multiple: true
 
        - name: check the dist folder
          run: ls -R dist
