@@ -63,7 +63,7 @@ jobs:
            path: dist
 
        - name: check the dist folder
-         run: ls dist
+         run: ls -R dist
 
        - name: Publish to PyPI
          uses: pypa/gh-action-pypi-publish@release/v1
