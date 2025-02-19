@@ -33,6 +33,7 @@ jobs:
       - name: Build docs
         run: |
              pip install ply
+             pip install numpy
              pip install .
              pip install pdoc
              cd docs; make
