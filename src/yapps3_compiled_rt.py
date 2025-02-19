@@ -53,9 +53,9 @@ if __name__.startswith('CifFile.'):
 # Otherwise assume this is imported from the yapps3/yapps2.py script
 # that is executed from Makefile to generate YappsStarParser sources.
 else:
-    assert __name__ == 'yapps3_compiled_rt', "Unexpected module name."
-    assert sys.argv[0].endswith('yapps2.py'), (
-        "This should be reached only when running yapps2.py in Makefile.")
+    assert __name__.endswith('yapps3_compiled_rt'), "Unexpected module name %s" % __name__
+    if not sys.argv[0].endswith('yapps2.py'):
+        print("WARNING: This line should be reached only when running yapps2.py in Makefile.")
     have_star_scan = False
 
 class YappsSyntaxError(Exception):

@@ -1,6 +1,8 @@
 Release Notes for version 5.0.0
 ===============================
 
+Version 5.0 officially drops all support for Python 2.0.
+
 New since 4.4.6
 ===============
 

@@ -13,7 +13,6 @@ include src/Programs/*.cif
 include src/Programs/*.html
 include src/Programs/README
 include src/Programs/Web.README
-include src/Changelog
 include src/Makefile
 include src/lib/*
 include docs/*.html

@@ -453,11 +453,6 @@ tables) are absent, the output CIF files will conform to 1.0,1.1 and
 calling `CifFile.set_grammar` with the choices being `1.0`,`1.1`,`2.0` or
 `STAR2`.
 
-## Deprecated classes
-
-The ValidCifFile class is deprecated and will be removed in a future
-version.
-
 # Example programs
 
 A program which uses PyCIFRW for validation, `validate_cif.py`, is 
@@ -484,13 +479,3 @@ used to find the dictionary and download it if necessary.
     -c fetch and use canonical registry from IUCr
     -r registry location of registry as filename or URL
     -t The file to be checked is itself a DDL2 dictionary
-
-# Further information
-
-The source files are in a literate programming format (noweb) 
-with file extension .nw. HTML documentation generated from these 
-files and containing both code and copious comments is included 
-in the downloaded package. Details of interpretation of the 
-current standards as relates to validation can be found in these 
-files.
-

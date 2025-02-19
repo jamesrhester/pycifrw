@@ -9,7 +9,7 @@ Information Format) files using Python.  It was developed at the
 Australian National Beamline Facility (ANBF), run by the Australian
 Synchrotron Research Program (ASRP), as part of a larger project to
 provide CIF input/output capabilities for data collection.  It is
-now (Jan 2025) maintained and developed within the Australian Nuclear Science and
+now (Feb 2025) maintained and developed within the Australian Nuclear Science and
 Technology Organisation (ANSTO). Outside contributions are very
 welcome.
 
@@ -35,9 +35,7 @@ communicated to the author, either through the Github issues
 tracker (http://github.com/jamesrhester/pycifrw/issues) or email.
 
 The source code of a C extension module is also included in the
-distribution.  This module accelerates CIF file reading. From time to
-time system-dependent installation packages are generated containing
-precompiled versions of this module.
+distribution. 
 
 Installation
 ------------

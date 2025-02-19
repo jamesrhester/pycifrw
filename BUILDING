@@ -9,7 +9,7 @@ After code changes are complete:
 3. Audit wheel for manylinux1 conformance:
     python3 check_manylinux_package.py show <generated_wheel>
     (uses auditwheel package from pip)
-4. For each of Python 2,3 and source, wheel conduct testing
+4. For each of source, wheel conduct testing
    procedure outlined in TESTING file.
 5. When testing is complete, assign a git tag (remember to
    push the tag to the repo with git push origin <tag>)

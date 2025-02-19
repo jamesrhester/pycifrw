@@ -1,7 +1,7 @@
 Testing procedure for PyCIFRW
 =============================
 
-In Python2 and Python3 virtual environments (create with
+In Python3 virtual environments (create with
 virtualenv -p python<2,3> test-environment, activate with
 source local/bin/activate (Python2) or source bin/activate (Python3)):
 
@@ -15,9 +15,8 @@ source local/bin/activate (Python2) or source bin/activate (Python3)):
 
 Additional tests run during development
 
-1. Edit out/in '__unicode_literals__' from TestPyCIFRW.py for Python2
-2. in the tests directory, 'python runtests.py'
-3. in the unicode-tests directory, 'python runtests.py'
+1. in the tests directory, 'python runtests.py'
+2. in the unicode-tests directory, 'python runtests.py'
 
 
 Note that the tests and dictionaries directories are
