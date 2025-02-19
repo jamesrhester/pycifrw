@@ -5,9 +5,6 @@ name: CD
 
 on:
     workflow_dispatch:
-    push:
-        branches:
-            - development
     release:
         types: 
             - published
@@ -32,6 +29,9 @@ jobs:
 
       - name: Build internal items
         run: cd src; make
+
+      - name: Build docs
+        run: cd ../docs; make
         
       - name: Build Package
         uses: pypa/cibuildwheel@v2.22.0
