@@ -30,6 +30,13 @@ jobs:
       - name: Build internal items
         run: cd src; make
 
+      - name: Build docs
+        run: |
+             apt install python3-ply
+             pip install .
+             pip install pdoc
+             cd docs; make
+        
       - name: Build Package
         uses: pypa/cibuildwheel@v2.22.0
 
@@ -39,12 +46,6 @@ jobs:
           name: cibw-wheel-${{ matrix.os }}-${{ matrix.python-version }}
           path: ./wheelhouse/*.whl
 
-      - name: Build docs
-        run: |
-             pip install .
-             pip install pdoc
-             cd docs; make
-        
   build_sdist:
     name: Build source distribution
     runs-on: ubuntu-latest
