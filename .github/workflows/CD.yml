@@ -31,7 +31,9 @@ jobs:
         run: cd src; make
 
       - name: Build docs
-        run: cd ../docs; make
+        run: |
+             pip install pdoc
+             cd docs; make
         
       - name: Build Package
         uses: pypa/cibuildwheel@v2.22.0
