@@ -32,7 +32,7 @@ jobs:
 
       - name: Build docs
         run: |
-             apt install python3-ply
+             pip install ply
              pip install .
              pip install pdoc
              cd docs; make
