@@ -30,6 +30,9 @@ jobs:
       - name: Build internal items
         run: cd src; make
 
+      - name: Setup pandoc for docs build
+        uses: r-lib/actions/setup-pandoc@v2
+        
       - name: Build docs
         run: |
              pip install ply
