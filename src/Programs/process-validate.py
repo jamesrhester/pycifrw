@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # This script processes the input from the web form requesting validation
 # against one or more CIF dictionaries
+# Note it requires the legacy-cgi package to be installed for Python >= 3.13
 
 from __future__ import print_function
 
@@ -8,7 +9,7 @@ import CifFile
 import validate_cif
 import tempfile
 
-import cgi
+import cgi   #requires installation of package legacy-cgi for Python >= 3.13
 import os
 import cgitb; cgitb.enable()      # for debugging
 
