@@ -285,6 +285,107 @@ class CifFile(StarFile.StarFile):
 
         return cif_json
 
+    def filter_tags(self, tags):
+        """Function for retrieving the key and the value of the given
+        input tags. It returns the a dictionary of key/value of the input cif.
+
+        Args:
+            tags: List of tags to retrieve. The function will look for these
+                tags in the cif file, and return their corresponding values.
+        """
+
+        def str_is_int(value):
+            try:
+                int(value)
+                return True
+            except ValueError:
+                return False
+
+        def str_is_float(value):
+            try:
+                float(value)
+                return True
+            except ValueError:
+                return False
+
+        def str_has_stdev(value):
+            start_idx = value.find("(")
+            end_idx = value.find(")")
+
+            if start_idx > 0 and end_idx > 0:
+                return True
+
+            return False
+
+        def parse_list_values(value):
+            new_list = []
+            for val in value:
+                temp_val_list = val.split(',')
+
+                for idx, temp_val in enumerate(temp_val_list):
+                    if str_is_int(temp_val):
+                        temp_val_list[idx] = int(temp_val)
+
+                    elif str_is_float(temp_val):
+                        temp_val_list[idx] = float(temp_val)
+
+                    elif str_has_stdev(temp_val):
+                        start_idx = temp_val.find("(")
+                        end_idx = temp_val.find(")")
+
+                        val = float(temp_val[:start_idx])
+                        stdev = float(temp_val[start_idx+1:end_idx])
+
+                        temp_val_list[idx] = {
+                            "value":val,
+                            "stdev":stdev
+                        }
+
+                    else:
+                        temp_val_list[idx] = temp_val
+
+                new_list.append(temp_val_list)
+
+            return new_list
+
+        filtered_tags = {}
+        for tag in tags:
+            filtered_tags[tag.lower()] = None
+
+        tags = {tag.lower() for tag in tags}
+
+        for block_name, block in self.items():
+            for block_tag in block.keys():
+
+                if block_tag.lower() in tags:
+                    value = self[block_name][block_tag]
+
+                    if isinstance(value, list):
+                        filtered_tags[block_tag] = parse_list_values(value)
+
+                    elif str_has_stdev(value):
+                        start_idx = value.find("(")
+                        end_idx = value.find(")")
+
+                        val = float(value[:start_idx])
+                        stdev = float(value[start_idx+1:end_idx])
+
+                        filtered_tags[block_tag] = {
+                            "value":val,
+                            "stdev":stdev
+                        }
+
+                    elif str_is_int(value):
+                        filtered_tags[block_tag] = int(value)
+
+                    elif str_is_float(value):
+                        filtered_tags[block_tag] = float(value)
+
+                    else:
+                        filtered_tags[block_tag] = value
+
+        return filtered_tags
+
 class CifError(Exception):
     def __init__(self,value):
         self.value = value
