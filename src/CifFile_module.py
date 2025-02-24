@@ -424,6 +424,47 @@ class CifDic(StarFile.StarFile):
         self.add_type_info()
         self.install_validation_functions()
 
+    def update_blocks_with_dRel(self, ciffile):
+        def add_function_to_namespace(py_function_str):
+            namespace = {}
+            exec(py_function_str, {}, namespace)
+            pyfunc = namespace["pyfunc"]
+
+            return pyfunc
+
+        def get_result(py_method, ciffile):
+            result = None
+            for key in ciffile.keys():
+                block = ciffile[key]
+                try:
+                    result = py_method(block)
+
+                except Exception as error:
+                    continue
+
+            return result
+
+        for key, block in self.items():
+            purposes = block.get("_method.purpose", [])
+            py_methods = block.get("_method.py_expression", [])
+            if not purposes or not py_methods:
+                continue
+
+            for idx, purpose in enumerate(purposes):
+                if purpose == "Definition":
+                    method_data = py_methods[idx]
+
+                    target_key = method_data[0]
+                    str_py_method = method_data[1]
+
+                    py_method = add_function_to_namespace(str_py_method)
+                    result = get_result(py_method, ciffile)
+
+                    if result is None:
+                        continue
+
+                    self[key][target_key] = result
+
     def add_alias_blocks(self):
         '''
         Function to add alias tags to the dictionary. If a datablock has the "_alias.definition_id" tag,
