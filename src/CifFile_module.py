@@ -2297,6 +2297,7 @@ class CifDic(StarFile.StarFile):
             ]
         elif self.diclang == 'DDLm':
             self.item_validation_funs = [
+                self.validate_item_container,
                 self.validate_item_esd_ddlm,
                 self.validate_item_enum,
                 self.validate_enum_range_ddlm,
@@ -2331,19 +2332,23 @@ class CifDic(StarFile.StarFile):
                return {"result":False,"bad_values":result_list}
 
     def validate_item_container(self, item_name,item_value):
-        container_type = self[item_name]['_type.container']
+        container_type = self[item_name][self.type_container]
         item_values = listify(item_value)
         if container_type == 'Single':
            okcheck = [a for a in item_values if not isinstance(a,(int,float,long,unicode))]
            return self.decide(okcheck)
-        if container_type in ('Multiple','List'):
-           okcheck = [a for a in item_values if not isinstance(a,StarList)]
-           return self.decide(okcheck)
-        if container_type == 'Array':    #A list with numerical values
-           okcheck = [a for a in item_values if not isinstance(a,StarList)]
-           first_check = self.decide(okcheck)
-           if not first_check['result']: return first_check
-           #num_check = [a for a in item_values if len([b for b in a if not isinstance
+
+        elif container_type in ('Multiple','List','Array'):
+           if (
+               not isinstance(item_value, StarList)
+               and not isinstance(item_value, list)
+            ):
+               return {"result": False, "bad_values":[item_value]}
+
+           return {"result":True}
+
+        else:
+            return {"result":True}
 
     def validate_item_esd(self,item_name,item_value):
         if self[item_name].get(self.primitive_type) != 'numb':
