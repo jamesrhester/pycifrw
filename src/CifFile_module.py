@@ -2297,8 +2297,9 @@ class CifDic(StarFile.StarFile):
             ]
         elif self.diclang == 'DDLm':
             self.item_validation_funs = [
-                self.validate_item_enum,
                 self.validate_item_esd_ddlm,
+                self.validate_item_enum,
+                self.validate_enum_range_ddlm,
                 self.validate_array_defined_dimensionality
                 ]
             self.loop_validation_funs = [
@@ -2465,6 +2466,72 @@ class CifDic(StarFile.StarFile):
         check_all = [a for a in item_values if map_check(rangelist,a) != True]
         if len(check_all)>0: return {"result":False,"bad_values":check_all}
         else: return {"result":True}
+
+    def validate_enum_range_ddlm(self, item_name, item_value):
+        def val_is_in_range(value, max_value, min_value):
+            if value == "." or value == "?":
+                return True
+
+            if "(" in value and ")" in value:
+                left_p_index = value.index("(")
+                value = value[:left_p_index]
+
+            # If the value cannot be converted to string,
+            # Return true, as the error will be raised
+            # by validate_item_type
+            try:
+                value = float(value)
+            except ValueError:
+                return True
+
+            if min_value is None:
+                return value <= max_value
+
+            elif max_value is None:
+                return value >= min_value
+
+            else:
+                return (
+                    value >= min_value
+                    and value <= max_value
+                )
+
+        range_spec = self[item_name].get(self.range_spec, None)
+        if range_spec is None:
+            return {"result":None}
+
+        # Get the max and the min values
+        range_values = range_spec.split(":")
+        range_values = [float(val) for val in range_values if val]
+
+        if len(range_values) > 1:
+            min_val = range_values[0]
+            max_val = range_values[1]
+
+        else:
+            # There is only max value
+            if range_spec.startswith(":"):
+                min_val = None
+                max_val = range_values[0]
+
+            else:
+                min_val = range_values[0]
+                max_val = None
+
+        if not isinstance(item_value, list):
+            item_value = [item_value]
+
+        # Get all the values that are not inside the range
+        check_all = [
+            val for val in item_value
+            if not val_is_in_range(val, max_val, min_val)
+        ]
+
+        # If the list is not empty, there are some wrong values
+        if check_all:
+            return {"result":False,"bad_values":check_all}
+
+        return {"result":True}
 
     def validate_item_enum(self,item_name,item_value):
         try:
