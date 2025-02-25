@@ -2299,6 +2299,7 @@ class CifDic(StarFile.StarFile):
             self.item_validation_funs = [
                 self.validate_item_enum,
                 self.validate_item_esd_ddlm,
+                self.validate_array_defined_dimensionality
                 ]
             self.loop_validation_funs = [
                 self.validate_looping_ddlm,
@@ -2366,6 +2367,74 @@ class CifDic(StarFile.StarFile):
                  (not can_esd and v != None)]
         if len(check_all)>0: return {"result":False,"bad_values":check_all}
         return {"result":True}
+
+    def validate_array_defined_dimensionality(self, item_name, item_value):
+
+        def parse_item_dimensions(str_list):
+            if str_list == '[]' or not str_list:
+                return []
+
+            str_list2 = str_list[1:len(str_list)-1]
+            parsed_dimensions = str_list2.split(",")
+            final_list = [int(dim) for dim in parsed_dimensions]
+            return final_list
+
+        def is_list_of_str(input_list):
+            return all(isinstance(elem,str) for elem in input_list)
+
+        def is_matrix(input_list):
+            return isinstance(input_list, list) and \
+                all(is_list_of_str(row) for row in input_list)
+
+        def check_defined_dimensions(array, dimensions):
+            if len(dimensions) == 1:
+                if is_list_of_str(array):
+                    if len(array) != dimensions[0]:
+                        return {"result":False, "bad_values":item_value}
+
+                else:
+                    for row in array:
+                        if len(row) != dimensions[0]:
+                            return {"result":False, "bad_values":item_value}
+
+            else:
+                if is_matrix(array):
+                    if len(array) != dimensions[0]:
+                        return {"result":False, "bad_values":item_value}
+
+                    for row in array:
+                        if len(row) != dimensions[1]:
+                            return {"result":False, "bad_values":item_value}
+
+                else:
+                    for matrix in array:
+                        if len(matrix) != dimensions[0]:
+                            return {"result":False, "bad_values":item_value}
+
+                        for row in matrix:
+                            if len(row) != dimensions[1]:
+                                return {"result":False, "bad_values":item_value}
+
+            return {"result":True}
+
+        item_container = self[item_name].get(self.type_container, None)
+
+        if item_container is None \
+        or item_container not in {"Array", "Matrix", "List"}:
+            return {"result":True}
+
+        if not isinstance(item_value, list):
+            return {"result":False, "bad_values":[item_value]}
+
+        item_dimensionality = self[item_name].get(self.type_dimension, [])
+        item_dimensionality = parse_item_dimensions(item_dimensionality)
+
+        if not item_dimensionality:
+            return {"result":None}
+
+        result = check_defined_dimensions(item_value, item_dimensionality)
+
+        return result
 
     def validate_enum_range(self,item_name,item_value):
         if "_item_range.minimum" not in self[item_name] and \
