@@ -2309,7 +2309,8 @@ class CifDic(StarFile.StarFile):
                 self.validate_loop_membership
                 ]
             self.loop_id_uniqueness_funs = [
-                self.validate_loop_key_uniqueness_ddlm
+                self.validate_loop_key_uniqueness_ddlm,
+                self.validate_array_undefined_dimensionality
             ]
             self.global_validation_funs = [
                 self.validate_item_type,
@@ -2696,6 +2697,75 @@ class CifDic(StarFile.StarFile):
             return {"result":False, "bad_items":repeated_values}
 
         return {"result":True}
+
+    def validate_array_undefined_dimensionality(self, loop_names, block):
+        def parse_item_dimensions(str_list):
+            if str_list == '[]' or not str_list:
+                return []
+
+            str_list = str_list[1:len(str_list)-1]
+            parsed_dimensions = str_list.split(",")
+            final_list = [int(dim) for dim in parsed_dimensions]
+
+            return final_list
+
+        def is_list_of_str(input_list):
+            return all(isinstance(elem,str) for elem in input_list)
+
+        def is_matrix(input_list):
+            return isinstance(input_list, list) and \
+                all(is_list_of_str(row) for row in input_list)
+
+        def check_array_dimensions(array):
+            if is_list_of_str(array):
+                return (len(array))
+
+            if is_matrix(array):
+                dim_1 = len(array)
+
+                first_row = array[0]
+                dim_2 = len(first_row)
+
+                return (dim_1, dim_2)
+
+            return None
+
+        loop_names_to_check = []
+        for loop_name in loop_names:
+            item_container = self[loop_name].get(self.type_container, None)
+
+            if (
+                item_container is None
+                or item_container not in {"Array", "Matrix", "List"}
+            ):
+                continue
+
+            dims = self[loop_name].get(self.type_dimension, [])
+            array_dimensions = parse_item_dimensions(dims)
+
+            if not array_dimensions:
+                loop_names_to_check.append(loop_name)
+
+        if not loop_names_to_check:
+            return {"result":True}
+
+        num_elems = len(block[loop_names_to_check[0]])
+
+        dimensions = [set() for _ in range(num_elems)]
+
+        for loop_name in loop_names_to_check:
+            loop_arrays = block[loop_name]
+
+            for idx, loop_array in enumerate(loop_arrays):
+                array_dimensions = check_array_dimensions(loop_array)
+                if array_dimensions is not None:
+                    dimensions[idx].add(array_dimensions)
+
+        result = [len(dimensions_set) for dimensions_set in dimensions if len(dimensions_set) > 1]
+        if result:
+            return {"result":False, "bad_items":loop_names}
+
+        return {"result": True}
 
     def validate_loop_key_ddlm(self, loop_names):
         '''
