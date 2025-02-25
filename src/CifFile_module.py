@@ -1434,6 +1434,29 @@ class CifDic(StarFile.StarFile):
             for typecode,primtype in zip(types,prim_types):
                 self.primdic[typecode] = primtype
 
+        else:
+            type_dict = {
+                "Text":";?[\x20\x21-\x7E\n\r]+;?",
+                "Word":"[\x21-\x7E]+",
+                "Code":"(?i)[\x21-\x7E]+",
+                "Name":"(?i)[a-z0-9_]+",
+                "Tag":"(?i)_[\x21-\x7E]+",
+                "Uri":"[A-Za-z][A-Za-z0-9+.-]*:[\x21-\x7E]*",
+                "Date":"\d{4}-\d{2}-\d{2}",
+                "DateTime":"\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(.\d+)?(Z|[+-]\d{2}:\d{2})?)?",
+                "Version":"\d+\.\d+\.\d+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?",
+                "Dimension":"\[\d*(,\d*)*\]",
+                "Range":"(-?\d+.?\d*)?:(-?\d+.?\d*)?",
+                "Integer":"-?\d+",
+                "Real":"-?\d+(\.\d+)?(\(\d+\))?([eE]-?\d+(\.\d+)?(\(\d+\))?)?",
+                "Imag":"-?\d+(\.\d+)?[iI]",
+                "Complex":"(-?\d+(\.\d+)?)([+-]\d+(\.\d+)?[iI])",
+                "Symop":"\d+(_|\s)?\d{3,}"
+            }
+
+            for type, type_regex in type_dict.items():
+                self.typedic[type] = re.compile(type_regex, re.MULTILINE|re.DOTALL)
+
     def add_category_info(self,full=True):
         if self.diclang == "DDLm":
             catblocks = [c for c in self.keys() if self[c].get('_definition.scope')=='Category']
