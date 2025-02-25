@@ -2260,7 +2260,6 @@ class CifDic(StarFile.StarFile):
         if self.diclang != 'DDLm':
             # functions which check conformance
             self.item_validation_funs = [
-                self.validate_item_type,
                 self.validate_item_esd,
                 self.validate_item_enum,
                 self.validate_enum_range,
@@ -2281,6 +2280,7 @@ class CifDic(StarFile.StarFile):
 
             # where we need to look at other values
             self.global_validation_funs = [
+                self.validate_item_type,
                 self.validate_exclusion,
                 self.validate_parent,
                 self.validate_child,
@@ -2308,7 +2308,9 @@ class CifDic(StarFile.StarFile):
             self.loop_id_uniqueness_funs = [
                 self.validate_loop_key_uniqueness_ddlm
             ]
-            self.global_validation_funs = []
+            self.global_validation_funs = [
+                self.validate_item_type,
+            ]
             self.block_validation_funs = [
                 self.check_mandatory_items,
                 self.check_prohibited_items
@@ -2318,24 +2320,6 @@ class CifDic(StarFile.StarFile):
         self.done_parents = []
         self.done_children = []
         self.done_keys = []
-
-    def validate_item_type(self,item_name,item_value):
-        def mymatch(m,a):
-            res = m.match(a)
-            if res != None: return res.group()
-            else: return ""
-        target_type = self[item_name].get(self.type_spec)
-        if target_type == None:          # e.g. a category definition
-            return {"result":True}                  # not restricted in any way
-        matchexpr = self.typedic[target_type]
-        item_values = listify(item_value)
-        #for item in item_values:
-            #print("Type match " + item_name + " " + item + ":",)
-        #skip dots and question marks
-        check_all = [a for a in item_values if a !="." and a != "?"]
-        check_all = [a for a in check_all if mymatch(matchexpr,a) != a]
-        if len(check_all)>0: return {"result":False,"bad_values":check_all}
-        else: return {"result":True}
 
     def decide(self,result_list):
         """Construct the return list"""
@@ -2795,6 +2779,81 @@ class CifDic(StarFile.StarFile):
         for child_item in child_items:
             if child_item in whole_block:
                 return {"result":False,"child":child_item}
+        return {"result":True}
+
+    def validate_item_type(self,item_name,item_value,whole_block,prov={},globals={}):
+        def mymatch(m,a):
+            res = m.match(a)
+            if res != None: return res.group()
+            else: return ""
+
+        def flatten_list(input_list):
+            final_list = []
+            for elem in input_list:
+                if isinstance(elem, dict):
+                    for key, value in elem.items():
+                        final_list.append(key)
+                        final_list.append(value)
+
+                elif not isinstance(elem, list):
+                    final_list.append(elem)
+
+                else:
+                    temp_list = flatten_list(elem)
+                    final_list.extend(temp_list)
+
+            return final_list
+
+        target_type = self[item_name].get(self.type_spec, None)
+        if target_type is None:          # e.g. a category definition
+            return {"result":True}                  # not restricted in any way
+
+        if target_type == "ByReference":
+            other_tag = self[item_name].get(self.contents_referenced_id)
+            target_type = self[other_tag].get(self.type_spec, None)
+
+        if target_type == "Implied":
+            target_type = whole_block.get(self.type_spec, None)
+
+        if target_type is None:          # e.g. a category definition
+            return {"result":True}                  # not restricted in any way
+
+        matchexpr = self.typedic[target_type]
+
+        if not isinstance(item_value, list):
+            item_value = [item_value]
+
+        item_values = flatten_list(item_value)
+
+        if (
+           target_type in (
+            "Integer",
+            "Real",
+            "Imag",
+            "Complex",
+            "Symop"
+            )
+           and isinstance(item_values[0], str)
+            ):
+            final_list = []
+            for value in item_values:
+                if "," in value:
+                    temp = value.split(",")
+                    final_list.extend(temp)
+
+                else:
+                    final_list.append(value)
+
+            item_values = final_list
+
+        item_values = [a.strip() for a in item_values if isinstance(a,str)]
+
+        check_all = [a for a in item_values if a !="." and a != "?"]
+        check_all = [a for a in check_all if mymatch(matchexpr,a) != a]
+
+        if len(check_all)>0:
+            return {"result":False,"bad_values":check_all}
+
         return {"result":True}
 
     def validate_dependents(self,item_name,item_value,whole_block,prov={},globals={}):
