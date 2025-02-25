@@ -624,6 +624,7 @@ class CifDic(StarFile.StarFile):
             self.related_func = "_related_function"
             self.related_item = "_related_item"
             self.primitive_type = "_type"
+            self.alias_spec = "_alias.definition_id"
             self.dep_spec = "xxx"
             self.cat_list = []   #to save searching all the time
 
@@ -653,6 +654,7 @@ class CifDic(StarFile.StarFile):
                 self.enum_spec = '_enumeration_set.state'
                 self.key_spec = '_category.key_id'
                 self.must_exist_spec = None
+                self.type_spec = "_type.contents"
                 self.cat_spec = '_name.category_id'
                 self.primitive_type = '_type.contents'
                 self.cat_id_spec = "_definition.id"
@@ -660,6 +662,14 @@ class CifDic(StarFile.StarFile):
                 self.unique_spec = "_category_key.name"
                 self.alias_spec = "_alias.definition_id"
                 self.related_func = "_definition_replaced.by"
+                self.related_item = None
+                self.parent_spec = "_name.linked_item_id"
+                self.range_spec = "_enumeration.range"
+                self.type_container = "_type.container"
+                self.type_dimension = "_type.dimension"
+                self.type_purpose = "_type.purpose"
+                self.definition_class = "_definition.class"
+                self.contents_referenced_id = "_type.contents_referenced_id"
                 # Categories to which their loop id uniqueness validation
                 # needs to be avoided due to dictionary ambiguities
                 self.black_list_categories = {
