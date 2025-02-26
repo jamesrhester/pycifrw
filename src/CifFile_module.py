@@ -3292,13 +3292,19 @@ class CifDic(StarFile.StarFile):
 
 
     def run_item_validation(self,item_name,item_value):
-        return {item_name:list([(f.__name__,f(item_name,item_value)) for f in self.item_validation_funs])}
+        return {
+            item_name:list([(f.__name__,f(item_name,item_value)) for f in self.item_validation_funs])
+        }
 
     def run_loop_validation(self,loop_names):
-        return {loop_names[0]:list([(f.__name__,f(loop_names)) for f in self.loop_validation_funs])}
+        return {
+            loop_names[0]:list([(f.__name__,f(loop_names)) for f in self.loop_validation_funs])
+        }
 
     def run_loop_id_uniqueness(self, loop_names, block):
-        return {loop_names[0]:list([(f.__name__, f(loop_names, block)) for f in self.loop_id_uniqueness_funs])}
+        return {
+            loop_names[0]:list([(f.__name__, f(loop_names, block)) for f in self.loop_id_uniqueness_funs])
+        }
 
     def run_global_validation(self,item_name,item_value,data_block,provisional_items={},globals={}):
         results = list([(f.__name__,f(item_name,item_value,data_block,provisional_items,globals)) for f in self.global_validation_funs])
