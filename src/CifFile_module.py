@@ -2843,20 +2843,27 @@ class CifDic(StarFile.StarFile):
     def get_alternates(self,main_name,exclusive_only=False):
         if self.get(main_name, None) is None:
             return []
+
         alternates = self[main_name].get(self.related_func,None)
         alt_names = []
         if alternates is not None:
             alt_names =  self[main_name].get(self.related_item,None)
-            if isinstance(alt_names,unicode):
-                alt_names = [alt_names]
-                alternates = [alternates]
-            together = zip(alt_names,alternates)
-            if exclusive_only:
-                alt_names = [a for a in together if a[1]=="alternate_exclusive" \
-                                             or a[1]=="replace"]
+
+            if alt_names is not None:
+                if isinstance(alt_names,unicode):
+                    alt_names = [alt_names]
+                    alternates = [alternates]
+                together = zip(alt_names,alternates)
+                if exclusive_only:
+                    alt_names = [a for a in together if a[1]=="alternate_exclusive" \
+                                                or a[1]=="replace"]
+                else:
+                    alt_names = [a for a in together if a[1]=="alternate" or a[1]=="replace"]
+                alt_names = list([a[0] for a in alt_names])
+
             else:
-                alt_names = [a for a in together if a[1]=="alternate" or a[1]=="replace"]
-            alt_names = list([a[0] for a in alt_names])
+                alt_names = []
+
         # now do the alias thing
         alias_names = listify(self[main_name].get(self.alias_spec,[]))
         alt_names.extend(alias_names)
