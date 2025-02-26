@@ -4334,7 +4334,14 @@ def make_immutable(values):
 
 # merge ddl dictionaries.  We should be passed filenames or CifFile
 # objects
-def merge_dic(diclist,mergemode="replace",ddlspec=None, verbose_import=True, verbose_validation=True):
+def merge_dic(
+    diclist,
+    mergemode="replace",
+    ddlspec=None,
+    verbose_import=True,
+    verbose_validation=True,
+    do_dRel=False
+):
     dic_as_cif_list = []
     for dic in diclist:
         if not isinstance(dic,CifFile) and \
@@ -4354,7 +4361,12 @@ def merge_dic(diclist,mergemode="replace",ddlspec=None, verbose_import=True, ver
            basedic.merge(dic,mode=mergemode,
                          single_block=[basedic.keys()[0],dic.keys()[0]],
                          match_att=["_item.name"],match_function=find_parent)
-    final_dic = CifDic(basedic, do_dREL=False, verbose_import=verbose_import, verbose_validation=verbose_validation)
+    final_dic = CifDic(
+        basedic,
+        do_dREL=do_dRel,
+        verbose_import=verbose_import,
+        verbose_validation=verbose_validation
+    )
 
     # Add all the alias blocks once the dictionary is fully formed
     if final_dic.diclang == "DDLm":
