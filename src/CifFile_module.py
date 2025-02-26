@@ -2645,7 +2645,15 @@ class CifDic(StarFile.StarFile):
         # If the lengths are different, it means that there are repeated values
         if len(values) != len(set_values):
             repeated_values = [item for item, count in collections.Counter(values).items() if count > 1]
-            return {"result":False, "bad_items":repeated_values}
+
+            repeated_keys = []
+            for repeated_value in repeated_values:
+                for loop_name in loop_names:
+                    loop_values = block[loop_name]
+                    if repeated_value in loop_values:
+                        repeated_keys.append(loop_name)
+
+            return {"result":False, "bad_items":repeated_keys, "bad_values":repeated_values}
 
         return {"result":True}
 
@@ -2660,9 +2668,17 @@ class CifDic(StarFile.StarFile):
         # Get the category ids
         cat_keys = []
         for cat in final_cats:
+            if cat in self.black_list_categories:
+                continue
+
             temp_cat_key = self[cat].get(self.unique_spec, "")
-            if temp_cat_key not in cat_keys:
-                cat_keys.append(temp_cat_key)
+
+            if isinstance(temp_cat_key, list):
+                for cat_key in temp_cat_key:
+                    cat_keys.append(cat_key.lower())
+
+            else:
+                cat_keys.append(temp_cat_key.lower())
 
         # Only take into account the loop ids from our loop tags
         loop_names_to_check = [loop_name for loop_name in loop_names if loop_name in cat_keys]
@@ -2686,7 +2702,15 @@ class CifDic(StarFile.StarFile):
         # If the lengths are different, it means that there are repeated values
         if len(values) != len(set_values):
             repeated_values = [item for item, count in collections.Counter(values).items() if count > 1]
-            return {"result":False, "bad_items":repeated_values}
+
+            repeated_keys = []
+            for repeated_value in repeated_values:
+                for loop_name in loop_names:
+                    loop_values = block[loop_name]
+                    if repeated_value in loop_values:
+                        repeated_keys.append(loop_name)
+
+            return {"result":False, "bad_items":repeated_keys, "bad_values":repeated_values}
 
         return {"result":True}
 
