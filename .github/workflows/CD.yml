@@ -23,7 +23,7 @@ jobs:
           - [macos-latest, macosx_x86_64]
           #- [windows-2019, win_amd64]
           #- [windows-2019, win32]
-        python: ["cp310", "cp311", "cp312", "cp313"]
+        python: ["cp311", "cp312", "cp313"]
 
     runs-on: ${{ matrix.buildplat[0] }}
 
