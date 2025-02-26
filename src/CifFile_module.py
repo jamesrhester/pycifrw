@@ -2315,6 +2315,7 @@ class CifDic(StarFile.StarFile):
             self.global_validation_funs = [
                 self.validate_item_type,
                 self.validate_exclusion_ddlm,
+                self.validate_parent,
             ]
             self.block_validation_funs = [
                 self.check_mandatory_items,
@@ -2907,6 +2908,33 @@ class CifDic(StarFile.StarFile):
 
     # validate that parent exists and contains matching values
     def validate_parent(self,item_name,item_value,whole_block,provisional_items={},globals={}):
+
+        def flatten_list(input_list):
+            final_list = []
+            for elem in input_list:
+                if not isinstance(elem, list):
+                    final_list.append(elem)
+
+                else:
+                    temp_list = flatten_list(elem)
+                    final_list.extend(temp_list)
+
+            return final_list
+
+        def normalize_list(input_list):
+            flattened_list = flatten_list(input_list)
+            final_list = []
+
+            for value in flattened_list:
+                if "," in value:
+                    temp = value.split(",")
+                    final_list.extend(temp)
+
+                else:
+                    final_list.append(value)
+
+            return final_list
+
         parent_item = self[item_name].get(self.parent_spec)
         if not parent_item: return {"result":None}   #no parent specified
         if isinstance(parent_item,list):
@@ -2927,6 +2955,20 @@ class CifDic(StarFile.StarFile):
         # we have collected all parent values into the global block - so no need to search
         # for them elsewhere.
         # print("Looking for {!r}".format(parent_item))
+        if (
+            parent_item not in provisional_items
+            and parent_item not in globals
+            and parent_item not in whole_block.keys()
+            and parent_item in self
+            and self[parent_item].get(self.alias_spec)
+        ):
+            parent_alias = self[parent_item].get(self.alias_spec)
+            if isinstance(parent_alias, list):
+                parent_item = parent_alias[0]
+
+            else:
+                parent_item = parent_alias
+
         parent_values = globals.get(parent_item)
         if not parent_values:
             parent_values = provisional_items.get(parent_item,whole_block.get(parent_item))
@@ -2938,7 +2980,7 @@ class CifDic(StarFile.StarFile):
             alt_names = filter_present(self.get_alternates(parent_item),namespace)
             if len(alt_names) == 0:
                 if len([a for a in child_values if a != "." and a != "?"])>0:
-                    return {"result":False,"parent":parent_item}#no parent available -> error
+                    return {"result":False,"bad_values": [], "parent":parent_item}#no parent available -> error
                 else:
                     return {"result":None}       #maybe True is more appropriate??
             parent_item = alt_names[0]           #should never be more than one??
@@ -2949,6 +2991,16 @@ class CifDic(StarFile.StarFile):
             parent_values = [parent_values]
         #print("Checking parent %s against %s, values %r/%r" % (parent_item,
         #                                          item_name, parent_values, child_values))
+
+        # The child item is of type SU, so all the values represent
+        # the standard uncertainties of the parent values
+        child_type_purpose = self[item_name].get(self.type_purpose, "")
+        if child_type_purpose == "SU":
+            return {"result":True}
+
+        parent_values = normalize_list(parent_values)
+        child_values = normalize_list(child_values)
+
         missing = self.check_parent_child(parent_values,child_values)
         if len(missing) > 0:
             return {"result":False,"bad_values":missing,"parent":parent_item}
