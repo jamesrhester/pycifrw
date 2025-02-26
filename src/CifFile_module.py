@@ -2364,16 +2364,51 @@ class CifDic(StarFile.StarFile):
         return {"result":True}
 
     def validate_item_esd_ddlm(self,item_name,item_value):
-        if self[item_name].get('self.primitive_type') not in \
-        ['Count','Index','Integer','Real','Imag','Complex','Binary','Hexadecimal','Octal']:
+        def flatten_list(input_list):
+            final_list = []
+            for elem in input_list:
+                if not isinstance(elem, list):
+                    final_list.append(elem)
+
+                else:
+                    temp_list = flatten_list(elem)
+                    final_list.extend(temp_list)
+
+            return final_list
+
+        def has_esd(value):
+            if "(" in value and ")" in value:
+                return True
+
+            return False
+
+        if (
+            self[item_name].get(self.primitive_type)
+            not in [
+                'Count',
+                'Index',
+                'Integer',
+                'Real',
+                'Imag',
+                'Complex',
+                'Binary',
+                'Hexadecimal',
+                'Octal'
+            ]):
             return {"result":None}
         can_esd = True
         if self[item_name].get('_type.purpose') != 'Measurand':
             can_esd = False
-        item_values = listify(item_value)
-        check_all = [get_number_with_esd(a)[1] for a in item_values]
-        check_all = [v for v in check_all if (can_esd and v == None) or \
-                 (not can_esd and v != None)]
+
+        if not isinstance(item_value, list):
+            item_value = listify(item_value)
+
+        final_values = flatten_list(item_value)
+
+        check_all = [
+            v for v in final_values
+            if not can_esd and has_esd(v)
+        ]
         if len(check_all)>0: return {"result":False,"bad_values":check_all}
         return {"result":True}
 
