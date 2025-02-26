@@ -2845,7 +2845,7 @@ class CifDic(StarFile.StarFile):
             return []
         alternates = self[main_name].get(self.related_func,None)
         alt_names = []
-        if alternates != None:
+        if alternates is not None:
             alt_names =  self[main_name].get(self.related_item,None)
             if isinstance(alt_names,unicode):
                 alt_names = [alt_names]
@@ -2858,7 +2858,7 @@ class CifDic(StarFile.StarFile):
                 alt_names = [a for a in together if a[1]=="alternate" or a[1]=="replace"]
             alt_names = list([a[0] for a in alt_names])
         # now do the alias thing
-        alias_names = listify(self[main_name].get("_item_aliases.alias_name",[]))
+        alias_names = listify(self[main_name].get(self.alias_spec,[]))
         alt_names.extend(alias_names)
         # print("Alternates for {}: {!r}".format(main_name, alt_names))
         return alt_names
@@ -3203,7 +3203,7 @@ class CifDic(StarFile.StarFile):
             return {"result":None}
         # print("Category {!r} for item {}".format(category, item_name))
         # we make a copy in the following as we will be removing stuff later!
-        unique_i = self[category].get("_category_key.name",[])[:]
+        unique_i = self[category].get(self.key_spec,[])[:]
         if isinstance(unique_i,unicode):
             unique_i = [unique_i]
         if item_name not in unique_i:       #no need to verify
