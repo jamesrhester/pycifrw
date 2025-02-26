@@ -2567,7 +2567,10 @@ class CifDic(StarFile.StarFile):
         return {"result":True}
 
     def validate_loop_membership(self,loop_names):
-        final_cat = self.get_final_cats(loop_names)
+        if self.diclang  == "DDLm":
+            final_cat = self.get_final_cats(loop_names)
+        else:
+            final_cat = [self[a][self.cat_spec].lower() for a in loop_names]
         bad_items =  [a for a in final_cat if a != final_cat[0]]
         if len(bad_items)>0:
             return {"result":False,"bad_items":bad_items}
