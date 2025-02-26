@@ -3781,14 +3781,22 @@ def validate_report(val_result,use_html=False):
         # make a table of test name, test message
         info_table = {\
         'validate_item_type':\
-            "Error: The following data items had badly formed values",
+            "Error: The following data items have badly formed values",
         'validate_item_esd':\
             "Error: The following data items should not have esds appended",
+        'validate_item_esd_ddlm':\
+            "Error: The following data items should not have esds appended",
+        'validate_item_container':\
+            "Error: The following data items do not have the correct container",
         'validate_enum_range':\
+            "Error: The following data items have values outside permitted range",
+        'validate_enum_range_ddlm':\
             "Error: The following data items have values outside permitted range",
         'validate_item_enum':\
             "Error: The following data items have values outside permitted set",
         'validate_looping':\
+            "Error: The following data items violate looping constraints",
+        'validate_looping_ddlm':\
             "Error: The following data items violate looping constraints",
         'validate_loop_membership':\
             "Error: The following looped data names are of different categories to the first looped data name",
@@ -3798,6 +3806,8 @@ def validate_report(val_result,use_html=False):
             "Error: A loop key is missing for the category containing the dataname",
         'validate_loop_key_uniqueness':\
             "Error: There are repeated values for a _list_mandatory type tag",
+        'validate_loop_key_uniqueness_ddlm':\
+            "Error: There are repeated values for a _category_key.name tag",
         'validate_loop_references':\
             "Error: A dataname required by the item is missing from the loop",
         'validate_parent':\
@@ -3810,12 +3820,18 @@ def validate_report(val_result,use_html=False):
             "Error: A dataname required by the item is missing from the data block",
         'validate_exclusion': \
             "Error: Both dataname and exclusive alternates or aliases are present in data block",
+        'validate_exclusion_ddlm': \
+            "Error: Both dataname and exclusive alternates or aliases are present in data block",
         'validate_mandatory_category':\
             "Error: A required category is missing from this block",
         'check_mandatory_items':\
             "Error: A required data attribute is missing from this block",
         'check_prohibited_items':\
-            "Error: A prohibited data attribute is present in this block"}
+            "Error: A prohibited data attribute is present in this block",
+        'validate_array_defined_dimensionality':\
+            "Error: The array has a mismatch between its dimensions and its definition",
+        'validate_array_undefined_dimensionality':\
+            "Error: The array does not have its dimensions defined, but it presents inconsistencies with the arrays inside the loop"}
 
         block_validation_str = "\n" + out_line + " \n" + warnings_str + "\n"
         block_warning_str = "\n" + out_line + "\n" + warnings_str + "\n"
