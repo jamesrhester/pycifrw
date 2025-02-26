@@ -2304,7 +2304,6 @@ class CifDic(StarFile.StarFile):
                 self.validate_array_defined_dimensionality
                 ]
             self.loop_validation_funs = [
-                self.validate_looping_ddlm,
                 self.validate_loop_key_ddlm,
                 self.validate_loop_membership
                 ]
@@ -2314,6 +2313,7 @@ class CifDic(StarFile.StarFile):
             ]
             self.global_validation_funs = [
                 self.validate_item_type,
+                self.validate_looping_ddlm,
                 self.validate_exclusion_ddlm,
                 self.validate_parent,
             ]
@@ -2565,16 +2565,6 @@ class CifDic(StarFile.StarFile):
         if must_loop == 'no' and not isinstance(item_value,(unicode,str)):
             return {"result":False}
         return {"result":True}
-
-    def validate_looping_ddlm(self,loop_names):
-        """Check that all names are loopable"""
-        truly_loopy = self.get_final_cats(loop_names)
-        if len(truly_loopy)<len(loop_names):  #some are bad
-            categories = [(a,self[a][self.cat_spec].lower()) for a in loop_names]
-            not_looped = [a[0] for a in categories if a[1] not in self.parent_lookup.keys()]
-            return {"result":False,"bad_items":not_looped}
-        return {"result":True}
-
 
     def validate_loop_membership(self,loop_names):
         final_cat = self.get_final_cats(loop_names)
@@ -3138,6 +3128,46 @@ class CifDic(StarFile.StarFile):
 
         if len(check_all)>0:
             return {"result":False,"bad_values":check_all}
+
+        return {"result":True}
+
+    def validate_looping_ddlm(self,item_name,item_value,whole_block,prov={},globals={}):
+        """Check that all names are loopable"""
+
+        # If the definition of the category is "Loop", the tags must appear
+        # inside a loop
+        category = self[item_name].get(self.cat_spec)
+        def_class = self[category].get(self.definition_class, "Datum")
+
+        # Take the type of container of the loop
+        # Tags can be not loopable, but still hold lists
+        type_container = self[item_name].get(self.type_container, "Single")
+
+        if type_container == "Implied":
+            type_container = whole_block.get(self.type_container, "Single")
+
+        # Decide if the tag is loopable
+        is_loopable = False
+        if def_class == "Loop":
+            is_loopable = True
+
+        # The tag is loopable, it is not in a loop nor stores a list
+        # and its container should not be a single value
+        # This captures the tags that are loopable but hold single values
+        if (
+            is_loopable
+            and not isinstance(item_value, list)
+            and type_container != "Single"
+        ):
+            return {"result":False}
+
+        elif (
+            not is_loopable
+            and isinstance(item_value, list)
+            and type_container == "Single"
+        ):
+            # The value is not loopable, but it holds a list
+            return {"result":False}
 
         return {"result":True}
 
