@@ -2767,42 +2767,60 @@ class CifDic(StarFile.StarFile):
 
         # Get the parent categories of the input loop names
         temp_final_cats = self.get_final_cats(loop_names)
-        final_cats = [final_cat for final_cat in temp_final_cats if final_cat not in self.black_list_categories]
+        final_cats = [
+            final_cat for final_cat in temp_final_cats
+            if final_cat not in self.black_list_categories
+        ]
 
         if not final_cats:
             return {"result":True}
 
         # Get the category keys
-        poss_keys = self.cat_key_table[final_cats[0]]
+        cat_keys = self.cat_key_table[final_cats[0]]
 
-        poss_keys_set = set()
+        extended_cat_keys = []
 
         # As we want to validate CIF1.0 against DDLm dictionaries,
         # we have to take into account that the category keys may have
         # alias.
         # The input loop tags may also be CIF1.0 tags.
         # Retrieve those alias to make a more complete validation
-        for poss_key in poss_keys:
-            for temp in poss_key:
-                if temp is None: continue
-                key = temp
+
+        # Store all of them in a list of lists, where every element
+        # corresponds to all the aliases assigned to the same key
+        for cat_key in cat_keys:
+            for key in cat_key:
+                key_alias_list = []
+                if key is None:
+                    continue
+
                 key_alias = self[key].get(self.alias_spec, [])
 
-                poss_keys_set.add(key.lower())
+                key_alias_list.append(key.lower())
 
                 if isinstance(key_alias, list):
                     for alias in key_alias:
-                        poss_keys_set.add(alias.lower())
+                        key_alias_list.append(alias.lower())
 
                 else:
-                    poss_keys_set.add(key_alias.lower())
+                    key_alias_list.append(key_alias.lower())
 
-        # If one of the tags exists, the loop is valid
-        for loop_name in loop_names:
-            if loop_name.lower() in poss_keys_set:
-                return {"result":True}
+                extended_cat_keys.append(key_alias_list)
 
-        return {"result":False, "bad_items":poss_keys_set}
+        # Ensure that for every category key, the key itself
+        # or one alias at least appears in the loop
+        loop_names_set = set(loop_names)
+        key_in_loop = False
+
+        for cat_key_aliases in extended_cat_keys:
+            for cat_key_alias in cat_key_aliases:
+                if cat_key_alias in loop_names_set:
+                    key_in_loop = True
+
+        if not key_in_loop:
+            return {"result":False, "bad_items":cat_keys}
+
+        return {"result":True}
 
     def validate_loop_references(self,loop_names):
         must_haves = [self[a].get(self.list_ref_spec,None) for a in loop_names]
