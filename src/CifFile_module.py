@@ -3881,6 +3881,25 @@ def warning_report_no_matches(no_matches_warnings, warning_table):
 
 
 def warning_report_obsolete(obsolete_tags, warning_table):
+    def list_to_str(value):
+        final_str = "["
+
+        if len(value) == 1 and "," in value[0]:
+            values = value[0].split(",")
+
+        else:
+            values = value
+
+        for idx, val in enumerate(values):
+            if idx < len(values) - 1:
+                final_str += str(val) + ", "
+            else:
+                final_str += str(val)
+
+        final_str += "]"
+
+        return final_str
+
     if not obsolete_tags:
         return ""
 
@@ -3894,7 +3913,12 @@ def warning_report_obsolete(obsolete_tags, warning_table):
     table.align["Related tags"] = "l"
 
     for obsolete_tag, related_tag in obsolete_tags.items():
-        row = [obsolete_tag, related_tag]
+        if isinstance(related_tag, list):
+            row = [obsolete_tag, list_to_str(related_tag)]
+
+        else:
+            row = [obsolete_tag, related_tag]
+
         table.add_row(row)
 
     table_str = table.get_string() + "\n"
@@ -3902,6 +3926,25 @@ def warning_report_obsolete(obsolete_tags, warning_table):
     return "\n".join((warning_header, table_str))
 
 def warning_report_case_sensitive(case_sensitive_tags, warning_table):
+    def list_to_str(value):
+        final_str = "["
+
+        if len(value) == 1 and "," in value[0]:
+            values = value[0].split(",")
+
+        else:
+            values = value
+
+        for idx, val in enumerate(values):
+            if idx < len(values) - 1:
+                final_str += str(val) + ", "
+            else:
+                final_str += str(val)
+
+        final_str += "]"
+
+        return final_str
+
     if not case_sensitive_tags:
         return ""
 
@@ -3915,7 +3958,12 @@ def warning_report_case_sensitive(case_sensitive_tags, warning_table):
     table.align["Case sensitive value"] = "l"
 
     for tag, wrong_values in case_sensitive_tags.items():
-        row = [tag, wrong_values]
+        if isinstance(wrong_values, list):
+            row = [tag, list_to_str(wrong_values)]
+
+        else:
+            row = [tag, wrong_values]
+
         table.add_row(row)
 
     table_str = table.get_string() + "\n"
@@ -3968,6 +4016,45 @@ def get_warning_report(warnings, warning_table):
 # information.  We print no more than 50 characters of the item
 
 def error_report(error_name,error_explanation,error_dics):
+
+   def is_list_str(value):
+       if (
+           isinstance(value, list)
+           and all(isinstance(val, str) for val in value)
+       ):
+           return True
+
+       return False
+
+   def list_to_str(value):
+       final_str = "["
+
+       for idx, val in enumerate(value):
+           if idx < len(value) - 1:
+            final_str += str(val) + ", "
+           else:
+            final_str += str(val)
+
+       final_str += "]"
+
+       return final_str
+
+   def matrix_to_str(matrix):
+       final_str = "["
+
+       for idx, row in enumerate(matrix):
+           row_str = list_to_str(row)
+           if idx < len(matrix) - 1:
+              final_str += row_str + ", "
+
+           else:
+               final_str += row_str
+
+       final_str += "]"
+
+       return final_str
+
+
    retstring = "\n\n" + error_explanation + ":\n\n"
    headstring = "{}".format("Item name, ")
    bodystring = ""
@@ -3975,12 +4062,12 @@ def error_report(error_name,error_explanation,error_dics):
    table = PrettyTable()
    field_names = ["Wrong item name"]
 
-   if "bad_values" in error_dics[0]:
-      headstring += "{}".format("Bad value(s)")
-      field_names.append("Wrong value(s)")
    if "bad_items" in error_dics[0]:
       headstring += "{}".format("Bad dataname(s)")
       field_names.append("Bad dataname(s)")
+   if "bad_values" in error_dics[0]:
+      headstring += "{}".format("Bad value(s)")
+      field_names.append("Wrong value(s)")
    if "child" in error_dics[0]:
       headstring += "{}".format("Child")
       field_names.append("Child")
@@ -3995,7 +4082,6 @@ def error_report(error_name,error_explanation,error_dics):
        table.align[field_name] = "l"
 
    for error in error_dics:
-      bodystring += "\n{}".format(error["item_name"])
       row = [error["item_name"]]
       if "bad_values" in error:
           max_items = 8
@@ -4006,20 +4092,31 @@ def error_report(error_name,error_explanation,error_dics):
 
               out_vals.append("...")
           else:
-            out_vals = [repr(a)[:50] for a in error["bad_values"]]
+            out_vals = [a[:50] for a in error["bad_values"]]
           row.append(out_vals)
-          bodystring += "{}".format(out_vals)
       if "bad_items" in error:
-          bodystring += "{}".format(repr(error["bad_items"]))
-          row.append(repr(error["bad_items"]))
+          row.append(error["bad_items"])
       if "child" in error:
-          bodystring += "{}".format(repr(error["child"]))
-          row.append(repr(error["child"]))
+          row.append(error["child"])
       if "parent" in error:
-          bodystring += "{}".format(repr(error["parent"]))
-          row.append(repr(error["parent"]))
+          row.append(error["parent"])
 
-      table.add_row(row)
+      final_row = []
+
+      for elem in row:
+          if isinstance(elem, str):
+              final_row.append(elem)
+
+          elif is_list_str(elem):
+              final_row.append(list_to_str(elem))
+
+          elif isinstance(elem, list) and len(elem) == 1:
+              final_row.append(str(elem[0]))
+
+          else:
+              final_row.append(matrix_to_str(elem))
+
+      table.add_row(final_row)
 
    bodystring = table.get_string()
    return retstring + bodystring
