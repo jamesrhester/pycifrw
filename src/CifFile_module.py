@@ -2314,11 +2314,12 @@ class CifDic(StarFile.StarFile):
             ]
             self.global_validation_funs = [
                 self.validate_item_type,
+                self.validate_exclusion_ddlm,
             ]
             self.block_validation_funs = [
                 self.check_mandatory_items,
                 self.check_prohibited_items
-                ]
+            ]
             self.global_remove_validation_funs = []
         self.optimize = False        # default value
         self.done_parents = []
@@ -2882,6 +2883,27 @@ class CifDic(StarFile.StarFile):
                 print("Bad: {}, alternates {}".format(repr(bad),repr(alternates)))
            return {"result":False,"bad_items":bad}
        else: return {"result":True}
+
+    def validate_exclusion_ddlm(self,item_name,item_value,whole_block,provisional_items={},globals={}):
+        alias_list = self[item_name].get(self.alias_spec, [])
+        definition_id = self[item_name].get(self.def_id_spec, "")
+
+        if not isinstance(alias_list, list):
+            alias_list = [alias_list]
+
+        alias_list.extend(definition_id)
+
+        alias_list = [alias.lower() for alias in alias_list]
+
+        bad_items = [
+            alias for alias in alias_list
+            if alias != item_name and alias in whole_block
+        ]
+
+        if bad_items:
+            return {"result":False, "bad_items": bad_items}
+
+        return {"result":True}
 
     # validate that parent exists and contains matching values
     def validate_parent(self,item_name,item_value,whole_block,provisional_items={},globals={}):
