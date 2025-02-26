@@ -812,7 +812,7 @@ class CifDic(StarFile.StarFile):
 
         [get_cat_info(a) for a in deflist] # apply the above function
         for cat in cat_mand_dic.keys():
-            self[cat]["_category_mandatory.name"] = cat_mand_dic[cat]
+            self[cat][self.key_spec] = cat_mand_dic[cat]
         for cat in cat_unique_dic.keys():
             self[cat]["_category_key.name"] = cat_unique_dic[cat]
 
@@ -970,6 +970,9 @@ class CifDic(StarFile.StarFile):
         dictionaries = set()
         for parent_block,import_list in import_frames:
             for import_ref in import_list:
+                if isinstance(import_ref, str):
+                    continue
+
                 dictionary_name = import_ref.get("file", "")
                 dictionaries.add(dictionary_name)
 
@@ -990,6 +993,9 @@ class CifDic(StarFile.StarFile):
         #resolve all references
         for parent_block,import_list in import_frames:
           for import_ref in import_list:
+            if isinstance(import_ref, str):
+                continue
+
             file_loc = import_ref["file"]
             full_uri = self.resolve_path(file_loc)
             if full_uri not in self.template_cache:
@@ -2302,11 +2308,11 @@ class CifDic(StarFile.StarFile):
                 self.validate_item_enum,
                 self.validate_enum_range_ddlm,
                 self.validate_array_defined_dimensionality
-                ]
+            ]
             self.loop_validation_funs = [
+                self.validate_loop_membership,
                 self.validate_loop_key_ddlm,
-                self.validate_loop_membership
-                ]
+            ]
             self.loop_id_uniqueness_funs = [
                 self.validate_loop_key_uniqueness_ddlm,
                 self.validate_array_undefined_dimensionality
