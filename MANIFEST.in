@@ -17,3 +17,15 @@ include src/Makefile
 include src/lib/*
 include docs/*.html
 include docs/CifFile/*.html
+include tests/C13H22O3.cif
+include tests/ddl.dic
+include tests/ddl_rearranged.dic 
+include tests/C13H2203_with_errors.cif 
+include tests/drel/cif_core.dic
+include tests/drel/nick_old.cif
+include tests/drel/nick_new.cif
+include tests/drel/nick.cif
+include tests/full_demo_0.0.6.dic 
+include tests/multi-image-test.cif
+include tests/multi-image-test.cif.pulled_back
+
