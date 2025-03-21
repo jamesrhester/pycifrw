@@ -35,6 +35,8 @@ setup(name="PyCifRW",
       test_suite = 'TestPyCIFRW',
       package_dir = {'CifFile':'src'},
       install_requires = [
-          "prettytable"
+          "prettytable",
+          "ply",
+          "numpy"
       ]
       )
