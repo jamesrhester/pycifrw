@@ -3100,10 +3100,10 @@ def ReadStarWithError(filename,prepared = None, maxlength=-1,
 
     # save desired scoping
     save_scoping = prepared.scoping
-    from . import YappsStarParser_1_1 as Y11
-    from . import YappsStarParser_1_0 as Y10
-    from . import YappsStarParser_2_0 as Y20
-    from . import YappsStarParser_STAR2 as YST
+    from CifFile import YappsStarParser_1_1 as Y11
+    from CifFile import YappsStarParser_1_0 as Y10
+    from CifFile import YappsStarParser_2_0 as Y20
+    from CifFile import YappsStarParser_STAR2 as YST
     if prepared is None:
         prepared = StarFile()
     if grammar == "auto" or grammar is None:
