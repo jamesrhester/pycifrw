@@ -13,4 +13,4 @@ from .StarFile import remove_line_prefix,remove_line_folding
 from .StarFile import check_stringiness
 
 
-__all__ = [ReadCif, CifFile, CifBlock, CifDic, CifError, ValidCifError, get_number_with_esd]
+# __all__ = [ReadCif, CifFile, CifBlock, CifDic, CifError, ValidCifError, get_number_with_esd]
