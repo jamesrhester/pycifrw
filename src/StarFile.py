@@ -3214,7 +3214,7 @@ def ReadStarWithError(filename,prepared = None, maxlength=-1,
            # Syntax error
        except:
            # List that stores information about the syntax error
-           result = [-1, sys.exception(), parser, Y]
+           result = [-1, sys.exc_info()[1], parser, Y]
 
        if proto_star is not None:
            proto_star.set_grammar(grammar_name)   #remember for output

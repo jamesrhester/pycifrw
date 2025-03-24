@@ -46,8 +46,6 @@ jobs:
                         ls -la $PKG_PATH/CifFile
 
                 - name: Run tests
-                  env: 
-                      PYTHONVERBOSE: 2
                   run: |
                           pytest -k SyntaxErrorTestCase TestPyCIFRW.py
                           # pytest TestDrel.py
