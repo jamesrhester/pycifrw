@@ -20,7 +20,7 @@ jobs:
                 strategy:
                         matrix:
                                 python-version: ['3.10']
-                                os: [ubuntu-latest] #, macos13, macos-latest, windows-2022, windows-latest]
+                                os: [macos13, macos-latest, windows-2022] #, ubuntu-latest, macos13, macos-latest, windows-2022, windows-latest]
                 steps:
                 - name: Checkout code
                   uses: actions/checkout@v4
