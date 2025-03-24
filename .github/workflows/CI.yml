@@ -45,6 +45,16 @@ jobs:
                         PKG_PATH=$(python -c "import site, os; print([p for p in site.getsitepackages() if os.path.exists(os.path.join(p, 'CifFile'))][0])")
                         ls -la $PKG_PATH/CifFile
 
+                - name: Get cif core dictionary for tests
+                  uses: actions/checkout@v4
+                  with:
+                     repository: COMCIFS/cif_core
+                     path: tests/drel
+                     sparse-checkout: |
+                             cif_core.dic
+                             templ_enum.cif
+                             templ_attr.cif
+
                 - name: Run tests
                   run: |
                           pytest TestPyCIFRW.py
