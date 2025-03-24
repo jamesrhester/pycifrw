@@ -47,5 +47,5 @@ jobs:
 
                 - name: Run tests
                   run: |
-                          pytest -k SyntaxErrorTestCase TestPyCIFRW.py
+                          pytest TestPyCIFRW.py
                           # pytest TestDrel.py
