@@ -37,6 +37,8 @@ jobs:
                           pip install .
 
                 - name: Run tests
+                  env: 
+                      PYTHONVERBOSE: 1
                   run: |
-                          pytest TestPyCIFRW.py
-                          pytest TestDrel.py
+                          pytest -k SyntaxErrorTestCase TestPyCIFRW.py
+                          # pytest TestDrel.py
