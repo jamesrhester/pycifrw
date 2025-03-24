@@ -38,7 +38,7 @@ jobs:
 
                 - name: Run tests
                   env: 
-                      PYTHONVERBOSE: 1
+                      PYTHONVERBOSE: 2
                   run: |
                           pytest -k SyntaxErrorTestCase TestPyCIFRW.py
                           # pytest TestDrel.py
