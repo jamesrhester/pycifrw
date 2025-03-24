@@ -59,4 +59,4 @@ jobs:
                 - name: Run tests
                   run: |
                           pytest TestPyCIFRW.py
-                          # pytest TestDrel.py
+                          pytest TestDrel.py
