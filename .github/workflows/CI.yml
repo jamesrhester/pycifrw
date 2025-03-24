@@ -30,6 +30,10 @@ jobs:
                   with:
                           python-version: ${{ matrix.python-version }}
 
+                - name: Create derived files
+                  run: |
+                       cd src; make
+                       
                 - name: Install dependencies
                   run: |
                           python -m pip install --upgrade pip
