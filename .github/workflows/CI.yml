@@ -49,8 +49,9 @@ jobs:
                   uses: actions/checkout@v4
                   with:
                      repository: COMCIFS/cif_core
-                     path: tests/drel
+                     path: tests/dictionaries
                      sparse-checkout: |
+                             ddl.dic
                              cif_core.dic
                              templ_enum.cif
                              templ_attr.cif

@@ -1244,11 +1244,11 @@ class DDLmImportCase(unittest.TestCase):
 # Test dictionary type
 #
 ##############################################################
-#ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic",scantype="flex",do_minimum=True)
+#ddl1dic = CifFile.CifDic("test/dictionaries/cif_core.dic",scantype="flex",do_minimum=True)
 
 class DictTestCase(unittest.TestCase):
     def setUp(self):
-        self.ddldic = CifFile.CifDic("tests/ddl.dic",grammar='2.0',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
+        self.ddldic = CifFile.CifDic("tests/dictionaries/ddl.dic",grammar='2.0',scoping='dictionary',do_minimum=True)  #small DDLm dictionary
 
     def tearDown(self):
         try:
@@ -1473,7 +1473,7 @@ _matrix.value [[1,2,3],[4,5,6],[7,8,9]]
 class DDL1TestCase(unittest.TestCase):
 
     def setUp(self):
-        self.ddl1dic = CifFile.CifDic("dictionaries/cif_core.dic")
+        self.ddl1dic = CifFile.CifDic("tests/dictionaries/cif_core.dic")
 
     def testReport(self):
         CifFile.validate_report(CifFile.Validate("tests/C13H2203_with_errors.cif",dic=self.ddl1dic))
@@ -1591,7 +1591,7 @@ save_
         f.write(testdic_string)
         f.close()
         self.testcif = CifFile.CifFile('tests/ddlm_valid_test.cif2',grammar='auto')
-        self.refdic = CifFile.CifDic('dictionaries/ddl.dic',grammar='auto')
+        self.refdic = CifFile.CifDic('tests/dictionaries/ddl.dic',grammar='auto')
 
     def tearDown(self):
         os.remove('tests/ddlm_valid_test.cif2')
@@ -1639,7 +1639,7 @@ save_
 
 class DicEvalTestCase(unittest.TestCase):
     def setUp(self):
-        testdic = CifFile.CifDic("tests/drel/cif_core.dic",grammar="auto")
+        testdic = CifFile.CifDic("tests/dictionaries/cif_core.dic",grammar="auto")
         c_old = CifFile.CifFile("tests/drel/nick_old.cif",grammar="2.0")
         c_new = CifFile.CifFile("tests/drel/nick_new.cif",grammar="2.0")
         self.fb = c_new['saly2']
@@ -1718,7 +1718,7 @@ class DicEvalTestCase(unittest.TestCase):
 class DicStructureTestCase(unittest.TestCase):
     """Tests use of dictionary semantic information for item lookup"""
     def setUp(self):
-        self.testdic = CifFile.CifDic("tests/drel/cif_core.dic",grammar="auto")
+        self.testdic = CifFile.CifDic("tests/dictionaries/cif_core.dic",grammar="auto")
         cc = CifFile.CifFile("tests/drel/nick.cif",grammar="STAR2")
         self.fb = cc["saly2"]
         self.fb.assign_dictionary(self.testdic)

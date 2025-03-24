@@ -466,7 +466,7 @@ class TestSimpleCompoundStatement():
 
 @pytest.fixture(scope="module")
 def testdic():
-    testdic = CifFile.CifDic("tests/drel/cif_core.dic",grammar="2.0",do_imports='Contents')
+    testdic = CifFile.CifDic("tests/dictionaries/cif_core.dic",grammar="2.0",do_imports='Contents')
     # Add drel functions for deriving items
     testdic.initialise_drel()
     return testdic
