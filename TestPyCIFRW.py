@@ -1718,7 +1718,7 @@ class DicEvalTestCase(unittest.TestCase):
 class DicStructureTestCase(unittest.TestCase):
     """Tests use of dictionary semantic information for item lookup"""
     def setUp(self):
-        self.testdic = CifFile.CifDic("src/drel/testing/cif_core.dic",grammar="auto")
+        self.testdic = CifFile.CifDic("tests/drel/cif_core.dic",grammar="auto")
         cc = CifFile.CifFile("tests/drel/nick.cif",grammar="STAR2")
         self.fb = cc["saly2"]
         self.fb.assign_dictionary(self.testdic)

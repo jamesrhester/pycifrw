@@ -1,4 +1,3 @@
-recursive-include src
 include LICENSE
 include INSTALLATION
 include TESTING
