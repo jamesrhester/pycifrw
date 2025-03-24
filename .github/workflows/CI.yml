@@ -38,7 +38,7 @@ jobs:
 
                 - name: Check installed contents
                   run: |
-                        PKG_PATH = $(python -c "import site, os; print([p for p in site.getsitepackages() if os.path.exists(os.path.join(p, 'CifFile'))][0])")
+                        PKG_PATH=$(python -c "import site, os; print([p for p in site.getsitepackages() if os.path.exists(os.path.join(p, 'CifFile'))][0])")
                         ls -la $PKG_PATH/CifFile
 
                 - name: Run tests
