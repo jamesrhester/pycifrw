@@ -1114,15 +1114,16 @@ class CifDic(StarFile.StarFile):
     #                                                                         
     # <Parse DDLm validity information>=                                      
     def ddlm_parse_valid(self):
-        if "_dictionary_valid.application" not in self.master_block:
+        if "_dictionary_valid.scope" not in self.master_block:
             return
-        for scope_pack in self.master_block.GetLoop("_dictionary_valid.application"):
-            scope = getattr(scope_pack,"_dictionary_valid.application")
+        for scope_pack in self.master_block.GetLoop("_dictionary_valid.scope"):
+            scope = getattr(scope_pack,"_dictionary_valid.scope")
+            stance = getattr(scope_pack, "_dictionary_valid.option")
             valid_info = getattr(scope_pack,"_dictionary_valid.attributes")
-            if scope[1] == "Mandatory":
-                self.scopes_mandatory[scope[0]] = self.expand_category_opt(valid_info)
-            elif scope[1] == "Prohibited":
-                self.scopes_naughty[scope[0]] = self.expand_category_opt(valid_info)
+            if stance == "Mandatory":
+                self.scopes_mandatory[scope] = self.expand_category_opt(valid_info)
+            elif stance == "Prohibited":
+                self.scopes_naughty[scope] = self.expand_category_opt(valid_info)
 
     # Section{DDLm functionality}                                             
     #                                                                         

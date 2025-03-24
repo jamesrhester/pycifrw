@@ -1365,7 +1365,7 @@ class DictTestCase(unittest.TestCase):
     def testSemanticChildren(self):
         """Test that we can obtain the semantic children of a category"""
         children = self.ddldic.ddlm_immediate_children('enumeration_set')
-        self.assertTrue('_enumeration_set.xref_dictionary' in children)
+        self.assertTrue('_enumeration_set.state' in children)
         children = self.ddldic.ddlm_immediate_children('enumeration')
         self.assertTrue('enumeration_set' in children)
 
@@ -1594,7 +1594,8 @@ save_
         self.refdic = CifFile.CifDic('tests/dictionaries/ddl.dic',grammar='auto')
 
     def tearDown(self):
-        os.remove('tests/ddlm_valid_test.cif2')
+        pass
+        #os.remove('tests/ddlm_valid_test.cif2')
 
     def testMandatory(self):
         """Test that missing mandatory items are found"""
