@@ -1,3 +1,9 @@
+Release Notes for version 5.0.1
+===============================
+
+A bugfix release to fix deployment errors and get Github CI
+passing.
+
 Release Notes for version 5.0.0
 ===============================
 
