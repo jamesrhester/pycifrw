@@ -551,6 +551,12 @@ class CifDic(StarFile.StarFile):
             if not purposes or not py_methods:
                 continue
 
+            # Probably there is a syntax error on the drel dictionary method
+            # If there is not the same number of methods and purposes
+            # The function will update the wrong block
+            if len(purposes) != len(py_methods):
+                continue
+
             for idx, purpose in enumerate(purposes):
                 if purpose == "Definition":
                     method_data = py_methods[idx]
