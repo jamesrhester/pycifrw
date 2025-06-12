@@ -4135,6 +4135,8 @@ def validate_report(val_result,use_html=False):
             "Error: The following data items have values outside permitted set",
         'validate_looping':\
             "Error: The following data items violate looping constraints",
+        'validate_looping_ddlm':\
+            "Error: The following data items are not loopable",
         'validate_loop_membership':\
             "Error: The following looped data names are of different categories to the first looped data name",
         'validate_loop_key':\
