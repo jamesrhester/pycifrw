@@ -3085,8 +3085,7 @@ class CifDic(StarFile.StarFile):
             can_esd = False
         item_values = listify(item_value)
         check_all = [get_number_with_esd(a)[1] for a in item_values]
-        check_all = [v for v in check_all if (can_esd and v == None) or \
-                 (not can_esd and v != None)]
+        check_all = [v for v in check_all if (not can_esd and v is not None)]
         if len(check_all)>0: return {"result":False,"bad_values":check_all}
         return {"result":True}
 
@@ -4128,6 +4127,8 @@ def validate_report(val_result,use_html=False):
         'validate_item_type':\
             "Error: The following data items had badly formed values",
         'validate_item_esd':\
+            "Error: The following data items should not have esds appended",
+        'validate_item_esd_ddlm':\
             "Error: The following data items should not have esds appended",
         'validate_enum_range':\
             "Error: The following data items have values outside permitted range",
