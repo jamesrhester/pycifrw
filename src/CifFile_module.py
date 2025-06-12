@@ -3298,15 +3298,15 @@ class CifDic(StarFile.StarFile):
         Function to validate if the id tags of a loop are unique. Function for the DDLm dictionaries.
         Tags that have a category in self.black_list_categories are ignored.
         '''
-        # Get the final categories
-        final_cats = self.get_final_cats(loop_names)
+        # Get the final categories, dropping duplicates
+        final_cats = liste(set(self.get_final_cats(loop_names)))
 
-        # Get the category ids
+        # Get the category ids, dropping duplicates
         cat_keys = []
         for cat in final_cats:
             temp_cat_key = self[cat].get(self.unique_spec, "")
-            if temp_cat_key not in cat_keys:
-                cat_keys.append(temp_cat_key)
+            cat_keys.extend(temp_cat_key)
+        cat_keys = list(set(cat_keys))
 
         # Only take into account the loop ids from our loop tags
         loop_names_to_check = [loop_name for loop_name in loop_names if loop_name in cat_keys]
@@ -4146,6 +4146,8 @@ def validate_report(val_result,use_html=False):
             "Error: A loop key is missing for the category containing the dataname",
         'validate_loop_key_uniqueness':\
             "Error: There are repeated values for a _list_mandatory type tag",
+        'validate_loop_key_uniqueness_ddlm':\
+            "Error: There are repeated values for a loop key tag",
         'validate_loop_references':\
             "Error: A dataname required by the item is missing from the loop",
         'validate_parent':\
