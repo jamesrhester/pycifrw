@@ -3077,7 +3077,7 @@ class CifDic(StarFile.StarFile):
         return {"result":True}
 
     def validate_item_esd_ddlm(self,item_name,item_value):
-        if self[item_name].get('self.primitive_type') not in \
+        if self[item_name].get(self.primitive_type) not in \
         ['Count','Index','Integer','Real','Imag','Complex','Binary','Hexadecimal','Octal']:
             return {"result":None}
         can_esd = True
