@@ -2,6 +2,8 @@
 *.html
 *~
 
+sync.bat
+
 # generated Python sources
 /src/YappsStarParser_*.py
 /src/TypeContentsParser.py
