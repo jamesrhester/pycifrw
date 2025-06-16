@@ -4839,8 +4839,8 @@ def ReadCifWithErrors(filename,grammar='auto',scantype='standard',scoping='insta
     Keyword meanings are as for `ReadCif`"""
 
     finalcif = CifFile(scoping=scoping,standard=standard)
-    return StarFile.ReadStarWithErrors(filename,prepared=finalcif,grammar=grammar,scantype=scantype,
-                             permissive=permissive)
+    # where is ReadStarWithErrors defined?
+    return StarFile.ReadStarWithErrors(filename, prepared=finalcif, grammar=grammar, scantype=scantype, permissive=permissive)
 
 def ReadCif(filename, grammar='auto', scantype='standard', scoping='instance', standard='CIF',
             permissive = False):
