@@ -1958,7 +1958,7 @@ class CifDic(StarFile.StarFile):
 
     def create_catobj_name(self,cat,obj):
         """Combine category and object in approved fashion to create id"""
-        return ('_'+cat+'.'+obj)
+        return '_'+cat+ '.'+obj
 
     def change_category(self,itemname,catname):
         """Move itemname into catname, return new handle"""
