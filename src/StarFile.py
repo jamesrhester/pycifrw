@@ -1630,24 +1630,25 @@ class StarBlock(object):
     #                                                                         
     # <Format loop packets>=                                                  
     def format_packets(self,outstring,indent=0,loop_no=-1):
-       alldata = [self[a] for a in self.loops[loop_no]]
-       loopnames = self.loops[loop_no]
-       #print 'Alldata: %s' % `alldata`
-       if all(isinstance(elem, str) for elem in alldata):
+        alldata = [self[a] for a in self.loops[loop_no]]
+        loopnames = self.loops[loop_no]
+        #print 'Alldata: %s' % `alldata`
+        if all(isinstance(elem, str) for elem in alldata):
             packet_data = list(zip(alldata))
-       else:
+        else:
             packet_data = list(zip(*alldata))
-       #print 'Packet data: %s' % `packet_data`
-       #create a dictionary for quick lookup of formatting requirements
-       format_hints = dict([(i['dataname'],i) for i in self.formatting_hints if i['dataname'] in loopnames])
-       for position in range(len(packet_data)):
-           if position > 0:
+        #print 'Packet data: %s' % `packet_data`
+        #create a dictionary for quick lookup of formatting requirements
+        format_hints = dict([(i['dataname'],i) for i in self.formatting_hints if i['dataname'] in loopnames])
+        for position in range(len(packet_data)):
+            if position > 0:
                outstring.write("\n")    #new line each packet except first
-           for point in range(len(packet_data[position])):
+            for point in range(len(packet_data[position])):
                datapoint = packet_data[position][point]
                format_hint = format_hints.get(loopnames[point],{})
-               packstring = self.format_packet_item(datapoint,indent,outstring,format_hint)
+               packstring = self.format_packet_item(datapoint,indent,outstring,format_hint) # this function doesn't return anything.
                outstring.write(' ',canbreak=True,do_tab=False,delimiter=True)
+        # where is the return statement?
 
     # Formatting a single packet item.                                        
     #                                                                         
