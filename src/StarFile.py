@@ -2994,7 +2994,7 @@ class CIFStringIO(StringIO):
                 print('Could not format {} at column {} as already at {}'.format(outstring,startcol,self.currentpos))
                 startcol = -1   #so that tabbing works as a backup
         #handle tabs
-        if self.tabwidth > 0 and do_tab and startcol < 0:
+        if do_tab and self.tabwidth > 0 > startcol:
             next_stop = ((self.currentpos//self.tabwidth)+1)*self.tabwidth
             #print 'Currentpos %d: Next tab stop at %d' % (self.currentpos,next_stop)
             if self.currentpos < next_stop:
