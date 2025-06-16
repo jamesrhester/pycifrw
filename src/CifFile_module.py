@@ -1724,9 +1724,9 @@ class CifDic(StarFile.StarFile):
                 
             # and the repeated ones get appended instead
 
-            repeats = [a for a in child_names if a in extra_table]
+            rpts = [a for a in child_names if a in extra_table]
 
-            for obj,name in repeats:
+            for obj,name in rpts:
                 extra_table[(parent_cat,obj)] += [name]
 
             # and finally, add our own names to the return list
@@ -2090,18 +2090,18 @@ class CifDic(StarFile.StarFile):
         cat,obj = name.split('.')
         return cat.strip('_'), obj
 
-    def get_name_by_cat_obj(self,category,object,give_default=False):
+    def get_name_by_cat_obj(self, category, obj, give_default=False):
         """Return the dataname corresponding to the given category and object"""
         if category[0] == '_':    #accidentally left in
            true_cat = category[1:].lower()
         else:
            true_cat = category.lower()
         try:
-            return self.cat_obj_lookup_table[(true_cat,object.lower())][0]
+            return self.cat_obj_lookup_table[(true_cat, obj.lower())][0]
         except KeyError:
             if give_default:
-               return '_'+true_cat+'.'+object
-        raise KeyError('No such category,object in the dictionary: {} {}'.format(true_cat,object))
+               return '_'+true_cat+'.'+obj
+        raise KeyError('No such category,object in the dictionary: {} {}'.format(true_cat, obj))
 
 
     # \subsection {Outputting dictionaries}                                   
@@ -3156,11 +3156,11 @@ class CifDic(StarFile.StarFile):
         minvals = map(makefloat, minvals)
         rangelist = list(zip(minvals,maxvals))
         item_values = listify(item_value)
-        def map_check(rangelist,item_value):
-            if item_value == "?" or item_value == ".": return True
-            iv,esd = get_number_with_esd(item_value)
-            if iv==None: return None  #shouldn't happen as is numb type
-            for lower,upper in rangelist:
+        def map_check(rnglst, item_val):
+            if item_val in [ "?", "."]: return True
+            iv,esd = get_number_with_esd(item_val)
+            if iv is None: return None  #shouldn't happen as is numb type
+            for lower,upper in rnglst:
                 #check the minima
                 if lower == ".": lower = iv - 1
                 if upper == ".": upper = iv + 1
@@ -3529,11 +3529,11 @@ class CifDic(StarFile.StarFile):
     #                                                                         
     #                                                                         
     # <Validate exclusion rules>=                                             
-    def validate_exclusion(self, item_name, item_value, whole_block, provisional_items=None, globals=None):
+    def validate_exclusion(self, item_name, item_value, whole_block, provisional_items=None, glbls=None):
        if provisional_items is None:
            provisional_items = {}
-       if globals is None:
-           globals = {}
+       if glbls is None:
+           glbls = {}
        alternates = [a.lower() for a in self.get_alternates(item_name,exclusive_only=True)]
        item_name_list = [a.lower() for a in whole_block.keys()]
        item_name_list.extend([a.lower() for a in provisional_items.keys()])
@@ -3570,11 +3570,11 @@ class CifDic(StarFile.StarFile):
     #                                                                         
     # <Validate parent child relations>=                                      
     # validate that parent exists and contains matching values
-    def validate_parent(self, item_name, item_value, whole_block, provisional_items=None, globals=None):
+    def validate_parent(self, item_name, item_value, whole_block, provisional_items=None, glbls=None):
         if provisional_items is None:
             provisional_items = {}
-        if globals is None:
-            globals = {}
+        if glbls is None:
+            glbls = {}
         parent_item = self[item_name].get(self.parent_spec)
         if not parent_item: return {"result":None}   #no parent specified
         if isinstance(parent_item,list):
@@ -3595,14 +3595,14 @@ class CifDic(StarFile.StarFile):
         # we have collected all parent values into the global block - so no need to search
         # for them elsewhere.
         # print("Looking for {!r}".format(parent_item))
-        parent_values = globals.get(parent_item)
+        parent_values = glbls.get(parent_item)
         if not parent_values:
             parent_values = provisional_items.get(parent_item,whole_block.get(parent_item))
         if not parent_values:
             # go for alternates
             namespace = whole_block.keys()
             namespace.extend(provisional_items.keys())
-            namespace.extend(globals.keys())
+            namespace.extend(glbls.keys())
             alt_names = filter_present(self.get_alternates(parent_item),namespace)
             if len(alt_names) == 0:
                 if len([a for a in child_values if a != "." and a != "?"])>0:
@@ -3612,7 +3612,7 @@ class CifDic(StarFile.StarFile):
             parent_item = alt_names[0]           #should never be more than one??
             parent_values = provisional_items.get(parent_item,whole_block.get(parent_item))
             if not parent_values:   # check global block
-                parent_values = globals.get(parent_item)
+                parent_values = glbls.get(parent_item)
         if isinstance(parent_values,unicode):
             parent_values = [parent_values]
         #print("Checking parent %s against %s, values %r/%r" % (parent_item,
@@ -3622,17 +3622,17 @@ class CifDic(StarFile.StarFile):
             return {"result":False,"bad_values":missing,"parent":parent_item}
         return {"result":True}
 
-    def validate_child(self, item_name, item_value, whole_block, provisional_items=None, globals=None):
+    def validate_child(self, item_name, item_value, whole_block, provisional_items=None, glbls=None):
         if provisional_items is None:
             provisional_items = {}
-        if globals is None:
-            globals = {}
+        if glbls is None:
+            glbls = {}
         try:
             child_items = self[item_name][self.child_spec][:]  #copy
         except KeyError:
             return {"result":None}    #not relevant
         # special case for dictionaries  -> we check parents of children only
-        if item_name in globals:  #dictionary so skip
+        if item_name in glbls:  #dictionary so skip
             return {"result":None}
         if isinstance(child_items,unicode): # only one child
             child_items = [child_items]
@@ -3694,11 +3694,11 @@ class CifDic(StarFile.StarFile):
     #                                                                         
     #                                                                         
     # <Validate presence of dependents>=                                      
-    def validate_dependents(self, item_name, item_value, whole_block, prov=None, globals=None):
+    def validate_dependents(self, item_name, item_value, whole_block, prov=None, glbls=None):
         if prov is None:
             prov = {}
-        if globals is None:
-            globals = {}
+        if glbls is None:
+            glbls = {}
         try:
             dep_items = self[item_name][self.dep_spec][:]
         except KeyError:
@@ -3707,7 +3707,7 @@ class CifDic(StarFile.StarFile):
             dep_items = [dep_items]
         actual_names = whole_block.keys()
         actual_names.extend(prov.keys())
-        actual_names.extend(globals.keys())
+        actual_names.extend(glbls.keys())
         missing = [a for a in dep_items if a not in actual_names]
         if len(missing) > 0:
             alternates = map(lambda a:[self.get_alternates(a),a],missing)
@@ -3740,11 +3740,11 @@ class CifDic(StarFile.StarFile):
     #                                                                         
     # <Validate list uniqueness>=                                             
     def validate_uniqueness(self, item_name, item_value, whole_block, provisional_items=None,
-                            globals=None):
+                            glbls=None):
         if provisional_items is None:
             provisional_items = {}
-        if globals is None:
-            globals = {}
+        if glbls is None:
+            glbls = {}
         category = self[item_name].get(self.cat_spec)
         if category is None:
             if self.verbose_validation:
@@ -3887,12 +3887,12 @@ class CifDic(StarFile.StarFile):
     def run_loop_id_uniqueness(self, loop_names, block):
         return {loop_names[0]:list([(f.__name__, f(loop_names, block)) for f in self.loop_id_uniqueness_funs])}
 
-    def run_global_validation(self, item_name, item_value, data_block, provisional_items=None, globals=None):
+    def run_global_validation(self, item_name, item_value, data_block, provisional_items=None, glbls=None):
         if provisional_items is None:
             provisional_items = {}
-        if globals is None:
-            globals = {}
-        results = list([(f.__name__,f(item_name,item_value,data_block,provisional_items,globals)) for f in self.global_validation_funs])
+        if glbls is None:
+            glbls = {}
+        results = list([(f.__name__,f(item_name, item_value, data_block, provisional_items, glbls)) for f in self.global_validation_funs])
         return {item_name:results}
 
     def run_block_validation(self,whole_block,block_scope='Item'):
@@ -4792,7 +4792,7 @@ def print_cif_syntax_error(parsing_result, cif_file_name):
         Y = parsing_result[3]
 
         scanner = parser._scanner
-        input = parser._scanner.input
+        inpt = parser._scanner.input
         pos = error.charpos
 
         line_number = scanner.get_line_number_with_pos(pos)
@@ -4805,7 +4805,7 @@ def print_cif_syntax_error(parsing_result, cif_file_name):
         out_str += "\n"
         out_str += "ERROR NEAR THE FOLLOWING INPUT TEXT:\n"
 
-        text_error = Y.yappsrt.print_line_with_pointer(input, pos)
+        text_error = Y.yappsrt.print_line_with_pointer(inpt, pos)
 
         out_str += text_error
         print(out_str)
