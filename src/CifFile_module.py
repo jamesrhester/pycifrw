@@ -1769,7 +1769,7 @@ class CifDic(StarFile.StarFile):
                 kk = []
                 for child_cat in child_cats:
                     if child_cat in self.loop_expand_list:
-                        kk += collect_keys(child_cat)
+                        kk += collect_keys(child_cat) # missing an argument
                     # add these keys to our list
                     kk += [listify(self[child_cat].get('_category_key.name',[self[child_cat].get('_category.key_id')]))]
                 self.cat_key_table[parent_cat] = self.cat_key_table[parent_cat] + kk
