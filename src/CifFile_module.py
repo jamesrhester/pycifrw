@@ -3299,7 +3299,7 @@ class CifDic(StarFile.StarFile):
         Tags that have a category in self.black_list_categories are ignored.
         '''
         # Get the final categories, dropping duplicates
-        final_cats = liste(set(self.get_final_cats(loop_names)))
+        final_cats = list(set(self.get_final_cats(loop_names)))
 
         # Get the category ids, dropping duplicates
         cat_keys = []
