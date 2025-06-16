@@ -109,7 +109,7 @@ to be bound by the terms and conditions of this License Agreement.
 
 import re,sys
 from . import StarFile
-from .StarFile import StarList  #put in global scope for exec statement
+from .StarFile import StarList, StarPacket  # put in global scope for exec statement
 from . import CifSyntaxError
 try:
     import numpy                   #put in global scope for exec statement
@@ -304,7 +304,7 @@ class CifFile(StarFile.StarFile):
 ##########################################################################
 """
         pr = self.get_parsing_result()
-        if not allow_partial and len(pr) > 0 and pr[0] < 0: #Fail aggressively
+        if not allow_partial and len(pr) > 0 > pr[0]: #Fail aggressively
             print_cif_syntax_error(pr, self.my_uri)
             raise pr[1]
 
@@ -345,11 +345,9 @@ class CifFile(StarFile.StarFile):
         return tags_without_alias
 
     def to_json(self):
-        cif_dict = {}
+        cif_dict = {'filename': self.my_uri, 'version': self.grammar}
 
         # Add meta data
-        cif_dict['filename'] = self.my_uri
-        cif_dict['version'] = self.grammar
 
         tags_dict = {}
         for key in self.keys():
@@ -537,6 +535,48 @@ class CifDic(StarFile.StarFile):
     # <Initialise Cif dictionary>=                                            
     def __init__(self,dic,do_minimum=False,do_imports='All', do_dREL=True,
                  grammar='auto',heavy=True,verbose_import=True,verbose_validation=True,**kwargs):
+        #instance variables
+        self.alias_spec = None
+        self.alias_table = None
+        self.black_list_categories = None
+        self.block_id_table = None
+        self.block_validation_funs = None
+        self.cat_id_spec = None
+        self.cat_key_table = None
+        self.cat_list = None
+        self.cat_obj_lookup_table = None
+        self.cat_spec = None
+        self.child_spec = None
+        self.def_id_spec = None
+        self.dep_spec = None
+        self.done_children = None
+        self.done_keys = None
+        self.done_parents = None
+        self.enum_spec = None
+        self.esd_spec = None
+        self.global_remove_validation_funs = None
+        self.global_validation_funs = None
+        self.item_validation_funs = None
+        self.key_equivs = None
+        self.key_spec = None
+        self.list_ref_spec = None
+        self.loop_expand_list = None
+        self.loop_id_uniqueness_funs = None
+        self.loop_spec = None
+        self.loop_validation_funs = None
+        self.master_block = None
+        self.must_exist_spec = None
+        self.must_loop_spec = None
+        self.optimize = None
+        self.parent_lookup = None
+        self.parent_spec = None
+        self.primitive_type = None
+        self.related_func = None
+        self.related_item = None
+        self.type_spec = None
+        self.type_spec = None
+        self.unique_spec = None
+
         self.do_minimum = do_minimum
         if do_minimum:
             do_imports = 'No'
@@ -584,13 +624,14 @@ class CifDic(StarFile.StarFile):
         self.add_type_info()
         self.install_validation_functions()
 
+
     def add_alias_blocks(self):
-        '''
+        """
         Function to add alias tags to the dictionary. If a datablock has the "_alias.definition_id" tag,
         a new datablock is created with the same information of the original datablock.
 
         It requires the dictionary to be fully formed.
-        '''
+        """
         # Retrieve all the alias blocks
         data_blocks_to_edit = []
         for block_name in self.keys():
@@ -679,7 +720,7 @@ class CifDic(StarFile.StarFile):
             }
             name = super(CifDic,self).__getitem__("on_this_dictionary")["_dictionary_name"]
             version = super(CifDic,self).__getitem__("on_this_dictionary")["_dictionary_version"]
-            return (name,version,"DDL1")
+            return name,version,"DDL1"
         elif len(self.get_roots()) == 1:              # DDL2/DDLm
             self.master_block = super(CifDic,self).__getitem__(self.get_roots()[0][0])
             # now change to dictionary scoping
@@ -702,7 +743,7 @@ class CifDic(StarFile.StarFile):
                 self.black_list_categories = {
                     'publ_author'
                 }
-                return(name,version,"DDLm")
+                return name,version,"DDLm"
             else:   #DDL2
                 self.cat_id_spec = "_category.id"
                 self.def_id_spec = "_item.name"
@@ -723,7 +764,7 @@ class CifDic(StarFile.StarFile):
                 self.primitive_type = "_type"
                 self.alias_spec = "_alias.definition_id"
                 self.dep_spec = "_item_dependent.dependent_name"
-                return (name,version,"DDL2")
+                return name,version,"DDL2"
         else:
             raise CifError("Unable to determine dictionary DDL version")
 
@@ -801,13 +842,13 @@ class CifDic(StarFile.StarFile):
            if "_type_conditions" not in value: value["_type_conditions"] = 'none'
            # deal with enumeration ranges
            if "_enumeration_range" in value:
-               max,min = self.getmaxmin(value["_enumeration_range"])
-               if min == ".":
-                   self[key].AddLoopItem((("_item_range.maximum","_item_range.minimum"),((max,max),(max,min))))
-               elif max == ".":
-                   self[key].AddLoopItem((("_item_range.maximum","_item_range.minimum"),((max,min),(min,min))))
+               max_,min_ = self.getmaxmin(value["_enumeration_range"])
+               if min_ == ".":
+                   self[key].AddLoopItem((("_item_range.maximum","_item_range.minimum"),((max_,max_),(max_, min_))))
+               elif max_ == ".":
+                   self[key].AddLoopItem((("_item_range.maximum","_item_range.minimum"),((max_, min_), (min_, min_))))
                else:
-                   self[key].AddLoopItem((("_item_range.maximum","_item_range.minimum"),((max,max,min),(max,min,min))))
+                   self[key].AddLoopItem((("_item_range.maximum","_item_range.minimum"),((max_, max_, min_), (max_, min_, min_))))
            #add any type construct information
            if "_type_construct" in value:
                base_types.append(value["_name"]+"_type")   #ie dataname_type
@@ -878,7 +919,7 @@ class CifDic(StarFile.StarFile):
             # not the same as the defined item for publ_body_label, so we have
             # to collect both together.  We assume a non-listed entry, which
             # is true for all current (May 2005) ddl1 dictionaries.
-            if self[single_def].get(self.unique_spec,None)!=None:
+            if self[single_def].get(self.unique_spec,None) is not None:
                 thiscat = self[single_def]["_category"]
                 new_unique = self[single_def][self.unique_spec]
                 uis = cat_unique_dic.get(thiscat,[])
@@ -1039,29 +1080,29 @@ class CifDic(StarFile.StarFile):
                 mychildren = [a for a in family if a[0]==notmychildren[0][0]]
                 print("Parent {}: {} children".format(notmychildren[0][0],len(mychildren)))
                 for parent,child in mychildren:   #parent is the same for all
-                         # Make sure that we simply add in the new entry for the child, not replace it,
-                         # otherwise we might spoil the child entry loop structure
-                         try:
-                             childloop = self[child].GetLoop('_item_linked.parent_name')
-                         except KeyError:
-                             print('Creating new parent entry {} for definition {}'.format(parent,child))
-                             self[child]['_item_linked.parent_name'] = [parent]
-                             childloop = self[child].GetLoop('_item_linked.parent_name')
-                             childloop.AddLoopItem(('_item_linked.child_name',[child]))
+                     # Make sure that we simply add in the new entry for the child, not replace it,
+                     # otherwise we might spoil the child entry loop structure
+                     try:
+                         childloop = self[child].GetLoop('_item_linked.parent_name')
+                     except KeyError:
+                         print('Creating new parent entry {} for definition {}'.format(parent,child))
+                         self[child]['_item_linked.parent_name'] = [parent]
+                         childloop = self[child].GetLoop('_item_linked.parent_name')
+                         childloop.AddLoopItem(('_item_linked.child_name',[child]))
+                         continue
+                     else:
+                         # A parent loop already exists and so will a child loop due to the
+                         # call to create_pcloop above
+                         pars = [a for a in childloop if getattr(a,'_item_linked.child_name','')==child]
+                         goodpars = [a for a in pars if getattr(a,'_item_linked.parent_name','')==parent]
+                         if len(goodpars)>0:   #no need to add it
+                             print('Skipping duplicated parent - child entry in {}: {} - {}'.format(child,parent,child))
                              continue
-                         else:
-                             # A parent loop already exists and so will a child loop due to the
-                             # call to create_pcloop above
-                             pars = [a for a in childloop if getattr(a,'_item_linked.child_name','')==child]
-                             goodpars = [a for a in pars if getattr(a,'_item_linked.parent_name','')==parent]
-                             if len(goodpars)>0:   #no need to add it
-                                 print('Skipping duplicated parent - child entry in {}: {} - {}'.format(child,parent,child))
-                                 continue
-                             print('Adding {} to {} entry'.format(parent,child))
-                             newpacket = childloop.GetPacket(0)   #essentially a copy, I hope
-                             setattr(newpacket,'_item_linked.child_name',child)
-                             setattr(newpacket,'_item_linked.parent_name',parent)
-                             childloop.AddPacket(newpacket)
+                         print('Adding {} to {} entry'.format(parent,child))
+                         newpacket = childloop.GetPacket(0)   #essentially a copy, I hope
+                         setattr(newpacket,'_item_linked.child_name',child)
+                         setattr(newpacket,'_item_linked.parent_name',parent)
+                         childloop.AddPacket(newpacket)
                 #
                 # Make sure the parent also points to the children.  We get
                 # the current entry, then add our
@@ -1276,12 +1317,12 @@ class CifDic(StarFile.StarFile):
             del self[parent_block]["_import.get"]
 
     def merge_duplicates(self, child_blocks, double_defs):
-        '''
+        """
         Duplicated blocks may have different definitions. Therefore deleting them will end up
         creating an incomplete dictionary.
         This functions checks among the duplicated tags, and if a duplicated pair has different
         tags, the remaining tags of the imported block are added to the base block.
-        '''
+        """
 
         for double_def in double_defs:
             # Tag name in the dictionary to be imported
@@ -1656,7 +1697,7 @@ class CifDic(StarFile.StarFile):
                             for n in self.names_in_cat(parent_cat) if self[n].get('_type.purpose','')!='Key']
 
             # first deal with all the child categories
-
+            child_names = []
             for child_cat in child_cats:
                 nn = []
               
@@ -1780,11 +1821,11 @@ class CifDic(StarFile.StarFile):
                 fixed_regexp = mm_regex[:]  #copy
                 # fix the brackets
                 bm = re.match(brack_match,mm_regex)
-                if bm != None:
+                if bm is not None:
                     fixed_regexp = bm.expand(r"\2\\\\{\4")
                 # fix missing \r
                 rm = re.match(ret_match,fixed_regexp)
-                if rm != None:
+                if rm is not None:
                     fixed_regexp = rm.expand(r"\2\3\\r\4")
                 #print("Regexp %s becomes %s" % (mm_regex,fixed_regexp))
                 return fixed_regexp
@@ -2048,7 +2089,7 @@ class CifDic(StarFile.StarFile):
     def get_cat_obj(self,name):
         """Return (cat,obj) tuple. [[name]] must contain only a single period"""
         cat,obj = name.split('.')
-        return (cat.strip('_'),obj)
+        return cat.strip('_'), obj
 
     def get_name_by_cat_obj(self,category,object,give_default=False):
         """Return the dataname corresponding to the given category and object"""
@@ -2143,39 +2184,39 @@ class CifDic(StarFile.StarFile):
         onepack = data.GetPackKey(keyname,value)
         return onepack
 
-    # This support function uses re capturing to work out the number's value. The
-    # re contains 7 groups: group 0 is the entire expression; group 1 is the overall
-    # match in the part prior to esd brackets; group 2 is the match with a decimal
-    # point, group 3 is the digits after the decimal point, group 4 is the match
-    # without a decimal point.  Group 5 is the esd bracket contents, and      
-    # group 6 is the exponent.                                                
-    #                                                                         
-    # The esd should be returned as an independent number.  We count the number
-    # of digits after the decimal point, create the esd in terms of this, and then,
-    # if necessary, apply the exponent.                                       
-    #                                                                         
-    #                                                                         
-    # <Extract number and esd>=                                               
-    def get_number_with_esd(numstring):
+    def get_number_with_esd(self, numstring):
+        # This support function uses re capturing to work out the number's value. The
+        # re contains 7 groups: group 0 is the entire expression; group 1 is the overall
+        # match in the part prior to esd brackets; group 2 is the match with a decimal
+        # point, group 3 is the digits after the decimal point, group 4 is the match
+        # without a decimal point.  Group 5 is the esd bracket contents, and
+        # group 6 is the exponent.
+        #
+        # The esd should be returned as an independent number.  We count the number
+        # of digits after the decimal point, create the esd in terms of this, and then,
+        # if necessary, apply the exponent.
+        #
+        #
+        # <Extract number and esd>=
         numb_re = '((-?(([0-9]*[.]([0-9]+))|([0-9]+)[.]?))([(][0-9]+[)])?([eEdD][+-]?[0-9]+)?)|(\\?)|(\\.)'
-        our_match = re.match(numb_re,numstring)
+        our_match = re.match(numb_re, numstring)
         if our_match:
-            a,base_num,b,c,dad,dbd,esd,exp,q,dot = our_match.groups()
+            a, base_num, b, c, dad, dbd, esd, exp, q, dot = our_match.groups()
             # print("Debug: {} -> {!r}".format(numstring, our_match.groups()))
         else:
-            return None,None
-        if dot or q: return None,None     #a dot or question mark
-        if exp:          #has exponent
-           exp = exp.replace("d","e")     # mop up old fashioned numbers
-           exp = exp.replace("D","e")
-           base_num = base_num + exp
+            return None, None
+        if dot or q: return None, None  # a dot or question mark
+        if exp:  # has exponent
+            exp = exp.replace("d", "e")  # mop up old fashioned numbers
+            exp = exp.replace("D", "e")
+            base_num = base_num + exp
         # print("Debug: have %s for base_num from %s" % (base_num,numstring))
         base_num = float(base_num)
         # work out esd, if present.
         if esd:
-            esd = float(esd[1:-1])    # no brackets
-            if dad:                   # decimal point + digits
-                esd = esd * (10 ** (-1* len(dad)))
+            esd = float(esd[1:-1])  # no brackets
+            if dad:  # decimal point + digits
+                esd = esd * (10 ** (-1 * len(dad)))
             if exp:
                 esd = esd * (10 ** (float(exp[1:])))
         return base_num,esd
@@ -2191,14 +2232,16 @@ class CifDic(StarFile.StarFile):
         regexp = '(-?(([0-9]*[.]([0-9]+))|([0-9]+)[.]?)([eEdD][+-]?[0-9]+)?)*'
         regexp = regexp + ":" + regexp
         regexp = re.match(regexp,rangeexp)
+        minimum = None
+        maximum = None
         try:
             minimum = regexp.group(1)
             maximum = regexp.group(7)
         except AttributeError:
             print("Can't match {}".format(rangeexp))
-        if minimum == None: minimum = "."
+        if minimum is None: minimum = "."
         else: minimum = float(minimum)
-        if maximum == None: maximum = "."
+        if maximum is None: maximum = "."
         else: maximum = float(maximum)
         return maximum,minimum
 
@@ -2666,7 +2709,7 @@ class CifDic(StarFile.StarFile):
     def construct_category(self,category,cifdata,store_value=True):
         """Construct a category using DDLm attributes"""
         con_type = self[category].get('_category_construct_local.type',None)
-        if con_type == None:
+        if con_type is None:
             return {}
         if con_type == 'Pullback' or con_type == 'Filter':
             morphisms  = self[category]['_category_construct_local.components']
@@ -2690,6 +2733,7 @@ class CifDic(StarFile.StarFile):
                 return {}
             newids = self[category]['_category_construct_local.new_ids']
             fullnewids = [self.cat_obj_lookup_table[(category,n)][0] for n in newids]
+            final_results = {}
             if con_type == 'Pullback':
                 final_results = {fullnewids[0]:[x[0] for x in pullback_ids],fullnewids[1]:[x[1] for x in pullback_ids]}
                 final_results.update(self.duplicate_datanames(cifdata,cats[0],category,key_vals = final_results[fullnewids[0]],skip_names=newids))
@@ -2780,8 +2824,10 @@ class CifDic(StarFile.StarFile):
             self.store_new_cat_values(cifdata,result,target_category)
         return result
 
-    def duplicate_datanames(self,cifdata,from_category,to_category,key_vals=None,skip_names=[]):
+    def duplicate_datanames(self, cifdata, from_category, to_category, key_vals=None, skip_names=None):
         """Copy across datanames for which the from_category key equals [[key_vals]]"""
+        if skip_names is None:
+            skip_names = []
         result = {}
         s_names_in_cat = set(self.names_in_cat(from_category,names_only=True))
         t_names_in_cat = set(self.names_in_cat(to_category,names_only=True))
@@ -3007,10 +3053,10 @@ class CifDic(StarFile.StarFile):
     def validate_item_type(self,item_name,item_value):
         def mymatch(m,a):
             res = m.match(a)
-            if res != None: return res.group()
+            if res: return res.group()
             else: return ""
         target_type = self[item_name].get(self.type_spec)
-        if target_type == None:          # e.g. a category definition
+        if target_type is None:          # e.g. a category definition
             return {"result":True}                  # not restricted in any way
         matchexpr = self.typedic[target_type]
         item_values = listify(item_value)
@@ -3072,7 +3118,7 @@ class CifDic(StarFile.StarFile):
         can_esd = self[item_name].get(self.esd_spec,"none") == "esd"
         if can_esd: return {"result":True}         #must be OK!
         item_values = listify(item_value)
-        check_all = list([a for a in item_values if get_number_with_esd(a)[1] != None])
+        check_all = list([a for a in item_values if get_number_with_esd(a)[1] is not None])
         if len(check_all)>0: return {"result":False,"bad_values":check_all}
         return {"result":True}
 
@@ -3085,8 +3131,8 @@ class CifDic(StarFile.StarFile):
             can_esd = False
         item_values = listify(item_value)
         check_all = [get_number_with_esd(a)[1] for a in item_values]
-        check_all = [v for v in check_all if (can_esd and v == None) or \
-                 (not can_esd and v != None)]
+        check_all = [v for v in check_all if (can_esd and v is None) or \
+                 (not can_esd and v is not None)]
         if len(check_all)>0: return {"result":False,"bad_values":check_all}
         return {"result":True}
 
@@ -3119,7 +3165,7 @@ class CifDic(StarFile.StarFile):
                 #check the minima
                 if lower == ".": lower = iv - 1
                 if upper == ".": upper = iv + 1
-                if iv > lower and iv < upper: return True
+                if lower < iv < upper: return True
                 if upper == lower and iv == upper: return True
             # debug
             # print("Value %s fails range check %d < x < %d" % (item_value,lower,upper))
@@ -3235,7 +3281,7 @@ class CifDic(StarFile.StarFile):
                     if self[loop_key].get(self.must_exist_spec,None) == "implicit":
                         continue          #it is virtually there...
                     alternates = self.get_alternates(loop_key)
-                    if alternates == []:
+                    if not alternates:
                         return {"result":False,"bad_items":loop_key}
                     for alt_names in alternates:
                         alt = [a for a in alt_names if a in loop_names]
@@ -3250,10 +3296,10 @@ class CifDic(StarFile.StarFile):
     #                                                                         
     # <Validate loop key DDLm>=                                               
     def validate_loop_key_uniqueness(self, loop_names, block):
-        '''
+        """
         Function to validate if the id tags of a loop are unique. Function for the DDL1 dictionaries.
         Tags that have a category in self.black_list_categories are ignored.
-        '''
+        """
 
         loop_names_to_check = []
         for loop_name in loop_names:
@@ -3295,10 +3341,10 @@ class CifDic(StarFile.StarFile):
         return {"result":True}
 
     def validate_loop_key_uniqueness_ddlm(self, loop_names, block):
-        '''
+        """
         Function to validate if the id tags of a loop are unique. Function for the DDLm dictionaries.
         Tags that have a category in self.black_list_categories are ignored.
-        '''
+        """
         # Get the final categories
         final_cats = self.get_final_cats(loop_names)
 
@@ -3336,10 +3382,10 @@ class CifDic(StarFile.StarFile):
         return {"result":True}
 
     def validate_loop_key_ddlm(self, loop_names):
-        '''
+        """
         New version of the validation of the loop keys for the DDLm dictionaries.
         It checks if the _category_key.name of a given looped category appears.
-        '''
+        """
 
         # Get the parent categories of the input loop names
         temp_final_cats = self.get_final_cats(loop_names)
@@ -3391,7 +3437,7 @@ class CifDic(StarFile.StarFile):
 
     def validate_loop_references(self,loop_names):
         must_haves = [self[a].get(self.list_ref_spec,None) for a in loop_names]
-        must_haves = [a for a in must_haves if a != None]
+        must_haves = [a for a in must_haves if a is not None]
         # build a flat list.  For efficiency we don't remove duplicates,as
         # we expect no more than the order of 10 or 20 looped names.
         def flat_func(a,b):
@@ -3450,7 +3496,7 @@ class CifDic(StarFile.StarFile):
             return []
         alternates = self[main_name].get(self.related_func,None)
         alt_names = []
-        if alternates != None:
+        if alternates is not None:
             alt_names =  self[main_name].get(self.related_item,None)
             if isinstance(alt_names,unicode):
                 alt_names = [alt_names]
@@ -3484,7 +3530,11 @@ class CifDic(StarFile.StarFile):
     #                                                                         
     #                                                                         
     # <Validate exclusion rules>=                                             
-    def validate_exclusion(self,item_name,item_value,whole_block,provisional_items={},globals={}):
+    def validate_exclusion(self, item_name, item_value, whole_block, provisional_items=None, globals=None):
+       if provisional_items is None:
+           provisional_items = {}
+       if globals is None:
+           globals = {}
        alternates = [a.lower() for a in self.get_alternates(item_name,exclusive_only=True)]
        item_name_list = [a.lower() for a in whole_block.keys()]
        item_name_list.extend([a.lower() for a in provisional_items.keys()])
@@ -3521,7 +3571,11 @@ class CifDic(StarFile.StarFile):
     #                                                                         
     # <Validate parent child relations>=                                      
     # validate that parent exists and contains matching values
-    def validate_parent(self,item_name,item_value,whole_block,provisional_items={},globals={}):
+    def validate_parent(self, item_name, item_value, whole_block, provisional_items=None, globals=None):
+        if provisional_items is None:
+            provisional_items = {}
+        if globals is None:
+            globals = {}
         parent_item = self[item_name].get(self.parent_spec)
         if not parent_item: return {"result":None}   #no parent specified
         if isinstance(parent_item,list):
@@ -3569,7 +3623,11 @@ class CifDic(StarFile.StarFile):
             return {"result":False,"bad_values":missing,"parent":parent_item}
         return {"result":True}
 
-    def validate_child(self,item_name,item_value,whole_block,provisional_items={},globals={}):
+    def validate_child(self, item_name, item_value, whole_block, provisional_items=None, globals=None):
+        if provisional_items is None:
+            provisional_items = {}
+        if globals is None:
+            globals = {}
         try:
             child_items = self[item_name][self.child_spec][:]  #copy
         except KeyError:
@@ -3637,7 +3695,11 @@ class CifDic(StarFile.StarFile):
     #                                                                         
     #                                                                         
     # <Validate presence of dependents>=                                      
-    def validate_dependents(self,item_name,item_value,whole_block,prov={},globals={}):
+    def validate_dependents(self, item_name, item_value, whole_block, prov=None, globals=None):
+        if prov is None:
+            prov = {}
+        if globals is None:
+            globals = {}
         try:
             dep_items = self[item_name][self.dep_spec][:]
         except KeyError:
@@ -3678,10 +3740,14 @@ class CifDic(StarFile.StarFile):
     #                                                                         
     #                                                                         
     # <Validate list uniqueness>=                                             
-    def validate_uniqueness(self,item_name,item_value,whole_block,provisional_items={},
-                                                                  globals={}):
+    def validate_uniqueness(self, item_name, item_value, whole_block, provisional_items=None,
+                            globals=None):
+        if provisional_items is None:
+            provisional_items = {}
+        if globals is None:
+            globals = {}
         category = self[item_name].get(self.cat_spec)
-        if category == None:
+        if category is None:
             if self.verbose_validation:
                 print("No category found for {}".format(item_name))
             return {"result":None}
@@ -3822,7 +3888,11 @@ class CifDic(StarFile.StarFile):
     def run_loop_id_uniqueness(self, loop_names, block):
         return {loop_names[0]:list([(f.__name__, f(loop_names, block)) for f in self.loop_id_uniqueness_funs])}
 
-    def run_global_validation(self,item_name,item_value,data_block,provisional_items={},globals={}):
+    def run_global_validation(self, item_name, item_value, data_block, provisional_items=None, globals=None):
+        if provisional_items is None:
+            provisional_items = {}
+        if globals is None:
+            globals = {}
         results = list([(f.__name__,f(item_name,item_value,data_block,provisional_items,globals)) for f in self.global_validation_funs])
         return {item_name:results}
 
@@ -3883,8 +3953,9 @@ class ValidationResult:
             block_names = [block_name]
         else:
             block_names = self.valid_result.keys()
-        for block_name in block_names:
-            if not self.valid_result[block_name] == (True,{}):
+        valid = True
+        for block in block_names:
+            if not self.valid_result[block] == (True,{}):
                 valid = False
                 break
             else:
@@ -3897,8 +3968,9 @@ class ValidationResult:
             block_names = [block_name]
         else:
             block_names = self.no_matches.iter_keys()
-        for block_name in block_names:
-            if self.no_matches[block_name]:
+        has_no_match_items = False
+        for block in block_names:
+            if self.no_matches[block]:
                 has_no_match_items = True
                 break
             else:
@@ -3973,10 +4045,9 @@ def get_blacklist_warning(checkfile, block, fulldic):
     return result
 
 def get_warnings(checkfile, block, fulldic):
-    warnings = {}
-    warnings["no_matches"] = get_no_matches_warning(checkfile, block, fulldic)
-    warnings["blacklist"] = get_blacklist_warning(checkfile, block, fulldic)
-    warnings["case_sensitive"] = get_case_sensitive_warning(checkfile, block, fulldic)
+    warnings = {"no_matches": get_no_matches_warning(checkfile, block, fulldic),
+                "blacklist": get_blacklist_warning(checkfile, block, fulldic),
+                "case_sensitive": get_case_sensitive_warning(checkfile, block, fulldic)}
 
     if fulldic.diclang == "DDL1":
         warnings["obsolete"] = get_obsolete_tags_warning_ddl1(checkfile, block, fulldic)
@@ -3998,11 +4069,13 @@ def get_warnings(checkfile, block, fulldic):
 #                                                                         
 #                                                                         
 # <Validate against the given dictionaries>=                              
-def Validate(ciffile,dic = "", diclist=[],mergemode="replace",isdic=False):
+def Validate(ciffile, dic = "", diclist=None, mergemode="replace", isdic=False):
     """Validate the `ciffile` conforms to the definitions in `CifDic` object `dic`, or if `dic` is missing,
     to the results of merging the `CifDic` objects in `diclist` according to `mergemode`.  Flag
     `isdic` indicates that `ciffile` is a CIF dictionary meaning that save frames should be
     accessed for validation and that mandatory_category should be interpreted differently for DDL2."""
+    if diclist is None:
+        diclist = []
     if not isinstance(ciffile,CifFile):
         check_file = CifFile(ciffile)
     else:
@@ -4069,8 +4142,7 @@ def validate_report(val_result,use_html=False):
     else:
         suppress_valid = False
 
-    dict_summary = {}
-    dict_summary['blocks'] = {}
+    dict_summary = {'blocks': {}}
     cif_is_valid = True
     cif_has_warnings = False
     for block in valid_result.keys():
@@ -4124,7 +4196,7 @@ def validate_report(val_result,use_html=False):
                 except KeyError:
                     error_type_dic[func_name] = [bad_result]
         # make a table of test name, test message
-        info_table = {\
+        info_table = {
         'validate_item_type':\
             "Error: The following data items had badly formed values",
         'validate_item_esd':\
@@ -4355,7 +4427,9 @@ def error_report(error_name,error_explanation,error_dics):
 
 #  This lays out an HTML error report
 
-def html_error_report(error_name,error_explanation,error_dics,annotate=[]):
+def html_error_report(error_name, error_explanation, error_dics, annotate=None):
+   if annotate is None:
+       annotate = []
    retstring = "<h4>" + error_explanation + ":</h4>"
    retstring = retstring + "<table cellpadding=5><tr>"
    headstring = "<th>Item name</th>"
@@ -4537,8 +4611,7 @@ class convert_simple_list(object):
 
     def __call__(self, element):
         if len(element) != len(self.converters):
-            emsg = "Expected iterable of {} values, got {}.".format(
-                (len(self.converters), len(element)))
+            emsg = "Expected iterable of {} values, got {}.".format(len(self.converters), len(element))
             raise ValueError(emsg)
         rv = [f(e) for f, e in zip(self.converters, element)]
         return rv
