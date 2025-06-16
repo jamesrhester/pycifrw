@@ -1061,8 +1061,8 @@ class CifDic(StarFile.StarFile):
        #                                                                         
        #                                                                         
        # <Populate parent and child links correctly>=                            
-       target_defs = [a for a in self.keys() if '_item_linked.child_name' in self[a] or \
-                                     '_item_linked.parent_name' in self[a]]
+       target_defs = [a for a in self.keys() if '_item_linked.child_name' in self[a] or '_item_linked.parent_name' in self[a]]
+       # target_defs not used
        # now dodgy_defs contains all definition blocks with more than one child/parent link
        for item_def in dodgy_defs: self.create_pcloop(item_def)           #regularise appearance
        for item_def in dodgy_defs:
@@ -1111,7 +1111,7 @@ class CifDic(StarFile.StarFile):
                 old_children = self[parent_name].get('_item_linked.child_name',[])
                 old_parents = self[parent_name].get('_item_linked.parent_name',[])
                 oldfamily = zip(old_parents,old_children)
-                newfamily = []
+                newfamily = [] # newfamily is not used
                 print('Old parents -> {}'.format(repr(old_parents)))
                 for jj, childname in mychildren:
                     alreadythere = [a for a in oldfamily if a[0]==parent_name and a[1] ==childname]
@@ -1390,7 +1390,7 @@ class CifDic(StarFile.StarFile):
             head_id = import_target["_definition.id"]
             # Adjust parent information
             merging_cat = self[parent_block]['_name.object_id']
-            from_cat_head = import_target['_name.object_id']
+            from_cat_head = import_target['_name.object_id'] # from_cat_head is not used
             if not head_to_head:   # imported category is only child
                 import_target["_name.category_id"]=merging_cat
             self._import_dics = [(import_from,head_id)]+self._import_dics #prepend
@@ -1689,61 +1689,49 @@ class CifDic(StarFile.StarFile):
         # returning the list of new names so it can be used recursively
         
         def expand_base_table(parent_cat,child_cats):
-
             extra_names = []
-
             parent_names = [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) \
                             for n in self.names_in_cat(parent_cat) if self[n].get('_type.purpose','')!='Key']
 
             # first deal with all the child categories
             child_names = []
             for child_cat in child_cats:
-                nn = []
-              
                 if child_cat in expand_list:  # a nested category: grab its names
                     nn = expand_base_table(child_cat,expand_list[child_cat])
                     # store child names
                     extra_names += nn
 
                 # get all child names for this category
-
                 child_names = [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) \
                              for n in self.names_in_cat(child_cat) if self[n].get('_type.purpose','') != 'Key']
-                # update child category with parent names (it can also see the parent)
 
+                # update child category with parent names (it can also see the parent)
                 extra_table.update(dict([((child_cat,obj),[name]) for obj, name in parent_names if (child_cat, obj) not in extra_table]))
 
                 # and include those from child categories
-                
                 child_names += extra_names
 
                 # update our reference table for the parent category
-                
                 extra_table.update(dict([((parent_cat,obj),[name]) for obj,name in child_names if (parent_cat,obj) not in extra_table]))
 
-                
             # and the repeated ones get appended instead
-
             rpts = [a for a in child_names if a in extra_table]
 
             for obj,name in rpts:
                 extra_table[(parent_cat,obj)] += [name]
 
             # and finally, add our own names to the return list
-
             child_names += [(self[n]['_name.object_id'].lower(),self[n]['_definition.id']) \
                             for n in self.names_in_cat(parent_cat) if self[n].get('_type.purpose','')!='Key']
             return child_names
 
         # Process all parent-child hierarchies that we've found.
-        
         [expand_base_table(parent,child) for parent,child in expand_list.items()]
 
         if self.verbose_import:
             print('Expansion cat/obj values: ' + repr(extra_table))
 
         # pick over our expanded information: repeats append, new get added
-
         non_repeats = dict([a for a in extra_table.items() if a[0] not in base_table])
         repeats = [a for a in extra_table.keys() if a in base_table]
         base_table.update(non_repeats)
@@ -2067,7 +2055,7 @@ class CifDic(StarFile.StarFile):
         if self[defname].get('_definition.scope')=='Category':
             children = self.ddlm_immediate_children(defname)
             [self.remove_definition(a) for a in children]
-            cat_id = self[defname]['_definition.id'].lower()
+            cat_id = self[defname]['_definition.id'].lower() # cat_id is not used
         del self[defname]
 
     # The DDLm architecture identifies a data definition by (category,object) which
@@ -2286,7 +2274,7 @@ class CifDic(StarFile.StarFile):
         parser = drel_ast_yacc.parser
         lexer = drel_ast_yacc.lexer
         my_namespace = self.keys()
-        my_namespace = dict(zip(my_namespace,my_namespace))
+        my_namespace = dict(zip(my_namespace,my_namespace)) # my_namespace is not used
         default_attrs = ["_units.code", "_enumeration.default"]
         # we provide a table of loopable categories {cat_name:((key1,key2..),[item_name,...]),...})
         loopable_cats = self.get_loopable_cats()
@@ -2299,7 +2287,7 @@ class CifDic(StarFile.StarFile):
                               and self[a].get("_name.category_id","")!= "function"]
         for derivable in derivable_list:
             # reset the list of visible names for parser
-            special_ids = [dict(zip(self.keys(),self.keys()))]
+            special_ids = [dict(zip(self.keys(),self.keys()))] # special_ids not used
             print("Target id: {}".format(derivable))
             drel_exprs = self[derivable]["_method.expression"]
             drel_purposes = self[derivable]["_method.purpose"]
@@ -2531,7 +2519,7 @@ class CifDic(StarFile.StarFile):
                 stored_setting = cifdata.provide_value
                 cifdata.provide_value = True
                 try:
-                    result = pyfunc(cifdata)
+                    result = pyfunc(cifdata) # where is pyfunc defined?
                 except CifRecursionError as s:
                     print(s)
                     result = None
@@ -2594,7 +2582,7 @@ class CifDic(StarFile.StarFile):
                     stored_setting = cifdata.provide_value
                     cifdata.provide_value = True
                     try:
-                        result = pyfunc(cifdata)
+                        result = pyfunc(cifdata)  # where is pyfunc defined?
                     except CifRecursionError as s:
                         print(s)
                         result = None
@@ -4328,9 +4316,7 @@ def warning_report_blacklist(blacklist_tags, warning_table):
 
     warning_header = warning_table.get('blacklist') + "\n"
     table = PrettyTable()
-
     field_names = ["Tags in the black list"]
-
     table.field_names = field_names
     table.align["Tags in the black list"] = "l"
 
@@ -4338,22 +4324,18 @@ def warning_report_blacklist(blacklist_tags, warning_table):
         table.add_row([blacklist_tag])
 
     table_str = table.get_string() + "\n"
-
     return "\n".join((warning_header, table_str))
 
 def get_warning_report(warnings, warning_table):
-    out_str = ""
-    out_dict = {}
-
     no_matches_str = warning_report_no_matches(warnings.get('no_matches'), warning_table)
     obsolete_str = warning_report_obsolete(warnings.get('obsolete'), warning_table)
     case_sensitive_str = warning_report_case_sensitive(warnings.get('case_sensitive'), warning_table)
     blacklist_str = warning_report_blacklist(warnings.get('blacklist'), warning_table)
 
-    out_dict['no_matches'] = no_matches_str
-    out_dict['obsolete'] = obsolete_str
-    out_dict['case_sensitive_str'] = case_sensitive_str
-    out_dict['blacklist_str'] = blacklist_str
+    out_dict = {'no_matches': no_matches_str,
+                'obsolete': obsolete_str,
+                'case_sensitive_str': case_sensitive_str,
+                'blacklist_str': blacklist_str}
 
     out_str = "".join((
                 no_matches_str, obsolete_str,
@@ -4667,7 +4649,7 @@ def convert_matrix_values(valtype):
 # <Parse the structure specification>=                                    
 def interpret_structure(struc_spec):
     """Interpret a DDLm structure specification"""
-    from . import TypeContentsParser as t
+    from . import TypeContentsParser as t # TypeContentsParser.py is a generated file
     p = t.TypeParser(t.TypeParserScanner(struc_spec))
     return getattr(p,"input")()
 
@@ -4741,7 +4723,7 @@ def merge_dic(diclist,mergemode="replace",ddlspec=None, verbose_import=True, ver
     elif len(basedic.keys()) == 1:                     #One block: DDL2/m style
         old_block = basedic[basedic.keys()[0]]
         for dic in dic_as_cif_list[1:]:
-           new_block = dic[dic.keys()[0]]
+           new_block = dic[dic.keys()[0]] # new_block is not used
            basedic.merge(dic,mode=mergemode,
                          single_block=[basedic.keys()[0],dic.keys()[0]],
                          match_att=["_item.name"],match_function=find_parent)
