@@ -170,6 +170,7 @@ class LoopBlock(object):
     #                                                                         
     # <Initialise Loop Block>=                                                
     def __init__(self,parent_block,dataname):
+        self.popout = None
         self.loop_no = parent_block.FindLoop(dataname)
         if self.loop_no < 0:
             raise KeyError('{} is not in a loop structure'.format(dataname))
@@ -232,7 +233,9 @@ class LoopBlock(object):
     #                                                                         
     #                                                                         
     # <A load iterator>=                                                      
-    def load_iter(self,coords=[]):
+    def load_iter(self, coords=None):
+        if coords is None:
+            coords = []
         count = 0        #to create packet index
         while not self.popout:
             # ok, we have a new packet:  append a list to our subloops
@@ -291,8 +294,12 @@ class LoopBlock(object):
     #                                                                         
     #                                                                         
     # <A recursive iterator>=                                                 
-    def recursive_iter(self,dict_so_far={},coord=[]):
+    def recursive_iter(self, dict_so_far=None, coord=None):
         # print "Recursive iter: coord %s, keys %s, dim %d" % (`coord`,`self.block.keys()`,self.dimension)
+        if dict_so_far is None:
+            dict_so_far = {}
+        if coord is None:
+            coord = []
         my_length = 0
         top_items = self.block.items()
         top_values = self.block.values()       #same order as items
@@ -356,7 +363,7 @@ class LoopBlock(object):
             if len(top_keys)>0:
                 my_length = len(self.block[top_keys[0]])
             for pack_no in range(my_length):
-                yield(self.collapse(pack_no))
+                yield self.collapse(pack_no)
 
 
     # Removing a data item.  We delete the item, and if it is looped, and     
@@ -468,12 +475,12 @@ class LoopBlock(object):
         referenced by that number."""
         if isinstance(itemname,int):
             # return loop position
-            return (-1, self.item_order.index(itemname))
+            return -1, self.item_order.index(itemname)
         if not itemname in self:
             raise ValueError('No such dataname {}'.format(itemname))
         testname = itemname.lower()
         if testname in self.item_order:
-            return (-1,self.item_order.index(testname))
+            return -1,self.item_order.index(testname)
         loop_no = self.FindLoop(testname)
         loop_pos = self.loops[loop_no].index(testname)
         return loop_no,loop_pos
@@ -554,6 +561,8 @@ class StarBlock(object):
     # <Initialise a StarBlock>=                                               
     def __init__(self,data = (), maxoutlength=2048, wraplength=80, overwrite=True,
                  characterset='ascii',maxnamelength=-1):
+        self.char_check = None
+        self.characterset = None
         self.block = {}    #the actual data storage (lower case keys)
         self.loops = {}    #each loop is indexed by a number and contains a list of datanames
         self.item_order = []  #lower case, loops referenced by integer
@@ -655,7 +664,7 @@ class StarBlock(object):
                print('Turning {} into string'.format(repr( rawitem )))
                return self.convert_to_string(key)
         else:    # a string
-            if self.provide_value and ((not isinstance(rawitem,list) and rawitem != '?' and rawitem != ".") or \
+            if self.provide_value and ((not isinstance(rawitem,list) and rawitem != '?' and rawitem != ".") or
                                       (isinstance(rawitem,list) and '?' not in rawitem and '.' not in rawitem)):
                 return self.dictionary.change_type(key,rawitem)
             elif self.provide_value: # catch the question marks
@@ -763,12 +772,12 @@ class StarBlock(object):
         referenced by that number."""
         if isinstance(itemname,int):
             # return loop position
-            return (-1, self.item_order.index(itemname))
+            return -1, self.item_order.index(itemname)
         if not itemname in self:
             raise ValueError('No such dataname {}'.format(itemname))
         testname = itemname.lower()
         if testname in self.item_order:
-            return (-1,self.item_order.index(testname))
+            return -1,self.item_order.index(testname)
         loop_no = self.FindLoop(testname)
         loop_pos = self.loops[loop_no].index(testname)
         return loop_no,loop_pos
@@ -933,11 +942,11 @@ class StarBlock(object):
             # print 'Checking %s for unicode characterset conformance' % dataname
             if len ([a for a in dataname if ord(a) < 33]) > 0:
                 raise StarError( 'Dataname ' + dataname + ' contains forbidden characters (below code point 33)')
-            if len ([a for a in dataname if ord(a) > 126 and ord(a) < 160]) > 0:
+            if len ([a for a in dataname if 126 < ord(a) < 160]) > 0:
                 raise StarError( 'Dataname ' + dataname + ' contains forbidden characters (between code point 127-159)')
-            if len ([a for a in dataname if ord(a) > 0xD7FF and ord(a) < 0xE000]) > 0:
+            if len ([a for a in dataname if 0xD7FF < ord(a) < 0xE000]) > 0:
                 raise StarError( 'Dataname ' + dataname + ' contains unsupported characters (between U+D800 and U+E000)')
-            if len ([a for a in dataname if ord(a) > 0xFDCF and ord(a) < 0xFDF0]) > 0:
+            if len ([a for a in dataname if 0xFDCF < ord(a) < 0xFDF0]) > 0:
                 raise StarError( 'Dataname ' + dataname + ' contains unsupported characters (between U+FDD0 and U+FDEF)')
             if len ([a for a in dataname if ord(a) == 0xFFFE or ord(a) == 0xFFFF]) > 0:
                 raise StarError( 'Dataname ' + dataname + ' contains unsupported characters (U+FFFE and/or U+FFFF)')
@@ -1159,7 +1168,7 @@ class StarBlock(object):
         loop_len = len(self[oldname])
         self.provide_value = old_provides
         if len(self[newname]) != loop_len:
-            raise StarLengthError('Mismatch of loop column lengths for {}: should be {}'.format((newname,loop_len)))
+            raise StarLengthError('Mismatch of loop column lengths for {}: should be {}'.format(newname,loop_len))
         # remove from any other loops
         [self.loops[a].remove(lower_newname) for a in self.loops if lower_newname in self.loops[a]]
         # and add to this loop
@@ -1356,6 +1365,8 @@ class StarBlock(object):
         lcase = False
         if self.dictionary[target_keys[0]]['_type.contents'] in ['Code','Tag','Name']:
             lcase = True
+
+        extra_packet = None
         for cat_key in target_keys:
             try:
                 extra_packet = self.GetKeyedPacket(cat_key,keyvalue,no_case=lcase)
@@ -1452,6 +1463,7 @@ class StarBlock(object):
                 if self.has_key(one_key):
                     return one_key
             return None
+        true_keys = []
         for one_set in target_keys: #loop down the categories
             true_keys = [find_key(k) for k in one_set]
             true_keys = [k for k in true_keys if k is not None]
@@ -1522,7 +1534,7 @@ class StarBlock(object):
         wrap at (`wraplength`).  The wrap length is a target only and may not always be
         possible."""
         if wraplength > maxoutlength:
-            raise StarError("Wrap length (requested {}) must be <= Maximum line length (requested {})".format((wraplength,maxoutlength)))
+            raise StarError("Wrap length (requested {}) must be <= Maximum line length (requested {})".format(wraplength,maxoutlength))
         self.wraplength = wraplength
         self.maxoutlength = maxoutlength
 
@@ -1618,24 +1630,25 @@ class StarBlock(object):
     #                                                                         
     # <Format loop packets>=                                                  
     def format_packets(self,outstring,indent=0,loop_no=-1):
-       alldata = [self[a] for a in self.loops[loop_no]]
-       loopnames = self.loops[loop_no]
-       #print 'Alldata: %s' % `alldata`
-       if all(isinstance(elem, str) for elem in alldata):
+        alldata = [self[a] for a in self.loops[loop_no]]
+        loopnames = self.loops[loop_no]
+        #print 'Alldata: %s' % `alldata`
+        if all(isinstance(elem, str) for elem in alldata):
             packet_data = list(zip(alldata))
-       else:
+        else:
             packet_data = list(zip(*alldata))
-       #print 'Packet data: %s' % `packet_data`
-       #create a dictionary for quick lookup of formatting requirements
-       format_hints = dict([(i['dataname'],i) for i in self.formatting_hints if i['dataname'] in loopnames])
-       for position in range(len(packet_data)):
-           if position > 0:
+        #print 'Packet data: %s' % `packet_data`
+        #create a dictionary for quick lookup of formatting requirements
+        format_hints = dict([(i['dataname'],i) for i in self.formatting_hints if i['dataname'] in loopnames])
+        for position in range(len(packet_data)):
+            if position > 0:
                outstring.write("\n")    #new line each packet except first
-           for point in range(len(packet_data[position])):
+            for point in range(len(packet_data[position])):
                datapoint = packet_data[position][point]
                format_hint = format_hints.get(loopnames[point],{})
-               packstring = self.format_packet_item(datapoint,indent,outstring,format_hint)
+               packstring = self.format_packet_item(datapoint,indent,outstring,format_hint) # this function doesn't return anything.
                outstring.write(' ',canbreak=True,do_tab=False,delimiter=True)
+        # where is the return statement?
 
     # Formatting a single packet item.                                        
     #                                                                         
@@ -1689,7 +1702,9 @@ class StarBlock(object):
     #                                                                         
     #                                                                         
     # <Format a string>=                                                      
-    def _formatstring(self,instring,delimiter=None,standard='CIF1',indent=0,hints={}):
+    def _formatstring(self, instring, delimiter=None, standard='CIF1', indent=0, hints=None):
+        if hints is None:
+            hints = {}
         if hints.get("reformat",False) and "\n" in instring:
             instring = "\n"+self.do_wrapping(instring,hints["reformat_indent"])
         allowed_delimiters = set(self.string_delimiters)
@@ -1732,8 +1747,10 @@ class StarBlock(object):
     #                                                                         
     #                                                                         
     # <Format a data value>=                                                  
-    def format_value(self,itemvalue,stringsink,compound=False,hints={}):
+    def format_value(self, itemvalue, stringsink, compound=False, hints=None):
         """Format a Star data value"""
+        if hints is None:
+            hints = {}
         global have_numpy
         delimiter = hints.get('delimiter',None)
         startcol = hints.get('column',-1)
@@ -1741,7 +1758,7 @@ class StarBlock(object):
             raise StarError("Non-unicode value {0} found in block".format(itemvalue))
         if isinstance(itemvalue,unicode):  #need to sanitize
             stringsink.write(self._formatstring(itemvalue,delimiter=delimiter,hints=hints),canbreak = True,startcol=startcol)
-        elif isinstance(itemvalue,(list)) or (hasattr(itemvalue,'dtype') and hasattr(itemvalue,'__iter__')): #numpy
+        elif isinstance(itemvalue, list) or (hasattr(itemvalue, 'dtype') and hasattr(itemvalue, '__iter__')): #numpy
            stringsink.set_tab(0)
            stringsink.write('[',canbreak=True,newindent=True,mustbreak=compound,startcol=startcol)
            if len(itemvalue)>0:
@@ -1765,7 +1782,7 @@ class StarBlock(object):
                    self.format_value(value,stringsink)   #never break between key and value
            stringsink.write('}',unindent=True)
         elif isinstance(itemvalue,(float,int,long)) or \
-             (have_numpy and isinstance(itemvalue,(numpy.number))):  #TODO - handle uncertainties
+             (have_numpy and isinstance(itemvalue, numpy.number)):  #TODO - handle uncertainties
            stringsink.write(str(itemvalue),canbreak=True,startcol=startcol)   #numbers
         else:
            raise ValueError('Value in unexpected format for output: {}'.format(repr( itemvalue )))
@@ -1908,8 +1925,12 @@ class StarBlock(object):
     #                                                                         
     #                                                                         
     # <Merge with another block>=                                             
-    def merge(self,new_block,mode="strict",match_att=[],match_function=None,
-                   rel_keys = []):
+    def merge(self, new_block, mode="strict", match_att=None, match_function=None,
+              rel_keys=None):
+        if match_att is None:
+            match_att = []
+        if rel_keys is None:
+            rel_keys = []
         if mode == 'strict':
            for key in new_block.keys():
                if key in self and key not in match_att:
@@ -2136,6 +2157,8 @@ class BlockCollection(object):
     # <Initialise BC data structures>=                                        
     def __init__(self,datasource=None,standard='CIF',blocktype = StarBlock,
                  characterset='ascii',scoping='instance',**kwargs):
+        self.characterset = None
+        self.grammar = None
         import collections
         self.dictionary = {}
         self.standard = standard
@@ -2333,12 +2356,12 @@ class BlockCollection(object):
         if len(blockname)>75:
                  raise StarError('Blockname {} is longer than 75 characters'.format(blockname))
         if fix:
-            newblockname = re.sub('[  \t]','_',blockname)
+            newblockname = re.sub('[ \t]','_',blockname)
         else: newblockname = blockname
         new_lowerbn = newblockname.lower()
         if new_lowerbn in self.lower_keys:   #already there
             if self.standard is not None:
-               toplevelnames = [a[0] for a in self.child_table.items() if a[1].parent==None]
+               toplevelnames = [a[0] for a in self.child_table.items() if a[1].parent is None]
                if parent is None and new_lowerbn not in toplevelnames:  #can give a new key to this one
                   while new_lowerbn in self.lower_keys: new_lowerbn = new_lowerbn + '+'
                elif parent is not None and new_lowerbn in toplevelnames: #can fix a different one
@@ -2408,7 +2431,7 @@ class BlockCollection(object):
         realoldname = oldname.lower()
         realnewname = newname.lower()
         if realnewname in self.lower_keys:
-            raise StarError('Cannot change blockname {} to {} as {} already present'.format((oldname,newname,newname)))
+            raise StarError('Cannot change blockname {} to {} as {} already present'.format(oldname,newname,newname))
         if realoldname not in self.lower_keys:
             raise KeyError('Cannot find old block {}'.format(realoldname))
         self._rekey(realoldname,realnewname,block_id=newname)
@@ -2546,12 +2569,16 @@ class BlockCollection(object):
         #print('Block input order now:' + repr(self.block_input_order))
         self.child_table.update(new_bc.child_table)
         if parent_name is not None:     #redo the child_table entries
-              reparent_list = [(a[0],a[1].block_id) for a in new_bc.child_table.items() if a[1].parent==None]
+              reparent_list = [(a[0],a[1].block_id) for a in new_bc.child_table.items() if a[1].parent is None]
               reparent_dict = [(a[0],self.PC(a[1],parent_name.lower())) for a in reparent_list]
               self.child_table.update(dict(reparent_dict))
 
-    def merge(self,new_bc,mode=None,parent=None,single_block=[],
-                   idblock="",match_att=[],match_function=None):
+    def merge(self, new_bc, mode=None, parent=None, single_block=None,
+              idblock="", match_att=None, match_function=None):
+        if single_block is None:
+            single_block = []
+        if match_att is None:
+            match_att = []
         if mode is None:
             if self.standard is None:
                mode = 'replace'
@@ -2635,7 +2662,7 @@ class BlockCollection(object):
     # <Collect all values of a single key in all blocks>=                     
     def get_all(self,item_name):
         raw_values = [self[a].get(item_name) for a in self.keys()]
-        raw_values = [a for a in raw_values if a != None]
+        raw_values = [a for a in raw_values if a is not None]
         ret_vals = []
         for rv in raw_values:
             if isinstance(rv,list):
@@ -2661,7 +2688,7 @@ class BlockCollection(object):
                 self.visible_keys = [a for a in self.lower_keys]
             else:
                 #only top-level datablocks visible
-                self.visible_keys = [a[0] for a in self.child_table.items() if a[1].parent==None]
+                self.visible_keys = [a[0] for a in self.child_table.items() if a[1].parent is None]
         object.__setattr__(self,attr_name,newval)
 
     # Parent-child utilities.  As we are now emulating parent-child relationships
@@ -2684,7 +2711,7 @@ class BlockCollection(object):
 
     def get_roots(self):
         """Get the top-level blocks"""
-        return [a for a in self.child_table.items() if a[1].parent==None]
+        return [a for a in self.child_table.items() if a[1].parent is None]
 
     def get_children(self,blockname,include_parent=False,scoping='dictionary'):
         """Get all children of [[blockname]] as a block collection. If [[include_parent]] is
@@ -2968,7 +2995,7 @@ class CIFStringIO(StringIO):
                 print('Could not format {} at column {} as already at {}'.format(outstring,startcol,self.currentpos))
                 startcol = -1   #so that tabbing works as a backup
         #handle tabs
-        if self.tabwidth >0 and do_tab and startcol < 0:
+        if do_tab and self.tabwidth > 0 > startcol:
             next_stop = ((self.currentpos//self.tabwidth)+1)*self.tabwidth
             #print 'Currentpos %d: Next tab stop at %d' % (self.currentpos,next_stop)
             if self.currentpos < next_stop:
@@ -3195,6 +3222,8 @@ def ReadStarWithError(filename,prepared = None, maxlength=-1,
     if text[:10] == r"#\#CIF_2.0" and ('2.0',Y20) in try_list:
         try_list = [('2.0',Y20)]
 
+    proto_star = None
+    result = []
     for grammar_name,Y in try_list:
 
        result = [0, None, None, None]
@@ -3208,7 +3237,6 @@ def ReadStarWithError(filename,prepared = None, maxlength=-1,
            prepared.set_characterset('unicode')
        else:
            prepared.set_characterset('ascii')
-       proto_star = None
        try:
            proto_star = getattr(parser,"input")(prepared)
            # Syntax error
@@ -3497,7 +3525,7 @@ def process_template(template_file):
             hint_dict = {"dataname":item}
             # find the line in the file
             start_pos = re.search("(^[ \t]*(?P<name>" + item + ")[ \t\n]+)(?P<spec>([\\S]+)|(^;))",template_string,re.I|re.M)
-            if start_pos.group("spec") != None:
+            if start_pos.group("spec") is not None:
                 spec_pos = start_pos.start("spec")-start_pos.start(0)
                 spec_char = template_string[start_pos.start("spec"):start_pos.start("spec")+3]
                 if spec_char[0] in '\'";':
@@ -3515,7 +3543,7 @@ def process_template(template_file):
                         p = re.search(find_indent,text_val,re.M)
                         if p.group() is not None:
                             hint_dict["reformat_indent"]=p.end() - p.start()
-                if start_pos.group('name') != None:
+                if start_pos.group('name') is not None:
                     name_pos = start_pos.start('name') - start_pos.start(0)
                     hint_dict.update({"name_pos":name_pos})
             #print '%s: %s' % (item,`hint_dict`)

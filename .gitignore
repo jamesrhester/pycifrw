@@ -12,3 +12,5 @@ sync.bat
 /PyCifRW.egg-info/
 /build/
 /dist/
+
+/.idea/
