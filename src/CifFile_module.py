@@ -3110,7 +3110,7 @@ class CifDic(StarFile.StarFile):
         return {"result":True}
 
     def validate_item_esd_ddlm(self,item_name,item_value):
-        if self[item_name].get('self.primitive_type') not in \
+        if self[item_name].get(self.primitive_type) not in \
         ['Count','Index','Integer','Real','Imag','Complex','Binary','Hexadecimal','Octal']:
             return {"result":None}
         can_esd = True
@@ -3118,8 +3118,7 @@ class CifDic(StarFile.StarFile):
             can_esd = False
         item_values = listify(item_value)
         check_all = [get_number_with_esd(a)[1] for a in item_values]
-        check_all = [v for v in check_all if (can_esd and v is None) or \
-                 (not can_esd and v is not None)]
+        check_all = [v for v in check_all if (not can_esd and v is not None)]
         if len(check_all)>0: return {"result":False,"bad_values":check_all}
         return {"result":True}
 
@@ -3332,15 +3331,15 @@ class CifDic(StarFile.StarFile):
         Function to validate if the id tags of a loop are unique. Function for the DDLm dictionaries.
         Tags that have a category in self.black_list_categories are ignored.
         """
-        # Get the final categories
-        final_cats = self.get_final_cats(loop_names)
+        # Get the final categories, dropping duplicates
+        final_cats = list(set(self.get_final_cats(loop_names)))
 
-        # Get the category ids
+        # Get the category ids, dropping duplicates
         cat_keys = []
         for cat in final_cats:
             temp_cat_key = self[cat].get(self.unique_spec, "")
-            if temp_cat_key not in cat_keys:
-                cat_keys.append(temp_cat_key)
+            cat_keys.extend(temp_cat_key)
+        cat_keys = list(set(cat_keys))
 
         # Only take into account the loop ids from our loop tags
         loop_names_to_check = [loop_name for loop_name in loop_names if loop_name in cat_keys]
@@ -4188,12 +4187,16 @@ def validate_report(val_result,use_html=False):
             "Error: The following data items had badly formed values",
         'validate_item_esd':\
             "Error: The following data items should not have esds appended",
+        'validate_item_esd_ddlm':\
+            "Error: The following data items should not have esds appended",
         'validate_enum_range':\
             "Error: The following data items have values outside permitted range",
         'validate_item_enum':\
             "Error: The following data items have values outside permitted set",
         'validate_looping':\
             "Error: The following data items violate looping constraints",
+        'validate_looping_ddlm':\
+            "Error: The following data items are not loopable",
         'validate_loop_membership':\
             "Error: The following looped data names are of different categories to the first looped data name",
         'validate_loop_key':\
@@ -4202,6 +4205,8 @@ def validate_report(val_result,use_html=False):
             "Error: A loop key is missing for the category containing the dataname",
         'validate_loop_key_uniqueness':\
             "Error: There are repeated values for a _list_mandatory type tag",
+        'validate_loop_key_uniqueness_ddlm':\
+            "Error: There are repeated values for a loop key tag",
         'validate_loop_references':\
             "Error: A dataname required by the item is missing from the loop",
         'validate_parent':\
