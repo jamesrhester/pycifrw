@@ -22,7 +22,7 @@ http://dx.doi.org/10.1107/S1600576715021871 was used as the CIF 2.0
 reference.
 
 PyCifRW has been tested on the IUCr sample CIF1.1 trip files located at
-http://www.iucr.org/iucr-top/cif/developers/trip and fails or
+https://www.iucr.org/resources/cif/software/archived/ciftest1 and fails or
 successfully reads as it is supposed to (note that `ciftest5` contains
 characters now forbidden in CIFs).
 
